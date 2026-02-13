@@ -340,16 +340,36 @@ a:hover {
   font-size: 0.46rem;
   color: var(--text-dim);
   letter-spacing: 0.5px;
-  line-height: 2.2;
+  line-height: 1.6;
 }
 
 .footer a {
   color: var(--accent-dim);
 }
 
+.footer-legal {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+
 .footer-hint {
   color: var(--text-dim) !important;
   font-size: 0.44rem !important;
+}
+
+@media (max-width: 639px) {
+  .footer {
+    padding: 12px 16px 16px;
+  }
+  .footer-legal {
+    margin-top: 10px;
+    padding-top: 8px;
+  }
+  .footer p,
+  .footer-hint {
+    line-height: 1.4 !important;
+  }
 }
 
 .pokeball-inline {
