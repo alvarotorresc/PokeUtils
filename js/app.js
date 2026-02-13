@@ -7,10 +7,70 @@ import { renderAbilities } from './abilities.js';
 import { renderItems } from './items.js';
 import { renderNatures } from './natures.js';
 import { renderCalculator } from './calculator.js';
+import { t, getLang, setLang, onLangChange } from './i18n.js';
 
 const app = document.getElementById('app');
 const navToggle = document.getElementById('navToggle');
 const navLinks = document.getElementById('navLinks');
+const langToggle = document.getElementById('langToggle');
+const themeToggle = document.getElementById('themeToggle');
+
+// ===== THEME =====
+function initTheme() {
+  const saved = localStorage.getItem('pkutils_theme') || 'dark';
+  if (saved === 'light') document.documentElement.classList.add('light');
+  updateThemeBtn();
+}
+
+function toggleTheme() {
+  document.documentElement.classList.toggle('light');
+  const isLight = document.documentElement.classList.contains('light');
+  localStorage.setItem('pkutils_theme', isLight ? 'light' : 'dark');
+  updateThemeBtn();
+}
+
+function updateThemeBtn() {
+  const isLight = document.documentElement.classList.contains('light');
+  themeToggle.textContent = isLight ? '🌙' : '☀️';
+}
+
+themeToggle.addEventListener('click', toggleTheme);
+initTheme();
+
+// ===== LANGUAGE =====
+function updateLangBtn() {
+  langToggle.textContent = getLang() === 'es' ? 'EN' : 'ES';
+}
+
+function updateNavLabels() {
+  const labels = {
+    home: t('nav.home'),
+    pokedex: t('nav.pokedex'),
+    types: t('nav.types'),
+    moves: t('nav.moves'),
+    abilities: t('nav.abilities'),
+    items: t('nav.items'),
+    natures: t('nav.natures'),
+    calculator: t('nav.calculator'),
+  };
+  document.querySelectorAll('.nav-link').forEach(link => {
+    const page = link.dataset.page;
+    if (labels[page]) link.textContent = labels[page];
+  });
+}
+
+langToggle.addEventListener('click', () => {
+  setLang(getLang() === 'es' ? 'en' : 'es');
+});
+
+onLangChange(() => {
+  updateLangBtn();
+  updateNavLabels();
+  route(); // re-render current page
+});
+
+updateLangBtn();
+updateNavLabels();
 
 // ===== NAV TOGGLE =====
 navToggle.addEventListener('click', () => {
@@ -86,8 +146,8 @@ async function route() {
       app.innerHTML = `
         <div class="no-results">
           <div class="icon">❓</div>
-          <p>Pagina no encontrada</p>
-          <p style="margin-top:12px"><a href="#/">Volver al inicio</a></p>
+          <p>${t('common.notfound')}</p>
+          <p style="margin-top:12px"><a href="#/">${t('common.backhome')}</a></p>
         </div>
       `;
     }
@@ -96,7 +156,7 @@ async function route() {
     app.innerHTML = `
       <div class="no-results">
         <div class="icon">⚠️</div>
-        <p>Error al cargar la pagina</p>
+        <p>${t('common.error')}</p>
         <p style="margin-top:8px;font-size:0.44rem;color:var(--text-dim)">${err.message}</p>
       </div>
     `;
@@ -107,11 +167,11 @@ window.addEventListener('hashchange', route);
 route();
 
 // ===== HELPER: loading HTML =====
-export function loadingHTML(text = 'Cargando...') {
+export function loadingHTML(text) {
   return `
     <div class="loading">
       <div class="pokeball-spinner"></div>
-      <div class="loading-text">${text}</div>
+      <div class="loading-text">${text || t('common.loading')}</div>
     </div>
   `;
 }
@@ -123,7 +183,7 @@ export function renderPagination(container, currentPage, totalPages, onPageChang
 
   const prevBtn = document.createElement('button');
   prevBtn.className = 'page-btn';
-  prevBtn.textContent = '◀ Ant.';
+  prevBtn.textContent = t('common.prev');
   prevBtn.disabled = currentPage <= 1;
   prevBtn.onclick = () => onPageChange(currentPage - 1);
   div.appendChild(prevBtn);
@@ -171,7 +231,7 @@ export function renderPagination(container, currentPage, totalPages, onPageChang
 
   const nextBtn = document.createElement('button');
   nextBtn.className = 'page-btn';
-  nextBtn.textContent = 'Sig. ▶';
+  nextBtn.textContent = t('common.next');
   nextBtn.disabled = currentPage >= totalPages;
   nextBtn.onclick = () => onPageChange(currentPage + 1);
   div.appendChild(nextBtn);

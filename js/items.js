@@ -2,19 +2,19 @@
 import { itemSpriteUrl } from './data.js';
 import { fetchItems } from './api.js';
 import { loadingHTML, renderPagination } from './app.js';
+import { t, pokeName, getLang } from './i18n.js';
 
 const PAGE_SIZE = 48;
 
-const CATEGORY_LABELS = {
-  '': 'TODOS',
-  'medicine': '💊 Medicina',
-  'pokeballs': '🔴 Pokeballs',
-  'berries': '🫐 Bayas',
-  'machines': '💿 MTs/MOs',
-  'battle-items': '⚔️ Combate',
-  'mail': '✉️ Correo',
-  'items-key': '🔑 Clave',
-  'held-items': '🎁 Equipables',
+const CATEGORY_MAP = {
+  'medicine': 'cat.medicine',
+  'pokeballs': 'cat.pokeballs',
+  'berries': 'cat.berries',
+  'machines': 'cat.machines',
+  'battle-items': 'cat.battle-items',
+  'mail': 'cat.mail',
+  'items-key': 'cat.items-key',
+  'held-items': 'cat.held-items',
 };
 
 export function renderItems(container) {
@@ -27,12 +27,12 @@ export function renderItems(container) {
 
   container.innerHTML = `
     <div class="page-header">
-      <h1>OBJETOS</h1>
-      <p>Objetos Pokemon con imagen y descripcion</p>
+      <h1>${t('items.title')}</h1>
+      <p>${t('items.subtitle')}</p>
     </div>
     <div class="search-bar">
       <span class="search-icon">🔍</span>
-      <input type="text" class="search-input" id="itSearch" placeholder="Buscar objeto...">
+      <input type="text" class="search-input" id="itSearch" placeholder="${t('items.search')}">
     </div>
     <div class="filter-row" id="itFilters"></div>
     <div id="itContent"></div>
@@ -59,7 +59,7 @@ export function renderItems(container) {
     const allBtn = document.createElement('button');
     allBtn.className = 'filter-btn' + (catFilter === '' ? ' active' : '');
     allBtn.dataset.cat = '';
-    allBtn.textContent = 'TODOS';
+    allBtn.textContent = t('items.all');
     allBtn.onclick = () => { catFilter = ''; currentPage = 1; updateFilterActive(); render(); };
     filtersEl.appendChild(allBtn);
 
@@ -67,7 +67,7 @@ export function renderItems(container) {
       const btn = document.createElement('button');
       btn.className = 'filter-btn' + (catFilter === cat ? ' active' : '');
       btn.dataset.cat = cat;
-      btn.textContent = CATEGORY_LABELS[cat] || cat.toUpperCase();
+      btn.textContent = CATEGORY_MAP[cat] ? t(CATEGORY_MAP[cat]) : cat.toUpperCase();
       btn.onclick = () => { catFilter = cat; currentPage = 1; updateFilterActive(); render(); };
       filtersEl.appendChild(btn);
     });
@@ -81,20 +81,20 @@ export function renderItems(container) {
 
   function showModal(item) {
     modalOpen = true;
-    const catLabel = CATEGORY_LABELS[item.category] || item.category;
+    const catLabel = CATEGORY_MAP[item.category] ? t(CATEGORY_MAP[item.category]) : item.category;
     modal.innerHTML = `
       <div class="modal-overlay" id="itModalOverlay">
         <div class="modal-content">
           <button class="modal-close" id="itModalClose">✕</button>
           <div style="text-align:center;margin-bottom:16px">
-            <img src="${itemSpriteUrl(item.name)}" alt="${item.nameEs}"
+            <img src="${itemSpriteUrl(item.name)}" alt="${pokeName(item)}"
                  style="width:64px;height:64px;image-rendering:pixelated;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.4))"
                  onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><text x=%2220%22 y=%2226%22 text-anchor=%22middle%22 font-size=%2224%22>🎒</text></svg>'">
           </div>
-          <h3 style="font-size:0.55rem;color:var(--accent);text-align:center;margin-bottom:4px">${item.nameEs}</h3>
+          <h3 style="font-size:0.55rem;color:var(--accent);text-align:center;margin-bottom:4px">${pokeName(item)}</h3>
           <div style="font-size:0.44rem;color:var(--text-dim);text-align:center;margin-bottom:16px">${item.name}</div>
           ${catLabel ? `<div style="font-size:0.44rem;color:var(--text-muted);text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">${catLabel}</div>` : ''}
-          <div style="font-size:0.48rem;color:var(--text-muted);line-height:2;text-align:center">${item.description || 'Sin descripcion disponible'}</div>
+          <div style="font-size:0.48rem;color:var(--text-muted);line-height:2;text-align:center">${(getLang() === 'es' ? item.descriptionEs : item.descriptionEn) || t('items.nodesc')}</div>
         </div>
       </div>
     `;
@@ -115,7 +115,7 @@ export function renderItems(container) {
 
   async function loadAll() {
     if (allItems) return;
-    content.innerHTML = loadingHTML('Cargando objetos...');
+    content.innerHTML = loadingHTML(t('items.loading'));
     let all = [];
     let offset = 0;
     while (true) {
@@ -144,6 +144,7 @@ export function renderItems(container) {
     if (searchTerm) {
       filtered = filtered.filter(i =>
         i.nameEs.toLowerCase().includes(searchTerm) ||
+        i.nameEn.toLowerCase().includes(searchTerm) ||
         i.name.toLowerCase().includes(searchTerm)
       );
     }
@@ -160,14 +161,14 @@ export function renderItems(container) {
       content.innerHTML = `
         <div class="no-results">
           <div class="icon">🔍</div>
-          <p>No se encontraron objetos</p>
+          <p>${t('items.empty')}</p>
         </div>
       `;
       return;
     }
 
     content.innerHTML = `
-      <div class="page-info" style="margin-bottom:12px">${filtered.length} objetos encontrados</div>
+      <div class="page-info" style="margin-bottom:12px">${filtered.length} ${t('items.found')}</div>
       <div class="items-grid" id="itGrid"></div>
     `;
 
@@ -176,9 +177,9 @@ export function renderItems(container) {
       const card = document.createElement('div');
       card.className = 'item-card';
       card.innerHTML = `
-        <img class="item-sprite" src="${itemSpriteUrl(item.name)}" alt="${item.nameEs}" loading="lazy"
+        <img class="item-sprite" src="${itemSpriteUrl(item.name)}" alt="${pokeName(item)}" loading="lazy"
              onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><text x=%2220%22 y=%2226%22 text-anchor=%22middle%22 font-size=%2224%22>🎒</text></svg>'">
-        <div class="item-name">${item.nameEs}</div>
+        <div class="item-name">${pokeName(item)}</div>
       `;
       card.onclick = () => showModal(item);
       grid.appendChild(card);

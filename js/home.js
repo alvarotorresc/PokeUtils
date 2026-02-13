@@ -1,47 +1,49 @@
 // ===== HOME PAGE =====
+import { t } from './i18n.js';
+
 export function renderHome(container) {
   container.innerHTML = `
     <div class="home-hero">
       <div class="pokeball-icon-lg"></div>
       <h1>POKE<span class="accent">UTILS</span></h1>
-      <p>Tu guia Pokemon retro definitiva</p>
+      <p>${t('home.tagline')}</p>
     </div>
 
     <div class="home-grid">
       <a href="#/pokedex" class="home-card">
         <div class="icon">📖</div>
-        <div class="label">POKEDEX</div>
-        <div class="desc">Los 1025 Pokemon con stats, tipos y habilidades</div>
+        <div class="label">${t('nav.pokedex')}</div>
+        <div class="desc">${t('home.pokedex.desc')}</div>
       </a>
       <a href="#/types" class="home-card">
         <div class="icon">⚡</div>
-        <div class="label">TIPOS</div>
-        <div class="desc">Tabla de tipos interactiva con debilidades y resistencias</div>
+        <div class="label">${t('nav.types')}</div>
+        <div class="desc">${t('home.types.desc')}</div>
       </a>
       <a href="#/moves" class="home-card">
         <div class="icon">💥</div>
-        <div class="label">MOVIMIENTOS</div>
-        <div class="desc">Todos los movimientos con tipo, poder y descripcion</div>
+        <div class="label">${t('nav.moves')}</div>
+        <div class="desc">${t('home.moves.desc')}</div>
       </a>
       <a href="#/abilities" class="home-card">
         <div class="icon">✨</div>
-        <div class="label">HABILIDADES</div>
-        <div class="desc">Lista completa de habilidades y sus efectos</div>
+        <div class="label">${t('nav.abilities')}</div>
+        <div class="desc">${t('home.abilities.desc')}</div>
       </a>
       <a href="#/items" class="home-card">
         <div class="icon">🎒</div>
-        <div class="label">OBJETOS</div>
-        <div class="desc">Objetos con imagen, descripcion y categoria</div>
+        <div class="label">${t('nav.items')}</div>
+        <div class="desc">${t('home.items.desc')}</div>
       </a>
       <a href="#/natures" class="home-card">
         <div class="icon">🧬</div>
-        <div class="label">NATURALEZAS</div>
-        <div class="desc">Las 25 naturalezas y sus modificadores de stats</div>
+        <div class="label">${t('nav.natures')}</div>
+        <div class="desc">${t('home.natures.desc')}</div>
       </a>
       <a href="#/calculator" class="home-card">
         <div class="icon">🔢</div>
-        <div class="label">CALCULADORA</div>
-        <div class="desc">Calcula IVs, EVs y stats de tus Pokemon</div>
+        <div class="label">${t('nav.calculator')}</div>
+        <div class="desc">${t('home.calculator.desc')}</div>
       </a>
     </div>
   `;

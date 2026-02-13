@@ -1,7 +1,8 @@
 // ===== MOVES PAGE =====
-import { TYPE_NAMES, TYPES, CATEGORY_NAMES } from './data.js';
+import { TYPES } from './data.js';
 import { fetchMoves } from './api.js';
 import { loadingHTML, renderPagination } from './app.js';
+import { t, typeName, categoryName, pokeName, getLang } from './i18n.js';
 
 const PAGE_SIZE = 50;
 
@@ -14,22 +15,22 @@ export function renderMoves(container) {
 
   container.innerHTML = `
     <div class="page-header">
-      <h1>MOVIMIENTOS</h1>
-      <p>Todos los movimientos Pokemon con detalles</p>
+      <h1>${t('moves.title')}</h1>
+      <p>${t('moves.subtitle')}</p>
     </div>
     <div class="search-bar">
       <span class="search-icon">🔍</span>
-      <input type="text" class="search-input" id="mvSearch" placeholder="Buscar movimiento...">
+      <input type="text" class="search-input" id="mvSearch" placeholder="${t('moves.search')}">
     </div>
     <div class="filter-row" id="mvTypeFilters">
-      <button class="filter-btn active" data-type="">TODOS</button>
-      ${TYPES.map(t => `<button class="filter-btn" data-type="${t}"><span class="type-badge sm" data-type="${t}" style="padding:3px 6px;font-size:0.42rem">${TYPE_NAMES[t]}</span></button>`).join('')}
+      <button class="filter-btn active" data-type="">${t('moves.all')}</button>
+      ${TYPES.map(tp => `<button class="filter-btn" data-type="${tp}"><span class="type-badge sm" data-type="${tp}" style="padding:3px 6px;font-size:0.42rem">${typeName(tp)}</span></button>`).join('')}
     </div>
     <div class="filter-row" id="mvCatFilters">
-      <button class="filter-btn active" data-cat="">TODAS</button>
-      <button class="filter-btn" data-cat="physical"><span class="move-category physical">FISICO</span></button>
-      <button class="filter-btn" data-cat="special"><span class="move-category special">ESPECIAL</span></button>
-      <button class="filter-btn" data-cat="status"><span class="move-category status">ESTADO</span></button>
+      <button class="filter-btn active" data-cat="">${t('moves.allcat')}</button>
+      <button class="filter-btn" data-cat="physical"><span class="move-category physical">${t('cat.physical')}</span></button>
+      <button class="filter-btn" data-cat="special"><span class="move-category special">${t('cat.special')}</span></button>
+      <button class="filter-btn" data-cat="status"><span class="move-category status">${t('cat.status')}</span></button>
     </div>
     <div id="mvContent"></div>
   `;
@@ -69,7 +70,7 @@ export function renderMoves(container) {
 
   async function loadAll() {
     if (allMoves) return;
-    content.innerHTML = loadingHTML('Cargando movimientos...');
+    content.innerHTML = loadingHTML(t('moves.loading'));
     let all = [];
     let offset = 0;
     while (true) {
@@ -88,6 +89,7 @@ export function renderMoves(container) {
     if (searchTerm) {
       filtered = filtered.filter(m =>
         m.nameEs.toLowerCase().includes(searchTerm) ||
+        m.nameEn.toLowerCase().includes(searchTerm) ||
         m.name.toLowerCase().includes(searchTerm)
       );
     }
@@ -103,24 +105,24 @@ export function renderMoves(container) {
       content.innerHTML = `
         <div class="no-results">
           <div class="icon">🔍</div>
-          <p>No se encontraron movimientos</p>
+          <p>${t('moves.empty')}</p>
         </div>
       `;
       return;
     }
 
     content.innerHTML = `
-      <div class="page-info" style="margin-bottom:12px">${filtered.length} movimientos encontrados</div>
+      <div class="page-info" style="margin-bottom:12px">${filtered.length} ${t('moves.found')}</div>
       <div class="data-table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th>NOMBRE</th>
-              <th>TIPO</th>
-              <th>CAT.</th>
-              <th>POW</th>
-              <th>ACC</th>
-              <th>PP</th>
+              <th>${t('moves.col.name')}</th>
+              <th>${t('moves.col.type')}</th>
+              <th>${t('moves.col.cat')}</th>
+              <th>${t('moves.col.pow')}</th>
+              <th>${t('moves.col.acc')}</th>
+              <th>${t('moves.col.pp')}</th>
             </tr>
           </thead>
           <tbody id="mvBody"></tbody>
@@ -132,13 +134,14 @@ export function renderMoves(container) {
     page.forEach(m => {
       const tr = document.createElement('tr');
       tr.style.cursor = 'pointer';
+      const desc = getLang() === 'es' ? m.descriptionEs : m.descriptionEn;
       tr.innerHTML = `
         <td>
-          <div style="font-size:0.42rem;color:var(--text)">${m.nameEs}</div>
-          ${m.description ? `<div style="font-size:0.42rem;color:var(--text-dim);margin-top:4px;line-height:1.8;max-width:300px">${m.description}</div>` : ''}
+          <div style="font-size:0.42rem;color:var(--text)">${pokeName(m)}</div>
+          ${desc ? `<div style="font-size:0.42rem;color:var(--text-dim);margin-top:4px;line-height:1.8;max-width:300px">${desc}</div>` : ''}
         </td>
-        <td><span class="type-badge sm" data-type="${m.type}">${TYPE_NAMES[m.type] || m.type}</span></td>
-        <td><span class="move-category ${m.category}">${CATEGORY_NAMES[m.category] || m.category}</span></td>
+        <td><span class="type-badge sm" data-type="${m.type}">${typeName(m.type)}</span></td>
+        <td><span class="move-category ${m.category}">${categoryName(m.category)}</span></td>
         <td style="text-align:center;color:${m.power ? 'var(--text)' : 'var(--text-dim)'}">${m.power || '—'}</td>
         <td style="text-align:center;color:${m.accuracy ? 'var(--text)' : 'var(--text-dim)'}">${m.accuracy ? m.accuracy + '%' : '—'}</td>
         <td style="text-align:center">${m.pp || '—'}</td>

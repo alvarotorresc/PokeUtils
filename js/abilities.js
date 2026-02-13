@@ -1,6 +1,7 @@
 // ===== ABILITIES PAGE =====
 import { fetchAbilities } from './api.js';
 import { loadingHTML, renderPagination } from './app.js';
+import { t, pokeName, getLang } from './i18n.js';
 
 const PAGE_SIZE = 30;
 
@@ -12,13 +13,13 @@ export function renderAbilities(container, highlightName = null) {
 
   container.innerHTML = `
     <div class="page-header">
-      <h1>HABILIDADES</h1>
-      <p>Todas las habilidades Pokemon y sus efectos</p>
+      <h1>${t('abilities.title')}</h1>
+      <p>${t('abilities.subtitle')}</p>
     </div>
-    ${targetName ? `<button class="back-btn" id="abBack">◀ Volver al Pokemon</button>` : ''}
+    ${targetName ? `<button class="back-btn" id="abBack">◀ ${t('abilities.back')}</button>` : ''}
     <div class="search-bar">
       <span class="search-icon">🔍</span>
-      <input type="text" class="search-input" id="abSearch" placeholder="Buscar habilidad...">
+      <input type="text" class="search-input" id="abSearch" placeholder="${t('abilities.search')}">
     </div>
     <div id="abContent"></div>
   `;
@@ -43,7 +44,7 @@ export function renderAbilities(container, highlightName = null) {
 
   async function loadAll() {
     if (allAbilities) return;
-    content.innerHTML = loadingHTML('Cargando habilidades...');
+    content.innerHTML = loadingHTML(t('abilities.loading'));
     let all = [];
     let offset = 0;
     while (true) {
@@ -74,6 +75,7 @@ export function renderAbilities(container, highlightName = null) {
     if (searchTerm) {
       filtered = filtered.filter(a =>
         a.nameEs.toLowerCase().includes(searchTerm) ||
+        a.nameEn.toLowerCase().includes(searchTerm) ||
         a.name.toLowerCase().includes(searchTerm)
       );
     }
@@ -87,14 +89,14 @@ export function renderAbilities(container, highlightName = null) {
       content.innerHTML = `
         <div class="no-results">
           <div class="icon">🔍</div>
-          <p>No se encontraron habilidades</p>
+          <p>${t('abilities.empty')}</p>
         </div>
       `;
       return;
     }
 
     content.innerHTML = `
-      <div class="page-info" style="margin-bottom:12px">${filtered.length} habilidades encontradas</div>
+      <div class="page-info" style="margin-bottom:12px">${filtered.length} ${t('abilities.found')}</div>
       <div id="abList"></div>
     `;
 
@@ -117,10 +119,11 @@ export function renderAbilities(container, highlightName = null) {
         highlightEl = card;
       }
 
+      const desc = getLang() === 'es' ? (a.descriptionEs || a.effect) : (a.descriptionEn || a.effect);
       card.innerHTML = `
-        <h3>${a.nameEs}</h3>
+        <h3>${pokeName(a)}</h3>
         <div style="font-size:0.44rem;color:var(--text-dim);margin-bottom:6px">${a.name}</div>
-        <div class="ability-desc">${a.description || a.effect || 'Sin descripcion disponible'}</div>
+        <div class="ability-desc">${desc || t('abilities.nodesc')}</div>
       `;
       list.appendChild(card);
     });

@@ -1,7 +1,8 @@
 // ===== POKEDEX PAGE =====
-import { TYPE_NAMES, spriteUrl, STAT_NAMES, STAT_KEYS, STAT_COLORS, TYPES, CHART } from './data.js';
+import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART } from './data.js';
 import { fetchPokemonList, fetchPokemonDetail } from './api.js';
 import { loadingHTML, renderPagination } from './app.js';
+import { t, typeName, statName, pokeName, getLang } from './i18n.js';
 
 const PAGE_SIZE = 50;
 
@@ -13,16 +14,16 @@ export function renderPokedex(container) {
 
   container.innerHTML = `
     <div class="page-header">
-      <h1>POKEDEX</h1>
-      <p>Los 1025 Pokemon de todas las generaciones</p>
+      <h1>${t('pokedex.title')}</h1>
+      <p>${t('pokedex.subtitle')}</p>
     </div>
     <div class="search-bar">
       <span class="search-icon">🔍</span>
-      <input type="text" class="search-input" id="pdxSearch" placeholder="Buscar por nombre o numero...">
+      <input type="text" class="search-input" id="pdxSearch" placeholder="${t('pokedex.search')}">
     </div>
     <div class="filter-row" id="pdxFilters">
-      <button class="filter-btn active" data-type="">TODOS</button>
-      ${TYPES.map(t => `<button class="filter-btn" data-type="${t}"><span class="type-badge sm" data-type="${t}" style="padding:3px 6px;font-size:0.42rem">${TYPE_NAMES[t]}</span></button>`).join('')}
+      <button class="filter-btn active" data-type="">${t('common.all')}</button>
+      ${TYPES.map(tp => `<button class="filter-btn" data-type="${tp}"><span class="type-badge sm" data-type="${tp}" style="padding:3px 6px;font-size:0.42rem">${typeName(tp)}</span></button>`).join('')}
     </div>
     <div id="pdxContent"></div>
   `;
@@ -55,7 +56,7 @@ export function renderPokedex(container) {
 
   async function loadAll() {
     if (allPokemon) return;
-    content.innerHTML = loadingHTML('Cargando Pokedex...');
+    content.innerHTML = loadingHTML(t('pokedex.loading'));
     // Load in batches
     let all = [];
     let offset = 0;
@@ -77,6 +78,7 @@ export function renderPokedex(container) {
       filtered = filtered.filter(p =>
         p.nameEs.toLowerCase().includes(searchTerm) ||
         p.name.toLowerCase().includes(searchTerm) ||
+        (p.nameEn && p.nameEn.toLowerCase().includes(searchTerm)) ||
         String(p.id) === searchTerm
       );
     }
@@ -93,7 +95,7 @@ export function renderPokedex(container) {
       content.innerHTML = `
         <div class="no-results">
           <div class="icon">🔍</div>
-          <p>No se encontraron Pokemon</p>
+          <p>${t('pokedex.empty')}</p>
         </div>
       `;
       return;
@@ -107,11 +109,11 @@ export function renderPokedex(container) {
       card.className = 'pokemon-card';
       card.href = `#/pokedex/${p.id}`;
       card.innerHTML = `
-        <img class="sprite" src="${spriteUrl(p.id)}" alt="${p.nameEs}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><text x=%2248%22 y=%2260%22 text-anchor=%22middle%22 font-size=%2240%22>?</text></svg>'">
+        <img class="sprite" src="${spriteUrl(p.id)}" alt="${pokeName(p)}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><text x=%2248%22 y=%2260%22 text-anchor=%22middle%22 font-size=%2240%22>?</text></svg>'">
         <div class="dex-number">#${String(p.id).padStart(4, '0')}</div>
-        <div class="poke-name">${p.nameEs}</div>
+        <div class="poke-name">${pokeName(p)}</div>
         <div class="types">
-          ${p.types.map(t => `<span class="type-badge sm" data-type="${t}">${TYPE_NAMES[t]}</span>`).join('')}
+          ${p.types.map(tp => `<span class="type-badge sm" data-type="${tp}">${typeName(tp)}</span>`).join('')}
         </div>
       `;
       grid.appendChild(card);
@@ -129,15 +131,15 @@ export function renderPokedex(container) {
 
 // ===== POKEMON DETAIL =====
 export async function renderPokedexDetail(container, id) {
-  container.innerHTML = loadingHTML('Cargando Pokemon...');
+  container.innerHTML = loadingHTML();
 
   const pokemon = await fetchPokemonDetail(id);
   if (!pokemon) {
     container.innerHTML = `
       <div class="no-results">
         <div class="icon">❓</div>
-        <p>Pokemon no encontrado</p>
-        <p style="margin-top:12px"><a href="#/pokedex">Volver a la Pokedex</a></p>
+        <p>${t('pokedex.notfound')}</p>
+        <p style="margin-top:12px"><a href="#/pokedex">${t('pokedex.back')}</a></p>
       </div>
     `;
     return;
@@ -154,10 +156,10 @@ export async function renderPokedexDetail(container, id) {
   });
 
   const weak = [], resist = [], immune = [];
-  Object.entries(matchups).forEach(([t, m]) => {
-    if (m === 0) immune.push({ t, m });
-    else if (m > 1) weak.push({ t, m });
-    else if (m < 1) resist.push({ t, m });
+  Object.entries(matchups).forEach(([tp, m]) => {
+    if (m === 0) immune.push({ t: tp, m });
+    else if (m > 1) weak.push({ t: tp, m });
+    else if (m < 1) resist.push({ t: tp, m });
   });
   weak.sort((a, b) => b.m - a.m);
   resist.sort((a, b) => a.m - b.m);
@@ -167,19 +169,22 @@ export async function renderPokedexDetail(container, id) {
   const statTotal = STAT_KEYS.reduce((sum, k) => sum + (pokemon.stats[k] || 0), 0);
   const maxStat = 255;
 
+  const displayName = pokeName(pokemon);
+  const altName = getLang() === 'es' ? (pokemon.nameEn || pokemon.name) : pokemon.nameEs;
+
   container.innerHTML = `
     <div class="poke-detail fade-in">
-      <button class="back-btn" onclick="history.back()">◀ Volver</button>
+      <button class="back-btn" onclick="history.back()">◀ ${t('pokedex.back')}</button>
 
       <div class="poke-detail-header">
-        <img class="poke-detail-sprite" src="${spriteUrl(pokemon.id)}" alt="${pokemon.nameEs}"
+        <img class="poke-detail-sprite" src="${spriteUrl(pokemon.id)}" alt="${displayName}"
              onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><text x=%2248%22 y=%2260%22 text-anchor=%22middle%22 font-size=%2240%22>?</text></svg>'">
         <div class="poke-detail-info">
           <div class="dex-number">#${String(pokemon.id).padStart(4, '0')}</div>
-          <h2>${pokemon.nameEs}</h2>
-          <div class="name-en">${pokemon.nameEn}</div>
+          <h2>${displayName}</h2>
+          <div class="name-en">${altName}</div>
           <div class="types">
-            ${pokemon.types.map(t => `<span class="type-badge" data-type="${t}" style="cursor:default">${TYPE_NAMES[t]}</span>`).join('')}
+            ${pokemon.types.map(tp => `<span class="type-badge" data-type="${tp}" style="cursor:default">${typeName(tp)}</span>`).join('')}
           </div>
           <div class="meta">
             <span>📏 ${pokemon.height} m</span>
@@ -190,7 +195,7 @@ export async function renderPokedexDetail(container, id) {
 
       ${pokemon.description ? `<div class="card" style="margin-bottom:20px"><p style="font-size:0.48rem;color:var(--text-muted);line-height:2">${pokemon.description}</p></div>` : ''}
 
-      <h3 class="section-title">ESTADISTICAS BASE</h3>
+      <h3 class="section-title">${t('pokedex.stats')}</h3>
       <div class="card" style="margin-bottom:20px">
         <div class="stat-bars">
           ${STAT_KEYS.map(k => {
@@ -198,7 +203,7 @@ export async function renderPokedexDetail(container, id) {
             const pct = Math.min((val / maxStat) * 100, 100);
             return `
               <div class="stat-row">
-                <span class="stat-label">${STAT_NAMES[k]}</span>
+                <span class="stat-label">${statName(k)}</span>
                 <span class="stat-value">${val}</span>
                 <div class="stat-bar-bg">
                   <div class="stat-bar-fill" style="width:${pct}%;background:${STAT_COLORS[k]}"></div>
@@ -208,7 +213,7 @@ export async function renderPokedexDetail(container, id) {
             `;
           }).join('')}
           <div class="stat-row" style="margin-top:6px;border-top:2px solid var(--border);padding-top:10px">
-            <span class="stat-label" style="color:var(--accent)">TOTAL</span>
+            <span class="stat-label" style="color:var(--accent)">${t('common.total')}</span>
             <span class="stat-value" style="color:var(--accent)">${statTotal}</span>
             <div></div>
             <span></span>
@@ -216,34 +221,34 @@ export async function renderPokedexDetail(container, id) {
         </div>
       </div>
 
-      <h3 class="section-title">HABILIDADES</h3>
+      <h3 class="section-title">${t('pokedex.abilities')}</h3>
       <div class="card" style="margin-bottom:20px">
         ${pokemon.abilities.map(a => `
           <div style="margin-bottom:8px">
             <a href="#/abilities/${encodeURIComponent(a.nameEn)}" style="font-size:0.45rem;color:var(--accent);text-decoration:none;border-bottom:1px dashed rgba(255,204,0,0.3);padding-bottom:1px;transition:border-color 0.15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='rgba(255,204,0,0.3)'">${a.name}</a>
-            ${a.isHidden ? '<span style="font-size:0.42rem;color:var(--text-dim);margin-left:8px">(oculta)</span>' : ''}
+            ${a.isHidden ? `<span style="font-size:0.42rem;color:var(--text-dim);margin-left:8px">${t('pokedex.hidden')}</span>` : ''}
           </div>
         `).join('')}
       </div>
 
-      <h3 class="section-title">DEBILIDADES Y RESISTENCIAS</h3>
+      <h3 class="section-title">${t('pokedex.matchups')}</h3>
       <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
         ${weak.length ? `
           <div class="result-section weakness">
-            <h3><span class="result-icon">💥</span> DEBIL <span class="result-hint">x2 / x4 daño</span></h3>
-            <div class="result-badges">${weak.map(w => `<span class="result-badge" data-type="${w.t}">${TYPE_NAMES[w.t]}<span class="multiplier">${fmtMult(w.m)}</span></span>`).join('')}</div>
+            <h3><span class="result-icon">💥</span> ${t('pokedex.weak')} <span class="result-hint">x2 / x4</span></h3>
+            <div class="result-badges">${weak.map(w => `<span class="result-badge" data-type="${w.t}">${typeName(w.t)}<span class="multiplier">${fmtMult(w.m)}</span></span>`).join('')}</div>
           </div>
         ` : ''}
         ${resist.length ? `
           <div class="result-section resistance">
-            <h3><span class="result-icon">🛡️</span> RESISTE <span class="result-hint">x0.5 / x0.25 daño</span></h3>
-            <div class="result-badges">${resist.map(r => `<span class="result-badge" data-type="${r.t}">${TYPE_NAMES[r.t]}<span class="multiplier">${fmtMult(r.m)}</span></span>`).join('')}</div>
+            <h3><span class="result-icon">🛡️</span> ${t('pokedex.resist')} <span class="result-hint">x0.5 / x0.25</span></h3>
+            <div class="result-badges">${resist.map(r => `<span class="result-badge" data-type="${r.t}">${typeName(r.t)}<span class="multiplier">${fmtMult(r.m)}</span></span>`).join('')}</div>
           </div>
         ` : ''}
         ${immune.length ? `
           <div class="result-section immunity">
-            <h3><span class="result-icon">🚫</span> INMUNE</h3>
-            <div class="result-badges">${immune.map(i => `<span class="result-badge" data-type="${i.t}">${TYPE_NAMES[i.t]}</span>`).join('')}</div>
+            <h3><span class="result-icon">🚫</span> ${t('pokedex.immune')}</h3>
+            <div class="result-badges">${immune.map(i => `<span class="result-badge" data-type="${i.t}">${typeName(i.t)}</span>`).join('')}</div>
           </div>
         ` : ''}
       </div>

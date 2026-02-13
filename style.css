@@ -45,6 +45,40 @@
   --nav-height: 56px;
 }
 
+/* ===== LIGHT THEME ===== */
+.light {
+  --bg: #eeeef5;
+  --bg-surface: #ffffff;
+  --bg-card: #e6e6f0;
+  --bg-card-hover: #dddde8;
+  --accent: #b88800;
+  --accent-dim: #7a5a00;
+  --text: #1a1a3e;
+  --text-muted: #555577;
+  --text-dim: #8888aa;
+  --border: rgba(0, 0, 0, 0.1);
+  --border-accent: rgba(184, 136, 0, 0.3);
+}
+
+.light .scanlines {
+  opacity: 0.02;
+}
+
+.light ::selection {
+  background: var(--accent);
+  color: #fff;
+}
+
+.light .pokeball-icon-sm,
+.light .pokeball-icon-lg {
+  border-color: #999;
+}
+
+.light .pokeball-icon-sm::after,
+.light .pokeball-icon-lg::after {
+  border-color: #999;
+}
+
 html, body {
   height: 100%;
 }
@@ -150,6 +184,32 @@ a:hover {
   border: 2px solid #555;
 }
 
+/* ===== NAV TOGGLES (lang/theme) ===== */
+.nav-toggles {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.nav-toggle-btn {
+  font-family: var(--font-retro);
+  font-size: 0.42rem;
+  padding: 5px 8px;
+  border-radius: 5px;
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.nav-toggle-btn:hover {
+  border-color: var(--border-accent);
+  color: var(--accent);
+}
+
 .nav-toggle {
   display: flex;
   flex-direction: column;
@@ -158,7 +218,7 @@ a:hover {
   border: none;
   cursor: pointer;
   padding: 8px;
-  margin-left: auto;
+  margin-left: 8px;
 }
 
 .nav-toggle span {
@@ -226,6 +286,11 @@ a:hover {
     display: none;
   }
 
+  .nav-toggles {
+    order: 10;
+    margin-left: 12px;
+  }
+
   .nav-links {
     display: flex;
     position: static;
@@ -234,6 +299,8 @@ a:hover {
     border: none;
     padding: 0;
     gap: 2px;
+    flex: 1;
+    min-width: 0;
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -243,8 +310,8 @@ a:hover {
   }
 
   .nav-link {
-    font-size: 0.5rem;
-    padding: 8px 10px;
+    font-size: 0.44rem;
+    padding: 8px 8px;
   }
 }
 

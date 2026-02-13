@@ -1,6 +1,7 @@
 // ===== IV/EV CALCULATOR =====
-import { NATURES, STAT_NAMES, STAT_KEYS, STAT_COLORS, spriteUrl } from './data.js';
+import { NATURES, STAT_KEYS, STAT_COLORS, spriteUrl } from './data.js';
 import { searchPokemon } from './api.js';
+import { t, statName, natureName, getLang, pokeName } from './i18n.js';
 
 export function renderCalculator(container) {
   let selectedPokemon = null;
@@ -8,95 +9,93 @@ export function renderCalculator(container) {
 
   container.innerHTML = `
     <div class="page-header">
-      <h1>CALCULADORA</h1>
-      <p>Calcula IVs, EVs y estadisticas de tus Pokemon</p>
+      <h1>${t('calc.title')}</h1>
+      <p>${t('calc.subtitle')}</p>
     </div>
 
     <div class="card" style="margin-bottom:20px">
       <div style="font-size:0.4rem;color:var(--text-muted);line-height:2;margin-bottom:12px">
-        Selecciona un Pokemon para cargar sus stats base automaticamente.
-        Rellena nivel, naturaleza, IVs y EVs para calcular las estadisticas finales.
-        Tambien puedes introducir la estadistica final para calcular los posibles IVs.
+        ${t('calc.intro')}
       </div>
     </div>
 
     <div class="calc-form">
       <div class="card">
-        <h3 class="section-title" style="margin-bottom:12px">POKEMON</h3>
+        <h3 class="section-title" style="margin-bottom:12px">${t('calc.pokemon')}</h3>
         <div class="search-bar" style="margin-bottom:12px">
           <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="calcSearch" placeholder="Buscar Pokemon...">
+          <input type="text" class="search-input" id="calcSearch" placeholder="${t('calc.search')}">
         </div>
         <div id="calcSearchResults" style="display:none"></div>
         <div id="calcSelected" style="display:none"></div>
       </div>
 
       <div class="card" id="calcFormCard" style="display:none">
-        <h3 class="section-title" style="margin-bottom:12px">PARAMETROS</h3>
+        <h3 class="section-title" style="margin-bottom:12px">${t('calc.params')}</h3>
         <div class="calc-row">
           <div class="calc-field">
-            <label>NIVEL</label>
+            <label>${t('calc.level')}</label>
             <input type="number" id="calcLevel" min="1" max="100" value="50">
           </div>
           <div class="calc-field">
-            <label>NATURALEZA</label>
+            <label>${t('calc.nature')}</label>
             <select id="calcNature">
-              ${NATURES.map(n => `<option value="${n.name}">${n.es}${n.increase ? ` (+${STAT_NAMES[n.increase]} / -${STAT_NAMES[n.decrease]})` : ' (neutra)'}</option>`).join('')}
+              ${NATURES.map(n => `<option value="${n.name}">${natureName(n)}${n.increase ? ` (+${statName(n.increase)} / -${statName(n.decrease)})` : ` ${t('calc.neutral')}`}</option>`).join('')}
             </select>
           </div>
         </div>
       </div>
 
       <div class="card" id="calcStatsCard" style="display:none">
-        <h3 class="section-title" style="margin-bottom:12px">ESTADISTICAS</h3>
+        <h3 class="section-title" style="margin-bottom:12px">${t('calc.stats')}</h3>
         <div class="tabs" style="margin-bottom:16px">
-          <button class="tab active" id="calcModeIvEv">IVs/EVs → Stats</button>
-          <button class="tab" id="calcModeStat">Stat → IVs posibles</button>
+          <button class="tab active" id="calcModeIvEv">${t('calc.mode.ivev')}</button>
+          <button class="tab" id="calcModeStat">${t('calc.mode.stat')}</button>
         </div>
 
         <div id="calcModeIvEvPanel">
           <div style="font-size:0.44rem;color:var(--text-dim);margin-bottom:12px">
-            Introduce IVs (0-31) y EVs (0-252) para cada stat. Max total EVs: 510.
+            ${t('calc.ivev.hint')}
           </div>
           <div class="data-table-wrap">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>STAT</th>
-                  <th style="text-align:center">BASE</th>
-                  <th style="text-align:center">IV</th>
-                  <th style="text-align:center">EV</th>
-                  <th style="text-align:center">FINAL</th>
+                  <th>${t('calc.col.stat')}</th>
+                  <th style="text-align:center">${t('calc.col.base')}</th>
+                  <th style="text-align:center">${t('calc.col.iv')}</th>
+                  <th style="text-align:center">${t('calc.col.ev')}</th>
+                  <th style="text-align:center">${t('calc.col.final')}</th>
                 </tr>
               </thead>
               <tbody id="calcIvEvBody"></tbody>
             </table>
           </div>
           <div style="text-align:center;margin-top:16px">
-            <button class="calc-btn" id="calcCalcBtn">CALCULAR</button>
+            <button class="calc-btn" id="calcCalcBtn">${t('calc.calculate')}</button>
           </div>
         </div>
 
         <div id="calcModeStatPanel" style="display:none">
           <div style="font-size:0.44rem;color:var(--text-dim);margin-bottom:12px">
-            Introduce la estadistica final y los EVs para calcular el rango de IVs posibles.
+            ${t('calc.stat.hint')}
           </div>
           <div class="data-table-wrap">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>STAT</th>
-                  <th style="text-align:center">BASE</th>
-                  <th style="text-align:center">STAT FINAL</th>
-                  <th style="text-align:center">EV</th>
-                  <th style="text-align:center">IV POSIBLE</th>
+                  <th>${t('calc.col.stat')}</th>
+                  <th style="text-align:center">${t('calc.col.base')}</th>
+                  <th style="text-align:center">${t('calc.col.statval')}</th>
+                  <th style="text-align:center">${t('calc.col.ev')}</th>
+                  <th style="text-align:center">${t('calc.col.ivposs')}</th>
                 </tr>
               </thead>
               <tbody id="calcStatBody"></tbody>
             </table>
           </div>
           <div style="text-align:center;margin-top:16px">
-            <button class="calc-btn" id="calcCalcBtn2">CALCULAR IVs</button>
+            <button class="calc-btn" id="calcCalcBtn2">${t('calc.calcivs')}</button>
           </div>
         </div>
       </div>
@@ -142,7 +141,7 @@ export function renderCalculator(container) {
         searchResults = await searchPokemon(term);
         renderSearchResults();
       } catch (err) {
-        searchResultsEl.innerHTML = `<div style="font-size:0.46rem;color:var(--danger);padding:8px">Error al buscar</div>`;
+        searchResultsEl.innerHTML = `<div style="font-size:0.46rem;color:var(--danger);padding:8px">${t('calc.searcherr')}</div>`;
         searchResultsEl.style.display = '';
       }
     }, 400);
@@ -150,16 +149,16 @@ export function renderCalculator(container) {
 
   function renderSearchResults() {
     if (!searchResults.length) {
-      searchResultsEl.innerHTML = `<div style="font-size:0.46rem;color:var(--text-dim);padding:8px">No encontrado</div>`;
+      searchResultsEl.innerHTML = `<div style="font-size:0.46rem;color:var(--text-dim);padding:8px">${t('calc.notfound')}</div>`;
       searchResultsEl.style.display = '';
       return;
     }
     searchResultsEl.style.display = '';
     searchResultsEl.innerHTML = searchResults.map(p => `
       <div class="card card-clickable" style="padding:10px;margin-bottom:4px;display:flex;align-items:center;gap:10px" data-id="${p.id}">
-        <img src="${spriteUrl(p.id)}" style="width:40px;height:40px;image-rendering:pixelated" alt="${p.nameEs}">
+        <img src="${spriteUrl(p.id)}" style="width:40px;height:40px;image-rendering:pixelated" alt="${pokeName(p)}">
         <div>
-          <div style="font-size:0.42rem">${p.nameEs}</div>
+          <div style="font-size:0.42rem">${pokeName(p)}</div>
           <div style="font-size:0.42rem;color:var(--text-dim)">#${String(p.id).padStart(4, '0')} · ${p.name}</div>
         </div>
       </div>
@@ -182,9 +181,9 @@ export function renderCalculator(container) {
     selectedEl.style.display = '';
     selectedEl.innerHTML = `
       <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
-        <img src="${spriteUrl(poke.id)}" style="width:56px;height:56px;image-rendering:pixelated" alt="${poke.nameEs}">
+        <img src="${spriteUrl(poke.id)}" style="width:56px;height:56px;image-rendering:pixelated" alt="${pokeName(poke)}">
         <div>
-          <div style="font-size:0.5rem;color:var(--accent)">${poke.nameEs}</div>
+          <div style="font-size:0.5rem;color:var(--accent)">${pokeName(poke)}</div>
           <div style="font-size:0.44rem;color:var(--text-dim)">#${String(poke.id).padStart(4, '0')} · ${poke.name}</div>
         </div>
       </div>
@@ -202,7 +201,7 @@ export function renderCalculator(container) {
     const ivevBody = container.querySelector('#calcIvEvBody');
     ivevBody.innerHTML = STAT_KEYS.map(k => `
       <tr>
-        <td style="color:${STAT_COLORS[k]}">${STAT_NAMES[k]}</td>
+        <td style="color:${STAT_COLORS[k]}">${statName(k)}</td>
         <td style="text-align:center">${selectedPokemon.stats[k] || 0}</td>
         <td><input type="number" class="calc-iv" data-stat="${k}" min="0" max="31" value="31" style="width:60px;font-family:var(--font-retro);font-size:0.4rem;padding:6px;background:var(--bg-card);border:2px solid var(--border);border-radius:4px;color:var(--text);text-align:center"></td>
         <td><input type="number" class="calc-ev" data-stat="${k}" min="0" max="252" value="0" style="width:70px;font-family:var(--font-retro);font-size:0.4rem;padding:6px;background:var(--bg-card);border:2px solid var(--border);border-radius:4px;color:var(--text);text-align:center"></td>
@@ -214,7 +213,7 @@ export function renderCalculator(container) {
     const statBody = container.querySelector('#calcStatBody');
     statBody.innerHTML = STAT_KEYS.map(k => `
       <tr>
-        <td style="color:${STAT_COLORS[k]}">${STAT_NAMES[k]}</td>
+        <td style="color:${STAT_COLORS[k]}">${statName(k)}</td>
         <td style="text-align:center">${selectedPokemon.stats[k] || 0}</td>
         <td><input type="number" class="calc-stat-val" data-stat="${k}" min="1" max="999" value="" placeholder="..." style="width:70px;font-family:var(--font-retro);font-size:0.4rem;padding:6px;background:var(--bg-card);border:2px solid var(--border);border-radius:4px;color:var(--text);text-align:center"></td>
         <td><input type="number" class="calc-stat-ev" data-stat="${k}" min="0" max="252" value="0" style="width:70px;font-family:var(--font-retro);font-size:0.4rem;padding:6px;background:var(--bg-card);border:2px solid var(--border);border-radius:4px;color:var(--text);text-align:center"></td>
@@ -233,8 +232,8 @@ export function renderCalculator(container) {
     return Math.floor((Math.floor(((2 * base + iv + Math.floor(ev / 4)) * level / 100) + 5)) * natureMod);
   }
 
-  function getNatureMod(natureName, stat) {
-    const nature = NATURES.find(n => n.name === natureName);
+  function getNatureMod(natName, stat) {
+    const nature = NATURES.find(n => n.name === natName);
     if (!nature || !nature.increase) return 1;
     if (nature.increase === stat) return 1.1;
     if (nature.decrease === stat) return 0.9;
@@ -245,7 +244,7 @@ export function renderCalculator(container) {
   container.querySelector('#calcCalcBtn').onclick = () => {
     if (!selectedPokemon) return;
     const level = parseInt(container.querySelector('#calcLevel').value) || 50;
-    const natureName = container.querySelector('#calcNature').value;
+    const natureVal = container.querySelector('#calcNature').value;
 
     STAT_KEYS.forEach(k => {
       const iv = parseInt(container.querySelector(`.calc-iv[data-stat="${k}"]`).value) || 0;
@@ -257,7 +256,7 @@ export function renderCalculator(container) {
       if (k === 'hp') {
         finalStat = calcHP(base, iv, ev, level);
       } else {
-        const mod = getNatureMod(natureName, k);
+        const mod = getNatureMod(natureVal, k);
         finalStat = calcStat(base, iv, ev, level, mod);
       }
       resultEl.textContent = finalStat;
@@ -275,8 +274,8 @@ export function renderCalculator(container) {
     bar.innerHTML = `
       <div class="card" style="text-align:center">
         <div style="font-size:0.42rem;color:${overLimit ? 'var(--danger)' : 'var(--text-muted)'}">
-          EVs totales: <span style="color:${overLimit ? 'var(--danger)' : 'var(--accent)'}">${evTotal}</span> / 510
-          ${overLimit ? ' ⚠️ Excede el limite!' : ''}
+          ${t('calc.evtotal')}: <span style="color:${overLimit ? 'var(--danger)' : 'var(--accent)'}">${evTotal}</span> / 510
+          ${overLimit ? ` ⚠️ ${t('calc.evover')}` : ''}
         </div>
       </div>
     `;
@@ -286,7 +285,7 @@ export function renderCalculator(container) {
   container.querySelector('#calcCalcBtn2').onclick = () => {
     if (!selectedPokemon) return;
     const level = parseInt(container.querySelector('#calcLevel').value) || 50;
-    const natureName = container.querySelector('#calcNature').value;
+    const natureVal = container.querySelector('#calcNature').value;
 
     STAT_KEYS.forEach(k => {
       const statVal = parseInt(container.querySelector(`.calc-stat-val[data-stat="${k}"]`).value);
@@ -306,7 +305,7 @@ export function renderCalculator(container) {
         if (k === 'hp') {
           calc = calcHP(base, iv, ev, level);
         } else {
-          const mod = getNatureMod(natureName, k);
+          const mod = getNatureMod(natureVal, k);
           calc = calcStat(base, iv, ev, level, mod);
         }
         if (calc === statVal) possibleIVs.push(iv);

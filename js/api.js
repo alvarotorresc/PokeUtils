@@ -44,7 +44,7 @@ async function gql(query, variables = {}) {
 
 // ===== POKEMON =====
 export async function fetchPokemonList(limit = 50, offset = 0) {
-  const key = cacheKey('poke_list', { limit, offset });
+  const key = cacheKey('poke_list_v2', { limit, offset });
   const cached = getCache(key);
   if (cached) return cached;
 
@@ -55,7 +55,7 @@ export async function fetchPokemonList(limit = 50, offset = 0) {
         name
         pokemon_v2_pokemontypes { pokemon_v2_type { name } }
         pokemon_v2_pokemonspecy {
-          pokemon_v2_pokemonspeciesnames(where: {language_id: {_eq: ${LANG_ES}}}) { name }
+          pokemon_v2_pokemonspeciesnames(where: {language_id: {_in: [${LANG_ES}, ${LANG_EN}]}}) { name language_id }
         }
       }
       pokemon_v2_pokemon_aggregate(where: {id: {_lte: 1025}}) {
@@ -66,12 +66,16 @@ export async function fetchPokemonList(limit = 50, offset = 0) {
 
   const result = {
     total: data.pokemon_v2_pokemon_aggregate.aggregate.count,
-    pokemon: data.pokemon_v2_pokemon.map(p => ({
-      id: p.id,
-      name: p.name,
-      nameEs: p.pokemon_v2_pokemonspecy?.pokemon_v2_pokemonspeciesnames?.[0]?.name || p.name,
-      types: p.pokemon_v2_pokemontypes.map(t => t.pokemon_v2_type.name),
-    })),
+    pokemon: data.pokemon_v2_pokemon.map(p => {
+      const names = p.pokemon_v2_pokemonspecy?.pokemon_v2_pokemonspeciesnames || [];
+      return {
+        id: p.id,
+        name: p.name,
+        nameEs: names.find(n => n.language_id === LANG_ES)?.name || p.name,
+        nameEn: names.find(n => n.language_id === LANG_EN)?.name || p.name,
+        types: p.pokemon_v2_pokemontypes.map(t => t.pokemon_v2_type.name),
+      };
+    }),
   };
   setCache(key, result);
   return result;
@@ -161,7 +165,7 @@ export async function fetchPokemonDetail(id) {
 
 // ===== MOVES =====
 export async function fetchMoves(limit = 50, offset = 0) {
-  const key = cacheKey('moves', { limit, offset });
+  const key = cacheKey('moves_v2', { limit, offset });
   const cached = getCache(key);
   if (cached) return cached;
 
@@ -175,8 +179,10 @@ export async function fetchMoves(limit = 50, offset = 0) {
         pp
         pokemon_v2_type { name }
         pokemon_v2_movedamageclass { name }
-        pokemon_v2_movenames(where: {language_id: {_eq: ${LANG_ES}}}) { name }
-        pokemon_v2_moveflavortext: pokemon_v2_moveflavortexts(where: {language_id: {_eq: ${LANG_ES}}}, limit: 1, order_by: {version_group_id: desc}) { flavor_text }
+        es_name: pokemon_v2_movenames(where: {language_id: {_eq: ${LANG_ES}}}) { name }
+        en_name: pokemon_v2_movenames(where: {language_id: {_eq: ${LANG_EN}}}) { name }
+        es_desc: pokemon_v2_moveflavortexts(where: {language_id: {_eq: ${LANG_ES}}}, limit: 1, order_by: {version_group_id: desc}) { flavor_text }
+        en_desc: pokemon_v2_moveflavortexts(where: {language_id: {_eq: ${LANG_EN}}}, limit: 1, order_by: {version_group_id: desc}) { flavor_text }
       }
       pokemon_v2_move_aggregate {
         aggregate { count }
@@ -189,13 +195,15 @@ export async function fetchMoves(limit = 50, offset = 0) {
     moves: data.pokemon_v2_move.map(m => ({
       id: m.id,
       name: m.name,
-      nameEs: m.pokemon_v2_movenames?.[0]?.name || m.name,
+      nameEs: m.es_name?.[0]?.name || m.name,
+      nameEn: m.en_name?.[0]?.name || m.name,
       type: m.pokemon_v2_type?.name || 'normal',
       category: m.pokemon_v2_movedamageclass?.name || 'status',
       power: m.power,
       accuracy: m.accuracy,
       pp: m.pp,
-      description: m.pokemon_v2_moveflavortext?.[0]?.flavor_text?.replace(/\n|\f/g, ' ') || '',
+      descriptionEs: m.es_desc?.[0]?.flavor_text?.replace(/\n|\f/g, ' ') || '',
+      descriptionEn: m.en_desc?.[0]?.flavor_text?.replace(/\n|\f/g, ' ') || '',
     })),
   };
   setCache(key, result);
@@ -204,7 +212,7 @@ export async function fetchMoves(limit = 50, offset = 0) {
 
 // ===== ABILITIES =====
 export async function fetchAbilities(limit = 50, offset = 0) {
-  const key = cacheKey('abilities', { limit, offset });
+  const key = cacheKey('abilities_v2', { limit, offset });
   const cached = getCache(key);
   if (cached) return cached;
 
@@ -213,9 +221,11 @@ export async function fetchAbilities(limit = 50, offset = 0) {
       pokemon_v2_ability(limit: $limit, offset: $offset, order_by: {id: asc}, where: {is_main_series: {_eq: true}}) {
         id
         name
-        pokemon_v2_abilitynames(where: {language_id: {_eq: ${LANG_ES}}}) { name }
+        es_name: pokemon_v2_abilitynames(where: {language_id: {_eq: ${LANG_ES}}}) { name }
+        en_name: pokemon_v2_abilitynames(where: {language_id: {_eq: ${LANG_EN}}}) { name }
         pokemon_v2_abilityeffecttexts(where: {language_id: {_eq: ${LANG_EN}}}) { short_effect }
-        pokemon_v2_abilityflavortexts(where: {language_id: {_eq: ${LANG_ES}}}, limit: 1, order_by: {version_group_id: desc}) { flavor_text }
+        es_desc: pokemon_v2_abilityflavortexts(where: {language_id: {_eq: ${LANG_ES}}}, limit: 1, order_by: {version_group_id: desc}) { flavor_text }
+        en_desc: pokemon_v2_abilityflavortexts(where: {language_id: {_eq: ${LANG_EN}}}, limit: 1, order_by: {version_group_id: desc}) { flavor_text }
       }
       pokemon_v2_ability_aggregate(where: {is_main_series: {_eq: true}}) {
         aggregate { count }
@@ -228,9 +238,11 @@ export async function fetchAbilities(limit = 50, offset = 0) {
     abilities: data.pokemon_v2_ability.map(a => ({
       id: a.id,
       name: a.name,
-      nameEs: a.pokemon_v2_abilitynames?.[0]?.name || a.name,
+      nameEs: a.es_name?.[0]?.name || a.name,
+      nameEn: a.en_name?.[0]?.name || a.name,
       effect: a.pokemon_v2_abilityeffecttexts?.[0]?.short_effect || '',
-      description: a.pokemon_v2_abilityflavortexts?.[0]?.flavor_text?.replace(/\n|\f/g, ' ') || '',
+      descriptionEs: a.es_desc?.[0]?.flavor_text?.replace(/\n|\f/g, ' ') || '',
+      descriptionEn: a.en_desc?.[0]?.flavor_text?.replace(/\n|\f/g, ' ') || '',
     })),
   };
   setCache(key, result);
@@ -239,7 +251,7 @@ export async function fetchAbilities(limit = 50, offset = 0) {
 
 // ===== ITEMS =====
 export async function fetchItems(limit = 50, offset = 0) {
-  const key = cacheKey('items', { limit, offset });
+  const key = cacheKey('items_v2', { limit, offset });
   const cached = getCache(key);
   if (cached) return cached;
 
@@ -248,8 +260,10 @@ export async function fetchItems(limit = 50, offset = 0) {
       pokemon_v2_item(limit: $limit, offset: $offset, order_by: {id: asc}, where: {pokemon_v2_itemcategory: {pokemon_v2_itempocket: {id: {_in: [1,2,3,4,5,7,8]}}}}) {
         id
         name
-        pokemon_v2_itemnames(where: {language_id: {_eq: ${LANG_ES}}}) { name }
-        pokemon_v2_itemflavortexts(where: {language_id: {_eq: ${LANG_ES}}}, limit: 1, order_by: {version_group_id: desc}) { flavor_text }
+        es_name: pokemon_v2_itemnames(where: {language_id: {_eq: ${LANG_ES}}}) { name }
+        en_name: pokemon_v2_itemnames(where: {language_id: {_eq: ${LANG_EN}}}) { name }
+        es_desc: pokemon_v2_itemflavortexts(where: {language_id: {_eq: ${LANG_ES}}}, limit: 1, order_by: {version_group_id: desc}) { flavor_text }
+        en_desc: pokemon_v2_itemflavortexts(where: {language_id: {_eq: ${LANG_EN}}}, limit: 1, order_by: {version_group_id: desc}) { flavor_text }
         pokemon_v2_itemcategory {
           name
           pokemon_v2_itempocket { name }
@@ -266,8 +280,10 @@ export async function fetchItems(limit = 50, offset = 0) {
     items: data.pokemon_v2_item.map(i => ({
       id: i.id,
       name: i.name,
-      nameEs: i.pokemon_v2_itemnames?.[0]?.name || i.name,
-      description: i.pokemon_v2_itemflavortexts?.[0]?.flavor_text?.replace(/\n|\f/g, ' ') || '',
+      nameEs: i.es_name?.[0]?.name || i.name,
+      nameEn: i.en_name?.[0]?.name || i.name,
+      descriptionEs: i.es_desc?.[0]?.flavor_text?.replace(/\n|\f/g, ' ') || '',
+      descriptionEn: i.en_desc?.[0]?.flavor_text?.replace(/\n|\f/g, ' ') || '',
       category: i.pokemon_v2_itemcategory?.pokemon_v2_itempocket?.name || '',
     })),
   };
@@ -277,7 +293,7 @@ export async function fetchItems(limit = 50, offset = 0) {
 
 // ===== POKEMON SEARCH (for calculator) =====
 export async function searchPokemon(term) {
-  const key = cacheKey('poke_search', { term });
+  const key = cacheKey('poke_search_v2', { term });
   const cached = getCache(key);
   if (cached) return cached;
 
@@ -285,12 +301,12 @@ export async function searchPokemon(term) {
     query ($term: String!) {
       pokemon_v2_pokemon(where: {_or: [
         {name: {_ilike: $term}},
-        {pokemon_v2_pokemonspecy: {pokemon_v2_pokemonspeciesnames: {name: {_ilike: $term}, language_id: {_eq: ${LANG_ES}}}}}
+        {pokemon_v2_pokemonspecy: {pokemon_v2_pokemonspeciesnames: {name: {_ilike: $term}, language_id: {_in: [${LANG_ES}, ${LANG_EN}]}}}}
       ]}, limit: 10, order_by: {id: asc}) {
         id
         name
         pokemon_v2_pokemonspecy {
-          pokemon_v2_pokemonspeciesnames(where: {language_id: {_eq: ${LANG_ES}}}) { name }
+          pokemon_v2_pokemonspeciesnames(where: {language_id: {_in: [${LANG_ES}, ${LANG_EN}]}}) { name language_id }
         }
         pokemon_v2_pokemonstats {
           base_stat
@@ -310,10 +326,12 @@ export async function searchPokemon(term) {
       const k = sMap[s.pokemon_v2_stat.name] || s.pokemon_v2_stat.name;
       stats[k] = s.base_stat;
     });
+    const names = p.pokemon_v2_pokemonspecy?.pokemon_v2_pokemonspeciesnames || [];
     return {
       id: p.id,
       name: p.name,
-      nameEs: p.pokemon_v2_pokemonspecy?.pokemon_v2_pokemonspeciesnames?.[0]?.name || p.name,
+      nameEs: names.find(n => n.language_id === LANG_ES)?.name || p.name,
+      nameEn: names.find(n => n.language_id === LANG_EN)?.name || p.name,
       stats,
     };
   });

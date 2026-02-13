@@ -1,5 +1,6 @@
 // ===== TYPE CHART PAGE =====
-import { TYPES, TYPE_NAMES, CHART } from './data.js';
+import { TYPES, CHART } from './data.js';
+import { t, typeName } from './i18n.js';
 
 let selectedTypes = [];
 let activeTab = 'defense';
@@ -40,7 +41,7 @@ function formatMult(m) {
 
 function badgeHTML(type, mult) {
   const multHtml = mult !== undefined ? `<span class="multiplier">${formatMult(mult)}</span>` : '';
-  return `<span class="result-badge" data-type="${type}">${TYPE_NAMES[type]}${multHtml}</span>`;
+  return `<span class="result-badge" data-type="${type}">${typeName(type)}${multHtml}</span>`;
 }
 
 function renderBadgeList(items) {
@@ -51,15 +52,15 @@ function renderBadgeList(items) {
 export function renderTypeChart(container) {
   container.innerHTML = `
     <div class="page-header">
-      <h1>TABLA DE TIPOS</h1>
-      <p>Selecciona hasta 2 tipos para ver efectividades</p>
+      <h1>${t('types.title')}</h1>
+      <p>${t('types.subtitle')}</p>
     </div>
     <div class="selected-display" id="tcSelected">
       <div class="selected-placeholder" id="tcPlaceholder">
-        <span class="blink">▶</span> Elige un tipo para empezar
+        <span class="blink">▶</span> ${t('types.prompt')}
       </div>
       <div class="selected-types" id="tcSelectedTypes" style="display:none">
-        <span class="selected-label">TU POKEMON:</span>
+        <span class="selected-label">${t('types.your')}</span>
         <div class="selected-badges" id="tcBadges"></div>
         <button class="clear-btn" id="tcClear">✕</button>
       </div>
@@ -67,8 +68,8 @@ export function renderTypeChart(container) {
     <div class="type-selector-grid" id="tcGrid"></div>
     <div id="tcResults" style="display:none">
       <div class="tabs">
-        <button class="tab active" id="tcTabDef">🛡️ DEFENSA</button>
-        <button class="tab" id="tcTabAtk">⚔️ ATAQUE</button>
+        <button class="tab active" id="tcTabDef">🛡️ ${t('types.defense')}</button>
+        <button class="tab" id="tcTabAtk">⚔️ ${t('types.attack')}</button>
       </div>
       <div id="tcDefPanel" class="tab-content"></div>
       <div id="tcAtkPanel" class="tab-content" style="display:none"></div>
@@ -85,7 +86,7 @@ export function renderTypeChart(container) {
       const btn = document.createElement('button');
       btn.className = 'type-badge';
       btn.dataset.type = type;
-      btn.textContent = TYPE_NAMES[type];
+      btn.textContent = typeName(type);
       if (selectedTypes.includes(type)) btn.classList.add('selected');
       else if (selectedTypes.length >= 2) btn.classList.add('disabled');
       btn.onclick = () => { toggle(type); update(); };
@@ -104,64 +105,64 @@ export function renderTypeChart(container) {
     }
     placeholder.style.display = 'none';
     selTypes.style.display = '';
-    badges.innerHTML = selectedTypes.map(t =>
-      `<span class="type-badge selected" data-type="${t}" style="font-size:0.45rem;padding:6px 12px">${TYPE_NAMES[t]}</span>`
+    badges.innerHTML = selectedTypes.map(tp =>
+      `<span class="type-badge selected" data-type="${tp}" style="font-size:0.45rem;padding:6px 12px">${typeName(tp)}</span>`
     ).join('');
     resultsEl.style.display = '';
 
     // Defense
     const def = getDefensiveMultipliers(selectedTypes);
     const weak = [], resist = [], immune = [];
-    Object.entries(def).forEach(([t, m]) => {
-      if (m === 0) immune.push({ type: t, multiplier: m });
-      else if (m > 1) weak.push({ type: t, multiplier: m });
-      else if (m < 1) resist.push({ type: t, multiplier: m });
+    Object.entries(def).forEach(([tp, m]) => {
+      if (m === 0) immune.push({ type: tp, multiplier: m });
+      else if (m > 1) weak.push({ type: tp, multiplier: m });
+      else if (m < 1) resist.push({ type: tp, multiplier: m });
     });
     weak.sort((a, b) => b.multiplier - a.multiplier);
     resist.sort((a, b) => a.multiplier - b.multiplier);
 
     container.querySelector('#tcDefPanel').innerHTML = `
       <div class="result-section weakness">
-        <h3><span class="result-icon">💥</span> DEBILIDADES <span class="result-hint">Te hacen x2 o x4 de daño</span></h3>
+        <h3><span class="result-icon">💥</span> ${t('types.weak')} <span class="result-hint">${t('types.weak.hint')}</span></h3>
         <div class="result-badges">${renderBadgeList(weak)}</div>
-        ${!weak.length ? '<div class="empty-state visible">Sin debilidades</div>' : ''}
+        ${!weak.length ? `<div class="empty-state visible">${t('types.none.weak')}</div>` : ''}
       </div>
       <div class="result-section resistance">
-        <h3><span class="result-icon">🛡️</span> RESISTENCIAS <span class="result-hint">Te hacen x0.5 o x0.25 de daño</span></h3>
+        <h3><span class="result-icon">🛡️</span> ${t('types.resist')} <span class="result-hint">${t('types.resist.hint')}</span></h3>
         <div class="result-badges">${renderBadgeList(resist)}</div>
-        ${!resist.length ? '<div class="empty-state visible">Sin resistencias</div>' : ''}
+        ${!resist.length ? `<div class="empty-state visible">${t('types.none.resist')}</div>` : ''}
       </div>
       <div class="result-section immunity">
-        <h3><span class="result-icon">🚫</span> INMUNIDADES <span class="result-hint">No te hacen daño</span></h3>
+        <h3><span class="result-icon">🚫</span> ${t('types.immune')} <span class="result-hint">${t('types.immune.hint')}</span></h3>
         <div class="result-badges">${renderBadgeList(immune)}</div>
-        ${!immune.length ? '<div class="empty-state visible">Sin inmunidades</div>' : ''}
+        ${!immune.length ? `<div class="empty-state visible">${t('types.none.immune')}</div>` : ''}
       </div>
     `;
 
     // Attack
     const off = getOffensiveCoverage(selectedTypes);
     const superEff = [], notEff = [], noEff = [];
-    Object.entries(off).forEach(([t, m]) => {
-      if (m === 0) noEff.push({ type: t, multiplier: m });
-      else if (m >= 2) superEff.push({ type: t, multiplier: m });
-      else if (m < 1) notEff.push({ type: t, multiplier: m });
+    Object.entries(off).forEach(([tp, m]) => {
+      if (m === 0) noEff.push({ type: tp, multiplier: m });
+      else if (m >= 2) superEff.push({ type: tp, multiplier: m });
+      else if (m < 1) notEff.push({ type: tp, multiplier: m });
     });
 
     container.querySelector('#tcAtkPanel').innerHTML = `
       <div class="result-section super-effective">
-        <h3><span class="result-icon">⚔️</span> SUPER EFECTIVO <span class="result-hint">Haces x2 de daño</span></h3>
+        <h3><span class="result-icon">⚔️</span> ${t('types.super')} <span class="result-hint">${t('types.super.hint')}</span></h3>
         <div class="result-badges">${renderBadgeList(superEff)}</div>
-        ${!superEff.length ? '<div class="empty-state visible">Ningun tipo</div>' : ''}
+        ${!superEff.length ? `<div class="empty-state visible">${t('types.none.type')}</div>` : ''}
       </div>
       <div class="result-section not-effective">
-        <h3><span class="result-icon">↓</span> POCO EFECTIVO <span class="result-hint">Haces x0.5 de daño</span></h3>
+        <h3><span class="result-icon">↓</span> ${t('types.noteff')} <span class="result-hint">${t('types.noteff.hint')}</span></h3>
         <div class="result-badges">${renderBadgeList(notEff)}</div>
-        ${!notEff.length ? '<div class="empty-state visible">Ningun tipo</div>' : ''}
+        ${!notEff.length ? `<div class="empty-state visible">${t('types.none.type')}</div>` : ''}
       </div>
       <div class="result-section no-effect">
-        <h3><span class="result-icon">✕</span> SIN EFECTO <span class="result-hint">No haces daño</span></h3>
+        <h3><span class="result-icon">✕</span> ${t('types.noeff')} <span class="result-hint">${t('types.noeff.hint')}</span></h3>
         <div class="result-badges">${renderBadgeList(noEff)}</div>
-        ${!noEff.length ? '<div class="empty-state visible">Ningun tipo</div>' : ''}
+        ${!noEff.length ? `<div class="empty-state visible">${t('types.none.type')}</div>` : ''}
       </div>
     `;
   }
