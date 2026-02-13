@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PokeUtils</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+</head>
+<body>
+  <div class="scanlines"></div>
+
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="#/" class="nav-logo">
+        <div class="pokeball-icon-sm"></div>
+        <span>POKEUTILS</span>
+      </a>
+      <button class="nav-toggle" id="navToggle" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="nav-links" id="navLinks">
+        <a href="#/" class="nav-link" data-page="home">INICIO</a>
+        <a href="#/pokedex" class="nav-link" data-page="pokedex">POKEDEX</a>
+        <a href="#/types" class="nav-link" data-page="types">TIPOS</a>
+        <a href="#/moves" class="nav-link" data-page="moves">MOVIMIENTOS</a>
+        <a href="#/abilities" class="nav-link" data-page="abilities">HABILIDADES</a>
+        <a href="#/items" class="nav-link" data-page="items">OBJETOS</a>
+        <a href="#/natures" class="nav-link" data-page="natures">NATURALEZAS</a>
+        <a href="#/calculator" class="nav-link" data-page="calculator">CALCULADORA</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main" id="app"></main>
+
+  <footer class="footer">
+    <p>Datos de <a href="https://pokeapi.co" target="_blank" rel="noopener">PokeAPI</a></p>
+    <p style="margin-top:8px;font-size:0.46rem;color:var(--text-dim);line-height:2.2">Made with <span class="pokeball-inline"></span> by <a href="https://github.com/alvarotorresc" target="_blank" rel="noopener">Alvaro Torres</a></p>
+    <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.04)">
+      <p class="footer-hint" style="line-height:2.2">PokeUtils is an unofficial, free fan made app and is NOT affiliated, endorsed or supported by Nintendo, GAME FREAK or The Pok&eacute;mon company in any way.</p>
+      <p class="footer-hint" style="line-height:2.2">Pok&eacute;mon, Pok&eacute;mon character and all respective names are trademarks of Nintendo. No copyright infringement intended.</p>
+      <p class="footer-hint" style="line-height:2.2">Pok&eacute;mon &copy; 2002-2026 Pok&eacute;mon. &copy; 1995-2026 Nintendo/Creatures Inc./GAME FREAK inc.</p>
+    </div>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
