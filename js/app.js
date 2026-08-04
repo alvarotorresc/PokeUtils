@@ -5,6 +5,7 @@ import { renderPokedex } from './pokedex.js';
 import { renderPokedexDetail } from './pokedex-detail.js';
 import { renderMoves } from './moves.js';
 import { renderMoveDetail } from './moves-detail.js';
+import { renderTeam } from './team.js';
 import { renderAbilities } from './abilities.js';
 import { renderItems } from './items.js';
 import { renderNatures } from './natures.js';
@@ -52,6 +53,7 @@ function updateNavLabels() {
     home: t('nav.home'),
     pokedex: t('nav.pokedex'),
     types: t('nav.types'),
+    team: t('nav.team'),
     moves: t('nav.moves'),
     abilities: t('nav.abilities'),
     items: t('nav.items'),
@@ -126,6 +128,9 @@ async function route() {
     } else if (path === '/types') {
       updateActiveNav('types');
       renderTypeChart(app);
+    } else if (path === '/team') {
+      updateActiveNav('team');
+      await renderTeam(app, query);
     } else if (parts[0] === 'pokedex' && parts[1]) {
       updateActiveNav('pokedex');
       await renderPokedexDetail(app, parseInt(parts[1]));

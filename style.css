@@ -1399,6 +1399,178 @@ a.evo-node:hover {
 .move-category.special  { background: #6390F0; color: #fff; }
 .move-category.status   { background: #94A3B8; color: #1a1a3e; }
 
+/* ===== TEAM ANALYSIS ===== */
+/* Six slots that keep their shape whether they are filled or not, so adding a
+   member never reflows the page under the cursor. */
+.team-slots {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 700px) {
+  .team-slots { grid-template-columns: repeat(6, 1fr); }
+}
+
+.team-slot {
+  position: relative;
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 4px;
+  text-align: center;
+  min-height: 118px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.team-slot.empty {
+  border-style: dashed;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+.team-slot img {
+  width: 56px;
+  height: 56px;
+  image-rendering: pixelated;
+}
+
+.team-slot-name {
+  font-size: 0.36rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.team-slot-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+}
+
+.team-slot-types .type-badge {
+  padding: 2px 4px;
+  font-size: 0.3rem;
+}
+
+.team-remove {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.team-remove:hover { color: var(--danger); }
+
+.team-results {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.team-result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-family: var(--font-retro);
+  font-size: 0.44rem;
+  color: var(--text);
+  text-align: left;
+}
+
+.team-result:hover { border-color: var(--border-accent); }
+
+.team-result img {
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+}
+
+.team-result-types {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.team-noresults,
+.team-none {
+  font-size: 0.42rem;
+  color: var(--text-dim);
+  line-height: 1.9;
+  padding: 6px 0;
+}
+
+.team-summary {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 700px) {
+  .team-summary { grid-template-columns: 1fr 1fr; }
+}
+
+.team-summary-label {
+  display: block;
+  font-size: 0.4rem;
+  color: var(--text-muted);
+  line-height: 1.8;
+  margin-bottom: 8px;
+}
+
+.team-hint {
+  font-size: 0.4rem;
+  color: var(--text-dim);
+  line-height: 1.9;
+  margin-bottom: 12px;
+}
+
+.team-atk .filter-btn[disabled] {
+  cursor: default;
+  opacity: 0.9;
+}
+
+.result-badge.dimmed { opacity: 0.55; }
+
+/* The matrix is 18 rows by up to six members, so cells stay tight and the
+   sprites in the header carry the identification. */
+.team-matrix th img {
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+  display: block;
+  margin: 0 auto;
+}
+
+.team-matrix td.mult {
+  text-align: center;
+  font-size: 0.42rem;
+}
+
+.team-matrix td.weak { color: var(--stat-down); }
+.team-matrix td.resist { color: var(--stat-up); }
+.team-matrix td.immune { color: var(--accent); }
+
+/* Rows where every member takes normal damage stay visible but quiet: hiding
+   them would make the table change height as the team changes. */
+.team-matrix tr.row-quiet { opacity: 0.4; }
+
 /* ===== MOVE DETAIL ===== */
 /* Same shape as .poke-detail-header minus the sprite: a move has no artwork,
    so the name carries the header on its own. */
