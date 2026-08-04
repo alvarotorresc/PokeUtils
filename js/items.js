@@ -6,15 +6,16 @@ import { t, pokeName, getLang } from './i18n.js';
 
 const PAGE_SIZE = 48;
 
+// Keyed by PokeAPI pocket name; anything unmapped falls back to raw uppercase.
 const CATEGORY_MAP = {
+  'misc': 'cat.misc',
   'medicine': 'cat.medicine',
   'pokeballs': 'cat.pokeballs',
   'berries': 'cat.berries',
   'machines': 'cat.machines',
-  'battle-items': 'cat.battle-items',
+  'battle': 'cat.battle-items',
   'mail': 'cat.mail',
-  'items-key': 'cat.items-key',
-  'held-items': 'cat.held-items',
+  'key': 'cat.items-key',
 };
 
 export function renderItems(container) {
