@@ -263,7 +263,7 @@ console.log('KB:', Math.round(require('fs').statSync('data/moves.json').size/102
 "
 ```
 
-Esperado: 937 registros; `todos con priority: true`; `quick-attack` +1; `roar` −6; `swords-dance` `[["attack",2]]`; los dos `sin` en `true`; ~190 movimientos con `statChanges`; ~30 con prioridad distinta de cero; **entre 375 y 400 KB**. Si pasa de 420 KB, `withoutDefaults` no se está aplicando.
+Esperado: 937 registros; `todos con priority: true`; `quick-attack` +1; `roar` −6; `swords-dance` `[["attack",2]]`; los dos `sin` en `true`; **174 movimientos con `statChanges` y 56 con prioridad distinta de cero** (medidos sobre el dataset completo: la muestra de 63 del spec estimaba ~190 y ~30, y se quedó corta en prioridad); **entre 375 y 400 KB**. Si pasa de 420 KB, `withoutDefaults` no se está aplicando.
 
 - [ ] **Paso 5: Comprobar que la app sigue funcionando con los datos nuevos**
 
