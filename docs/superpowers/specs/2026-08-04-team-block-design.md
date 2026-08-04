@@ -115,8 +115,18 @@ información que solo tiene el usuario.
 arriba: saldría siempre "lo cubres todo". Los tipos añadidos a mano viven también
 en la URL (`&atk=ice,ground`).
 
-Muestra, para los 18 tipos: cuáles golpeas x2 o más, cuáles solo x1, y cuáles no
-puedes tocar (x½ o x0). Lo accionable es la tercera lista.
+Muestra, para los 18 tipos: cuáles golpeas x2 o más y **contra cuáles no tienes
+ventaja**, marcando dentro de estos los que además resistes o no puedes tocar
+(x½ o x0).
+
+**[decidido sin preguntar, corrigiendo este mismo spec]** La primera versión
+destacaba "no puedes tocar" como la lista accionable, y al implementar el cálculo
+salió **vacía en los tres equipos medidos**: con cuatro o más tipos STAB casi
+siempre hay algo que pega neutro a cualquier cosa. La lista con información es la
+de "sin ventaja": el monotipo de Agua tiene diez tipos ahí, y un equipo solo de
+tipo Normal es de los pocos que llena la otra (Roca, Fantasma y Acero). Es el
+mismo error que la cobertura por movimientos aprendibles, detectado igual: al
+medirlo.
 
 ### 5. Estado vacío y parcial
 

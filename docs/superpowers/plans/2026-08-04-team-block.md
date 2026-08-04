@@ -85,8 +85,8 @@ Equipos medidos, usados como valores esperados:
 **Ficheros:** modificar `js/team.js`, `js/i18n.js`, `style.css`
 
 - [ ] **Paso 1:** partir de `stabTypes(members)`, con chips de los 18 tipos para añadir o quitar tipos de ataque a mano; los añadidos van a la URL como `&atk=ice,ground`.
-- [ ] **Paso 2:** tres grupos de resultado: golpeas x2+, solo neutro, y no puedes tocar (x½ o x0), este último destacado por ser lo accionable.
-- [ ] **Paso 3:** verificar con Playwright: los tres equipos dan 12, 14 y 8 tipos golpeados x2 solo con STAB, y añadir Hielo y Tierra al monotipo de Agua sube ese número.
+- [ ] **Paso 2:** dos grupos: los que golpeas x2+ y los que **no tienes ventaja**, marcando dentro de estos los que resistes o no puedes tocar. El segundo grupo es lo accionable: "no puedes tocar" sale vacío en los tres equipos de referencia y no sirve como titular.
+- [ ] **Paso 3:** verificar con Playwright: los tres equipos dan 12, 14 y 8 tipos golpeados x2 solo con STAB (y 6, 4 y 10 sin ventaja), y añadir Hielo y Tierra al monotipo de Agua sube el primero.
 - [ ] **Paso 4:** commit `feat(team): show offensive coverage gaps`.
 
 ---
