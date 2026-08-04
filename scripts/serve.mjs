@@ -25,21 +25,26 @@ const TYPES = {
 };
 
 createServer(async (req, res) => {
-  const path = decodeURIComponent(req.url.split('?')[0]);
-  // normalize() collapses "..", so a request cannot climb out of the repo.
-  const file = join(ROOT, normalize(path === '/' ? '/index.html' : path));
-  if (!file.startsWith(ROOT)) {
-    res.writeHead(403).end('Forbidden');
-    return;
-  }
   try {
-    const body = await readFile(file);
-    res.writeHead(200, {
-      'Content-Type': TYPES[extname(file)] || 'application/octet-stream',
-      'Cache-Control': 'no-store',
-    });
-    res.end(body);
+    const path = decodeURIComponent(req.url.split('?')[0]);
+    // normalize() collapses "..", so a request cannot climb out of the repo.
+    const file = join(ROOT, normalize(path === '/' ? '/index.html' : path));
+    if (!file.startsWith(ROOT)) {
+      res.writeHead(403).end('Forbidden');
+      return;
+    }
+    try {
+      const body = await readFile(file);
+      res.writeHead(200, {
+        'Content-Type': TYPES[extname(file)] || 'application/octet-stream',
+        'Cache-Control': 'no-store',
+      });
+      res.end(body);
+    } catch {
+      res.writeHead(404).end('Not found');
+    }
   } catch {
-    res.writeHead(404).end('Not found');
+    // Decode errors (e.g., malformed percent-encoding) or other sync errors.
+    res.writeHead(400).end('Bad request');
   }
 }).listen(PORT, () => console.log(`http://localhost:${PORT}`));
