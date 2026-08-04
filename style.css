@@ -1071,10 +1071,21 @@ a:hover {
   text-align: right;
 }
 
+/* A link since the move detail page exists, but styled as the plain name it
+   was: 85 underlined rows would read as a wall of links. The accent on hover
+   is what tells you it goes somewhere, same as .ability-link. */
 .mv-name {
   font-size: 0.42rem;
   color: var(--text);
   line-height: 1.7;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.mv-name:hover,
+.mv-name:focus-visible {
+  color: var(--accent);
+  text-decoration: none;
 }
 
 .mv-num {

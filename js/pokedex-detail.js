@@ -97,7 +97,7 @@ function moveRowHTML(move, level) {
   return `
     <div class="mv-row">
       <span class="mv-level">${level === null ? '' : (level === 0 ? t('learn.start') : `${t('learn.col.level')} ${level}`)}</span>
-      <span class="mv-name">${move.nameEs && getLang() === 'es' ? move.nameEs : move.nameEn}</span>
+      <a class="mv-name" href="#/moves/${move.id}">${move.nameEs && getLang() === 'es' ? move.nameEs : move.nameEn}</a>
       <span class="type-badge sm" data-type="${move.type}" style="cursor:default">${typeName(move.type)}</span>
       <span class="move-category ${move.category}">${t('cat.' + move.category)}</span>
       <span class="mv-num">${move.power ?? dash}</span>

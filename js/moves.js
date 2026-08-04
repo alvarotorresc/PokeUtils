@@ -213,9 +213,19 @@ export function renderMoves(container, query = new URLSearchParams()) {
     `;
 
     const tbody = content.querySelector('#mvBody');
+
+    // Delegated here, inside render(): content.innerHTML above replaces the
+    // table on every draw, so this tbody is a new element each time and a
+    // listener hoisted out of render() would go on pointing at a dead one.
+    tbody.addEventListener('click', (e) => {
+      const row = e.target.closest('tr[data-move-id]');
+      if (row) location.hash = `#/moves/${row.dataset.moveId}`;
+    });
+
     page.forEach(m => {
       const tr = document.createElement('tr');
       tr.style.cursor = 'pointer';
+      tr.dataset.moveId = m.id;
       const desc = getLang() === 'es' ? m.descriptionEs : m.descriptionEn;
       tr.innerHTML = `
         <td>
