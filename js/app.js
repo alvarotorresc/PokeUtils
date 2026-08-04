@@ -8,7 +8,9 @@ import { renderItems } from './items.js';
 import { renderNatures } from './natures.js';
 import { renderCalculator } from './calculator.js';
 import { t, getLang, setLang, onLangChange } from './i18n.js';
-import { ErrorKind } from './api.js';
+import { ErrorKind, purgeLegacyCache } from './api.js';
+
+purgeLegacyCache();
 
 const app = document.getElementById('app');
 const navToggle = document.getElementById('navToggle');

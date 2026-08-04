@@ -116,15 +116,7 @@ export function renderItems(container) {
   async function loadAll() {
     if (allItems) return;
     content.innerHTML = loadingHTML(t('items.loading'));
-    let all = [];
-    let offset = 0;
-    while (true) {
-      const data = await fetchItems(200, offset);
-      all = all.concat(data.items);
-      if (all.length >= data.total || data.items.length === 0) break;
-      offset += 200;
-    }
-    allItems = all;
+    allItems = await fetchItems();
 
     // Extract unique categories preserving order
     const seen = new Set();

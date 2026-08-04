@@ -45,15 +45,7 @@ export function renderAbilities(container, highlightName = null) {
   async function loadAll() {
     if (allAbilities) return;
     content.innerHTML = loadingHTML(t('abilities.loading'));
-    let all = [];
-    let offset = 0;
-    while (true) {
-      const data = await fetchAbilities(200, offset);
-      all = all.concat(data.abilities);
-      if (all.length >= data.total || data.abilities.length === 0) break;
-      offset += 200;
-    }
-    allAbilities = all;
+    allAbilities = await fetchAbilities();
   }
 
   async function render() {

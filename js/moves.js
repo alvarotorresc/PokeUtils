@@ -71,15 +71,7 @@ export function renderMoves(container) {
   async function loadAll() {
     if (allMoves) return;
     content.innerHTML = loadingHTML(t('moves.loading'));
-    let all = [];
-    let offset = 0;
-    while (true) {
-      const data = await fetchMoves(200, offset);
-      all = all.concat(data.moves);
-      if (all.length >= data.total || data.moves.length === 0) break;
-      offset += 200;
-    }
-    allMoves = all;
+    allMoves = await fetchMoves();
   }
 
   async function render() {

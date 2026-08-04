@@ -57,17 +57,7 @@ export function renderPokedex(container) {
   async function loadAll() {
     if (allPokemon) return;
     content.innerHTML = loadingHTML(t('pokedex.loading'));
-    // Load in batches
-    let all = [];
-    let offset = 0;
-    const batchSize = 200;
-    while (true) {
-      const data = await fetchPokemonList(batchSize, offset);
-      all = all.concat(data.pokemon);
-      if (all.length >= data.total || data.pokemon.length === 0) break;
-      offset += batchSize;
-    }
-    allPokemon = all;
+    allPokemon = await fetchPokemonList();
   }
 
   async function render() {
