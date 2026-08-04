@@ -1497,7 +1497,25 @@ Tiene que aguantar, con el mismo marcado:
 
 Cada sprite es un enlace a `#/pokedex/{id}`; el Pokémon que se está viendo se destaca. La condición va escrita en cada transición. En 360 px de ancho, ocho ramas no caben en horizontal.
 
-- [ ] **Paso 3: Presentar al usuario y esperar aprobación explícita.**
+- [x] **Paso 3: Presentar al usuario y esperar aprobación explícita.**
+
+**APROBADO el 2026-08-04.**
+
+Medido sobre las 541 cadenas: **el 96% no se ramifica.** 201 sin evolución, 211 líneas de 2, 110 líneas de 3, y solo **19 con ramas** — de las cuales 17 tienen 2 o 3, y Eevee es el único caso de 8 en todo el Pokédex. Se diseña para la línea simple y las ramas degradan.
+
+**Cadena lineal:** fila horizontal, condición escrita en la flecha.
+
+```
+  [Bulbasaur]  ──Nv. 16──→  [Ivysaur]  ──Nv. 32──→  [Venusaur]
+```
+
+**Con ramas:** el padre a la izquierda y las ramas apiladas en vertical, cada una con su condición. Apilar es más legible que cualquier intento horizontal y en móvil ya está resuelto.
+
+**Móvil (<768px):** la línea simple también pasa a vertical con la flecha girada. Sin scroll horizontal.
+
+**Ubicación:** después de la sección Habilidades y antes de Debilidades y resistencias.
+
+El Pokémon que se está viendo se destaca; el resto son enlaces a su ficha.
 
 ### Tarea 14: Sección de línea evolutiva
 
