@@ -733,7 +733,39 @@ Con Playwright MCP en `http://localhost:8094/#/moves`, comparando contra los nú
 7. Limpiar: la URL vuelve a `#/moves` y la tabla muestra los 937.
 8. Consola sin errores.
 
-- [ ] **Paso 6: Commit**
+- [ ] **Paso 6: Verificar la degradación con un dataset viejo**
+
+Este es el único guardarraíl cuyo fallo es invisible en las pruebas normales: solo aparece en la hora siguiente al despliegue, cuando `netlify.toml` sigue sirviendo el `moves.json` anterior contra el JS nuevo. Hay que provocarlo a mano.
+
+```bash
+cp data/moves.json /tmp/moves-new.json
+node -e "
+const fs=require('fs');
+const m=require('./data/moves.json');
+// Exactly what a moves.json cached from before Tarea 2 looks like.
+const old=m.map(({priority,statChanges,target,effectChance,meta,...rest})=>rest);
+fs.writeFileSync('data/moves.json', JSON.stringify(old));
+console.log('campos del primero:', Object.keys(old[0]).join(', '));
+"
+node scripts/serve.mjs 8098 &
+```
+
+Con Playwright MCP en `http://localhost:8098/#/moves`:
+
+1. Los dos `<select>` nuevos **no aparecen**.
+2. La columna PRIO **no aparece** en la tabla.
+3. No hay chips de estadística bajo ningún nombre.
+4. La tabla sigue funcionando con búsqueda, tipo, categoría y paginación.
+5. Consola sin errores.
+
+Restaurar el dataset bueno y comprobar que vuelve todo:
+
+```bash
+cp /tmp/moves-new.json data/moves.json
+git status --short data/moves.json   # tiene que salir vacío
+```
+
+- [ ] **Paso 7: Commit**
 
 ```bash
 git add js/moves.js
@@ -1140,7 +1172,7 @@ En `js/moves.js`, donde hoy se crea el `<tr>` con `cursor:pointer` y ningún man
       tr.dataset.moveId = m.id;
 ```
 
-Y un único manejador delegado en el `tbody`, en vez de uno por fila:
+Y un manejador delegado en el `tbody`, en vez de uno por fila:
 
 ```js
     tbody.addEventListener('click', (e) => {
@@ -1148,6 +1180,8 @@ Y un único manejador delegado en el `tbody`, en vez de uno por fila:
       if (row) location.hash = `#/moves/${row.dataset.moveId}`;
     });
 ```
+
+**Este `addEventListener` va dentro de `render()`, justo después de resolver `tbody`, y se vuelve a enganchar en cada render a propósito.** `render()` reasigna `content.innerHTML` (`js/moves.js:106-123`), así que el `tbody` es un elemento nuevo cada vez: un manejador colocado fuera de `render()` quedaría apuntando al `tbody` viejo y dejaría de funcionar en cuanto se cambie de página o de filtro, sin dar ningún error.
 
 - [ ] **Paso 2: Que los movimientos de la ficha de Pokémon lleven a la ficha del movimiento**
 
