@@ -178,9 +178,55 @@ Hay que resolver también: cómo se ve un filtro activo, cómo se limpian todos 
 
 Enseñar el diseño y **no continuar** hasta que lo apruebe explícitamente. Si pide cambios, iterar.
 
-- [ ] **Paso 4: Registrar el marcado aprobado**
+- [x] **Paso 4: Registrar el marcado aprobado**
 
-Anotar en la respuesta al usuario las clases CSS y la estructura HTML acordadas. Las tareas 3, 4 y 5 las implementan.
+**APROBADO el 2026-08-04.** Las tareas 4 y 5 implementan esto.
+
+**Los 19 chips de tipo no se tocan.** Es el filtro más usado y ya funciona. Los tres controles nuevos van en una fila compacta debajo:
+
+```
+[TODOS] [Normal] [Fuego] [Agua] ...          <- .filter-row existente, sin cambios
+
+┌─────────────┐ ┌───────────────┐ ┌────────────┐ ┌───┐
+│ GEN: Todas ▾│ │ RAREZA: Todos▾│ │ ORDEN: Nº ▾│ │ ↑ │   342 POKEMON
+└─────────────┘ └───────────────┘ └────────────┘ └───┘   [LIMPIAR]
+```
+
+Estructura y clases:
+
+```html
+<div class="pdx-controls">
+  <select class="pdx-select" id="pdxGen"  aria-label="...">...</select>
+  <select class="pdx-select" id="pdxRare" aria-label="...">...</select>
+  <select class="pdx-select" id="pdxSort" aria-label="...">...</select>
+  <button class="pdx-dir" id="pdxDir" aria-label="...">↑</button>
+  <span class="pdx-count" id="pdxCount">342 POKEMON</span>
+  <button class="filter-btn pdx-clear" id="pdxClear">LIMPIAR</button>
+</div>
+```
+
+Decisiones fijadas:
+
+- **`<select>` nativos, no desplegables propios.** En móvil abren el selector del sistema; funcionan con teclado y lector de pantalla sin escribir nada; no añaden JS de paneles ni de clic-fuera. El coste aceptado es que la flecha la dibuja el sistema operativo.
+- **Forma:** 5px de radio en `.pdx-select`, `.pdx-dir` y chips; 8px en contenedores. Es la escala que ya usa `style.css`.
+- **Tipografía:** `var(--font-retro)` a `0.46rem`, igual que `.filter-btn`.
+- **Estado activo de un `<select>`** (valor distinto del defecto): mismo tratamiento que `.filter-btn.active`.
+- **`.pdx-clear` solo se muestra si hay algún filtro puesto.**
+- **`.pdx-count`** muestra el número de resultados tras filtrar. Con cinco filtros combinables, sin este dato se filtra a ciegas.
+- **Móvil (<768px):** `.pdx-controls` pasa a `grid-template-columns: 1fr 1fr`; GEN y RAREZA arriba, ORDEN y sentido abajo; el contador a su propia línea.
+- Sin dependencias, sin iconos nuevos, sin emojis más allá de la lupa existente.
+
+**Corrección de contraste aprobada.** Medido sobre los tokens actuales, el estado activo en modo claro da **2.58:1**, por debajo incluso del mínimo de 3.0 para componentes de UI: el filtro activo no se distingue del inactivo. Se cambia `.filter-btn.active` de "texto de color sobre fondo tenue" a **relleno sólido con texto oscuro**:
+
+```css
+.filter-btn.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg);
+}
+```
+
+Ratios resultantes: **12.48:1** en oscuro y **5.89:1** en claro. Afecta también a los 19 chips de tipo existentes, que es justo lo que se quiere.
 
 ### Tarea 3: Estado de la lista en la query del hash
 
