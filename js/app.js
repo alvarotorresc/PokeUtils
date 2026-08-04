@@ -1,7 +1,8 @@
 // ===== SPA Router & App Shell =====
 import { renderHome } from './home.js';
 import { renderTypeChart } from './type-chart.js';
-import { renderPokedex, renderPokedexDetail } from './pokedex.js';
+import { renderPokedex } from './pokedex.js';
+import { renderPokedexDetail } from './pokedex-detail.js';
 import { renderMoves } from './moves.js';
 import { renderAbilities } from './abilities.js';
 import { renderItems } from './items.js';
