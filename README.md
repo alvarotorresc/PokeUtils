@@ -14,6 +14,7 @@ Your retro Pokemon companion. A static web app with everything you need: Pokedex
 - **Pokedex** - All 1025 Pokemon (Gen I-IX) with sprites, stats, types, abilities and defensive matchups. Filter by generation and rarity, sort by any base stat, and share the view: every filter lives in the URL
 - **Pokemon detail** - Catch rate, the min/max each stat can reach at level 100, ability descriptions in a tooltip, the full evolution line with the exact condition for each step, and every move it learns by level, TM, breeding or tutor
 - **Type Chart** - Interactive type effectiveness calculator for 1 or 2 types (attack + defense)
+- **Team Analysis** - Up to 6 Pokemon: which types threaten half the team, which ones nobody resists, and the coverage your team is missing. The team lives in the URL, so a build is a link
 - **Moves** - Complete move database with type, category, power, accuracy and description. Filter by priority or by the stat a move raises or lowers, and share the view: every filter lives in the URL
 - **Move detail** - Priority spelled out (moves first / moves last), stat changes as data instead of buried in the description, and **which Pokemon learn the move**, split by level, TM, breeding and tutor
 - **Abilities** - Full ability list with descriptions and search
@@ -92,6 +93,8 @@ running the previous code after an edit, with nothing in the console to say so.
     ├── data.js         # Types, natures, generations, static tables
     ├── home.js         # Landing page
     ├── type-chart.js   # Type effectiveness calculator
+    ├── team.js         # Team analysis page: slots, matrix, coverage
+    ├── team-analysis.js # Team maths: defensive matrix, threats, coverage
     ├── pokedex.js      # Pokedex list: search, filters, sorting
     ├── pokedex-detail.js # A single Pokemon: stats, evolutions, moves
     ├── stats.js        # Stat formulas, shared with the calculator
