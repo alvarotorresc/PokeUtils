@@ -17,6 +17,28 @@ const CONCURRENCY = 8;
 // Everything except "mail" (pocket 6), which the app never showed.
 const ITEM_POCKETS = ['misc', 'medicine', 'pokeballs', 'machines', 'berries', 'battle', 'key'];
 
+// Preference order for picking which game learnsets and evolutions come from.
+// Sorting by descending id is WRONG: PokeAPI carries legacy version groups with
+// high ids (blue-japan = 29 and red-green-japan = 28 are generation I, above
+// scarlet-violet = 25), so "newest id" hands back Gen 1 movepools.
+const PREFERRED_VERSION_GROUPS = [
+  'scarlet-violet', 'brilliant-diamond-shining-pearl', 'legends-arceus',
+  'sword-shield', 'ultra-sun-ultra-moon', 'sun-moon',
+  'omega-ruby-alpha-sapphire', 'x-y', 'black-2-white-2', 'black-white',
+  'heartgold-soulsilver', 'platinum', 'diamond-pearl', 'emerald',
+  'firered-leafgreen', 'ruby-sapphire', 'crystal', 'gold-silver',
+  'yellow', 'red-blue',
+];
+
+// candidates: Set<string> of version group names. Returns the preferred one, or
+// null when none of them is listed.
+function pickVersionGroup(candidates) {
+  for (const name of PREFERRED_VERSION_GROUPS) {
+    if (candidates.has(name)) return name;
+  }
+  return null;
+}
+
 // ===== fetching =====
 
 async function getJson(url, attempt = 1) {
@@ -103,6 +125,9 @@ async function buildPokemon() {
         nameEn: a.ability.name,
         isHidden: a.is_hidden,
       })),
+      captureRate: species?.capture_rate ?? 0,
+      isLegendary: Boolean(species?.is_legendary),
+      isMythical: Boolean(species?.is_mythical),
     };
   }, 'pokemon');
 
