@@ -759,7 +759,7 @@ const casos = [
   ['Bulbasaur Atq (base 49)',  49,  'atk',  92, 216],
   ['Blissey   PS  (base 255)', 255, 'hp',  620, 714],
   ['Shedinja  PS  (base 1)',   1,   'hp',    1,   1],
-  ['Regieleki Vel (base 200)', 200, 'spe', 364, 526],
+  ['Regieleki Vel (base 200)', 200, 'spe', 364, 548],
 ];
 let ok = true;
 for (const [nombre, base, key, min, max] of casos) {
@@ -788,7 +788,7 @@ Si `NATURES` deja de usarse en `calculator.js`, quitarlo de su import.
 
 - [ ] **Paso 4: Verificar la calculadora en el navegador**
 
-Con Playwright MCP en `#/calculator`: elegir Pikachu, nivel 100, naturaleza Timid (Miedosa), 31 IV y 252 EV en Velocidad. La Velocidad resultante debe ser **394**. Comprobar la consola: cero errores.
+Con Playwright MCP en `#/calculator`: elegir Pikachu, nivel 100, naturaleza Timid (Miedosa), 31 IV y 252 EV en Velocidad. La Velocidad resultante debe ser **306** (Velocidad base 90). Comprobar la consola: cero errores.
 
 Verificarlo primero por línea de comandos:
 
