@@ -819,7 +819,28 @@ git commit -m "refactor: extract stat formulas into a shared module"
 2. **Mín/máx a nivel 100** dentro de las barras de estadísticas existentes (`.stat-row`, `.stat-bar-bg`, `.stat-bar-fill`). El reto es meter dos números más por fila sin convertirla en ruido. Ya hay una columna `.stat-total` vacía en el marcado actual.
 3. **Burbuja de habilidad.** Tiene que funcionar con hover en escritorio y con toque en móvil, donde no hay hover. **Decidir explícitamente si sustituye el enlace a `#/abilities/...` de `js/pokedex-detail.js` o convive con él**; el spec propone conservarlo y añadir la burbuja.
 
-- [ ] **Paso 3: Presentar al usuario y esperar aprobación explícita.**
+- [x] **Paso 3: Presentar al usuario y esperar aprobación explícita.**
+
+**APROBADO el 2026-08-04.**
+
+**El rango va como número, no como barra.** Las estadísticas base se dibujan sobre una escala de 255; los valores a nivel 100 llegan a 714. Meter ambos en la misma barra sería un eje doble, el error clásico en gráficos. El rango ocupa la cuarta columna de `.stat-row`, que ya existe vacía (`.stat-total`) y solo hay que ensanchar de 40px a ~86px.
+
+```
+ESTADISTICAS BASE                          A NVL 100
+   PS       35  ████░░░░░░░░░░░░░░░░░░░░   180-274
+   Ataque   55  ███████░░░░░░░░░░░░░░░░░   103-229
+   Velocid. 90  ███████████░░░░░░░░░░░░░   166-306
+   ─────────────────────────────────────
+   TOTAL   320
+```
+
+La fila TOTAL no lleva rango.
+
+**Ratio de captura en la cabecera**, junto a altura y peso: es un dato útil pero no protagonista, así que no lleva bloque propio. Formato `190 · Facil de capturar`.
+
+**Burbuja de habilidad:** hover en escritorio, toque en móvil, cierre al tocar fuera o con Escape, accesible por teclado. **Se conserva** el enlace a `#/abilities/...` y la burbuja se añade encima.
+
+**Móvil (<768px):** a 360px no caben seis columnas. El rango pasa a una segunda línea bajo la barra, alineado a la derecha.
 
 ### Tarea 9: Ratio de captura y rango a nivel 100
 
