@@ -8,6 +8,7 @@ import { renderItems } from './items.js';
 import { renderNatures } from './natures.js';
 import { renderCalculator } from './calculator.js';
 import { t, getLang, setLang, onLangChange } from './i18n.js';
+import { ErrorKind } from './api.js';
 
 const app = document.getElementById('app');
 const navToggle = document.getElementById('navToggle');
@@ -119,22 +120,22 @@ async function route() {
       renderTypeChart(app);
     } else if (parts[0] === 'pokedex' && parts[1]) {
       updateActiveNav('pokedex');
-      renderPokedexDetail(app, parseInt(parts[1]));
+      await renderPokedexDetail(app, parseInt(parts[1]));
     } else if (path === '/pokedex') {
       updateActiveNav('pokedex');
-      renderPokedex(app);
+      await renderPokedex(app);
     } else if (path === '/moves') {
       updateActiveNav('moves');
-      renderMoves(app);
+      await renderMoves(app);
     } else if (parts[0] === 'abilities' && parts[1]) {
       updateActiveNav('abilities');
-      renderAbilities(app, decodeURIComponent(parts[1]));
+      await renderAbilities(app, decodeURIComponent(parts[1]));
     } else if (path === '/abilities') {
       updateActiveNav('abilities');
-      renderAbilities(app);
+      await renderAbilities(app);
     } else if (path === '/items') {
       updateActiveNav('items');
-      renderItems(app);
+      await renderItems(app);
     } else if (path === '/natures') {
       updateActiveNav('natures');
       renderNatures(app);
@@ -153,18 +154,41 @@ async function route() {
     }
   } catch (err) {
     console.error('Route error:', err);
-    app.innerHTML = `
-      <div class="no-results">
-        <div class="icon">⚠️</div>
-        <p>${t('common.error')}</p>
-        <p style="margin-top:8px;font-size:0.44rem;color:var(--text-dim)">${err.message}</p>
-      </div>
-    `;
+    renderError(app, err, route);
   }
 }
 
 window.addEventListener('hashchange', route);
 route();
+
+// ===== HELPER: error state with retry =====
+const ERROR_MESSAGES = {
+  [ErrorKind.NETWORK]: 'common.error.network',
+  [ErrorKind.RATE_LIMIT]: 'common.error.ratelimit',
+  [ErrorKind.NOT_FOUND]: 'common.error.notfound',
+};
+
+export function renderError(container, err, onRetry) {
+  const messageKey = ERROR_MESSAGES[err?.kind] || 'common.error';
+
+  container.innerHTML = '';
+  const box = document.createElement('div');
+  box.className = 'no-results';
+  box.innerHTML = `
+    <div class="icon">⚠️</div>
+    <p>${t(messageKey)}</p>
+  `;
+
+  if (onRetry) {
+    const btn = document.createElement('button');
+    btn.className = 'page-btn';
+    btn.textContent = t('common.retry');
+    btn.onclick = () => onRetry();
+    box.appendChild(btn);
+  }
+
+  container.appendChild(box);
+}
 
 // ===== HELPER: loading HTML =====
 export function loadingHTML(text) {

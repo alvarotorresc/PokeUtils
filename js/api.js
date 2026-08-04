@@ -4,6 +4,22 @@ const REST_URL = 'https://pokeapi.co/api/v2';
 const LANG_ES = 7;
 const LANG_EN = 9;
 
+// Finite set of failure modes the UI knows how to explain.
+export const ErrorKind = {
+  NETWORK: 'network',
+  RATE_LIMIT: 'ratelimit',
+  NOT_FOUND: 'notfound',
+  UNKNOWN: 'unknown',
+};
+
+export class ApiError extends Error {
+  constructor(kind, message) {
+    super(message);
+    this.name = 'ApiError';
+    this.kind = kind;
+  }
+}
+
 const memCache = new Map();
 
 function cacheKey(prefix, params) {
@@ -31,14 +47,21 @@ function setCache(key, data) {
 }
 
 async function gql(query, variables = {}) {
-  const res = await fetch(GQL_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, variables }),
-  });
-  if (!res.ok) throw new Error(`GraphQL error: ${res.status}`);
+  let res;
+  try {
+    res = await fetch(GQL_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables }),
+    });
+  } catch (err) {
+    // A blocked CORS preflight surfaces here as a generic TypeError.
+    throw new ApiError(ErrorKind.NETWORK, err.message);
+  }
+  if (res.status === 429) throw new ApiError(ErrorKind.RATE_LIMIT, 'Rate limited');
+  if (!res.ok) throw new ApiError(ErrorKind.UNKNOWN, `GraphQL error: ${res.status}`);
   const json = await res.json();
-  if (json.errors) throw new Error(json.errors[0].message);
+  if (json.errors) throw new ApiError(ErrorKind.UNKNOWN, json.errors[0].message);
   return json.data;
 }
 

@@ -126,7 +126,8 @@ export function renderPokedex(container) {
     });
   }
 
-  render();
+  // Returned so the router can await it and surface load failures.
+  return render();
 }
 
 // ===== POKEMON DETAIL =====

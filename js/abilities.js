@@ -143,5 +143,6 @@ export function renderAbilities(container, highlightName = null) {
     }
   }
 
-  render();
+  // Returned so the router can await it and surface load failures.
+  return render();
 }
