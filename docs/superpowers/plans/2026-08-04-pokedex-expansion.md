@@ -1886,5 +1886,8 @@ git commit -m "docs: document the new pokedex features and datasets"
 
 - **Nunca hacer push.** Los commits se quedan en local.
 - Las tareas 1, 11 y 15 hacen miles de peticiones a PokeAPI y tardan minutos. La API REST no tiene límite de peticiones, pero `getJson` ya reintenta con espera exponencial: si empiezan a caer peticiones, dejar que reintente en vez de bajar `CONCURRENCY`.
-- El servidor local para verificar es `python3 -m http.server 8080` desde la raíz del repositorio.
+- **No uses `python3 -m http.server` para verificar cambios de JS.** No manda `Cache-Control`, así que el navegador aplica caché heurística sobre los módulos ES y **sigue ejecutando el código viejo después de editar**, sin avisar de nada: cero errores en consola y la página funcionando, pero con la versión anterior. Cuesta mucho de diagnosticar. Sirve con un servidor que mande `Cache-Control: no-store`.
+- **Con un router de hash, `page.goto()` entre dos URLs que solo difieren en el fragmento no recarga el documento.** Los módulos siguen siendo los de antes. Para recargar de verdad: pasar por `about:blank`, o cambiar de puerto, o usar un origen distinto.
+- Si el navegador ya cacheó los módulos de una sesión anterior, cambiar la cabecera no basta: esas entradas siguen "frescas" y no se revalidan. La salida rápida es **servir en otro puerto**, que es otro origen y otra clave de caché.
+- Señal para detectarlo: `performance.getEntriesByType('resource')` con `transferSize: 0` en los ficheros `.js` significa que vienen de caché.
 - Después de cada tarea de UI, revisar la consola del navegador. Cero errores es parte del criterio de aceptación, no un extra.
