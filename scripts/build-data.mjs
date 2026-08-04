@@ -210,13 +210,105 @@ async function buildItems() {
   return items.sort((a, b) => a.id - b.id);
 }
 
+// Fields on evolution_details that are real conditions. version_group,
+// is_default, evolved_form and base_form are metadata and are not stored.
+const EVO_CONDITION_FIELDS = [
+  'min_level', 'item', 'held_item', 'min_happiness', 'min_affection',
+  'min_beauty', 'time_of_day', 'location', 'region', 'known_move',
+  'known_move_type', 'gender', 'relative_physical_stats', 'needs_overworld_rain',
+  'party_species', 'party_type', 'trade_species', 'turn_upside_down',
+  'min_steps', 'near_special_rock', 'needs_multiplayer', 'min_move_count',
+  'used_move', 'min_damage_taken',
+];
+
+// Locations and regions are in no client dataset, so their translated name is
+// resolved here and stored ready to use. Every other name (items, moves,
+// species, types) the client resolves against datasets it already loads.
+const localizedNameCache = new Map();
+
+async function localizedName(url) {
+  if (!localizedNameCache.has(url)) {
+    const res = await getJson(url);
+    localizedNameCache.set(url, {
+      es: localName(res?.names || [], 'es') || res?.name || '',
+      en: localName(res?.names || [], 'en') || res?.name || '',
+    });
+  }
+  return localizedNameCache.get(url);
+}
+
+async function cleanDetail(d) {
+  const out = { trigger: d.trigger?.name || 'other' };
+  for (const field of EVO_CONDITION_FIELDS) {
+    const value = d[field];
+    // relative_physical_stats is handled apart: 0 means "Attack equals
+    // Defense", which is Hitmontop. Dropping it as empty would lose that case.
+    if (field === 'relative_physical_stats') {
+      if (value !== null && value !== undefined) out[field] = value;
+      continue;
+    }
+    if (value === null || value === undefined || value === false || value === '' || value === 0) continue;
+    if (typeof value === 'object' && value.name) {
+      out[field] = (field === 'location' || field === 'region')
+        ? { name: value.name, ...(await localizedName(value.url)) }
+        : value.name;
+    } else {
+      out[field] = value;
+    }
+  }
+  return out;
+}
+
+async function cleanNode(node) {
+  return {
+    species: idFromUrl(node.species.url),
+    evolvesTo: await Promise.all(node.evolves_to.map(async child => ({
+      // cleanNode returns { species, evolvesTo }; details goes on top.
+      ...(await cleanNode(child)),
+      // Default details only: PokeAPI includes form-specific variants that
+      // would duplicate branches. Verified that no transition is left without
+      // details by this filter.
+      details: await Promise.all(
+        child.evolution_details
+          .filter(d => d.is_default !== false)
+          .map(cleanDetail)
+      ),
+    }))),
+  };
+}
+
+async function buildEvolutions() {
+  const index = await getJson(`${API}/evolution-chain?limit=1000`);
+
+  const chainList = await mapLimit(index.results, async (entry) => {
+    const chain = await getJson(entry.url);
+    return { id: chain.id, root: await cleanNode(chain.chain) };
+  }, 'evolutions');
+
+  const chains = {};
+  const bySpecies = {};
+
+  const indexNode = (node, chainId) => {
+    bySpecies[node.species] = chainId;
+    for (const child of node.evolvesTo) indexNode(child, chainId);
+  };
+
+  for (const { id, root } of chainList) {
+    chains[id] = root;
+    indexNode(root, id);
+  }
+
+  return { chains, bySpecies };
+}
+
 // ===== main =====
 
 async function write(name, payload) {
   const file = join(OUT_DIR, `${name}.json`);
   await writeFile(file, JSON.stringify(payload));
   const kb = Math.round(JSON.stringify(payload).length / 1024);
-  console.log(`  wrote data/${name}.json (${payload.length} records, ${kb} KB)\n`);
+  const count = Array.isArray(payload) ? payload.length : Object.keys(payload).length;
+  console.log(`  wrote data/${name}.json (${count} records, ${kb} KB)\n`);
 }
 
 const BUILDERS = {
@@ -224,6 +316,7 @@ const BUILDERS = {
   moves: buildMoves,
   abilities: buildAbilities,
   items: buildItems,
+  evolutions: buildEvolutions,
 };
 
 async function main() {
