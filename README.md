@@ -14,7 +14,8 @@ Your retro Pokemon companion. A static web app with everything you need: Pokedex
 - **Pokedex** - All 1025 Pokemon (Gen I-IX) with sprites, stats, types, abilities and defensive matchups. Filter by generation and rarity, sort by any base stat, and share the view: every filter lives in the URL
 - **Pokemon detail** - Catch rate, the min/max each stat can reach at level 100, ability descriptions in a tooltip, the full evolution line with the exact condition for each step, and every move it learns by level, TM, breeding or tutor
 - **Type Chart** - Interactive type effectiveness calculator for 1 or 2 types (attack + defense)
-- **Moves** - Complete move database with type, category, power, accuracy and description filters
+- **Moves** - Complete move database with type, category, power, accuracy and description. Filter by priority or by the stat a move raises or lowers, and share the view: every filter lives in the URL
+- **Move detail** - Priority spelled out (moves first / moves last), stat changes as data instead of buried in the description, and **which Pokemon learn the move**, split by level, TM, breeding and tutor
 - **Abilities** - Full ability list with descriptions and search
 - **Items** - Item catalog with pixel sprites, category filters and detail modals
 - **Natures** - All 25 natures with stat modifiers and a visual 5x5 grid
@@ -61,10 +62,13 @@ Drag and drop the folder, or connect the repo with publish directory `.`
 
 **Local:**
 ```bash
-python3 -m http.server 8080
-# or
-npx serve .
+node scripts/serve.mjs        # port 8090, or pass your own
 ```
+
+Use this one while developing, not `python3 -m http.server`: that server sends
+no `Cache-Control`, so the browser caches the ES modules heuristically and keeps
+running the previous code after an edit, with nothing in the console to say so.
+`scripts/serve.mjs` sends `no-store`.
 
 ## Structure
 
@@ -74,13 +78,14 @@ npx serve .
 ├── netlify.toml      # Cache headers for the generated data
 ├── data/             # Generated datasets (see "Updating the data")
 │   ├── pokemon.json     # Species, stats, catch rate, rarity flags
-│   ├── moves.json       # Move metadata and descriptions
+│   ├── moves.json       # Move metadata, priority, stat changes and battle data
 │   ├── abilities.json   # Ability descriptions
 │   ├── items.json       # Item catalog
 │   ├── evolutions.json  # Evolution chains and their conditions
 │   └── learnsets.json   # Moves each Pokemon learns, by method
 ├── scripts/
-│   └── build-data.mjs # Regenerates data/ from the REST API
+│   ├── build-data.mjs # Regenerates data/ from the REST API
+│   └── serve.mjs      # Dev server that disables caching
 └── js/
     ├── app.js          # Hash router + query state + pagination
     ├── api.js          # Static data loader + REST fallback
@@ -92,7 +97,10 @@ npx serve .
     ├── stats.js        # Stat formulas, shared with the calculator
     ├── evolution.js    # Evolution conditions to readable text
     ├── tooltip.js      # Reusable hover/touch bubble
-    ├── moves.js        # Moves database
+    ├── moves.js        # Moves list: search, filters, priority, stat changes
+    ├── moves-detail.js # A single move: data, effect and who learns it
+    ├── move-effects.js # Priority and stat-change labels and filters
+    ├── learnset-index.js # Reverse index: move -> Pokemon that learn it
     ├── abilities.js    # Abilities list
     ├── items.js        # Items catalog
     ├── natures.js      # Natures table
