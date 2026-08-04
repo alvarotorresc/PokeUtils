@@ -1,6 +1,7 @@
 // ===== IV/EV CALCULATOR =====
 import { NATURES, STAT_KEYS, STAT_COLORS, spriteUrl } from './data.js';
 import { searchPokemon } from './api.js';
+import { calcHP, calcStat, getNatureMod } from './stats.js';
 import { t, statName, natureName, getLang, pokeName } from './i18n.js';
 
 export function renderCalculator(container) {
@@ -220,24 +221,6 @@ export function renderCalculator(container) {
         <td style="text-align:center;font-weight:bold" class="calc-iv-result" data-stat="${k}">—</td>
       </tr>
     `).join('');
-  }
-
-  // Stat calculation formulas (Gen III+)
-  function calcHP(base, iv, ev, level) {
-    if (base === 1) return 1; // Shedinja
-    return Math.floor(((2 * base + iv + Math.floor(ev / 4)) * level / 100) + level + 10);
-  }
-
-  function calcStat(base, iv, ev, level, natureMod) {
-    return Math.floor((Math.floor(((2 * base + iv + Math.floor(ev / 4)) * level / 100) + 5)) * natureMod);
-  }
-
-  function getNatureMod(natName, stat) {
-    const nature = NATURES.find(n => n.name === natName);
-    if (!nature || !nature.increase) return 1;
-    if (nature.increase === stat) return 1.1;
-    if (nature.decrease === stat) return 0.9;
-    return 1;
   }
 
   // Calculate: IVs/EVs → Stats
