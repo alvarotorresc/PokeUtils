@@ -1762,7 +1762,26 @@ Hay que resolver además:
 - Un movimiento puede tener `power` o `accuracy` a `null`: mostrar un guion, no "null".
 - Lucario tiene 26 movimientos por nivel y 100+ MTs: la lista larga necesita una solución (scroll interno, colapsable, o paginación).
 
-- [ ] **Paso 3: Presentar al usuario y esperar aprobación explícita.**
+- [x] **Paso 3: Presentar al usuario y esperar aprobación explícita.**
+
+**APROBADO el 2026-08-04**, delegando las dos decisiones abiertas.
+
+Distribución medida (movimientos por Pokémon):
+
+| Pestaña | Pokémon | Mediana | p90 | Máximo |
+|---|---|---|---|---|
+| Nivel | 1025 | 15 | 18 | 33 |
+| MT | 1016 | 40 | 59 | **229** |
+| Huevo | 566 | 5 | 10 | 23 |
+| Tutor | 887 | 2 | 14 | 31 |
+
+**No es una tabla.** Cada movimiento es una fila de dos alturas que en escritorio se estira a columnas alineadas y en móvil se apila, con el mismo marcado y solo cambiando la rejilla.
+
+**La sección arranca plegada, con memoria de sesión.** Abrirla siempre costaría 700 KB en cada ficha y anularía la reducción de 1455 a 522 KB. Los movimientos se buscan, no se ojean. Pero una vez abierta **se queda abierta el resto de la sesión**: los datos ya están en el `Map` de `api.js`, así que a partir de ahí es gratis.
+
+**Scroll interno en escritorio, flujo natural en móvil.** Con 229 MTs, dejar crecer la página en un monitor hace la ficha inmanejable; pero un contenedor con scroll dentro de una página con scroll es muy molesto al tocar, y abrir esa pestaña ya es una decisión deliberada. Nada de paginación: en una tabla de consulta se quiere barrer con la vista o buscar con Ctrl+F.
+
+**Solo se muestran las pestañas con contenido** (498 Pokémon tienen las cuatro, 3 tienen una sola), y cada cabecera indica de qué juego salen sus datos.
 
 ### Tarea 17: Sección de movimientos
 
