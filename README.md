@@ -11,7 +11,8 @@ Your retro Pokemon companion. A static web app with everything you need: Pokedex
 
 ## Features
 
-- **Pokedex** - All 1025 Pokemon (Gen I-IX) with sprites, stats, types, abilities and defensive matchups
+- **Pokedex** - All 1025 Pokemon (Gen I-IX) with sprites, stats, types, abilities and defensive matchups. Filter by generation and rarity, sort by any base stat, and share the view: every filter lives in the URL
+- **Pokemon detail** - Catch rate, the min/max each stat can reach at level 100, ability descriptions in a tooltip, the full evolution line with the exact condition for each step, and every move it learns by level, TM, breeding or tutor
 - **Type Chart** - Interactive type effectiveness calculator for 1 or 2 types (attack + defense)
 - **Moves** - Complete move database with type, category, power, accuracy and description filters
 - **Abilities** - Full ability list with descriptions and search
@@ -36,9 +37,11 @@ The files in `data/` are generated, not hand-edited. Regenerate them when a new
 Pokemon generation ships, then commit the result:
 
 ```bash
-node scripts/build-data.mjs              # all datasets
-node scripts/build-data.mjs moves items  # or just some
+node scripts/build-data.mjs                       # all datasets
+node scripts/build-data.mjs evolutions learnsets  # or just some
 ```
+
+Targets: `pokemon`, `moves`, `abilities`, `items`, `evolutions`, `learnsets`.
 
 It reads the REST API (no rate limit) and takes a few minutes. Bump
 `MAX_POKEMON` in the script when the National Dex grows.
@@ -70,20 +73,30 @@ npx serve .
 ├── style.css         # All styles
 ├── netlify.toml      # Cache headers for the generated data
 ├── data/             # Generated datasets (see "Updating the data")
+│   ├── pokemon.json     # Species, stats, catch rate, rarity flags
+│   ├── moves.json       # Move metadata and descriptions
+│   ├── abilities.json   # Ability descriptions
+│   ├── items.json       # Item catalog
+│   ├── evolutions.json  # Evolution chains and their conditions
+│   └── learnsets.json   # Moves each Pokemon learns, by method
 ├── scripts/
 │   └── build-data.mjs # Regenerates data/ from the REST API
 └── js/
-    ├── app.js        # Hash router + pagination
-    ├── api.js        # Static data loader + REST fallback
-    ├── data.js       # Types, natures, static data
-    ├── home.js       # Landing page
-    ├── type-chart.js # Type effectiveness calculator
-    ├── pokedex.js    # Pokedex list + detail view
-    ├── moves.js      # Moves database
-    ├── abilities.js  # Abilities list
-    ├── items.js      # Items catalog
-    ├── natures.js    # Natures table
-    └── calculator.js # IV/EV calculator
+    ├── app.js          # Hash router + query state + pagination
+    ├── api.js          # Static data loader + REST fallback
+    ├── data.js         # Types, natures, generations, static tables
+    ├── home.js         # Landing page
+    ├── type-chart.js   # Type effectiveness calculator
+    ├── pokedex.js      # Pokedex list: search, filters, sorting
+    ├── pokedex-detail.js # A single Pokemon: stats, evolutions, moves
+    ├── stats.js        # Stat formulas, shared with the calculator
+    ├── evolution.js    # Evolution conditions to readable text
+    ├── tooltip.js      # Reusable hover/touch bubble
+    ├── moves.js        # Moves database
+    ├── abilities.js    # Abilities list
+    ├── items.js        # Items catalog
+    ├── natures.js      # Natures table
+    └── calculator.js   # IV/EV calculator
 ```
 
 ## Legal
