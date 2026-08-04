@@ -155,6 +155,28 @@ const translations = {
     'moves.col.pow': 'POW',
     'moves.col.acc': 'ACC',
     'moves.col.pp': 'PP',
+    'moves.col.prio': 'PRIO',
+    'moves.prio.first': 'Ataca antes',
+    'moves.prio.last': 'Ataca despues',
+    'moves.filter.prio': 'Prioridad',
+    'moves.filter.prio.all': 'Cualquiera',
+    'moves.filter.prio.up': 'Positiva',
+    'moves.filter.prio.down': 'Negativa',
+    'moves.filter.stat': 'Estadistica',
+    'moves.filter.stat.all': 'Cualquiera',
+    'moves.filter.stat.up': 'Suben',
+    'moves.filter.stat.down': 'Bajan',
+    'moves.clear': 'Limpiar',
+    'moves.back': 'Volver',
+    'moves.notfound': 'Movimiento no encontrado',
+    'moves.detail.data': 'DATOS',
+    'moves.detail.effect': 'EFECTO',
+    'moves.detail.learners': 'QUIEN LO APRENDE',
+    'moves.learners.none': 'Ningun Pokemon lo aprende en los juegos que cubrimos',
+    'moves.learners.note': 'Los datos de cada Pokemon salen del juego mas reciente en el que aparece',
+    'moves.learners.more': 'Ver los {n} restantes',
+    'moves.learners.count': '{n} Pokemon',
+    'moves.learners.count.one': '1 Pokemon',
 
     // Abilities
     'abilities.title': 'HABILIDADES',
@@ -255,6 +277,7 @@ const translations = {
     // Stats
     'stat.hp': 'PS', 'stat.atk': 'Ataque', 'stat.def': 'Defensa',
     'stat.spa': 'At. Esp.', 'stat.spd': 'Def. Esp.', 'stat.spe': 'Velocidad',
+    'stat.acc': 'Precision', 'stat.eva': 'Evasion',
   },
 
   en: {
@@ -406,6 +429,28 @@ const translations = {
     'moves.col.pow': 'POW',
     'moves.col.acc': 'ACC',
     'moves.col.pp': 'PP',
+    'moves.col.prio': 'PRIO',
+    'moves.prio.first': 'Moves first',
+    'moves.prio.last': 'Moves last',
+    'moves.filter.prio': 'Priority',
+    'moves.filter.prio.all': 'Any',
+    'moves.filter.prio.up': 'Positive',
+    'moves.filter.prio.down': 'Negative',
+    'moves.filter.stat': 'Stat',
+    'moves.filter.stat.all': 'Any',
+    'moves.filter.stat.up': 'Raises',
+    'moves.filter.stat.down': 'Lowers',
+    'moves.clear': 'Clear',
+    'moves.back': 'Back',
+    'moves.notfound': 'Move not found',
+    'moves.detail.data': 'DATA',
+    'moves.detail.effect': 'EFFECT',
+    'moves.detail.learners': 'WHO LEARNS IT',
+    'moves.learners.none': 'No Pokemon learns it in the games we cover',
+    'moves.learners.note': 'Each Pokemon\'s data comes from the most recent game it appears in',
+    'moves.learners.more': 'Show the remaining {n}',
+    'moves.learners.count': '{n} Pokemon',
+    'moves.learners.count.one': '1 Pokemon',
 
     'abilities.title': 'ABILITIES',
     'abilities.subtitle': 'All Pokemon abilities and their effects',
@@ -498,6 +543,7 @@ const translations = {
 
     'stat.hp': 'HP', 'stat.atk': 'Attack', 'stat.def': 'Defense',
     'stat.spa': 'Sp. Atk', 'stat.spd': 'Sp. Def', 'stat.spe': 'Speed',
+    'stat.acc': 'Accuracy', 'stat.eva': 'Evasion',
   }
 };
 
