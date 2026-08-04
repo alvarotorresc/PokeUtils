@@ -38,7 +38,12 @@ async function getJson(url) {
   if (res.status === 404) throw new ApiError(ErrorKind.NOT_FOUND, `Not found: ${url}`);
   if (res.status === 429) throw new ApiError(ErrorKind.RATE_LIMIT, 'Rate limited');
   if (!res.ok) throw new ApiError(ErrorKind.UNKNOWN, `HTTP ${res.status}`);
-  return res.json();
+  try {
+    return await res.json();
+  } catch {
+    // A catch-all redirect serving index.html would land here as a 200.
+    throw new ApiError(ErrorKind.UNKNOWN, `Invalid JSON from ${url}`);
+  }
 }
 
 // One request per dataset per session. The CDN and the browser cache handle
