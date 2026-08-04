@@ -542,9 +542,9 @@ node scripts/serve.mjs 8092 &
 
 Con Playwright MCP en `http://localhost:8092/#/moves`:
 
-1. Escribir "danza" en el buscador → la URL pasa a `#/moves?q=danza` y la tabla filtra.
-2. Pulsar el filtro de tipo Fuego → `#/moves?q=danza&type=fire`.
-3. Ir a la página 2 → aparece `&p=2`.
+1. Escribir "danza" en el buscador → la URL pasa a `#/moves?q=danza` y la tabla filtra (13 resultados).
+2. Pulsar el filtro de tipo Fuego → `#/moves?q=danza&type=fire`, 1 resultado.
+3. Limpiar la búsqueda y dejar solo el tipo Normal (200 movimientos, 4 páginas), ir a la página 2 → aparece `&p=2`. **La paginación no se puede probar con "danza": ningún filtro combinado con esa búsqueda pasa de 50 resultados, que es `PAGE_SIZE`.**
 4. Recargar con F5 → búsqueda, filtro y página siguen puestos.
 5. Consola sin errores.
 
