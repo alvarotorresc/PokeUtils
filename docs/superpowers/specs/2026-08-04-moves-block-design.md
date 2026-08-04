@@ -217,9 +217,15 @@ Dos `<select>` nativos, la misma decisión que se tomó en la ampliación de la
 Pokédex:
 
 - **Prioridad**: todas / con prioridad positiva / con prioridad negativa.
-- **Estadística afectada**: las seis de siempre más precisión y evasión, con las
-  claves `stat.*` que ya existen; hacen falta dos nuevas, `stat.acc` y
-  `stat.eva`.
+- **Estadística afectada, con dirección**: distingue subirla de bajarla, que es
+  la diferencia entre buscar setup (Danza Espada) y buscar debuffs. Son ocho
+  estadísticas —las seis de siempre más precisión y evasión— por dos direcciones.
+  Va en un solo `<select>` con dos `<optgroup>`, "Suben" y "Bajan", en vez de dos
+  controles separados: son dieciséis opciones, que en una lista agrupada se leen
+  de un vistazo y ahorran un tercer control en la barra de filtros.
+
+Las claves `stat.*` ya existen para las seis estadísticas; hacen falta dos
+nuevas, `stat.acc` y `stat.eva`.
 
 La columna de prioridad de la tabla solo muestra un valor cuando no es cero, para
 no añadir una columna que sería un 97% de ceros.
