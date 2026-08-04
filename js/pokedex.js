@@ -1,5 +1,5 @@
 // ===== POKEDEX PAGE =====
-import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART } from './data.js';
+import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, GENERATIONS } from './data.js';
 import { fetchPokemonList, fetchPokemonDetail } from './api.js';
 import { loadingHTML, renderPagination, replaceQuery } from './app.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
@@ -12,6 +12,8 @@ export function renderPokedex(container, query = new URLSearchParams()) {
   const state = {
     q: query.get('q') || '',
     type: query.get('type') || '',
+    gen: query.get('gen') || '',
+    rare: query.get('rare') || '',
     p: Math.max(1, parseInt(query.get('p'), 10) || 1),
   };
   let allPokemon = null;
@@ -29,6 +31,20 @@ export function renderPokedex(container, query = new URLSearchParams()) {
       <button class="filter-btn${state.type === '' ? ' active' : ''}" data-type="">${t('common.all')}</button>
       ${TYPES.map(tp => `<button class="filter-btn${state.type === tp ? ' active' : ''}" data-type="${tp}"><span class="type-badge sm" data-type="${tp}" style="padding:3px 6px;font-size:0.42rem">${typeName(tp)}</span></button>`).join('')}
     </div>
+    <div class="pdx-controls">
+      <select class="pdx-select" id="pdxGen" aria-label="${t('pokedex.gen')}">
+        <option value="">${t('pokedex.gen')}: ${t('pokedex.gen.all')}</option>
+        ${GENERATIONS.map(g => `<option value="${g.id}">${t('pokedex.gen')}: ${g.name.replace('Gen ', '')}</option>`).join('')}
+      </select>
+      <select class="pdx-select" id="pdxRare" aria-label="${t('pokedex.rarity')}">
+        <option value="">${t('pokedex.rarity')}: ${t('pokedex.rarity.all')}</option>
+        <option value="normal">${t('pokedex.rarity')}: ${t('pokedex.rarity.normal')}</option>
+        <option value="legendary">${t('pokedex.rarity')}: ${t('pokedex.rarity.legendary')}</option>
+        <option value="mythical">${t('pokedex.rarity')}: ${t('pokedex.rarity.mythical')}</option>
+      </select>
+      <span class="pdx-count" id="pdxCount"></span>
+      <button class="filter-btn pdx-clear" id="pdxClear" hidden>${t('pokedex.clear')}</button>
+    </div>
     <div id="pdxContent"></div>
   `;
 
@@ -36,14 +52,54 @@ export function renderPokedex(container, query = new URLSearchParams()) {
   const searchInput = container.querySelector('#pdxSearch');
   const filters = container.querySelector('#pdxFilters');
 
+  const genSelect = container.querySelector('#pdxGen');
+  const rareSelect = container.querySelector('#pdxRare');
+  const countEl = container.querySelector('#pdxCount');
+  const clearBtn = container.querySelector('#pdxClear');
+
   // Default values are left out so plain #/pokedex stays the clean URL.
   function syncUrl() {
     replaceQuery('/pokedex', {
       q: state.q,
       type: state.type,
+      gen: state.gen,
+      rare: state.rare,
       p: state.p === 1 ? '' : state.p,
     });
   }
+
+  // render() only redraws the grid, so the controls are kept in sync here.
+  function syncControls() {
+    genSelect.value = state.gen;
+    rareSelect.value = state.rare;
+    genSelect.classList.toggle('active', state.gen !== '');
+    rareSelect.classList.toggle('active', state.rare !== '');
+    clearBtn.hidden = !(state.q || state.type || state.gen || state.rare);
+  }
+
+  genSelect.addEventListener('change', () => {
+    state.gen = genSelect.value;
+    state.p = 1;
+    render();
+  });
+
+  rareSelect.addEventListener('change', () => {
+    state.rare = rareSelect.value;
+    state.p = 1;
+    render();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    state.q = '';
+    state.type = '';
+    state.gen = '';
+    state.rare = '';
+    state.p = 1;
+    searchInput.value = '';
+    filters.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    filters.querySelector('.filter-btn[data-type=""]').classList.add('active');
+    render();
+  });
 
   // Debounce search
   let searchTimeout;
@@ -89,6 +145,25 @@ export function renderPokedex(container, query = new URLSearchParams()) {
     if (state.type) {
       filtered = filtered.filter(p => p.types.includes(state.type));
     }
+    if (state.gen) {
+      const genDef = GENERATIONS.find(g => String(g.id) === state.gen);
+      if (genDef) {
+        const [from, to] = genDef.range;
+        filtered = filtered.filter(p => p.id >= from && p.id <= to);
+      }
+    }
+    // Legendary and mythical are separate flags in PokeAPI: Mew is mythical,
+    // not legendary, so these cannot collapse into a single toggle.
+    if (state.rare === 'normal') {
+      filtered = filtered.filter(p => !p.isLegendary && !p.isMythical);
+    } else if (state.rare === 'legendary') {
+      filtered = filtered.filter(p => p.isLegendary);
+    } else if (state.rare === 'mythical') {
+      filtered = filtered.filter(p => p.isMythical);
+    }
+
+    countEl.textContent = `${filtered.length} ${t('pokedex.count')}`;
+    syncControls();
 
     const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
     if (state.p > totalPages) state.p = totalPages || 1;
