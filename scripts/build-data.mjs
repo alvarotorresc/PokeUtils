@@ -134,11 +134,37 @@ async function buildPokemon() {
   return pokemon.filter(Boolean);
 }
 
+// PokeAPI sends every field on every move, nearly always at its default value.
+// Writing them all costs 199 bytes per move (+52% on moves.json); dropping the
+// defaults costs 24. Reading back, an absent field means its default value.
+function withoutDefaults(obj) {
+  const out = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === null || value === undefined || value === 0 || value === 'none') continue;
+    if (Array.isArray(value) && value.length === 0) continue;
+    if (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) continue;
+    out[key] = value;
+  }
+  return out;
+}
+
 async function buildMoves() {
   const index = await getJson(`${API}/move?limit=2000`);
 
   const moves = await mapLimit(index.results, async (entry) => {
     const m = await getJson(entry.url);
+
+    const meta = m.meta ? withoutDefaults({
+      ailment: m.meta.ailment?.name,
+      ailmentChance: m.meta.ailment_chance,
+      critRate: m.meta.crit_rate,
+      drain: m.meta.drain,
+      healing: m.meta.healing,
+      flinchChance: m.meta.flinch_chance,
+      minHits: m.meta.min_hits,
+      maxHits: m.meta.max_hits,
+    }) : {};
+
     return {
       id: m.id,
       name: m.name,
@@ -151,6 +177,17 @@ async function buildMoves() {
       pp: m.pp,
       descriptionEs: latestFlavor(m.flavor_text_entries, 'es', 'flavor_text'),
       descriptionEn: latestFlavor(m.flavor_text_entries, 'en', 'flavor_text'),
+      // Written even when it is 0, unlike the fields below: the app uses its
+      // presence to tell whether a cached moves.json predates this build.
+      priority: m.priority,
+      // target and meta are stored but not shown: the damage calculator will
+      // need them, and this is the only pass over the 937 moves.
+      ...withoutDefaults({
+        statChanges: (m.stat_changes || []).map(s => [s.stat.name, s.change]),
+        target: m.target?.name === 'selected-pokemon' ? null : m.target?.name,
+        effectChance: m.effect_chance,
+        meta: Object.keys(meta).length ? meta : null,
+      }),
     };
   }, 'moves');
 
