@@ -90,10 +90,14 @@ navLinks.addEventListener('click', (e) => {
 });
 
 // ===== ROUTER =====
+// The hash carries page state as a query string: #/pokedex?gen=1&sort=spe
 function parseHash() {
-  const hash = location.hash.slice(1) || '/';
-  const parts = hash.split('/').filter(Boolean);
-  return { path: '/' + parts.join('/'), parts };
+  const raw = location.hash.slice(1) || '/';
+  const qIndex = raw.indexOf('?');
+  const pathPart = qIndex === -1 ? raw : raw.slice(0, qIndex);
+  const queryPart = qIndex === -1 ? '' : raw.slice(qIndex + 1);
+  const parts = pathPart.split('/').filter(Boolean);
+  return { path: '/' + parts.join('/'), parts, query: new URLSearchParams(queryPart) };
 }
 
 function updateActiveNav(page) {
@@ -108,7 +112,7 @@ function updateActiveNav(page) {
 }
 
 async function route() {
-  const { path, parts } = parseHash();
+  const { path, parts, query } = parseHash();
   app.innerHTML = '';
   app.className = 'main fade-in';
   window.scrollTo(0, 0);
@@ -125,7 +129,7 @@ async function route() {
       await renderPokedexDetail(app, parseInt(parts[1]));
     } else if (path === '/pokedex') {
       updateActiveNav('pokedex');
-      await renderPokedex(app);
+      await renderPokedex(app, query);
     } else if (path === '/moves') {
       updateActiveNav('moves');
       await renderMoves(app);
@@ -190,6 +194,20 @@ export function renderError(container, err, onRetry) {
   }
 
   container.appendChild(box);
+}
+
+// ===== HELPER: hash query =====
+//
+// Rewrites the hash without firing hashchange, so the live page survives.
+// route() calls app.innerHTML = '' the moment it fires, which would wipe the
+// search input along with its focus and caret mid-typing.
+export function replaceQuery(path, params) {
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== '' && value != null) qs.set(key, String(value));
+  }
+  const query = qs.toString();
+  history.replaceState(null, '', `#${path}${query ? '?' + query : ''}`);
 }
 
 // ===== HELPER: loading HTML =====

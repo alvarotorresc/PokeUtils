@@ -1,15 +1,19 @@
 // ===== POKEDEX PAGE =====
 import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART } from './data.js';
 import { fetchPokemonList, fetchPokemonDetail } from './api.js';
-import { loadingHTML, renderPagination } from './app.js';
+import { loadingHTML, renderPagination, replaceQuery } from './app.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
 
 const PAGE_SIZE = 50;
 
-export function renderPokedex(container) {
-  let currentPage = 1;
-  let searchTerm = '';
-  let typeFilter = '';
+export function renderPokedex(container, query = new URLSearchParams()) {
+  // The whole list state lives in the hash query, so leaving for a detail page
+  // and coming back restores exactly what you were looking at.
+  const state = {
+    q: query.get('q') || '',
+    type: query.get('type') || '',
+    p: Math.max(1, parseInt(query.get('p'), 10) || 1),
+  };
   let allPokemon = null;
 
   container.innerHTML = `
@@ -19,11 +23,11 @@ export function renderPokedex(container) {
     </div>
     <div class="search-bar">
       <span class="search-icon">🔍</span>
-      <input type="text" class="search-input" id="pdxSearch" placeholder="${t('pokedex.search')}">
+      <input type="text" class="search-input" id="pdxSearch" placeholder="${t('pokedex.search')}" value="${state.q.replace(/"/g, '&quot;')}">
     </div>
     <div class="filter-row" id="pdxFilters">
-      <button class="filter-btn active" data-type="">${t('common.all')}</button>
-      ${TYPES.map(tp => `<button class="filter-btn" data-type="${tp}"><span class="type-badge sm" data-type="${tp}" style="padding:3px 6px;font-size:0.42rem">${typeName(tp)}</span></button>`).join('')}
+      <button class="filter-btn${state.type === '' ? ' active' : ''}" data-type="">${t('common.all')}</button>
+      ${TYPES.map(tp => `<button class="filter-btn${state.type === tp ? ' active' : ''}" data-type="${tp}"><span class="type-badge sm" data-type="${tp}" style="padding:3px 6px;font-size:0.42rem">${typeName(tp)}</span></button>`).join('')}
     </div>
     <div id="pdxContent"></div>
   `;
@@ -32,13 +36,22 @@ export function renderPokedex(container) {
   const searchInput = container.querySelector('#pdxSearch');
   const filters = container.querySelector('#pdxFilters');
 
+  // Default values are left out so plain #/pokedex stays the clean URL.
+  function syncUrl() {
+    replaceQuery('/pokedex', {
+      q: state.q,
+      type: state.type,
+      p: state.p === 1 ? '' : state.p,
+    });
+  }
+
   // Debounce search
   let searchTimeout;
   searchInput.addEventListener('input', (e) => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-      searchTerm = e.target.value.trim().toLowerCase();
-      currentPage = 1;
+      state.q = e.target.value.trim().toLowerCase();
+      state.p = 1;
       render();
     }, 300);
   });
@@ -47,10 +60,10 @@ export function renderPokedex(container) {
   filters.addEventListener('click', (e) => {
     const btn = e.target.closest('.filter-btn');
     if (!btn) return;
-    typeFilter = btn.dataset.type;
+    state.type = btn.dataset.type;
     filters.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    currentPage = 1;
+    state.p = 1;
     render();
   });
 
@@ -62,23 +75,24 @@ export function renderPokedex(container) {
 
   async function render() {
     if (!allPokemon) await loadAll();
+    syncUrl();
 
     let filtered = allPokemon;
-    if (searchTerm) {
+    if (state.q) {
       filtered = filtered.filter(p =>
-        p.nameEs.toLowerCase().includes(searchTerm) ||
-        p.name.toLowerCase().includes(searchTerm) ||
-        (p.nameEn && p.nameEn.toLowerCase().includes(searchTerm)) ||
-        String(p.id) === searchTerm
+        p.nameEs.toLowerCase().includes(state.q) ||
+        p.name.toLowerCase().includes(state.q) ||
+        (p.nameEn && p.nameEn.toLowerCase().includes(state.q)) ||
+        String(p.id) === state.q
       );
     }
-    if (typeFilter) {
-      filtered = filtered.filter(p => p.types.includes(typeFilter));
+    if (state.type) {
+      filtered = filtered.filter(p => p.types.includes(state.type));
     }
 
     const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-    if (currentPage > totalPages) currentPage = totalPages || 1;
-    const start = (currentPage - 1) * PAGE_SIZE;
+    if (state.p > totalPages) state.p = totalPages || 1;
+    const start = (state.p - 1) * PAGE_SIZE;
     const page = filtered.slice(start, start + PAGE_SIZE);
 
     if (page.length === 0) {
@@ -109,8 +123,8 @@ export function renderPokedex(container) {
       grid.appendChild(card);
     });
 
-    renderPagination(content, currentPage, totalPages, (p) => {
-      currentPage = p;
+    renderPagination(content, state.p, totalPages, (p) => {
+      state.p = p;
       render();
       container.querySelector('.page-header').scrollIntoView({ behavior: 'smooth' });
     });
