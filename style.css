@@ -649,6 +649,28 @@ a:hover {
   color: var(--on-accent);
 }
 
+.pdx-dir {
+  font-family: var(--font-retro);
+  font-size: 0.46rem;
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pdx-dir:hover {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.pdx-dir:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .pdx-count {
   font-size: 0.42rem;
   color: var(--text-muted);

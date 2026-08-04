@@ -105,6 +105,10 @@ export const CATEGORY_NAMES = {
   status: 'Estado',
 };
 
+// Keys the Pokedex can be sorted by. 'id' is the dex number and 'total' the
+// sum of the six base stats.
+export const SORT_KEYS = ['id', 'total', ...STAT_KEYS];
+
 // Generation names
 export const GENERATIONS = [
   { id: 1, name: 'Gen I', range: [1, 151] },

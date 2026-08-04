@@ -70,6 +70,11 @@ const translations = {
     'pokedex.rarity.mythical': 'Singulares',
     'pokedex.count': 'POKEMON',
     'pokedex.clear': 'LIMPIAR',
+    'pokedex.sort': 'ORDEN',
+    'pokedex.sort.id': 'Nº Pokedex',
+    'pokedex.sort.total': 'Total',
+    'pokedex.sort.asc': 'Ascendente',
+    'pokedex.sort.desc': 'Descendente',
 
     // Moves
     'moves.title': 'MOVIMIENTOS',
@@ -253,6 +258,11 @@ const translations = {
     'pokedex.rarity.mythical': 'Mythical',
     'pokedex.count': 'POKEMON',
     'pokedex.clear': 'CLEAR',
+    'pokedex.sort': 'SORT',
+    'pokedex.sort.id': 'Dex No.',
+    'pokedex.sort.total': 'Total',
+    'pokedex.sort.asc': 'Ascending',
+    'pokedex.sort.desc': 'Descending',
 
     'moves.title': 'MOVES',
     'moves.subtitle': 'All Pokemon moves with details',

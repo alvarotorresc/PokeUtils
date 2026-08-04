@@ -1,5 +1,5 @@
 // ===== POKEDEX PAGE =====
-import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, GENERATIONS } from './data.js';
+import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, GENERATIONS, SORT_KEYS } from './data.js';
 import { fetchPokemonList, fetchPokemonDetail } from './api.js';
 import { loadingHTML, renderPagination, replaceQuery } from './app.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
@@ -14,8 +14,16 @@ export function renderPokedex(container, query = new URLSearchParams()) {
     type: query.get('type') || '',
     gen: query.get('gen') || '',
     rare: query.get('rare') || '',
+    sort: SORT_KEYS.includes(query.get('sort')) ? query.get('sort') : 'id',
+    // null means "not chosen", which resolves to each key's own default.
+    dir: query.get('dir') === 'desc' ? 'desc' : (query.get('dir') === 'asc' ? 'asc' : null),
     p: Math.max(1, parseInt(query.get('p'), 10) || 1),
   };
+
+  // Dex number reads naturally ascending; for stats what you want is who hits
+  // hardest, not who hits softest.
+  const defaultDir = () => (state.sort === 'id' ? 'asc' : 'desc');
+  const currentDir = () => state.dir || defaultDir();
   let allPokemon = null;
 
   container.innerHTML = `
@@ -42,6 +50,13 @@ export function renderPokedex(container, query = new URLSearchParams()) {
         <option value="legendary">${t('pokedex.rarity')}: ${t('pokedex.rarity.legendary')}</option>
         <option value="mythical">${t('pokedex.rarity')}: ${t('pokedex.rarity.mythical')}</option>
       </select>
+      <select class="pdx-select" id="pdxSort" aria-label="${t('pokedex.sort')}">
+        ${SORT_KEYS.map(k => {
+          const label = (k === 'id' || k === 'total') ? t('pokedex.sort.' + k) : statName(k);
+          return `<option value="${k}">${t('pokedex.sort')}: ${label}</option>`;
+        }).join('')}
+      </select>
+      <button class="pdx-dir" id="pdxDir"></button>
       <span class="pdx-count" id="pdxCount"></span>
       <button class="filter-btn pdx-clear" id="pdxClear" hidden>${t('pokedex.clear')}</button>
     </div>
@@ -54,6 +69,8 @@ export function renderPokedex(container, query = new URLSearchParams()) {
 
   const genSelect = container.querySelector('#pdxGen');
   const rareSelect = container.querySelector('#pdxRare');
+  const sortSelect = container.querySelector('#pdxSort');
+  const dirBtn = container.querySelector('#pdxDir');
   const countEl = container.querySelector('#pdxCount');
   const clearBtn = container.querySelector('#pdxClear');
 
@@ -64,6 +81,8 @@ export function renderPokedex(container, query = new URLSearchParams()) {
       type: state.type,
       gen: state.gen,
       rare: state.rare,
+      sort: state.sort === 'id' ? '' : state.sort,
+      dir: state.dir === null || state.dir === defaultDir() ? '' : state.dir,
       p: state.p === 1 ? '' : state.p,
     });
   }
@@ -72,9 +91,13 @@ export function renderPokedex(container, query = new URLSearchParams()) {
   function syncControls() {
     genSelect.value = state.gen;
     rareSelect.value = state.rare;
+    sortSelect.value = state.sort;
     genSelect.classList.toggle('active', state.gen !== '');
     rareSelect.classList.toggle('active', state.rare !== '');
-    clearBtn.hidden = !(state.q || state.type || state.gen || state.rare);
+    sortSelect.classList.toggle('active', state.sort !== 'id');
+    dirBtn.textContent = currentDir() === 'asc' ? '▲' : '▼';
+    dirBtn.setAttribute('aria-label', t('pokedex.sort.' + currentDir()));
+    clearBtn.hidden = !(state.q || state.type || state.gen || state.rare || state.sort !== 'id' || state.dir !== null);
   }
 
   genSelect.addEventListener('change', () => {
@@ -89,11 +112,27 @@ export function renderPokedex(container, query = new URLSearchParams()) {
     render();
   });
 
+  sortSelect.addEventListener('change', () => {
+    state.sort = sortSelect.value;
+    // Switching key drops a hand-picked direction: each key has its own default.
+    state.dir = null;
+    state.p = 1;
+    render();
+  });
+
+  dirBtn.addEventListener('click', () => {
+    state.dir = currentDir() === 'asc' ? 'desc' : 'asc';
+    state.p = 1;
+    render();
+  });
+
   clearBtn.addEventListener('click', () => {
     state.q = '';
     state.type = '';
     state.gen = '';
     state.rare = '';
+    state.sort = 'id';
+    state.dir = null;
     state.p = 1;
     searchInput.value = '';
     filters.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -160,6 +199,16 @@ export function renderPokedex(container, query = new URLSearchParams()) {
       filtered = filtered.filter(p => p.isLegendary);
     } else if (state.rare === 'mythical') {
       filtered = filtered.filter(p => p.isMythical);
+    }
+
+    if (state.sort !== 'id' || currentDir() !== 'asc') {
+      const total = p => STAT_KEYS.reduce((sum, k) => sum + (p.stats[k] || 0), 0);
+      const valueOf = p =>
+        state.sort === 'id' ? p.id : state.sort === 'total' ? total(p) : (p.stats[state.sort] || 0);
+      const sign = currentDir() === 'desc' ? -1 : 1;
+      // Copy: allPokemon is the shared dataset and must not be mutated.
+      // Tie-break on id so the order stays stable between renders.
+      filtered = [...filtered].sort((a, b) => sign * (valueOf(a) - valueOf(b)) || a.id - b.id);
     }
 
     countEl.textContent = `${filtered.length} ${t('pokedex.count')}`;
