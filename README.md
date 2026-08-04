@@ -2,7 +2,7 @@
 
 Your retro Pokemon companion. A static web app with everything you need: Pokedex, type chart, moves, abilities, items, natures and an IV/EV calculator.
 
-**[Live Demo](https://pokeutils.vercel.app)** _(update with your actual URL)_
+**[Live Demo](https://pokeutils.alvarotc.com)**
 
 ![HTML](https://img.shields.io/badge/HTML-Static-orange)
 ![CSS](https://img.shields.io/badge/CSS-Retro-blue)
@@ -23,11 +23,25 @@ Your retro Pokemon companion. A static web app with everything you need: Pokedex
 
 Zero dependencies. Zero build step. Pure HTML + CSS + JS (ES Modules).
 
-- Data from [PokeAPI GraphQL](https://pokeapi.co) with aggressive localStorage caching
+- Lists ship as static JSON in `data/`, served from the CDN — browsing costs zero API calls
+- Pokemon flavor text comes from the [PokeAPI REST API](https://pokeapi.co), which is CDN-cached and has no rate limit
 - Pixel sprites from the PokeAPI sprite repository
 - [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) font for the retro aesthetic
 - Fully responsive (mobile hamburger menu, adaptive grids)
 - All Pokemon names, moves, abilities and items in Spanish
+
+## Updating the data
+
+The files in `data/` are generated, not hand-edited. Regenerate them when a new
+Pokemon generation ships, then commit the result:
+
+```bash
+node scripts/build-data.mjs              # all datasets
+node scripts/build-data.mjs moves items  # or just some
+```
+
+It reads the REST API (no rate limit) and takes a few minutes. Bump
+`MAX_POKEMON` in the script when the National Dex grows.
 
 ## Deploy
 
@@ -54,9 +68,13 @@ npx serve .
 ```
 ├── index.html        # SPA shell
 ├── style.css         # All styles
+├── netlify.toml      # Cache headers for the generated data
+├── data/             # Generated datasets (see "Updating the data")
+├── scripts/
+│   └── build-data.mjs # Regenerates data/ from the REST API
 └── js/
     ├── app.js        # Hash router + pagination
-    ├── api.js        # PokeAPI GraphQL client + cache
+    ├── api.js        # Static data loader + REST fallback
     ├── data.js       # Types, natures, static data
     ├── home.js       # Landing page
     ├── type-chart.js # Type effectiveness calculator
