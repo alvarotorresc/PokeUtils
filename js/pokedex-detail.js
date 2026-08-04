@@ -4,6 +4,7 @@ import { fetchPokemonDetail } from './api.js';
 import { loadingHTML } from './app.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
 import { rangeAt100 } from './stats.js';
+import { attachTooltip } from './tooltip.js';
 
 // The capture rate runs 0 (Chansey and friends) to 255 (Caterpie and friends).
 // The cut-offs are for reading, not a formula from the games.
@@ -119,7 +120,7 @@ export async function renderPokedexDetail(container, id) {
       <div class="card" style="margin-bottom:20px">
         ${pokemon.abilities.map(a => `
           <div style="margin-bottom:8px">
-            <a href="#/abilities/${encodeURIComponent(a.nameEn)}" style="font-size:0.45rem;color:var(--accent);text-decoration:none;border-bottom:1px dashed rgba(255,204,0,0.3);padding-bottom:1px;transition:border-color 0.15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='rgba(255,204,0,0.3)'">${a.name}</a>
+            <a class="ability-link" href="#/abilities/${encodeURIComponent(a.nameEn)}" data-ability="${a.nameEn}">${getLang() === 'es' ? a.nameEs : a.displayEn}</a>
             ${a.isHidden ? `<span style="font-size:0.42rem;color:var(--text-dim);margin-left:8px">${t('pokedex.hidden')}</span>` : ''}
           </div>
         `).join('')}
@@ -167,4 +168,16 @@ export async function renderPokedexDetail(container, id) {
       </div>
     </div>
   `;
+
+  // Bubbles are attached after the markup lands. attachTooltip is a no-op when
+  // the ability has no description, so it stays a plain link.
+  const lang = getLang();
+  container.querySelectorAll('[data-ability]').forEach((el) => {
+    const ability = pokemon.abilities.find(a => a.nameEn === el.dataset.ability);
+    if (!ability) return;
+    const text = lang === 'es'
+      ? (ability.descriptionEs || ability.effect)
+      : (ability.descriptionEn || ability.effect);
+    attachTooltip(el, text);
+  });
 }

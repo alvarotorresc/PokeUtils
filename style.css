@@ -1020,6 +1020,44 @@ a:hover {
   gap: 10px;
 }
 
+/* ===== ABILITY LINK + TOOLTIP ===== */
+.ability-link {
+  position: relative;
+  display: inline-block;
+  font-size: 0.45rem;
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--border-accent);
+  padding-bottom: 1px;
+  transition: border-color 0.15s;
+}
+
+.ability-link:hover,
+.ability-link:focus-visible {
+  border-bottom-color: var(--accent);
+}
+
+.tooltip-bubble {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 50;
+  /* Never wider than the viewport: at 360px a fixed width would overflow. */
+  width: max-content;
+  max-width: min(280px, calc(100vw - 32px));
+  padding: 8px 10px;
+  font-size: 0.42rem;
+  line-height: 1.9;
+  color: var(--text);
+  background: var(--bg-surface);
+  border: 2px solid var(--border-accent);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  white-space: normal;
+  text-align: left;
+  pointer-events: none;
+}
+
 .stat-range,
 .stat-range-head {
   font-size: 0.4rem;

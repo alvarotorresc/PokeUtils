@@ -92,7 +92,7 @@ export async function fetchPokemonDetail(id) {
   const p = pokemon.find(x => x.id === id);
   if (!p) return null;
 
-  const spanishAbility = new Map(abilities.map(a => [a.name, a.nameEs]));
+  const abilityInfo = new Map(abilities.map(a => [a.name, a]));
   const speciesName = other => pokemon.find(x => x.id === other)?.nameEs || null;
 
   return {
@@ -104,11 +104,19 @@ export async function fetchPokemonDetail(id) {
     height: p.height,
     weight: p.weight,
     stats: p.stats,
-    abilities: p.abilities.map(a => ({
-      name: spanishAbility.get(a.nameEn) || a.nameEn,
-      nameEn: a.nameEn,
-      isHidden: a.isHidden,
-    })),
+    abilities: p.abilities.map(a => {
+      const info = abilityInfo.get(a.nameEn);
+      return {
+        name: info?.nameEs || a.nameEn,
+        nameEs: info?.nameEs || a.nameEn,
+        nameEn: a.nameEn,
+        displayEn: info?.nameEn || a.nameEn,
+        isHidden: a.isHidden,
+        descriptionEs: info?.descriptionEs || '',
+        descriptionEn: info?.descriptionEn || '',
+        effect: info?.effect || '',
+      };
+    }),
     captureRate: p.captureRate,
     isLegendary: p.isLegendary,
     isMythical: p.isMythical,
