@@ -101,25 +101,32 @@ const TYPES = {
 };
 
 createServer(async (req, res) => {
-  const path = decodeURIComponent(req.url.split('?')[0]);
-  // normalize() collapses "..", so a request cannot climb out of the repo.
-  const file = join(ROOT, normalize(path === '/' ? '/index.html' : path));
-  if (!file.startsWith(ROOT)) {
-    res.writeHead(403).end('Forbidden');
-    return;
-  }
   try {
-    const body = await readFile(file);
-    res.writeHead(200, {
-      'Content-Type': TYPES[extname(file)] || 'application/octet-stream',
-      'Cache-Control': 'no-store',
-    });
-    res.end(body);
+    const path = decodeURIComponent(req.url.split('?')[0]);
+    // normalize() collapses "..", so a request cannot climb out of the repo.
+    const file = join(ROOT, normalize(path === '/' ? '/index.html' : path));
+    if (!file.startsWith(ROOT)) {
+      res.writeHead(403).end('Forbidden');
+      return;
+    }
+    try {
+      const body = await readFile(file);
+      res.writeHead(200, {
+        'Content-Type': TYPES[extname(file)] || 'application/octet-stream',
+        'Cache-Control': 'no-store',
+      });
+      res.end(body);
+    } catch {
+      res.writeHead(404).end('Not found');
+    }
   } catch {
-    res.writeHead(404).end('Not found');
+    // Decode errors (e.g., malformed percent-encoding) or other sync errors.
+    res.writeHead(400).end('Bad request');
   }
 }).listen(PORT, () => console.log(`http://localhost:${PORT}`));
 ```
+
+El decodificado va **dentro** del `try`: `decodeURIComponent` lanza `URIError` de forma síncrona ante un `%zz`, y dentro de un callback `async` eso es una promesa rechazada sin manejar que mata el proceso. Un servidor del que dependen once tareas no puede caerse por una URL mal escrita.
 
 - [ ] **Paso 2: Comprobar que arranca y manda la cabecera**
 
@@ -131,13 +138,15 @@ curl -sI http://localhost:8090/js/moves.js | grep -i 'cache-control\|content-typ
 
 Esperado: `Cache-Control: no-store` y `Content-Type: text/javascript; charset=utf-8`.
 
-- [ ] **Paso 3: Comprobar que no se sale del repositorio**
+- [ ] **Paso 3: Comprobar que no se sale del repositorio ni se cae**
 
 ```bash
 curl -s -o /dev/null -w '%{http_code}\n' 'http://localhost:8090/../../../etc/passwd'
+curl -s -o /dev/null -w '%{http_code}\n' 'http://localhost:8090/js/%zz.js'
+curl -sI http://localhost:8090/js/moves.js | head -1
 ```
 
-Esperado: `404` (o `403`), nunca `200`.
+Esperado: `404` (o `403`) en la primera, nunca `200`; `400` en la segunda, **nunca `000`**, que significaría que el proceso ha muerto; y un `200 OK` en la tercera, que comprueba que el servidor sigue vivo después del error.
 
 - [ ] **Paso 4: Parar el servidor**
 
