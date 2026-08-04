@@ -68,6 +68,22 @@ De los 737 movimientos que tienen aprendices, 433 (el 59%) tienen 50 o menos y
 caben en pantalla sin paginar. 168 pasan de 100 y 75 pasan de 200: esos son los
 que necesitan corte.
 
+Pero la lista se muestra por método, y ahí el reparto es muy desigual:
+
+| Método | Movimientos | p50 | p90 | máximo | Con más de 60 |
+|---|---|---|---|---|---|
+| Nivel | 691 | 13 | 51 | 333 (Placaje) | 47 |
+| MT | 295 | 92 | 288 | 1003 (Protección) | 199 |
+| Huevo | 392 | 5 | 21 | 86 (Contraataque) | 2 |
+| Tutor | 123 | 33 | 75 | 310 (Ronquido) | 24 |
+
+El problema es casi todo de la pestaña de MT. Con un corte de 60 por pestaña,
+235 de los 737 movimientos (el 32%) muestran el botón de "ver los restantes" en
+alguna pestaña, y las de huevo prácticamente nunca lo verán.
+
+Un movimiento se aprende de media por más de un método: 239 movimientos tienen
+un solo método, 287 tienen dos y 211 tienen tres o cuatro.
+
 ### Campos nuevos y su peso
 
 Muestra de 63 movimientos equiespaciados (uno de cada quince) descargados de
@@ -79,8 +95,10 @@ Muestra de 63 movimientos equiespaciados (uno de cada quince) descargados de
 | **Guardar todo, omitiendo valores por defecto** | **24** | **373 KB (+6%)** |
 | Guardar solo `priority` y `statChanges` | 9 | 359 KB (+2%) |
 
-Se adopta el formato del medio: el ahorro del 46% viene de no escribir los ceros
-y los `none`, que son la inmensa mayoría.
+Se adopta el formato del medio: el ahorro del 88% viene de no escribir los ceros
+y los `none`, que son la inmensa mayoría. Con la única excepción de `priority`,
+que se escribe siempre por el motivo del §1, el dataset queda en unos **386 KB,
+un +10%**.
 
 Cobertura, extrapolada de la misma muestra:
 
@@ -107,7 +125,7 @@ valor por defecto**:
 
 | Campo | Forma | Se omite cuando |
 |---|---|---|
-| `priority` | entero, −7..5 | vale 0 |
+| `priority` | entero, −7..5 | **nunca**, ver abajo |
 | `statChanges` | `[["speed", -1], ...]` | está vacío |
 | `effectChance` | entero 0-100 | es `null` |
 | `target` | string de PokeAPI | vale `selected-pokemon` |
@@ -115,6 +133,14 @@ valor por defecto**:
 
 `statChanges` usa tuplas por el mismo motivo que `learnsets.json`: los nombres de
 clave repetidos 937 veces son el grueso del peso.
+
+`priority` es la excepción a la regla de omitir: **se escribe siempre, incluso
+cuando vale 0**. Cuesta unos 13 KB (`"priority":0` en los ~907 movimientos que no
+tienen prioridad), que dejan el dataset en unos 386 KB, un +10% sobre los 351 KB
+de hoy. A cambio, sirve de centinela fiable para detectar datos viejos (§7): si
+solo se escribiera cuando es distinto de cero, la comprobación dependería de que
+existan movimientos con prioridad, que es una casualidad del dato, no una
+garantía del formato.
 
 **Un campo ausente significa su valor por defecto, nunca "desconocido".** El
 lector aplica: `priority` 0, `target` `selected-pokemon`, `statChanges` vacío,
@@ -164,9 +190,10 @@ cierra el círculo en los dos sentidos.
 ### 3. Listas grandes
 
 Cada pestaña pinta **60 aprendices** y, si quedan más, un botón "ver los N
-restantes" que pinta el resto de una vez. Con p75 = 94 y p90 = 202, el corte deja
-la mayoría de las fichas completas de entrada y evita meter 1003 nodos en el DOM
-al abrir Protección. Los sprites siguen usando `loading="lazy"` y el mismo
+restantes" que pinta el resto de una vez. El corte se aplica por pestaña, que es
+donde está el problema: solo el 32% de los movimientos lo llegan a ver, casi
+siempre en la de MT, y evita meter los 1003 nodos de Protección en el DOM de
+golpe. Los sprites siguen usando `loading="lazy"` y el mismo
 `onerror` que la Pokédex.
 
 ### 4. El vacío no puede mentir
@@ -174,8 +201,15 @@ al abrir Protección. Los sprites siguen usando `loading="lazy"` y el mismo
 200 movimientos no tienen ningún aprendiz **en los seis version groups que sigue
 `learnsets.json`**, no en la franquicia: ahí caen movimientos Z, movimientos
 Dinamax y movimientos retirados. El mensaje será del tipo "Ningún Pokémon lo
-aprende en los juegos que cubrimos", nombrando el juego de referencia como ya
-hace `learn.from`. Nunca "ningún Pokémon aprende este movimiento", que es falso.
+aprende en los juegos que cubrimos". Nunca "ningún Pokémon aprende este
+movimiento", que es falso.
+
+**El juego de referencia se nombra por pestaña, no por ficha.** En
+`learnsets.json` cada método guarda su propio version group (Bulbasaur tiene los
+movimientos de nivel de Escarlata/Púrpura y los de tutor de Espada/Escudo), así
+que en una ficha de movimiento no hay un único juego de referencia: la etiqueta
+tipo `learn.from` va dentro de cada pestaña, con el juego que corresponda a ese
+método, o se omite si en la pestaña conviven varios.
 
 ### 5. Filtros nuevos en la lista
 
@@ -200,7 +234,7 @@ recargar: `#/moves?q=danza&prio=up&stat=atk`.
 abrir la primera ficha, con el `loadDataset` de `api.js`, que ya memoiza una
 petición por dataset y sesión. La ficha necesita además `pokemon.json` (353 KB)
 para los nombres, así que abrir una ficha en una visita nueva descarga hasta
-1,07 MB entre los tres ficheros (373 + 366 + 353 KB). Es un coste aceptado: son estáticos, los cachea Netlify una
+1,08 MB entre los tres ficheros (386 + 366 + 353 KB). Es un coste aceptado: son estáticos, los cachea Netlify una
 hora y el navegador después, y quien viene de la Pokédex ya los tiene.
 
 El índice inverso se construye una vez por módulo y se reutiliza en las fichas
@@ -215,8 +249,10 @@ degrada sola.
 
 Los filtros nuevos no: con datos viejos devolverían cero resultados siempre, que
 se lee como un bug. **Los dos `<select>` nuevos solo se pintan si el dataset trae
-la forma nueva**, comprobado con `allMoves.some(m => 'priority' in m)`, que sobre
-937 registros es inmediato.
+la forma nueva**, comprobado con `allMoves.some(m => 'priority' in m)`. Esa
+comprobación es fiable precisamente porque `priority` se escribe siempre (§1): si
+se omitiera en los ceros, dependería de que el dataset contenga alguno de los ~30
+movimientos con prioridad, que es una propiedad del dato y no del formato.
 
 ### 8. Verificación
 
