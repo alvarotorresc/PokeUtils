@@ -53,9 +53,16 @@ Muestra de 11 Pokémon elegidos por cubrir movepools grandes y casos límite
 Guardando solo identificadores de movimiento (más el nivel, en el caso de
 level-up) y cruzando contra `moves.json` para los metadatos.
 
+La muestra se midió resolviendo el version group por método, que es lo que
+finalmente especifica este documento y también el caso más pesado; 399 KB es por
+tanto una cota superior. Se midió con la regla "generación más alta, desempate
+por id" en vez de con la lista explícita de preferencia, pero en los 11 Pokémon
+de la muestra ambas reglas eligen los mismos version groups.
+
 ### Evoluciones
 
-541 cadenas, 550 evoluciones en total.
+541 cadenas, 484 transiciones de evolución, 550 detalles de evolución (una
+transición puede tener varios detalles, que son condiciones alternativas).
 
 | Trigger | Nº |
 |---|---|
@@ -147,6 +154,14 @@ La lista explícita también protege del caso contrario: `legends-za` (id 30),
 rellena parcialmente, una regla basada solo en generación e id los elegiría y
 los learnsets cambiarían solos en la siguiente regeneración.
 
+**La resolución es por método, no por Pokémon.** Cada uno de los cuatro métodos
+busca su propio version group. Es deliberado: en Gen 9 no hay tutores al estilo
+clásico, así que resolver un único version group por Pokémon dejaría la pestaña
+de Tutor casi vacía en todo el Pokédex y perdería contenido que sí existe. El
+precio es que un mismo Pokémon puede mostrar movimientos de nivel de
+Escarlata/Púrpura y MTs de otro juego. Para que eso no confunda, **cada pestaña
+indica de qué juego salen sus datos**.
+
 Esto no afecta a los datos actuales: los version groups japoneses no tienen
 textos en español ni en inglés, así que `latestFlavor` nunca los elige. Se deja
 como está.
@@ -156,6 +171,14 @@ como está.
 PokeAPI incluye detalles de evolución específicos por forma (36 casos con
 `evolved_form`, 32 con `base_form`). Solo se conservan las entradas con
 `is_default: true`, para no duplicar ramas en la línea evolutiva.
+
+Comprobado que el filtro es seguro: de las 484 transiciones, **ninguna** tiene
+todos sus detalles con `is_default: false`, así que ninguna se queda sin
+condición que mostrar.
+
+Sí existe un caso, y solo uno, con `evolution_details` vacío de origen:
+**Manaphy**. La transición se dibuja igual, sin texto de condición. `js/evolution.js`
+debe devolver cadena vacía ante una lista de detalles vacía, no reventar.
 
 ### Cobertura total de condiciones de evolución
 
@@ -191,6 +214,28 @@ Todos los parámetros son opcionales y se omiten cuando tienen el valor por
 defecto, para que `#/pokedex` a secas siga siendo la URL limpia. Como efecto
 secundario, una vista concreta se puede compartir o guardar en favoritos.
 
+**Cómo se escribe la URL sin destruir la página.** `app.js:163` engancha
+`hashchange` a `route()`, y `route()` empieza con `app.innerHTML = ''` y
+`window.scrollTo(0, 0)`. Escribir el hash con `location.hash = ...` dispararía
+`hashchange` y reconstruiría la página entera: el input de búsqueda pasaría a
+ser un nodo nuevo, sin foco ni cursor, 300 ms después de cada tecla por culpa
+del debounce de `pokedex.js:37`. Y la paginación, que ya hace su propio
+`scrollIntoView` en `pokedex.js:115`, pelearía con el `scrollTo(0, 0)`.
+
+Los cambios de filtro, orden y página se escriben con
+`history.replaceState(null, '', nuevoHash)`, que **no** dispara `hashchange`.
+La página no se re-renderiza sola: cada control actualiza la rejilla
+directamente, como ya hace hoy.
+
+Eso deja el caso que importa funcionando: filtras, entras en una ficha (un
+`<a href="#/pokedex/25">` normal, que sí apila entrada de historial), vuelves
+atrás, y el navegador restaura el hash con la query ya escrita, dispara
+`hashchange` y `route()` renderiza la lista con los filtros puestos.
+
+Efecto secundario aceptado: cambiar un filtro no crea entrada de historial, así
+que el botón atrás no deshace filtros uno a uno. Es preferible a llenar el
+historial con una entrada por pulsación.
+
 ### Los movimientos incluyen los cuatro métodos
 
 Nivel, MT, huevo y tutor, en pestañas. La petición original era solo "por
@@ -215,19 +260,29 @@ id con `GENERATIONS` de `data.js:109`, cuyos rangos cubren exactamente 1-1025.
 
 ### `data/learnsets.json` — nuevo
 
-Objeto indexado por id de Pokémon. Solo se emiten las claves de método con
-contenido.
+Solo se emiten las claves de método con contenido. Como cada método resuelve su
+propio version group y la pestaña tiene que decir de qué juego salen los datos,
+cada método guarda el índice de su version group en una tabla al principio del
+fichero, en vez del nombre repetido 1025 veces.
 
 ```js
 {
-  "25": {
-    "level":   [[45, 1], [98, 4], ...],   // [idMovimiento, nivel], orden por nivel
-    "machine": [13, 14, 15, ...],         // idMovimiento
-    "egg":     [...],
-    "tutor":   [...]
+  "versionGroups": ["scarlet-violet", "sword-shield", ...],   // índice → nombre
+  "pokemon": {
+    "25": {
+      // [índice de version group, movimientos]
+      "level":   [0, [[45, 1], [98, 4], ...]],   // [idMovimiento, nivel], orden por nivel
+      "machine": [0, [13, 14, 15, ...]],         // idMovimiento
+      "egg":     [1, [...]],
+      "tutor":   [1, [...]]
+    }
   }
 }
 ```
+
+Los nombres legibles de los juegos (`scarlet-violet` → "Escarlata/Púrpura")
+viven en `js/data.js`, junto a `GENERATIONS`, como una tabla estática de ~20
+entradas. PokeAPI no expone nombres localizados a nivel de version group.
 
 ### `data/evolutions.json` — nuevo
 
@@ -342,7 +397,9 @@ tres controles más sin saturar la vista.
 - Mín/máx a nivel 100 en las barras de estadísticas
 - Burbujas de habilidades (`js/tooltip.js`). `abilities.json` ya trae
   `descriptionEs` y `fetchPokemonDetail` ya carga ese dataset: es trabajo puro
-  de UI
+  de UI. Queda por decidir en la fase de diseño si la burbuja **sustituye** el
+  enlace a `#/abilities/...` que hay hoy en `pokedex.js:219` o convive con él;
+  por defecto, conservar el enlace y añadir la burbuja
 
 Reto de diseño: mostrar mín/máx sin convertir la barra en ruido, y una burbuja
 usable en móvil.
@@ -390,12 +447,13 @@ y por etapa. Casos que hay que comprobar explícitamente porque son los que
 rompen:
 
 - **Etapa 1:** combinar los cinco filtros a la vez; que el estado sobreviva a
-  entrar en una ficha y volver atrás; que `#/pokedex` sin query siga funcionando
+  entrar en una ficha y volver atrás; que `#/pokedex` sin query siga funcionando;
+  y sobre todo, que escribir en el buscador **no** pierda el foco ni el cursor
 - **Etapa 2:** Shedinja (PS base 1) en mín/máx; un Pokémon con habilidad oculta;
   la burbuja en viewport móvil
 - **Etapa 3:** Eevee (8 ramas), Wurmple (rama aleatoria), Tyrogue (3 por stats),
-  Shedinja (`shed`), Gimmighoul (`gimmighoul-coins`), y un Pokémon sin
-  evoluciones
+  Shedinja (`shed`), Gimmighoul (`gimmighoul-coins`), Manaphy (transición sin
+  detalles), y un Pokémon sin evoluciones
 - **Etapa 4:** Smeargle (1 movimiento por nivel), un Pokémon sin movimientos
   huevo, y comprobar que las pestañas vacías no aparecen
 
