@@ -75,6 +75,12 @@ const translations = {
     'pokedex.sort.total': 'Total',
     'pokedex.sort.asc': 'Ascendente',
     'pokedex.sort.desc': 'Descendente',
+    'pokedex.catchrate.veryeasy': 'Muy facil de capturar',
+    'pokedex.catchrate.easy': 'Facil de capturar',
+    'pokedex.catchrate.medium': 'Dificultad media',
+    'pokedex.catchrate.hard': 'Dificil de capturar',
+    'pokedex.catchrate.veryhard': 'Muy dificil de capturar',
+    'pokedex.range100': 'A NVL 100',
 
     // Moves
     'moves.title': 'MOVIMIENTOS',
@@ -263,6 +269,12 @@ const translations = {
     'pokedex.sort.total': 'Total',
     'pokedex.sort.asc': 'Ascending',
     'pokedex.sort.desc': 'Descending',
+    'pokedex.catchrate.veryeasy': 'Very easy to catch',
+    'pokedex.catchrate.easy': 'Easy to catch',
+    'pokedex.catchrate.medium': 'Average difficulty',
+    'pokedex.catchrate.hard': 'Hard to catch',
+    'pokedex.catchrate.veryhard': 'Very hard to catch',
+    'pokedex.range100': 'AT LV 100',
 
     'moves.title': 'MOVES',
     'moves.subtitle': 'All Pokemon moves with details',

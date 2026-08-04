@@ -3,6 +3,17 @@ import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART } from './data.js';
 import { fetchPokemonDetail } from './api.js';
 import { loadingHTML } from './app.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
+import { rangeAt100 } from './stats.js';
+
+// The capture rate runs 0 (Chansey and friends) to 255 (Caterpie and friends).
+// The cut-offs are for reading, not a formula from the games.
+function catchRateLabel(rate) {
+  if (rate >= 200) return t('pokedex.catchrate.veryeasy');
+  if (rate >= 120) return t('pokedex.catchrate.easy');
+  if (rate >= 60) return t('pokedex.catchrate.medium');
+  if (rate >= 20) return t('pokedex.catchrate.hard');
+  return t('pokedex.catchrate.veryhard');
+}
 
 export async function renderPokedexDetail(container, id) {
   container.innerHTML = loadingHTML();
@@ -63,6 +74,7 @@ export async function renderPokedexDetail(container, id) {
           <div class="meta">
             <span>📏 ${pokemon.height} m</span>
             <span>⚖️ ${pokemon.weight} kg</span>
+            <span>🎯 ${pokemon.captureRate} · ${catchRateLabel(pokemon.captureRate)}</span>
           </div>
         </div>
       </div>
@@ -72,9 +84,17 @@ export async function renderPokedexDetail(container, id) {
       <h3 class="section-title">${t('pokedex.stats')}</h3>
       <div class="card" style="margin-bottom:20px">
         <div class="stat-bars">
+          <div class="stat-row stat-head">
+            <span></span><span></span><span></span>
+            <span class="stat-range-head">${t('pokedex.range100')}</span>
+          </div>
           ${STAT_KEYS.map(k => {
             const val = pokemon.stats[k] || 0;
             const pct = Math.min((val / maxStat) * 100, 100);
+            // The range is text, not a second bar: base stats are scaled to 255
+            // while level 100 values reach 714, and drawing both on one track
+            // would be a dual axis.
+            const { min, max } = rangeAt100(val, k);
             return `
               <div class="stat-row">
                 <span class="stat-label">${statName(k)}</span>
@@ -82,7 +102,7 @@ export async function renderPokedexDetail(container, id) {
                 <div class="stat-bar-bg">
                   <div class="stat-bar-fill" style="width:${pct}%;background:${STAT_COLORS[k]}"></div>
                 </div>
-                <span class="stat-total"></span>
+                <span class="stat-range">${min}-${max}</span>
               </div>
             `;
           }).join('')}

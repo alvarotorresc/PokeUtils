@@ -1014,9 +1014,40 @@ a:hover {
 
 .stat-row {
   display: grid;
-  grid-template-columns: 60px 40px 1fr 40px;
+  /* Last column widened from 40px to fit the level 100 range (e.g. "180-274"). */
+  grid-template-columns: 60px 40px 1fr 86px;
   align-items: center;
   gap: 10px;
+}
+
+.stat-range,
+.stat-range-head {
+  font-size: 0.4rem;
+  color: var(--text-muted);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.stat-range-head {
+  color: var(--text-dim);
+}
+
+.stat-head {
+  margin-bottom: -4px;
+}
+
+@media (max-width: 767px) {
+  /* Six columns do not fit at 360px, so the range drops to its own line. */
+  .stat-row {
+    grid-template-columns: 60px 40px 1fr;
+  }
+  .stat-range {
+    grid-column: 1 / -1;
+    margin-top: -6px;
+  }
+  .stat-head {
+    display: none;
+  }
 }
 
 .stat-label {
