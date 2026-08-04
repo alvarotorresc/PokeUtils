@@ -1020,6 +1020,93 @@ a:hover {
   gap: 10px;
 }
 
+/* ===== LEARNED MOVES ===== */
+.mv-tabs {
+  flex-wrap: wrap;
+}
+
+.mv-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.38rem;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  line-height: 1.8;
+}
+
+/* Desktop caps the height so a 229-move TM list does not make the page
+   unusable. Mobile keeps natural flow: a scroll box inside a scrolling page is
+   miserable on touch, and opening this tab is already a deliberate choice. */
+.mv-list {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.mv-row {
+  display: grid;
+  /* The type column fits "Siniestro", the longest type name, which needs 87px. */
+  grid-template-columns: 52px 1fr 92px 76px 34px 44px 34px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mv-row:last-child {
+  border-bottom: none;
+}
+
+.mv-level {
+  font-size: 0.38rem;
+  color: var(--accent);
+  text-align: right;
+}
+
+.mv-name {
+  font-size: 0.42rem;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+.mv-num {
+  font-size: 0.4rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+/* The badges carry their own padding; keep them from being clipped. */
+.mv-row .type-badge,
+.mv-row .move-category {
+  white-space: nowrap;
+  text-align: center;
+}
+
+@media (max-width: 767px) {
+  .mv-list {
+    max-height: none;
+    overflow-y: visible;
+  }
+  /* Two rows: name on top, then the five metadata cells below it. Six columns
+     so power, accuracy and PP all fit on that second line instead of the PP
+     dropping to a third row on its own. */
+  .mv-row {
+    grid-template-columns: 46px auto auto 1fr auto auto;
+    row-gap: 5px;
+    column-gap: 6px;
+    padding: 9px 2px;
+  }
+  .mv-name {
+    grid-column: 2 / -1;
+  }
+  .mv-row .type-badge {
+    grid-column: 2;
+  }
+  .mv-num {
+    text-align: right;
+  }
+}
+
 /* ===== EVOLUTION LINE ===== */
 .evo-line {
   display: flex;

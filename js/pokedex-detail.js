@@ -1,6 +1,6 @@
 // ===== POKEMON DETAIL =====
-import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, TYPE_NAMES_FULL } from './data.js';
-import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList } from './api.js';
+import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, TYPE_NAMES_FULL, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN } from './data.js';
+import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchLearnsets, fetchMoves } from './api.js';
 import { loadingHTML, renderError } from './app.js';
 import { evolutionText } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
@@ -80,6 +80,96 @@ async function renderEvolutionSection(host, currentId) {
   } catch (err) {
     renderError(host, err, () => renderEvolutionSection(host, currentId));
   }
+}
+
+// ===== LEARNED MOVES =====
+//
+// The section starts collapsed: opening it pulls learnsets.json (366 KB) and
+// moves.json (343 KB), and a page consulted for its stats should not pay that.
+// Once opened it stays open for the rest of the session, since the datasets are
+// then cached and reopening costs nothing.
+let movesSectionOpen = false;
+
+const METHOD_ORDER = ['level', 'machine', 'egg', 'tutor'];
+
+function moveRowHTML(move, level) {
+  const dash = '—';
+  return `
+    <div class="mv-row">
+      <span class="mv-level">${level === null ? '' : (level === 0 ? t('learn.start') : `${t('learn.col.level')} ${level}`)}</span>
+      <span class="mv-name">${move.nameEs && getLang() === 'es' ? move.nameEs : move.nameEn}</span>
+      <span class="type-badge sm" data-type="${move.type}" style="cursor:default">${typeName(move.type)}</span>
+      <span class="move-category ${move.category}">${t('cat.' + move.category)}</span>
+      <span class="mv-num">${move.power ?? dash}</span>
+      <span class="mv-num">${move.accuracy != null ? move.accuracy + '%' : dash}</span>
+      <span class="mv-num">${move.pp ?? dash}</span>
+    </div>
+  `;
+}
+
+function renderMovesPanel(host, entry, byId, versionGroups) {
+  const methods = METHOD_ORDER.filter(m => entry[m]);
+  let active = methods[0];
+
+  const paint = () => {
+    const [vgIdx, list] = entry[active];
+    const vgSlug = versionGroups[vgIdx];
+    const game = (getLang() === 'es' ? VERSION_GROUP_NAMES : VERSION_GROUP_NAMES_EN)[vgSlug] || vgSlug;
+    const rows = list.map(item => {
+      const isLevel = Array.isArray(item);
+      const move = byId.get(isLevel ? item[0] : item);
+      return move ? moveRowHTML(move, isLevel ? item[1] : null) : '';
+    }).join('');
+
+    host.innerHTML = `
+      <div class="tabs mv-tabs">
+        ${methods.map(m => `<button class="tab${m === active ? ' active' : ''}" data-method="${m}">${t('learn.tab.' + m)}</button>`).join('')}
+      </div>
+      <div class="mv-meta">
+        <span>${t('learn.from', { game })}</span>
+        <span>${list.length === 1 ? t('learn.count.one') : t('learn.count', { n: list.length })}</span>
+      </div>
+      <div class="mv-list">${rows}</div>
+    `;
+
+    host.querySelector('.mv-tabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('.tab');
+      if (!btn) return;
+      active = btn.dataset.method;
+      paint();
+    });
+  };
+
+  paint();
+}
+
+async function loadMovesSection(host, currentId) {
+  host.innerHTML = loadingHTML();
+  try {
+    const [learnsets, moves] = await Promise.all([fetchLearnsets(), fetchMoves()]);
+    const entry = learnsets.pokemon[currentId];
+    if (!entry || Object.keys(entry).length === 0) {
+      host.innerHTML = `<p class="evo-none">${t('learn.none')}</p>`;
+      return;
+    }
+    renderMovesSectionOpen(host, entry, new Map(moves.map(m => [m.id, m])), learnsets.versionGroups);
+  } catch (err) {
+    renderError(host, err, () => loadMovesSection(host, currentId));
+  }
+}
+
+function renderMovesSectionOpen(host, entry, byId, versionGroups) {
+  movesSectionOpen = true;
+  renderMovesPanel(host, entry, byId, versionGroups);
+}
+
+function renderMovesSection(host, currentId) {
+  if (movesSectionOpen) {
+    loadMovesSection(host, currentId);
+    return;
+  }
+  host.innerHTML = `<button class="page-btn mv-open">${t('learn.show')}</button>`;
+  host.querySelector('.mv-open').addEventListener('click', () => loadMovesSection(host, currentId));
 }
 
 // The capture rate runs 0 (Chansey and friends) to 255 (Caterpie and friends).
@@ -205,6 +295,9 @@ export async function renderPokedexDetail(container, id) {
       <h3 class="section-title">${t('evo.title')}</h3>
       <div class="card" style="margin-bottom:20px" id="evoSection"></div>
 
+      <h3 class="section-title">${t('learn.title')}</h3>
+      <div class="card" style="margin-bottom:20px" id="mvSection"></div>
+
       <h3 class="section-title">${t('pokedex.matchups')}</h3>
       <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
         ${weak.length ? `
@@ -249,6 +342,7 @@ export async function renderPokedexDetail(container, id) {
   `;
 
   renderEvolutionSection(container.querySelector('#evoSection'), pokemon.id);
+  renderMovesSection(container.querySelector('#mvSection'), pokemon.id);
 
   // Bubbles are attached after the markup lands. attachTooltip is a no-op when
   // the ability has no description, so it stays a plain link.

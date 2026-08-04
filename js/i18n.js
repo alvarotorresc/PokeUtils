@@ -126,6 +126,20 @@ const translations = {
     'evo.rock': 'cerca de una roca especial',
     'evo.multiplayer': 'en multijugador',
 
+    // Movimientos aprendidos
+    'learn.title': 'MOVIMIENTOS',
+    'learn.show': 'VER MOVIMIENTOS',
+    'learn.tab.level': 'Nivel',
+    'learn.tab.machine': 'MT',
+    'learn.tab.egg': 'Huevo',
+    'learn.tab.tutor': 'Tutor',
+    'learn.col.level': 'Nv.',
+    'learn.start': 'Inicial',
+    'learn.from': 'Datos de {game}',
+    'learn.none': 'Sin movimientos registrados',
+    'learn.count': '{n} movimientos',
+    'learn.count.one': '1 movimiento',
+
     // Moves
     'moves.title': 'MOVIMIENTOS',
     'moves.subtitle': 'Todos los movimientos Pokemon con detalles',
@@ -363,6 +377,20 @@ const translations = {
     'evo.steps': 'after {n} steps',
     'evo.rock': 'near a special rock',
     'evo.multiplayer': 'in multiplayer',
+
+    // Learned moves
+    'learn.title': 'MOVES',
+    'learn.show': 'SHOW MOVES',
+    'learn.tab.level': 'Level',
+    'learn.tab.machine': 'TM',
+    'learn.tab.egg': 'Egg',
+    'learn.tab.tutor': 'Tutor',
+    'learn.col.level': 'Lv.',
+    'learn.start': 'Start',
+    'learn.from': 'Data from {game}',
+    'learn.none': 'No moves recorded',
+    'learn.count': '{n} moves',
+    'learn.count.one': '1 move',
 
     'moves.title': 'MOVES',
     'moves.subtitle': 'All Pokemon moves with details',
