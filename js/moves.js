@@ -2,10 +2,16 @@
 import { TYPES } from './data.js';
 import { fetchMoves } from './api.js';
 import { loadingHTML, renderPagination, replaceQuery } from './app.js';
-import { t, typeName, categoryName, pokeName, getLang } from './i18n.js';
-import { priorityLabel, statChangeLabel, hasBattleFields } from './move-effects.js';
+import { t, typeName, categoryName, pokeName, getLang, statName } from './i18n.js';
+import {
+  priorityLabel, statChangeLabel, hasBattleFields,
+  matchesPriorityFilter, matchesStatFilter,
+} from './move-effects.js';
 
 const PAGE_SIZE = 50;
+
+// The six battle stats plus the two that only exist as modifiers.
+const STAT_FILTER_KEYS = ['atk', 'def', 'spa', 'spd', 'spe', 'acc', 'eva'];
 
 export function renderMoves(container, query = new URLSearchParams()) {
   // The whole list state lives in the hash query, so opening a move and coming
@@ -14,6 +20,10 @@ export function renderMoves(container, query = new URLSearchParams()) {
     q: query.get('q') || '',
     type: query.get('type') || '',
     cat: query.get('cat') || '',
+    // Validated on the way in: a hand-edited URL must not leave a <select>
+    // showing a value it cannot represent.
+    prio: ['up', 'down'].includes(query.get('prio')) ? query.get('prio') : '',
+    stat: /^(atk|def|spa|spd|spe|acc|eva):(up|down)$/.test(query.get('stat') || '') ? query.get('stat') : '',
     p: Math.max(1, parseInt(query.get('p'), 10) || 1),
   };
   let allMoves = null;
@@ -37,11 +47,32 @@ export function renderMoves(container, query = new URLSearchParams()) {
       <button class="filter-btn${state.cat === 'special' ? ' active' : ''}" data-cat="special"><span class="move-category special">${t('cat.special')}</span></button>
       <button class="filter-btn${state.cat === 'status' ? ' active' : ''}" data-cat="status"><span class="move-category status">${t('cat.status')}</span></button>
     </div>
+    <div class="pdx-controls" id="mvControls" hidden>
+      <select class="pdx-select" id="mvPrio" aria-label="${t('moves.filter.prio')}">
+        <option value="">${t('moves.filter.prio')}: ${t('moves.filter.prio.all')}</option>
+        <option value="up">${t('moves.filter.prio')}: ${t('moves.filter.prio.up')}</option>
+        <option value="down">${t('moves.filter.prio')}: ${t('moves.filter.prio.down')}</option>
+      </select>
+      <select class="pdx-select" id="mvStat" aria-label="${t('moves.filter.stat')}">
+        <option value="">${t('moves.filter.stat')}: ${t('moves.filter.stat.all')}</option>
+        <optgroup label="${t('moves.filter.stat.up')}">
+          ${STAT_FILTER_KEYS.map(k => `<option value="${k}:up">${statName(k)}</option>`).join('')}
+        </optgroup>
+        <optgroup label="${t('moves.filter.stat.down')}">
+          ${STAT_FILTER_KEYS.map(k => `<option value="${k}:down">${statName(k)}</option>`).join('')}
+        </optgroup>
+      </select>
+      <button class="filter-btn pdx-clear" id="mvClear" hidden>${t('moves.clear')}</button>
+    </div>
     <div id="mvContent"></div>
   `;
 
   const content = container.querySelector('#mvContent');
   const searchInput = container.querySelector('#mvSearch');
+  const controls = container.querySelector('#mvControls');
+  const prioSelect = container.querySelector('#mvPrio');
+  const statSelect = container.querySelector('#mvStat');
+  const clearBtn = container.querySelector('#mvClear');
 
   // Defaults are left out so a plain #/moves stays the clean URL.
   function syncUrl() {
@@ -49,9 +80,41 @@ export function renderMoves(container, query = new URLSearchParams()) {
       q: state.q,
       type: state.type,
       cat: state.cat,
+      prio: state.prio,
+      stat: state.stat,
       p: state.p === 1 ? '' : state.p,
     });
   }
+
+  // render() only redraws the table, so the controls are kept in sync here.
+  function syncControls() {
+    prioSelect.value = state.prio;
+    statSelect.value = state.stat;
+    prioSelect.classList.toggle('active', state.prio !== '');
+    statSelect.classList.toggle('active', state.stat !== '');
+    clearBtn.hidden = !(state.q || state.type || state.cat || state.prio || state.stat);
+  }
+
+  prioSelect.addEventListener('change', () => {
+    state.prio = prioSelect.value;
+    state.p = 1;
+    render();
+  });
+
+  statSelect.addEventListener('change', () => {
+    state.stat = statSelect.value;
+    state.p = 1;
+    render();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    Object.assign(state, { q: '', type: '', cat: '', prio: '', stat: '', p: 1 });
+    searchInput.value = '';
+    container.querySelectorAll('#mvTypeFilters .filter-btn, #mvCatFilters .filter-btn').forEach(b => b.classList.remove('active'));
+    container.querySelector('#mvTypeFilters .filter-btn[data-type=""]').classList.add('active');
+    container.querySelector('#mvCatFilters .filter-btn[data-cat=""]').classList.add('active');
+    render();
+  });
 
   let searchTimeout;
   searchInput.addEventListener('input', (e) => {
@@ -98,6 +161,8 @@ export function renderMoves(container, query = new URLSearchParams()) {
     // none of the battle fields. Showing an empty PRIO column would look like
     // a bug; leaving it out until the data catches up degrades quietly.
     const showBattleFields = hasBattleFields(allMoves);
+    controls.hidden = !showBattleFields;
+    syncControls();
 
     let filtered = allMoves;
     if (state.q) {
@@ -109,6 +174,8 @@ export function renderMoves(container, query = new URLSearchParams()) {
     }
     if (state.type) filtered = filtered.filter(m => m.type === state.type);
     if (state.cat) filtered = filtered.filter(m => m.category === state.cat);
+    if (state.prio) filtered = filtered.filter(m => matchesPriorityFilter(m, state.prio));
+    if (state.stat) filtered = filtered.filter(m => matchesStatFilter(m, state.stat));
 
     const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
     if (state.p > totalPages) state.p = totalPages || 1;
