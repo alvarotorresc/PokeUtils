@@ -1,16 +1,20 @@
 // ===== MOVES PAGE =====
 import { TYPES } from './data.js';
 import { fetchMoves } from './api.js';
-import { loadingHTML, renderPagination } from './app.js';
+import { loadingHTML, renderPagination, replaceQuery } from './app.js';
 import { t, typeName, categoryName, pokeName, getLang } from './i18n.js';
 
 const PAGE_SIZE = 50;
 
-export function renderMoves(container) {
-  let currentPage = 1;
-  let searchTerm = '';
-  let typeFilter = '';
-  let catFilter = '';
+export function renderMoves(container, query = new URLSearchParams()) {
+  // The whole list state lives in the hash query, so opening a move and coming
+  // back restores exactly what you were looking at.
+  const state = {
+    q: query.get('q') || '',
+    type: query.get('type') || '',
+    cat: query.get('cat') || '',
+    p: Math.max(1, parseInt(query.get('p'), 10) || 1),
+  };
   let allMoves = null;
 
   container.innerHTML = `
@@ -20,17 +24,17 @@ export function renderMoves(container) {
     </div>
     <div class="search-bar">
       <span class="search-icon">🔍</span>
-      <input type="text" class="search-input" id="mvSearch" placeholder="${t('moves.search')}">
+      <input type="text" class="search-input" id="mvSearch" placeholder="${t('moves.search')}" value="${state.q.replace(/"/g, '&quot;')}">
     </div>
     <div class="filter-row" id="mvTypeFilters">
-      <button class="filter-btn active" data-type="">${t('moves.all')}</button>
-      ${TYPES.map(tp => `<button class="filter-btn" data-type="${tp}"><span class="type-badge sm" data-type="${tp}" style="padding:3px 6px;font-size:0.42rem">${typeName(tp)}</span></button>`).join('')}
+      <button class="filter-btn${state.type === '' ? ' active' : ''}" data-type="">${t('moves.all')}</button>
+      ${TYPES.map(tp => `<button class="filter-btn${state.type === tp ? ' active' : ''}" data-type="${tp}"><span class="type-badge sm" data-type="${tp}" style="padding:3px 6px;font-size:0.42rem">${typeName(tp)}</span></button>`).join('')}
     </div>
     <div class="filter-row" id="mvCatFilters">
-      <button class="filter-btn active" data-cat="">${t('moves.allcat')}</button>
-      <button class="filter-btn" data-cat="physical"><span class="move-category physical">${t('cat.physical')}</span></button>
-      <button class="filter-btn" data-cat="special"><span class="move-category special">${t('cat.special')}</span></button>
-      <button class="filter-btn" data-cat="status"><span class="move-category status">${t('cat.status')}</span></button>
+      <button class="filter-btn${state.cat === '' ? ' active' : ''}" data-cat="">${t('moves.allcat')}</button>
+      <button class="filter-btn${state.cat === 'physical' ? ' active' : ''}" data-cat="physical"><span class="move-category physical">${t('cat.physical')}</span></button>
+      <button class="filter-btn${state.cat === 'special' ? ' active' : ''}" data-cat="special"><span class="move-category special">${t('cat.special')}</span></button>
+      <button class="filter-btn${state.cat === 'status' ? ' active' : ''}" data-cat="status"><span class="move-category status">${t('cat.status')}</span></button>
     </div>
     <div id="mvContent"></div>
   `;
@@ -38,12 +42,22 @@ export function renderMoves(container) {
   const content = container.querySelector('#mvContent');
   const searchInput = container.querySelector('#mvSearch');
 
+  // Defaults are left out so a plain #/moves stays the clean URL.
+  function syncUrl() {
+    replaceQuery('/moves', {
+      q: state.q,
+      type: state.type,
+      cat: state.cat,
+      p: state.p === 1 ? '' : state.p,
+    });
+  }
+
   let searchTimeout;
   searchInput.addEventListener('input', (e) => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-      searchTerm = e.target.value.trim().toLowerCase();
-      currentPage = 1;
+      state.q = e.target.value.trim().toLowerCase();
+      state.p = 1;
       render();
     }, 300);
   });
@@ -51,20 +65,20 @@ export function renderMoves(container) {
   container.querySelector('#mvTypeFilters').addEventListener('click', (e) => {
     const btn = e.target.closest('.filter-btn');
     if (!btn) return;
-    typeFilter = btn.dataset.type;
+    state.type = btn.dataset.type;
     container.querySelectorAll('#mvTypeFilters .filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    currentPage = 1;
+    state.p = 1;
     render();
   });
 
   container.querySelector('#mvCatFilters').addEventListener('click', (e) => {
     const btn = e.target.closest('.filter-btn');
     if (!btn || btn.dataset.cat === undefined) return;
-    catFilter = btn.dataset.cat;
+    state.cat = btn.dataset.cat;
     container.querySelectorAll('#mvCatFilters .filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    currentPage = 1;
+    state.p = 1;
     render();
   });
 
@@ -76,21 +90,22 @@ export function renderMoves(container) {
 
   async function render() {
     if (!allMoves) await loadAll();
+    syncUrl();
 
     let filtered = allMoves;
-    if (searchTerm) {
+    if (state.q) {
       filtered = filtered.filter(m =>
-        m.nameEs.toLowerCase().includes(searchTerm) ||
-        m.nameEn.toLowerCase().includes(searchTerm) ||
-        m.name.toLowerCase().includes(searchTerm)
+        m.nameEs.toLowerCase().includes(state.q) ||
+        m.nameEn.toLowerCase().includes(state.q) ||
+        m.name.toLowerCase().includes(state.q)
       );
     }
-    if (typeFilter) filtered = filtered.filter(m => m.type === typeFilter);
-    if (catFilter) filtered = filtered.filter(m => m.category === catFilter);
+    if (state.type) filtered = filtered.filter(m => m.type === state.type);
+    if (state.cat) filtered = filtered.filter(m => m.category === state.cat);
 
     const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-    if (currentPage > totalPages) currentPage = totalPages || 1;
-    const start = (currentPage - 1) * PAGE_SIZE;
+    if (state.p > totalPages) state.p = totalPages || 1;
+    const start = (state.p - 1) * PAGE_SIZE;
     const page = filtered.slice(start, start + PAGE_SIZE);
 
     if (page.length === 0) {
@@ -141,8 +156,8 @@ export function renderMoves(container) {
       tbody.appendChild(tr);
     });
 
-    renderPagination(content, currentPage, totalPages, (p) => {
-      currentPage = p;
+    renderPagination(content, state.p, totalPages, (p) => {
+      state.p = p;
       render();
       container.querySelector('.page-header').scrollIntoView({ behavior: 'smooth' });
     });

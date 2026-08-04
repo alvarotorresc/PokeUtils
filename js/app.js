@@ -133,7 +133,7 @@ async function route() {
       await renderPokedex(app, query);
     } else if (path === '/moves') {
       updateActiveNav('moves');
-      await renderMoves(app);
+      await renderMoves(app, query);
     } else if (parts[0] === 'abilities' && parts[1]) {
       updateActiveNav('abilities');
       await renderAbilities(app, decodeURIComponent(parts[1]));
