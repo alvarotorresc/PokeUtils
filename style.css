@@ -1388,6 +1388,137 @@ a.evo-node:hover {
 .move-category.special  { background: #6390F0; color: #fff; }
 .move-category.status   { background: #94A3B8; color: #1a1a3e; }
 
+/* ===== MOVE DETAIL ===== */
+/* Same shape as .poke-detail-header minus the sprite: a move has no artwork,
+   so the name carries the header on its own. */
+.move-detail-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.move-detail-header h2 {
+  font-size: 0.9rem;
+  color: var(--accent);
+  line-height: 1.6;
+}
+
+.move-detail-header .name-en {
+  font-size: 0.44rem;
+  color: var(--text-dim);
+  margin: 6px 0 12px;
+}
+
+.move-detail-header .types {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* auto-fit rather than fixed columns: the row has three cells for most moves
+   and four for the 56 with priority, and both should fill the card. */
+.move-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 12px;
+  text-align: center;
+}
+
+.move-stats span {
+  display: block;
+  font-size: 0.38rem;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.move-stats strong {
+  display: block;
+  font-size: 0.6rem;
+  color: var(--text);
+  font-weight: normal;
+}
+
+.move-stats .prio-up { color: var(--stat-up); }
+.move-stats .prio-down { color: var(--stat-down); }
+
+.move-stats em {
+  display: block;
+  font-size: 0.34rem;
+  color: var(--text-dim);
+  font-style: normal;
+  margin-top: 4px;
+}
+
+.move-desc {
+  font-size: 0.48rem;
+  color: var(--text-muted);
+  line-height: 2;
+}
+
+.mv-chips + .move-desc {
+  margin-top: 12px;
+}
+
+/* ===== MOVE LEARNERS ===== */
+/* A compact .pokemon-card: same surface, border and radius, but half the
+   sprite and no lift on hover, because a tab can hold 1003 of these. */
+.learner-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 8px;
+}
+
+.learner {
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 4px;
+  text-align: center;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color 0.15s;
+}
+
+.learner:hover {
+  border-color: var(--border-accent);
+  text-decoration: none;
+}
+
+.learner img {
+  width: 56px;
+  height: 56px;
+  image-rendering: pixelated;
+  display: block;
+  margin: 0 auto 4px;
+}
+
+.learner-name {
+  display: block;
+  font-size: 0.36rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.learner-level {
+  display: block;
+  font-size: 0.34rem;
+  color: var(--accent);
+  margin-top: 4px;
+}
+
+.learner-more {
+  display: block;
+  margin: 12px auto 0;
+}
+
+.mv-note {
+  font-size: 0.34rem;
+  color: var(--text-dim);
+  line-height: 1.9;
+  margin-top: 14px;
+  text-align: center;
+}
+
 /* ===== STAT CHANGE CHIPS ===== */
 /* Outlined rather than filled: they sit inside a table cell next to the move
    name, and a filled badge there would compete with the type badge. */

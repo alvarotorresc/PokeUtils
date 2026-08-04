@@ -4,6 +4,7 @@ import { renderTypeChart } from './type-chart.js';
 import { renderPokedex } from './pokedex.js';
 import { renderPokedexDetail } from './pokedex-detail.js';
 import { renderMoves } from './moves.js';
+import { renderMoveDetail } from './moves-detail.js';
 import { renderAbilities } from './abilities.js';
 import { renderItems } from './items.js';
 import { renderNatures } from './natures.js';
@@ -131,6 +132,9 @@ async function route() {
     } else if (path === '/pokedex') {
       updateActiveNav('pokedex');
       await renderPokedex(app, query);
+    } else if (parts[0] === 'moves' && parts[1]) {
+      updateActiveNav('moves');
+      await renderMoveDetail(app, parseInt(parts[1], 10));
     } else if (path === '/moves') {
       updateActiveNav('moves');
       await renderMoves(app, query);
