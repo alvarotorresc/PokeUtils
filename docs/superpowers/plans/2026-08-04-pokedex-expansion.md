@@ -498,7 +498,31 @@ Los nombres de las seis estadísticas ya existen: se obtienen con `statName(k)`,
 
 - [ ] **Paso 4: Renderizar el control**
 
-Insertar el marcado aprobado en la Tarea 2, con `data-sort` para cada clave de `SORT_KEYS` y un control aparte para invertir el sentido. La etiqueta de cada clave es `t('pokedex.sort.' + k)` para `id` y `total`, y `statName(k)` para las demás.
+Insertar el marcado aprobado en la Tarea 2, con `data-sort` para cada clave de `SORT_KEYS` y un control aparte para invertir el sentido, con `id="pdxDir"`. La etiqueta de cada clave es `t('pokedex.sort.' + k)` para `id` y `total`, y `statName(k)` para las demás. La etiqueta del control de sentido es `t('pokedex.sort.' + currentDir())`.
+
+Los dos manejadores:
+
+```js
+  container.querySelector('#pdxSort').addEventListener('click', (e) => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    state.sort = btn.dataset.sort;
+    // Cambiar de clave descarta el sentido elegido a mano: cada clave tiene el
+    // suyo por defecto (ascendente para el numero de Pokedex, descendente para
+    // las estadisticas).
+    state.dir = null;
+    state.p = 1;
+    render();
+  });
+
+  container.querySelector('#pdxDir').addEventListener('click', () => {
+    state.dir = currentDir() === 'asc' ? 'desc' : 'asc';
+    state.p = 1;
+    render();
+  });
+```
+
+Como `render()` vuelve a pintar la rejilla pero no la fila de controles, el estado activo de los botones de orden y la etiqueta de `#pdxDir` hay que actualizarlos dentro de estos manejadores, igual que hace `bindChips` en la Tarea 4.
 
 - [ ] **Paso 5: Ordenar**
 
