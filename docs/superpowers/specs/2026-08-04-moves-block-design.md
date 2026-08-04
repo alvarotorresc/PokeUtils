@@ -204,12 +204,16 @@ Dinamax y movimientos retirados. El mensaje será del tipo "Ningún Pokémon lo
 aprende en los juegos que cubrimos". Nunca "ningún Pokémon aprende este
 movimiento", que es falso.
 
-**El juego de referencia se nombra por pestaña, no por ficha.** En
-`learnsets.json` cada método guarda su propio version group (Bulbasaur tiene los
-movimientos de nivel de Escarlata/Púrpura y los de tutor de Espada/Escudo), así
-que en una ficha de movimiento no hay un único juego de referencia: la etiqueta
-tipo `learn.from` va dentro de cada pestaña, con el juego que corresponda a ese
-método, o se omite si en la pestaña conviven varios.
+**No se nombra ningún juego de referencia.** En `learnsets.json` el version group
+se guarda por Pokémon y método, no por movimiento, y medido sobre los datos
+reales una misma pestaña mezcla juegos casi siempre: los 65 Pokémon que aprenden
+Danza Espada subiendo de nivel vienen de tres version groups distintos. La
+etiqueta tipo `learn.from` de la ficha de Pokémon, donde sí hay un único juego,
+aquí no tiene equivalente honesto.
+
+En su lugar, la sección lleva una nota fija al pie: los datos de cada Pokémon
+salen del juego más reciente en el que aparece, de entre los seis que cubre el
+dataset. Se dice una vez, no por pestaña ni por fila.
 
 ### 5. Filtros nuevos en la lista
 
