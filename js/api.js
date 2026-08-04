@@ -66,6 +66,7 @@ export const fetchPokemonList = () => loadDataset('pokemon');
 export const fetchMoves = () => loadDataset('moves');
 export const fetchAbilities = () => loadDataset('abilities');
 export const fetchItems = () => loadDataset('items');
+export const fetchEvolutions = () => loadDataset('evolutions');
 
 // ===== POKEMON DETAIL =====
 const idFromUrl = url => Number(url.replace(/\/$/, '').split('/').pop());

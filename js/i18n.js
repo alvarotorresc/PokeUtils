@@ -82,6 +82,50 @@ const translations = {
     'pokedex.catchrate.veryhard': 'Muy dificil de capturar',
     'pokedex.range100': 'A NVL 100',
 
+    // Evoluciones
+    'evo.title': 'LINEA EVOLUTIVA',
+    'evo.none': 'Este Pokemon no evoluciona',
+    'evo.level': 'Nv. {n}',
+    'evo.levelup': 'Subir de nivel',
+    'evo.trade': 'Intercambio',
+    'evo.trade.for': 'Intercambio por {species}',
+    'evo.usemove': 'Usar {move} {n} veces',
+    'evo.shed': 'Con hueco en el equipo y una Poke Ball',
+    'evo.spin': 'Girar con el traje puesto',
+    'evo.tower.dark': 'Torre Tenebrosa',
+    'evo.tower.water': 'Torre del Agua',
+    'evo.crits': 'Asestar 3 golpes criticos en un combate',
+    'evo.recoil': 'Acumular {n} PS de dano por retroceso',
+    'evo.damage': 'Recibir dano en el lugar adecuado',
+    'evo.bisharp': 'Derrotar a 3 Bisharp con la Insignia Jefe',
+    'evo.coins': 'Reunir 999 Monedas Gimmighoul',
+    'evo.agile': 'Usar {move} en estilo agil {n} veces',
+    'evo.strong': 'Usar {move} en estilo fuerte {n} veces',
+    'evo.other': 'Metodo especial',
+    'evo.with.item': 'con {item}',
+    'evo.held': 'con {item} equipado',
+    'evo.happiness': 'con amistad alta',
+    'evo.affection': 'con {n} de afecto',
+    'evo.beauty': 'con {n} de belleza',
+    'evo.day': 'de dia',
+    'evo.night': 'de noche',
+    'evo.dusk': 'al anochecer',
+    'evo.at': 'en {place}',
+    'evo.knowing': 'sabiendo {move}',
+    'evo.knowingtype': 'sabiendo un movimiento de tipo {type}',
+    'evo.female': 'siendo hembra',
+    'evo.male': 'siendo macho',
+    'evo.atkgtdef': 'con Ataque mayor que Defensa',
+    'evo.atkeqdef': 'con Ataque igual a Defensa',
+    'evo.atkltdef': 'con Ataque menor que Defensa',
+    'evo.rain': 'con lluvia',
+    'evo.party': 'con {species} en el equipo',
+    'evo.partytype': 'con un Pokemon de tipo {type} en el equipo',
+    'evo.upsidedown': 'con la consola boca abajo',
+    'evo.steps': 'tras {n} pasos',
+    'evo.rock': 'cerca de una roca especial',
+    'evo.multiplayer': 'en multijugador',
+
     // Moves
     'moves.title': 'MOVIMIENTOS',
     'moves.subtitle': 'Todos los movimientos Pokemon con detalles',
@@ -276,6 +320,50 @@ const translations = {
     'pokedex.catchrate.veryhard': 'Very hard to catch',
     'pokedex.range100': 'AT LV 100',
 
+    // Evolutions
+    'evo.title': 'EVOLUTION LINE',
+    'evo.none': 'This Pokemon does not evolve',
+    'evo.level': 'Lv. {n}',
+    'evo.levelup': 'Level up',
+    'evo.trade': 'Trade',
+    'evo.trade.for': 'Trade for {species}',
+    'evo.usemove': 'Use {move} {n} times',
+    'evo.shed': 'With a free party slot and a Poke Ball',
+    'evo.spin': 'Spin while wearing the costume',
+    'evo.tower.dark': 'Tower of Darkness',
+    'evo.tower.water': 'Tower of Waters',
+    'evo.crits': 'Land 3 critical hits in one battle',
+    'evo.recoil': 'Take {n} HP of recoil damage',
+    'evo.damage': 'Take damage at the right place',
+    'evo.bisharp': 'Defeat 3 Bisharp holding the Leaders Crest',
+    'evo.coins': 'Collect 999 Gimmighoul Coins',
+    'evo.agile': 'Use {move} in agile style {n} times',
+    'evo.strong': 'Use {move} in strong style {n} times',
+    'evo.other': 'Special method',
+    'evo.with.item': 'with {item}',
+    'evo.held': 'holding {item}',
+    'evo.happiness': 'with high friendship',
+    'evo.affection': 'with {n} affection',
+    'evo.beauty': 'with {n} beauty',
+    'evo.day': 'during the day',
+    'evo.night': 'at night',
+    'evo.dusk': 'at dusk',
+    'evo.at': 'at {place}',
+    'evo.knowing': 'knowing {move}',
+    'evo.knowingtype': 'knowing a {type}-type move',
+    'evo.female': 'when female',
+    'evo.male': 'when male',
+    'evo.atkgtdef': 'with Attack higher than Defense',
+    'evo.atkeqdef': 'with Attack equal to Defense',
+    'evo.atkltdef': 'with Attack lower than Defense',
+    'evo.rain': 'while raining',
+    'evo.party': 'with {species} in the party',
+    'evo.partytype': 'with a {type}-type Pokemon in the party',
+    'evo.upsidedown': 'holding the console upside down',
+    'evo.steps': 'after {n} steps',
+    'evo.rock': 'near a special rock',
+    'evo.multiplayer': 'in multiplayer',
+
     'moves.title': 'MOVES',
     'moves.subtitle': 'All Pokemon moves with details',
     'moves.search': 'Search move...',
@@ -388,8 +476,11 @@ const translations = {
 let currentLang = localStorage.getItem('pkutils_lang') || 'es';
 let onChangeCallbacks = [];
 
-export function t(key) {
-  return translations[currentLang]?.[key] || translations['es']?.[key] || key;
+// t('evo.level', { n: 25 }) -> "Nv. 25"
+export function t(key, vars) {
+  const raw = translations[currentLang]?.[key] || translations['es']?.[key] || key;
+  if (!vars) return raw;
+  return raw.replace(/\{(\w+)\}/g, (m, name) => (name in vars ? vars[name] : m));
 }
 
 export function getLang() {
