@@ -3,6 +3,7 @@ import { TYPES } from './data.js';
 import { fetchMoves } from './api.js';
 import { loadingHTML, renderPagination, replaceQuery } from './app.js';
 import { t, typeName, categoryName, pokeName, getLang } from './i18n.js';
+import { priorityLabel, statChangeLabel, hasBattleFields } from './move-effects.js';
 
 const PAGE_SIZE = 50;
 
@@ -92,6 +93,12 @@ export function renderMoves(container, query = new URLSearchParams()) {
     if (!allMoves) await loadAll();
     syncUrl();
 
+    // netlify.toml caches data/*.json for an hour but not the JS, so right
+    // after a deploy this code runs against the previous moves.json, which has
+    // none of the battle fields. Showing an empty PRIO column would look like
+    // a bug; leaving it out until the data catches up degrades quietly.
+    const showBattleFields = hasBattleFields(allMoves);
+
     let filtered = allMoves;
     if (state.q) {
       filtered = filtered.filter(m =>
@@ -130,6 +137,7 @@ export function renderMoves(container, query = new URLSearchParams()) {
               <th>${t('moves.col.pow')}</th>
               <th>${t('moves.col.acc')}</th>
               <th>${t('moves.col.pp')}</th>
+              ${showBattleFields ? `<th>${t('moves.col.prio')}</th>` : ''}
             </tr>
           </thead>
           <tbody id="mvBody"></tbody>
@@ -145,6 +153,7 @@ export function renderMoves(container, query = new URLSearchParams()) {
       tr.innerHTML = `
         <td>
           <div style="font-size:0.42rem;color:var(--text)">${pokeName(m)}</div>
+          ${(m.statChanges || []).length ? `<div class="mv-chips">${m.statChanges.map(c => `<span class="mv-chip ${c[1] > 0 ? 'up' : 'down'}">${statChangeLabel(c)}</span>`).join('')}</div>` : ''}
           ${desc ? `<div style="font-size:0.42rem;color:var(--text-dim);margin-top:4px;line-height:1.8;max-width:300px">${desc}</div>` : ''}
         </td>
         <td><span class="type-badge sm" data-type="${m.type}">${typeName(m.type)}</span></td>
@@ -152,6 +161,7 @@ export function renderMoves(container, query = new URLSearchParams()) {
         <td style="text-align:center;color:${m.power ? 'var(--text)' : 'var(--text-dim)'}">${m.power || '—'}</td>
         <td style="text-align:center;color:${m.accuracy ? 'var(--text)' : 'var(--text-dim)'}">${m.accuracy ? m.accuracy + '%' : '—'}</td>
         <td style="text-align:center">${m.pp || '—'}</td>
+        ${showBattleFields ? `<td style="text-align:center;color:${m.priority ? 'var(--text)' : 'var(--text-dim)'}">${m.priority ? priorityLabel(m.priority) : '—'}</td>` : ''}
       `;
       tbody.appendChild(tr);
     });

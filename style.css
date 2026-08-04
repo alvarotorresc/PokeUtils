@@ -24,6 +24,11 @@
   --success: #34D399;
   --info: #60A5FA;
   --warning: #F59E0B;
+  /* Stat-change chips. Their own variables because --success and --danger are
+     tuned for the dark surface only: on the light card #34D399 lands at
+     1.55:1, which is invisible. Measured against --bg-card in each theme. */
+  --stat-up: #34D399;   /* 7.83:1 on #22224a */
+  --stat-down: #FB7185; /* 5.59:1 on #22224a */
 
   --type-normal: #A8A77A;
   --type-fire: #EE8130;
@@ -61,6 +66,8 @@
   --text-dim: #8888aa;
   --border: rgba(0, 0, 0, 0.1);
   --border-accent: rgba(184, 136, 0, 0.3);
+  --stat-up: #0B6B4A;   /* 5.27:1 on #e6e6f0 */
+  --stat-down: #B3123C; /* 5.52:1 on #e6e6f0 */
 }
 
 .light .scanlines {
@@ -1380,6 +1387,27 @@ a.evo-node:hover {
 .move-category.physical { background: #C22E28; color: #fff; }
 .move-category.special  { background: #6390F0; color: #fff; }
 .move-category.status   { background: #94A3B8; color: #1a1a3e; }
+
+/* ===== STAT CHANGE CHIPS ===== */
+/* Outlined rather than filled: they sit inside a table cell next to the move
+   name, and a filled badge there would compete with the type badge. */
+.mv-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.mv-chip {
+  font-size: 0.38rem;
+  padding: 2px 6px;
+  border: 2px solid;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.mv-chip.up { border-color: var(--stat-up); color: var(--stat-up); }
+.mv-chip.down { border-color: var(--stat-down); color: var(--stat-down); }
 
 /* ===== ITEMS GRID ===== */
 .items-grid {
