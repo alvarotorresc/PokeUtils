@@ -305,6 +305,63 @@ async function buildEvolutions() {
   return { chains, bySpecies };
 }
 
+const LEARN_METHODS = ['level-up', 'machine', 'egg', 'tutor'];
+// Output keys, shorter than PokeAPI's names.
+const METHOD_KEY = { 'level-up': 'level', machine: 'machine', egg: 'egg', tutor: 'tutor' };
+
+async function buildLearnsets() {
+  const ids = Array.from({ length: MAX_POKEMON }, (_, i) => i + 1);
+  const versionGroups = [];
+  const vgIndex = (name) => {
+    let i = versionGroups.indexOf(name);
+    if (i === -1) { i = versionGroups.length; versionGroups.push(name); }
+    return i;
+  };
+
+  const entries = await mapLimit(ids, async (id) => {
+    const mon = await getJson(`${API}/pokemon/${id}`);
+    if (!mon) return null;
+
+    const out = {};
+    for (const method of LEARN_METHODS) {
+      // Each method resolves its own version group: gen 9 has no classic move
+      // tutors, so resolving a single one per Pokemon would empty that tab.
+      const candidates = new Set();
+      for (const m of mon.moves) {
+        for (const d of m.version_group_details) {
+          if (d.move_learn_method.name === method) candidates.add(d.version_group.name);
+        }
+      }
+      const vg = pickVersionGroup(candidates);
+      if (!vg) continue;
+
+      const moves = [];
+      for (const m of mon.moves) {
+        const d = m.version_group_details.find(
+          d => d.move_learn_method.name === method && d.version_group.name === vg
+        );
+        if (!d) continue;
+        moves.push(method === 'level-up'
+          ? [idFromUrl(m.move.url), d.level_learned_at]
+          : idFromUrl(m.move.url));
+      }
+      if (moves.length === 0) continue;
+
+      if (method === 'level-up') moves.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+      else moves.sort((a, b) => a - b);
+
+      out[METHOD_KEY[method]] = [vgIndex(vg), moves];
+    }
+    return [id, out];
+  }, 'learnsets');
+
+  const pokemon = {};
+  for (const entry of entries) {
+    if (entry && Object.keys(entry[1]).length) pokemon[entry[0]] = entry[1];
+  }
+  return { versionGroups, pokemon };
+}
+
 // ===== main =====
 
 async function write(name, payload) {
@@ -321,6 +378,7 @@ const BUILDERS = {
   abilities: buildAbilities,
   items: buildItems,
   evolutions: buildEvolutions,
+  learnsets: buildLearnsets,
 };
 
 async function main() {
