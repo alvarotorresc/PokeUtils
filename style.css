@@ -1020,6 +1020,120 @@ a:hover {
   gap: 10px;
 }
 
+/* ===== EVOLUTION LINE ===== */
+.evo-line {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+.evo-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.evo-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  text-decoration: none;
+  flex-shrink: 0;
+  width: 92px;
+  transition: all 0.15s;
+}
+
+a.evo-node:hover {
+  border-color: var(--border-accent);
+  background: var(--bg-card);
+}
+
+.evo-node.current {
+  border-color: var(--accent);
+  background: var(--bg-card);
+}
+
+.evo-node img {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+}
+
+.evo-dex {
+  font-size: 0.36rem;
+  color: var(--text-dim);
+}
+
+.evo-name {
+  font-size: 0.4rem;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* Branches stack vertically. 96% of chains never branch, and for the 4% that
+   do a vertical list reads better than any horizontal attempt. */
+.evo-branches {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.evo-branch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.evo-arrow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.evo-cond {
+  font-size: 0.36rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+  max-width: 130px;
+  text-align: center;
+}
+
+.evo-tip {
+  font-size: 0.4rem;
+  color: var(--accent);
+}
+
+.evo-none {
+  font-size: 0.44rem;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 2;
+}
+
+@media (max-width: 767px) {
+  /* Linear chains go vertical too, so nothing ever scrolls sideways. */
+  .evo-step,
+  .evo-branch {
+    flex-direction: column;
+    align-items: center;
+  }
+  .evo-arrow {
+    flex-direction: column;
+  }
+  .evo-tip {
+    transform: rotate(90deg);
+  }
+  .evo-cond {
+    max-width: 200px;
+  }
+}
+
 /* ===== ABILITY LINK + TOOLTIP ===== */
 .ability-link {
   position: relative;

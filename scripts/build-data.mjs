@@ -221,9 +221,13 @@ const EVO_CONDITION_FIELDS = [
   'used_move', 'min_damage_taken',
 ];
 
-// Locations and regions are in no client dataset, so their translated name is
-// resolved here and stored ready to use. Every other name (items, moves,
-// species, types) the client resolves against datasets it already loads.
+// Names resolved at build time, stored ready to use. Items and moves are here
+// on purpose: resolving them in the browser would mean every Pokemon page
+// downloading items.json (595 KB) and moves.json (343 KB) just to translate a
+// handful of names. Species stay as slugs because the detail page already
+// loads pokemon.json, and types come from a table in data.js.
+const NAMES_RESOLVED_AT_BUILD = ['location', 'region', 'item', 'held_item', 'known_move', 'used_move'];
+
 const localizedNameCache = new Map();
 
 async function localizedName(url) {
@@ -249,7 +253,7 @@ async function cleanDetail(d) {
     }
     if (value === null || value === undefined || value === false || value === '' || value === 0) continue;
     if (typeof value === 'object' && value.name) {
-      out[field] = (field === 'location' || field === 'region')
+      out[field] = NAMES_RESOLVED_AT_BUILD.includes(field)
         ? { name: value.name, ...(await localizedName(value.url)) }
         : value.name;
     } else {

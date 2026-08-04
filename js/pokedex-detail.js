@@ -1,10 +1,86 @@
 // ===== POKEMON DETAIL =====
-import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART } from './data.js';
-import { fetchPokemonDetail } from './api.js';
-import { loadingHTML } from './app.js';
+import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, TYPE_NAMES_FULL } from './data.js';
+import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList } from './api.js';
+import { loadingHTML, renderError } from './app.js';
+import { evolutionText } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
 import { rangeAt100 } from './stats.js';
 import { attachTooltip } from './tooltip.js';
+
+// Spanish names are missing for 616 of the 2187 items, and the build falls back
+// to the slug. Prefer English over a raw slug before giving up.
+function displayName(entry) {
+  if (!entry) return '';
+  if (getLang() === 'en') return entry.nameEn || entry.name;
+  return entry.nameEs !== entry.name ? entry.nameEs : (entry.nameEn || entry.name);
+}
+
+function evoNodeHTML(species, currentId, nameOf) {
+  const isCurrent = species === currentId;
+  const inner = `
+    <img src="${spriteUrl(species)}" alt="${nameOf(species)}" loading="lazy">
+    <span class="evo-dex">#${String(species).padStart(4, '0')}</span>
+    <span class="evo-name">${nameOf(species)}</span>
+  `;
+  return isCurrent
+    ? `<span class="evo-node current">${inner}</span>`
+    : `<a class="evo-node" href="#/pokedex/${species}">${inner}</a>`;
+}
+
+function evoTreeHTML(node, currentId, nameOf, lang, lookups) {
+  const children = node.evolvesTo;
+  if (children.length === 0) return evoNodeHTML(node.species, currentId, nameOf);
+  return `
+    <div class="evo-step">
+      ${evoNodeHTML(node.species, currentId, nameOf)}
+      <div class="evo-branches">
+        ${children.map(child => `
+          <div class="evo-branch">
+            <span class="evo-arrow">
+              <span class="evo-cond">${evolutionText(child.details, lang, lookups) || '&nbsp;'}</span>
+              <span class="evo-tip">▶</span>
+            </span>
+            ${evoTreeHTML(child, currentId, nameOf, lang, lookups)}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// A failure loading evolutions must not take down the whole detail page: this
+// section shows its own error with a retry and the rest stays up.
+async function renderEvolutionSection(host, currentId) {
+  host.innerHTML = loadingHTML();
+  try {
+    // Only two datasets: item and move names are already resolved inside
+    // evolutions.json, so the page never pulls items.json (595 KB) or
+    // moves.json (343 KB) just to read a few names.
+    const [evolutions, allPokemon] = await Promise.all([
+      fetchEvolutions(), fetchPokemonList(),
+    ]);
+
+    const chainId = evolutions.bySpecies[currentId];
+    const root = chainId != null ? evolutions.chains[chainId] : null;
+    if (!root || root.evolvesTo.length === 0) {
+      host.innerHTML = `<p class="evo-none">${t('evo.none')}</p>`;
+      return;
+    }
+
+    const pokeBySlug = new Map(allPokemon.map(x => [x.name, x]));
+    const byId = new Map(allPokemon.map(p => [p.id, p]));
+    const nameOf = id => displayName(byId.get(id)) || `#${id}`;
+
+    const lookups = {
+      species: slug => displayName(pokeBySlug.get(slug)) || slug,
+      type: slug => TYPE_NAMES_FULL[slug] || slug,
+    };
+
+    host.innerHTML = `<div class="evo-line">${evoTreeHTML(root, currentId, nameOf, getLang(), lookups)}</div>`;
+  } catch (err) {
+    renderError(host, err, () => renderEvolutionSection(host, currentId));
+  }
+}
 
 // The capture rate runs 0 (Chansey and friends) to 255 (Caterpie and friends).
 // The cut-offs are for reading, not a formula from the games.
@@ -126,6 +202,9 @@ export async function renderPokedexDetail(container, id) {
         `).join('')}
       </div>
 
+      <h3 class="section-title">${t('evo.title')}</h3>
+      <div class="card" style="margin-bottom:20px" id="evoSection"></div>
+
       <h3 class="section-title">${t('pokedex.matchups')}</h3>
       <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
         ${weak.length ? `
@@ -168,6 +247,8 @@ export async function renderPokedexDetail(container, id) {
       </div>
     </div>
   `;
+
+  renderEvolutionSection(container.querySelector('#evoSection'), pokemon.id);
 
   // Bubbles are attached after the markup lands. attachTooltip is a no-op when
   // the ability has no description, so it stays a plain link.
