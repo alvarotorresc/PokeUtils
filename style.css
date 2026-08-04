@@ -677,7 +677,8 @@ a:hover {
   margin-left: auto;
 }
 
-.pdx-clear[hidden] {
+.pdx-clear[hidden],
+.pdx-select[hidden] {
   display: none;
 }
 

@@ -162,10 +162,16 @@ export function renderPokedex(container, query = new URLSearchParams()) {
     render();
   });
 
+  // False when a cached pokemon.json predates the rarity flags; the control is
+  // then hidden instead of offering a filter that would match nothing.
+  let rarityAvailable = true;
+
   async function loadAll() {
     if (allPokemon) return;
     content.innerHTML = loadingHTML(t('pokedex.loading'));
     allPokemon = await fetchPokemonList();
+    rarityAvailable = allPokemon.some(p => p.isLegendary !== undefined);
+    rareSelect.hidden = !rarityAvailable;
   }
 
   async function render() {
@@ -193,7 +199,14 @@ export function renderPokedex(container, query = new URLSearchParams()) {
     }
     // Legendary and mythical are separate flags in PokeAPI: Mew is mythical,
     // not legendary, so these cannot collapse into a single toggle.
-    if (state.rare === 'normal') {
+    //
+    // The flags arrived with this feature, and netlify.toml lets pokemon.json
+    // sit in a browser cache for an hour. A visitor who loaded the site just
+    // before a deploy gets the new JS against the old data, so the filter is
+    // skipped rather than silently returning zero results.
+    if (state.rare && !rarityAvailable) {
+      // fall through unfiltered
+    } else if (state.rare === 'normal') {
       filtered = filtered.filter(p => !p.isLegendary && !p.isMythical);
     } else if (state.rare === 'legendary') {
       filtered = filtered.filter(p => p.isLegendary);

@@ -241,7 +241,7 @@ export async function renderPokedexDetail(container, id) {
           <div class="meta">
             <span>📏 ${pokemon.height} m</span>
             <span>⚖️ ${pokemon.weight} kg</span>
-            <span>🎯 ${pokemon.captureRate} · ${catchRateLabel(pokemon.captureRate)}</span>
+            ${pokemon.captureRate == null ? '' : `<span>🎯 ${pokemon.captureRate} · ${catchRateLabel(pokemon.captureRate)}</span>`}
           </div>
         </div>
       </div>
