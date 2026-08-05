@@ -10,6 +10,7 @@ import { renderAbilities } from './abilities.js';
 import { renderItems } from './items.js';
 import { renderNatures } from './natures.js';
 import { renderCalculator } from './calculator.js';
+import { renderHub } from './hub.js';
 import { t, getLang, setLang, onLangChange } from './i18n.js';
 import { ErrorKind, purgeLegacyCache } from './api.js';
 
@@ -155,6 +156,10 @@ async function route() {
     } else if (path === '/natures') {
       updateActiveNav('natures');
       renderNatures(app);
+    } else if (path === '/data') {
+      renderHub(app, 'data');
+    } else if (path === '/competitive') {
+      renderHub(app, 'competitive');
     } else if (path === '/calculator') {
       updateActiveNav('calculator');
       renderCalculator(app, query);
