@@ -7,12 +7,22 @@ import { fetchPokemonList, fetchMoves } from './api.js';
 import { loadingHTML, replaceQuery } from './app.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
+import { WEATHER, TERRAIN, SCREENS } from './battle-data.js';
 import { t, pokeName, typeName, statName, getLang } from './i18n.js';
 
 const PICKERS = [
   { key: 'a', label: 'survive.attacker' },
   { key: 'm', label: 'survive.move' },
   { key: 'd', label: 'survive.defender' },
+];
+
+// The same reduced field the damage calculator offers, and the same i18n keys.
+// Anything finer -- items, abilities, boosts -- belongs to the calculator: the
+// question here is what it takes to survive, not what every modifier does.
+const FIELDS = [
+  { key: 'w', param: 'weather', label: 'dmg.weather', options: WEATHER, prefix: 'weather' },
+  { key: 'tr', param: 'terrain', label: 'dmg.terrain', options: TERRAIN, prefix: 'terrain' },
+  { key: 'sc', param: 'screen', label: 'dmg.screen', options: SCREENS, prefix: 'screen' },
 ];
 
 export async function renderSurvive(container, query = new URLSearchParams()) {
@@ -33,6 +43,13 @@ export async function renderSurvive(container, query = new URLSearchParams()) {
     m: parseInt(query.get('m'), 10) || null,
     d: parseInt(query.get('d'), 10) || null,
   };
+  // A hand-edited URL must not put an unknown weather into the calculation.
+  for (const f of FIELDS) {
+    const value = query.get(f.key);
+    state[f.key] = f.options.some(o => o.id === value) ? value : 'none';
+  }
+
+  const fieldState = () => Object.fromEntries(FIELDS.map(f => [f.param, state[f.key]]));
 
   const listFor = key => (key === 'm' ? hitting : all);
   const nameOf = (key, x) => (key === 'm'
@@ -46,7 +63,7 @@ export async function renderSurvive(container, query = new URLSearchParams()) {
       defender,
       move: { type: move.type, category: move.category, power: move.power },
       level,
-      field: {},
+      field: fieldState(),
     };
     const bare = survives({ ...ctx, hpEv: 0, defEv: 0 });
     const min = minimumSpread(ctx);
@@ -70,7 +87,12 @@ export async function renderSurvive(container, query = new URLSearchParams()) {
   }
 
   function render() {
-    replaceQuery('/survive', { a: state.a || '', m: state.m || '', d: state.d || '' });
+    // Defaults stay out of the URL so a plain #/survive?a=6&m=53&d=3 remains
+    // the clean link, the same rule the Pokedex filters follow.
+    replaceQuery('/survive', {
+      a: state.a || '', m: state.m || '', d: state.d || '',
+      ...Object.fromEntries(FIELDS.map(f => [f.key, state[f.key] === 'none' ? '' : state[f.key]])),
+    });
     const attacker = find('a', state.a);
     const move = find('m', state.m);
     const defender = find('d', state.d);
@@ -91,12 +113,34 @@ export async function renderSurvive(container, query = new URLSearchParams()) {
           `;
         }).join('')}
       </div>
+      <details class="dmg-field" ${FIELDS.some(f => state[f.key] !== 'none') ? 'open' : ''}>
+        <summary>${t('dmg.field')}</summary>
+        <div class="dmg-field-body">
+          <div class="calc-row">
+            ${FIELDS.map(f => `
+              <div class="calc-field">
+                <label>${t(f.label)}</label>
+                <select data-field="${f.key}">
+                  ${f.options.map(o => `<option value="${o.id}"${state[f.key] === o.id ? ' selected' : ''}>${t(`${f.prefix}.${o.id}`)}</option>`).join('')}
+                </select>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </details>
       <div id="svResult">${
         attacker && move && defender
           ? resultHTML(attacker, move, defender, level)
           : `<p class="egg-note">${t('survive.pickall')}</p>`
       }</div>
     `;
+
+    body.querySelectorAll('[data-field]').forEach(select => {
+      select.addEventListener('change', () => {
+        state[select.dataset.field] = select.value;
+        render();
+      });
+    });
 
     body.querySelectorAll('[data-picker]').forEach(input => {
       const key = input.dataset.picker;

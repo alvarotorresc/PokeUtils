@@ -4,6 +4,10 @@ Segunda mitad del sub-bloque 4. El [4a](2026-08-05-pokedex-tools-design.md) dej�
 Pokédex con sus tres herramientas en pestañas; éste lleva Competitivo de 1 a 4,
 que por la regla medida es **hub**, y ese hub ya existe en `#/competitive`.
 
+Medido a 360 px, que es de donde sale la regla: EQUIPO 71 px, CONTRARRESTAR 135,
+VELOCIDAD 98 y SOBREVIVE 98 suman **414 px para 324 disponibles**. Las tres de
+Pokédex sumaban 248 y sí caben.
+
 ---
 
 ## Lo medido, esta vez de verdad

@@ -1132,9 +1132,19 @@ Run: `node scripts/check-tools.mjs` → PASS.
 - [x] **Step 4: Navegador**
 
 Con `?r=5`: la pestaña COMPETITIVO abre `#/competitive` y su hub lista **4**
-tarjetas. El home tiene **15**. A 360 px las cuatro pestañas de la tira **no
-caben** — por eso Competitivo es hub y no pestañas: en sus páginas la tira no se
-pinta, sólo el hub.
+tarjetas. El home tiene **15**.
+
+Y la razón de que sea hub, medida a 360 px con la fuente real y no supuesta:
+
+| Pestaña | Ancho |
+|---|---|
+| EQUIPO | 71 px |
+| CONTRARRESTAR | 135 px |
+| VELOCIDAD | 98 px |
+| SOBREVIVE | 98 px |
+| **Suma con huecos** | **414 px para 324 disponibles** |
+
+**No caben**, y por eso en las páginas de Competitivo no se pinta tira ninguna.
 
 > **Resuelto durante la ejecución:** las tres páginas nuevas **no llevan tira de
 > pestañas**. Competitivo es hub precisamente porque cuatro no caben, así que

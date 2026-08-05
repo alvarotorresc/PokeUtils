@@ -65,6 +65,18 @@ console.log('\nLo trivial tambien\n');
 const nada = { ...ctx, move: { type: 'normal', category: 'physical', power: 10 } };
 check('cero EVs cuando ya sobrevive', minimumSpread(nada), { hpEv: 0, defEv: 0 });
 
+console.log('\nEl campo cambia la respuesta, no solo la pantalla\n');
+
+// Lanzallamas especial de Charizard sobre Venusaur, que es el caso de la pagina.
+const especial = { ...ctx, move: { type: 'fire', category: 'special', power: 90 } };
+check('sin campo pide 28 y 116', minimumSpread(especial), { hpEv: 28, defEv: 116 });
+check('con sol no hay reparto que aguante',
+  minimumSpread({ ...especial, field: { weather: 'sun' } }), null);
+check('con lluvia no hace falta invertir nada',
+  minimumSpread({ ...especial, field: { weather: 'rain' } }), { hpEv: 0, defEv: 0 });
+check('con pantalla de luz tampoco',
+  minimumSpread({ ...especial, field: { screen: 'lightscreen' } }), { hpEv: 0, defEv: 0 });
+
 console.log('\nEl alto de la tirada es el que cuenta\n');
 
 const r = survives(ctx);
