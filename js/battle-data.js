@@ -51,6 +51,9 @@ export const POKEBALLS = [
     id: 'level-ball',
     es: 'Nivel Ball',
     en: 'Level Ball',
+    // The only ball whose bonus depends on the thrower, so the UI has to ask
+    // for a second level instead of assuming one.
+    needsYourLevel: true,
     mult: ctx => {
       const mine = ctx.yourLevel ?? 50;
       const theirs = ctx.level ?? 50;

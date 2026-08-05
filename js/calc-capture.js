@@ -57,6 +57,13 @@ export function renderCapture(container) {
           </div>
         </div>
 
+        <div class="calc-row" id="capYourLevelRow" style="display:none">
+          <div class="calc-field">
+            <label>${t('capture.yourlevel')}</label>
+            <input type="number" id="capYourLevel" min="1" max="100" value="50">
+          </div>
+        </div>
+
         <div class="calc-field" style="margin-top:4px">
           <label>${t('capture.hp')}: <span id="capHpLabel">100%</span></label>
           <input type="range" id="capHp" min="1" max="100" value="100" class="capture-hp-range">
@@ -150,8 +157,10 @@ export function renderCapture(container) {
   const turnsInput = container.querySelector('#capTurns');
   const hpRange = container.querySelector('#capHp');
   const hpLabel = container.querySelector('#capHpLabel');
+  const yourLevelRow = container.querySelector('#capYourLevelRow');
+  const yourLevelInput = container.querySelector('#capYourLevel');
 
-  [ballSelect, statusSelect, levelInput, turnsInput, hpRange, condBox].forEach(el => {
+  [ballSelect, statusSelect, levelInput, turnsInput, hpRange, condBox, yourLevelInput].forEach(el => {
     el.addEventListener('input', update);
   });
 
@@ -172,6 +181,8 @@ export function renderCapture(container) {
       condWrap.style.display = 'none';
     }
 
+    yourLevelRow.style.display = ball.needsYourLevel ? '' : 'none';
+
     const level = Number(levelInput.value) || 50;
     // Max HP at neutral IVs and EVs: the thing being caught is a wild Pokemon,
     // and only the ratio of current to max HP matters to the formula anyway.
@@ -187,7 +198,7 @@ export function renderCapture(container) {
       weight: target.weight,
       turns: Number(turnsInput.value) || 1,
       conditionMet: ball.condition ? condBox.checked : false,
-      yourLevel: 100,
+      yourLevel: Number(yourLevelInput.value) || level,
     });
 
     renderResult(result, ball);

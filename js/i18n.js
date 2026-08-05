@@ -19,6 +19,13 @@ const translations = {
     'home.types.desc': 'Tabla de tipos interactiva con debilidades y resistencias',
     'home.team.desc': 'Debilidades y cobertura de tu equipo de 6',
     'home.capture.desc': 'Cuantas balls necesitas y con que probabilidad',
+    'home.moves.desc': 'Todos los movimientos con tipo, poder y descripcion',
+    'home.abilities.desc': 'Lista completa de habilidades y sus efectos',
+    'home.items.desc': 'Objetos con imagen, descripcion y categoria',
+    'home.natures.desc': 'Las 25 naturalezas y sus modificadores de stats',
+    'home.calculator.desc': 'Calcula IVs, EVs y stats de tus Pokemon',
+
+    // Capture calculator
     'calc.tab.ivev': 'IV/EV',
     'calc.tab.catch': 'CAPTURA',
     'capture.title': 'Calculadora de Captura',
@@ -28,6 +35,7 @@ const translations = {
     'capture.ball': 'Ball',
     'capture.status': 'Estado',
     'capture.level': 'Nivel',
+    'capture.yourlevel': 'Tu nivel',
     'capture.turns': 'Turno',
     'capture.hp': 'PS restantes',
     'capture.rate': 'Ratio',
@@ -53,11 +61,6 @@ const translations = {
     'cond.asleep': 'Esta dormido',
     'cond.fast': 'Su Velocidad base es 100 o mas',
     'cond.ultrabeast': 'Es un Ultraente',
-    'home.moves.desc': 'Todos los movimientos con tipo, poder y descripcion',
-    'home.abilities.desc': 'Lista completa de habilidades y sus efectos',
-    'home.items.desc': 'Objetos con imagen, descripcion y categoria',
-    'home.natures.desc': 'Las 25 naturalezas y sus modificadores de stats',
-    'home.calculator.desc': 'Calcula IVs, EVs y stats de tus Pokemon',
 
     // Type chart
     'types.title': 'TABLA DE TIPOS',
@@ -354,6 +357,13 @@ const translations = {
     'home.types.desc': 'Interactive type chart with weaknesses and resistances',
     'home.team.desc': 'Weaknesses and coverage for your team of 6',
     'home.capture.desc': 'How many balls you need, and how likely each throw is',
+    'home.moves.desc': 'Every move with type, power and description',
+    'home.abilities.desc': 'Full ability list with effects',
+    'home.items.desc': 'Items with sprites, descriptions and categories',
+    'home.natures.desc': 'All 25 natures and their stat modifiers',
+    'home.calculator.desc': 'Calculate IVs, EVs and stats for your Pokemon',
+
+    // Capture calculator
     'calc.tab.ivev': 'IV/EV',
     'calc.tab.catch': 'CAPTURE',
     'capture.title': 'Capture Calculator',
@@ -363,6 +373,7 @@ const translations = {
     'capture.ball': 'Ball',
     'capture.status': 'Status',
     'capture.level': 'Level',
+    'capture.yourlevel': 'Your level',
     'capture.turns': 'Turn',
     'capture.hp': 'HP left',
     'capture.rate': 'Rate',
@@ -388,11 +399,6 @@ const translations = {
     'cond.asleep': 'It is asleep',
     'cond.fast': 'Base Speed of 100 or more',
     'cond.ultrabeast': 'It is an Ultra Beast',
-    'home.moves.desc': 'Every move with type, power and description',
-    'home.abilities.desc': 'Full ability list with effects',
-    'home.items.desc': 'Items with sprites, descriptions and categories',
-    'home.natures.desc': 'All 25 natures and their stat modifiers',
-    'home.calculator.desc': 'Calculate IVs, EVs and stats for your Pokemon',
 
     'types.title': 'TYPE CHART',
     'types.subtitle': 'Select up to 2 types to see effectiveness',
