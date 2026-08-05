@@ -126,6 +126,17 @@ async function buildPokemon() {
       if (s.effort) evYield[key] = s.effort;
     }
 
+    // Breeding lives on the species, which this build already downloads for the
+    // capture rate, so both fields are free.
+    //
+    // gender_rate counts eighths female: 0 is a real value (always male) and -1
+    // means genderless, which breeds only with Ditto. Neither may collapse into
+    // "missing": a `?? 0` here would turn a species that failed to load into
+    // "always male" and hand back wrong breeding answers with nothing on screen
+    // to say so. Absent field = unknown, and the UI says so.
+    const eggGroups = species?.egg_groups?.map(g => g.name) || [];
+    const hasGender = typeof species?.gender_rate === 'number';
+
     return {
       id: mon.id,
       name: mon.name,
@@ -143,6 +154,8 @@ async function buildPokemon() {
       captureRate: species?.capture_rate ?? 0,
       isLegendary: Boolean(species?.is_legendary),
       isMythical: Boolean(species?.is_mythical),
+      ...(eggGroups.length ? { eggGroups } : {}),
+      ...(hasGender ? { genderRate: species.gender_rate } : {}),
     };
   }, 'pokemon');
 
