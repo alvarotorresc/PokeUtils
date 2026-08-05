@@ -51,8 +51,11 @@ async function getJson(url, attempt = 1) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return await res.json();
   } catch (err) {
-    if (attempt >= 4) throw new Error(`${url} failed after 4 attempts: ${err.message}`);
-    await new Promise(r => setTimeout(r, 500 * 2 ** (attempt - 1)));
+    // Six attempts, not four: a full items build is ~2200 requests and the CDN
+    // returns the odd 502, which used to throw away the whole run after four
+    // tries inside three seconds.
+    if (attempt >= 6) throw new Error(`${url} failed after 6 attempts: ${err.message}`);
+    await new Promise(r => setTimeout(r, 800 * 2 ** (attempt - 1)));
     return getJson(url, attempt + 1);
   }
 }
@@ -243,8 +246,19 @@ async function buildItems() {
     for (const item of cat.items) itemUrls.push(item.url);
   }
 
+  // Items PokeAPI could not serve. One broken record upstream should not throw
+  // away a 2200-request build, so they are collected and reported instead.
+  const missing = [];
+
   const items = await mapLimit(itemUrls, async (url) => {
-    const i = await getJson(url);
+    let i;
+    try {
+      i = await getJson(url);
+    } catch (err) {
+      missing.push(`${url} (${err.message})`);
+      return null;
+    }
+    if (!i) return null;
     return {
       id: i.id,
       name: i.name,
@@ -253,10 +267,37 @@ async function buildItems() {
       descriptionEs: latestFlavor(i.flavor_text_entries, 'es', 'text'),
       descriptionEn: latestFlavor(i.flavor_text_entries, 'en', 'text'),
       category: pocketByCategory.get(i.category.name) || '',
+      // Power of Fling when this item is held. Absent means the item cannot be
+      // flung, which is most of them.
+      ...(i.fling_power ? { flingPower: i.fling_power } : {}),
     };
   }, 'items');
 
-  return items.sort((a, b) => a.id - b.id);
+  if (missing.length) {
+    console.log(`  ${missing.length} item(s) unavailable and skipped:`);
+    for (const entry of missing) console.log(`    ${entry}`);
+  }
+
+  return items.filter(Boolean).sort((a, b) => a.id - b.id);
+}
+
+// Natural Gift takes its type and power from the held berry, and neither lives
+// on the item endpoint: they are only on /berry/{id}. 74 extra requests.
+async function buildBerries() {
+  const index = await getJson(`${API}/berry?limit=200`);
+
+  const berries = await mapLimit(index.results, async (entry) => {
+    const b = await getJson(entry.url);
+    if (!b?.natural_gift_type) return null;
+    return {
+      id: b.id,
+      item: b.item.name,
+      type: b.natural_gift_type.name,
+      power: b.natural_gift_power,
+    };
+  }, 'berries');
+
+  return berries.filter(Boolean).sort((a, b) => a.id - b.id);
 }
 
 // Fields on evolution_details that are real conditions. version_group,
@@ -426,6 +467,7 @@ const BUILDERS = {
   moves: buildMoves,
   abilities: buildAbilities,
   items: buildItems,
+  berries: buildBerries,
   evolutions: buildEvolutions,
   learnsets: buildLearnsets,
 };
