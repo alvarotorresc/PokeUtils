@@ -99,24 +99,36 @@ fallo visible, así que va escrito aquí y comprobado en el check.
 
 ---
 
-## Las tres reglas de cría
+## Las cinco reglas de cría
 
-Comprobar "comparten grupo huevo" y ya está **da un resultado incorrecto**:
+Comprobar "comparten grupo huevo" y ya está **da un resultado incorrecto**, y no
+en casos raros:
 
-1. **`genderRate: -1` (sin género) solo cría con Ditto.** Son **155 Pokémon, el
-   15,1%**: no es un caso raro.
-2. **Ditto cría con todos** menos con el grupo `no-eggs`. Ditto está en su propio
-   grupo, `ditto`, del que es **el único miembro**, así que la comprobación de
-   grupo compartido nunca lo emparejaría con nadie.
-3. **`no-eggs` no cría con nada**, ni siquiera con Ditto. Son **151**.
+1. **`no-eggs` no cría con nada**, ni siquiera con Ditto. Son **151**.
+2. **Ditto cría con todo lo demás.** Está en su propio grupo, `ditto`, del que es
+   **el único miembro**, así que la comprobación de grupo compartido no lo
+   emparejaría jamás con nadie.
+3. **Ditto no cría con Ditto.** Se sigue de la anterior y hay que escribirla,
+   porque "Ditto cría con todos" tomada al pie de la letra dice que sí.
+4. **Sin género (`genderRate: -1`) solo cría con Ditto.** Son **155, el 15,1%**.
+   Y **Ditto es uno de ellos** —su propio `genderRate` es -1—, que es justo por
+   qué las reglas 2 y 3 no salen de esta.
+5. **Dos Pokémon de un solo género y el mismo no crían entre sí**, aunque
+   compartan grupo: **26 son siempre macho** (`genderRate: 0`) y **37 siempre
+   hembra** (`genderRate: 8`).
 
-Las tres viven en **`js/egg-groups.js` y en ningún otro sitio**. La sección de la
+Las cinco viven en **`js/egg-groups.js` y en ningún otro sitio**. La sección de la
 ficha y la página del grupo llaman a la misma función; duplicarlas es cómo se
 desincronizan.
 
 ```js
 canBreed(a, b) -> boolean
 ```
+
+Las cinco reglas se comprueban en `check-egg-groups.mjs` con parejas concretas,
+no en abstracto: Ditto con Ditto, Ditto con Charizard, Ditto con un `no-eggs`,
+Porygon (sin género) con Charizard, Porygon con Ditto, y dos siempre-macho del
+mismo grupo.
 
 ---
 
@@ -261,8 +273,8 @@ comparador y los grupos huevo **añaden** rutas; no reescriben ninguna.
 
 ## Verificación
 
-- `node scripts/check-egg-groups.mjs`: las tres reglas de cría con casos
-  conocidos (Ditto, un sin género, uno de `no-eggs`), los 15 grupos traducidos
+- `node scripts/check-egg-groups.mjs`: las cinco reglas de cría con las parejas
+  concretas de arriba, los 15 grupos traducidos
   en los dos idiomas, los recuentos por grupo contra los medidos arriba (278 en
   Campo, 1 en Ditto), y que ningún Pokémon se quede sin `eggGroups` ni sin
   `genderRate`.
