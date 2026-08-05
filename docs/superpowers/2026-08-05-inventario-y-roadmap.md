@@ -236,9 +236,13 @@ ambos casos.
   porque contrarrestar-mi-equipo sale mucho mejor con los *checks and counters*
   reales que con amenazas teóricas.
 
-Si se quisiera algo utilizable antes, el corte natural es **1 → 4**, dejando
-formas y sets para después: las cinco herramientas funcionan sin ellos, solo que
-contrarrestar-equipo se queda en la versión teórica.
+**Orden elegido por Álvaro el 2026-08-05: 1 → 4 → 2 → 3.** Herramientas antes que
+datos, para tener algo utilizable cuanto antes.
+
+Consecuencia asumida: **contrarrestar-mi-equipo nace en versión teórica** y
+mejora al llegar el sub-bloque 3. Para no escribirlo dos veces, su diseño tiene
+que dejar **la fuente de amenazas intercambiable**: la tabla de tipos ahora, los
+*checks and counters* reales después, sin tocar la interfaz.
 
 El más caro y arriesgado es el **2**, porque toca cinco páginas a la vez. El más
 barato es el **1**.
