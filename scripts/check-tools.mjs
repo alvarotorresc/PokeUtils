@@ -67,7 +67,9 @@ const i18n = await readFile(new URL('../js/i18n.js', import.meta.url), 'utf8');
 // usan hub.<categoria>.title y .subtitle para LAS CUATRO categorias, calculadora
 // incluida, asi que entran todas en la cuenta.
 const claves = [...new Set([
-  ...TOOLS.flatMap(tool => [tool.label, tool.desc]),
+  // `tab` entra en la cuenta: es una etiqueta visible mas, y la regla es que
+  // toda etiqueta nueva exista en los dos idiomas.
+  ...TOOLS.flatMap(tool => [tool.label, tool.desc, tool.tab]).filter(Boolean),
   ...CATEGORIES.map(c => c.label),
   ...CATEGORIES.flatMap(c => [`hub.${c.id}.title`, `hub.${c.id}.subtitle`]),
 ])];

@@ -577,7 +577,8 @@ git -c commit.gpgsign=false commit -m "feat(egg): add the egg group index and gr
 - Modify: `style.css`
 
 **Interfaces:**
-- Consumes: `canBreed`, `partnersOf`, `hasEggData` (Task 1), `eggGroupName` (Task 2).
+- Consumes: `partnersOf`, `hasEggData` (Task 1). El nombre del grupo sale de
+  `t('egg.group.' + g)`, sin importar nada de `egg-pages.js`.
 
 - [x] **Step 1: Añadir la sección**
 

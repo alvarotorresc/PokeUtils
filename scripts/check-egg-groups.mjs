@@ -34,6 +34,11 @@ console.log('\nLos datos estan\n');
 check('los 1025 traen eggGroups', pokemon.filter(p => !p.eggGroups).length, 0);
 check('los 1025 traen genderRate', pokemon.filter(p => typeof p.genderRate !== 'number').length, 0);
 check('el dataset tiene datos de cria', hasEggData(pokemon), true);
+// La rama de datos viejos solo se dispara con un visitante real que trae
+// pokemon.json cacheado de antes del despliegue, asi que en el navegador no se
+// ejerce nunca. Aqui si.
+check('un dataset viejo no tiene datos de cria', hasEggData([{ id: 1, types: [] }]), false);
+check('un dataset vacio tampoco', hasEggData([]), false);
 check('hay 15 grupos', EGG_GROUPS.length, 15);
 check('ningun grupo inventado',
   [...new Set(pokemon.flatMap(p => p.eggGroups))].filter(g => !EGG_GROUPS.includes(g)), []);
