@@ -59,7 +59,7 @@ navegador.
   - `groupCounts(list) -> Array<{group, count}>`
   - `hasEggData(list) -> boolean`
 
-- [ ] **Step 1: Escribir el check que falla**
+- [x] **Step 1: Escribir el check que falla**
 
 Crear `scripts/check-egg-groups.mjs`:
 
@@ -165,12 +165,12 @@ console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);
 ```
 
-- [ ] **Step 2: Ejecutarlo para verlo fallar**
+- [x] **Step 2: Ejecutarlo para verlo fallar**
 
 Run: `node scripts/check-egg-groups.mjs`
 Expected: FAIL — `Cannot find module '../js/egg-groups.js'`.
 
-- [ ] **Step 3: Escribir `js/egg-groups.js`**
+- [x] **Step 3: Escribir `js/egg-groups.js`**
 
 ```js
 // ===== EGG GROUPS AND BREEDING =====
@@ -236,7 +236,7 @@ export const groupCounts = list =>
 export const hasEggData = list => list.some(p => p.eggGroups !== undefined);
 ```
 
-- [ ] **Step 4: Añadir los 15 grupos a `js/i18n.js`**
+- [x] **Step 4: Añadir los 15 grupos a `js/i18n.js`**
 
 En el bloque `es`, después de las claves `hub.*`:
 
@@ -280,12 +280,12 @@ En el bloque `en`, en el mismo sitio:
     'egg.group.no-eggs': 'No Eggs',
 ```
 
-- [ ] **Step 5: Ejecutar el check hasta verlo pasar**
+- [x] **Step 5: Ejecutar el check hasta verlo pasar**
 
 Run: `node scripts/check-egg-groups.mjs`
 Expected: PASS — `All checks passed`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add js/egg-groups.js js/i18n.js scripts/check-egg-groups.mjs
@@ -309,7 +309,7 @@ git -c commit.gpgsign=false commit -m "feat(egg): add the breeding rules and the
   - `pokemonCardHTML(p) -> string` desde `js/pokedex.js`
   - `renderEggIndex(container)` y `renderEggGroup(container, group, query)`
 
-- [ ] **Step 1: Extraer la tarjeta de Pokémon de `js/pokedex.js`**
+- [x] **Step 1: Extraer la tarjeta de Pokémon de `js/pokedex.js`**
 
 La rejilla de un grupo es la misma rejilla de la Pokédex. En vez de copiar el
 marcado, se saca a una función y las dos la usan.
@@ -338,7 +338,7 @@ Y sustituir el bucle `page.forEach(p => { ... grid.appendChild(card); })` por:
     grid.innerHTML = page.map(pokemonCardHTML).join('');
 ```
 
-- [ ] **Step 2: Escribir `js/egg-pages.js`**
+- [x] **Step 2: Escribir `js/egg-pages.js`**
 
 ```js
 // ===== EGG GROUP PAGES =====
@@ -450,7 +450,7 @@ export async function renderEggGroup(container, group, query = new URLSearchPara
 }
 ```
 
-- [ ] **Step 3: Enchufar las rutas en `js/app.js`**
+- [x] **Step 3: Enchufar las rutas en `js/app.js`**
 
 Añadir el import junto a los demás:
 
@@ -467,7 +467,7 @@ Y en `route()`, **antes** de la rama `} else if (path === '/data') {`:
       await renderEggIndex(app);
 ```
 
-- [ ] **Step 4: Añadir las claves a `js/i18n.js`**
+- [x] **Step 4: Añadir las claves a `js/i18n.js`**
 
 En el bloque `es`:
 
@@ -489,7 +489,7 @@ En el bloque `en`:
     'egg.stale': 'The breeding data has not reached this browser yet. Reload the page.',
 ```
 
-- [ ] **Step 5: Estilos en `style.css`**
+- [x] **Step 5: Estilos en `style.css`**
 
 Junto a `.home-grid`:
 
@@ -546,7 +546,7 @@ Junto a `.home-grid`:
 }
 ```
 
-- [ ] **Step 6: Comprobarlo en el navegador**
+- [x] **Step 6: Comprobarlo en el navegador**
 
 ```bash
 node scripts/serve.mjs 8097
@@ -560,7 +560,7 @@ con **278** y Ditto con **1**. Entrar en Campo: 278 miembros, paginación de 50 
 Cambiar el idioma con EN y confirmar que Campo pasa a "Field" y Planta a "Grass",
 sin ninguna clave cruda en pantalla. Consola sin errores.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add js/egg-pages.js js/pokedex.js js/app.js js/i18n.js style.css
@@ -579,7 +579,7 @@ git -c commit.gpgsign=false commit -m "feat(egg): add the egg group index and gr
 **Interfaces:**
 - Consumes: `canBreed`, `partnersOf`, `hasEggData` (Task 1), `eggGroupName` (Task 2).
 
-- [ ] **Step 1: Añadir la sección**
+- [x] **Step 1: Añadir la sección**
 
 En `js/pokedex-detail.js`, añadir a los imports:
 
@@ -651,7 +651,7 @@ antes del de `evo.title`:
 > `learnsets.json` (375 KB), y esta son **tres filas con datos que ya están en
 > memoria**. Plegarla cobraría un clic por nada. Corregido también en el spec.
 
-- [ ] **Step 2: Claves nuevas**
+- [x] **Step 2: Claves nuevas**
 
 En el bloque `es`:
 
@@ -677,7 +677,7 @@ En el bloque `en`:
     'egg.gender.female': 'Always female',
 ```
 
-- [ ] **Step 3: Estilos**
+- [x] **Step 3: Estilos**
 
 ```css
 .egg-section {
@@ -722,7 +722,7 @@ En el bloque `en`:
 }
 ```
 
-- [ ] **Step 4: Comprobar los tres casos que importan**
+- [x] **Step 4: Comprobar los tres casos que importan**
 
 Recargar con `?r=2`:
 
@@ -738,7 +738,7 @@ en `canBreed`, no en la ficha.
 
 Los chips de grupo tienen que llevar a `#/egg/<grupo>`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add js/pokedex-detail.js js/i18n.js style.css
@@ -759,7 +759,7 @@ git -c commit.gpgsign=false commit -m "feat(egg): show breeding groups, gender a
 - Consumes: `defensiveMatrix` de `js/team-analysis.js`, `fetchPokemonList`.
 - Produces: `renderCompare(container, query)`.
 
-- [ ] **Step 1: Escribir `js/compare.js`**
+- [x] **Step 1: Escribir `js/compare.js`**
 
 ```js
 // ===== COMPARE =====
@@ -934,7 +934,7 @@ export async function renderCompare(container, query = new URLSearchParams()) {
 }
 ```
 
-- [ ] **Step 2: Enchufar la ruta en `js/app.js`**
+- [x] **Step 2: Enchufar la ruta en `js/app.js`**
 
 Import:
 
@@ -949,7 +949,7 @@ En `route()`, antes de la rama `} else if (parts[0] === 'egg' && parts[1]) {`:
       await renderCompare(app, query);
 ```
 
-- [ ] **Step 3: Claves nuevas**
+- [x] **Step 3: Claves nuevas**
 
 En el bloque `es`:
 
@@ -983,7 +983,7 @@ En el bloque `en`:
     'compare.weak2': 'Weak x2',
 ```
 
-- [ ] **Step 4: Estilos**
+- [x] **Step 4: Estilos**
 
 ```css
 .cmp-chips {
@@ -1050,7 +1050,7 @@ En el bloque `en`:
 .cmp-total th, .cmp-total td { border-top: 2px solid var(--border); }
 ```
 
-- [ ] **Step 5: Comprobar en el navegador**
+- [x] **Step 5: Comprobar en el navegador**
 
 Recargar con `?r=3` en `#/compare?ids=6,9,3`. Esperado: tres columnas con
 Charizard, Blastoise y Venusaur; en la fila de Ataque gana Charizard (84) y en la
@@ -1062,7 +1062,7 @@ Probar `#/compare` a secas: sale el buscador y el aviso de que hacen falta dos.
 Añadir hasta cuatro y confirmar que el buscador se desactiva con su mensaje.
 Quitar uno y ver que la URL se queda con los tres.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add js/compare.js js/app.js js/i18n.js style.css
@@ -1084,7 +1084,7 @@ git -c commit.gpgsign=false commit -m "feat(compare): add the side-by-side compa
 **Interfaces:**
 - Produces: `toolTabsHTML(categoryId, activeToolId) -> string` desde `js/hub.js`.
 
-- [ ] **Step 1: Añadir las dos herramientas a `js/tools.js`**
+- [x] **Step 1: Añadir las dos herramientas a `js/tools.js`**
 
 En `CATEGORIES`, marcar Pokédex como directa:
 
@@ -1109,7 +1109,7 @@ Y a la entrada que ya existe de `pokedex`, añadirle su etiqueta corta de pesta�
   { id: 'pokedex', category: 'pokedex', route: '#/pokedex', base: 'pokedex', icon: '📖', label: 'nav.pokedex', tab: 'pokedex.tab', desc: 'home.pokedex.desc' },
 ```
 
-- [ ] **Step 2: La tira de pestañas en `js/hub.js`**
+- [x] **Step 2: La tira de pestañas en `js/hub.js`**
 
 ```js
 // The strip a category uses instead of a hub when it holds three tools or
@@ -1126,7 +1126,7 @@ export function toolTabsHTML(categoryId, activeToolId) {
 }
 ```
 
-- [ ] **Step 3: Insertarla en las tres páginas**
+- [x] **Step 3: Insertarla en las tres páginas**
 
 En `js/pokedex.js`, `js/compare.js` y `js/egg-pages.js`, importar
 `toolTabsHTML` desde `./hub.js` y ponerla **justo antes** del `<div class="page-header">`
@@ -1134,7 +1134,7 @@ de cada una, con su propio id: `'pokedex'`, `'compare'` y `'egg'`.
 
 En `renderEggGroup` va también, con `'egg'` activo, debajo del enlace de vuelta.
 
-- [ ] **Step 4: Claves nuevas**
+- [x] **Step 4: Claves nuevas**
 
 En el bloque `es`:
 
@@ -1156,7 +1156,7 @@ En el bloque `en`:
     'home.egg.desc': 'The 15 breeding groups and who breeds with whom',
 ```
 
-- [ ] **Step 5: Estilo de la tira**
+- [x] **Step 5: Estilo de la tira**
 
 `.tab` está escrito para `<button>`; como enlace necesita dos líneas:
 
@@ -1167,7 +1167,7 @@ En el bloque `en`:
 }
 ```
 
-- [ ] **Step 6: Actualizar `scripts/check-tools.mjs`**
+- [x] **Step 6: Actualizar `scripts/check-tools.mjs`**
 
 Las dos comprobaciones anotadas vencen aquí. Sustituir:
 
@@ -1187,19 +1187,19 @@ check('toda herramienta de una categoria con pestanas tiene etiqueta corta',
   toolsIn('pokedex').filter(t => !t.tab).map(t => t.id), []);
 ```
 
-- [ ] **Step 7: Ejecutar los dos checks**
+- [x] **Step 7: Ejecutar los dos checks**
 
 Run: `node scripts/check-tools.mjs && node scripts/check-egg-groups.mjs`
 Expected: los dos en `All checks passed`.
 
-- [ ] **Step 8: Comprobar en el navegador**
+- [x] **Step 8: Comprobar en el navegador**
 
 Recargar con `?r=4`. La tira aparece en `#/pokedex`, `#/compare`, `#/egg` y
 `#/egg/ground`, con la pestaña correcta encendida en cada una. A **360 px** las
 tres caben en una línea. El home enseña ahora **12 tarjetas** bajo cuatro
 encabezados, con Comparador y Grupos huevo bajo Pokédex.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add js/tools.js js/hub.js js/pokedex.js js/compare.js js/egg-pages.js js/i18n.js scripts/check-tools.mjs style.css
@@ -1213,7 +1213,7 @@ git -c commit.gpgsign=false commit -m "feat(nav): give the pokedex category its 
 **Files:**
 - Ninguno que crear. Solo se corrige lo que falle.
 
-- [ ] **Step 1: Los scripts de comprobación en verde**
+- [x] **Step 1: Los scripts de comprobación en verde**
 
 ```bash
 node scripts/check-tools.mjs
@@ -1226,7 +1226,7 @@ node scripts/check-capture.mjs
 
 Expected: los seis terminan en `All checks passed`.
 
-- [ ] **Step 2: Las rutas responden, las viejas y las nuevas**
+- [x] **Step 2: Las rutas responden, las viejas y las nuevas**
 
 `#/`, `#/pokedex`, `#/pokedex/6`, `#/moves`, `#/moves/53`, `#/abilities`,
 `#/abilities/blaze`, `#/items`, `#/natures`, `#/types`, `#/team`, `#/calculator`,
@@ -1234,7 +1234,7 @@ Expected: los seis terminan en `All checks passed`.
 
 Ninguna puede caer en la pantalla de "no encontrado".
 
-- [ ] **Step 3: El estado en la URL sobrevive**
+- [x] **Step 3: El estado en la URL sobrevive**
 
 Los tres que se comparten:
 
@@ -1244,7 +1244,7 @@ Los tres que se comparten:
 #/compare?ids=6,9,3             -> tres columnas
 ```
 
-- [ ] **Step 4: Los números de cría, contra los medidos**
+- [x] **Step 4: Los números de cría, contra los medidos**
 
 | Ficha | Cría con |
 |---|---|
@@ -1254,21 +1254,21 @@ Los tres que se comparten:
 
 Y en `#/egg`: Campo **278**, Ditto **1**, Desconocido **151**.
 
-- [ ] **Step 5: Los dos idiomas**
+- [x] **Step 5: Los dos idiomas**
 
 Recorrer `#/egg`, `#/egg/ground`, `#/compare?ids=6,9` y `#/pokedex/132` en EN y
 confirmar que no aparece ni una clave cruda (`egg.`, `compare.`, `home.`).
 
-- [ ] **Step 6: Anchos**
+- [x] **Step 6: Anchos**
 
 A **360 px**: las tres pestañas en una línea y el menú móvil abre y cierra. A
 **900 px**: los cinco enlaces de la barra siguen cabiendo.
 
-- [ ] **Step 7: Consola limpia**
+- [x] **Step 7: Consola limpia**
 
 Cero errores y cero avisos en toda la sesión de pruebas.
 
-- [ ] **Step 8: Commit de lo que se haya corregido**
+- [x] **Step 8: Commit de lo que se haya corregido**
 
 ```bash
 git -c commit.gpgsign=false commit -m "fix(egg): <lo que fallaba>"
