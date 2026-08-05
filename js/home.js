@@ -20,6 +20,11 @@ export function renderHome(container) {
         <div class="label">${t('nav.types')}</div>
         <div class="desc">${t('home.types.desc')}</div>
       </a>
+      <a href="#/team" class="home-card">
+        <div class="icon">🛡️</div>
+        <div class="label">${t('nav.team')}</div>
+        <div class="desc">${t('home.team.desc')}</div>
+      </a>
       <a href="#/moves" class="home-card">
         <div class="icon">💥</div>
         <div class="label">${t('nav.moves')}</div>
