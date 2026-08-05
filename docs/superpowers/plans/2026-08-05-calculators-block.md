@@ -215,24 +215,22 @@ compartir un cálculo.
 
 - **Etapa A completa.** `evYield` en los 1025 y en la ficha de Pokédex.
 - **Etapa B completa.** Pestañas, fórmula de captura, tabla de 27 balls y UI.
-- **C1, C2 y C4.** Núcleo de la fórmula, tablas de modificadores (clima,
-  terreno, pantallas, Terastal, 25 objetos, 34 habilidades) y la pestaña de
-  daño funcionando de punta a punta.
+- **Etapa C completa.** Núcleo de la fórmula, tablas de modificadores (clima,
+  terreno, pantallas, Terastal, 25 objetos, 34 habilidades), las 11 familias de
+  poder variable, la mecánica Z, multigolpe, drenaje y retroceso, y el estado
+  del cálculo en la URL.
 
 La calculadora de daño ya responde la pregunta para la que existe. Verificado
 contra el ejemplo canónico publicado (Glaceon → Garchomp = 168–196) y a mano
 end to end (Charizard Lanzallamas vs Venusaur = 110–132, base 44).
 
-**Pendiente, por orden de valor:**
-
-1. **C3 · poder variable** — las 11 familias. Sin esto, los 41 movimientos sin
-   `power` fijo no se pueden elegir en la calculadora. La tabla del spec ya
-   tiene la fórmula de cada familia.
-2. **C3b · mecánica Z** — `Z_MOVES` y `zPower()` ya están escritos y
-   verificados en `battle-data.js`; falta la casilla en la UI que transforme el
-   movimiento elegido.
-3. **C6 · multigolpe y drenaje** — los 27 con `minHits` y los 22 con `drain`.
-4. **Estado en la URL** para poder compartir un cálculo, como hace `#/team`.
+**El plan queda sin pendientes.** El último punto, el estado en la URL, se cerró
+con `damage-url.js` (la mitad pura: tabla de campos, `encodeDamageState` y
+`decodeDamageState`) y `scripts/check-damage-url.mjs`. Comprobado en el
+navegador que un enlace copiado devuelve el mismo número, incluidos los
+movimientos que no pasan por la fórmula (Fisura, Bomba Sónica, Psicoonda,
+Contraataque), un `data-vp` de Don Natural y la casilla Z; y que una URL
+manipulada a mano recorta los valores fuera de rango en vez de romper el panel.
 
 **Desviaciones respecto al plan, con su motivo:**
 
