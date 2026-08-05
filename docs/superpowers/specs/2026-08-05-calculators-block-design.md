@@ -130,7 +130,9 @@ La familia 11 se desglosa así, y es la única con partes que no entran:
 - **Recuperables con datos que sí existen** (2): comprobado contra la API en
   vivo, `fling_power` está en `/item/{id}` (Gafas de Sol → 30) y las bayas
   traen `natural_gift_power` y `natural_gift_type` en `/berry/{id}` (Zreza →
-  60, Fuego). El backlog los había dado por perdidos sin medirlo.
+  60, Fuego). El backlog los había dado por perdidos sin medirlo. Ya
+  regenerados: **672 objetos con `flingPower`** y **66 bayas** en un
+  `berries.json` nuevo de 4 KB (no 74: solo 68 existen y 66 dan Don Natural).
 - **Fuera de verdad** (2): `beat-up` necesita el equipo entero de seis como
   contexto, que es otra pantalla; `shadow-half` es de Pokémon XD y no existe en
   los juegos principales.
@@ -140,9 +142,17 @@ La familia 11 se desglosa así, y es la única con partes que no entran:
 > regenerando datos en este bloque. Dejarlos fuera habría sido heredar una
 > suposición del backlog de ayer sin comprobarla.
 
-**Cobertura final: 599 con poder fijo + 39 de poder variable = 638 de los 676
-movimientos de daño (94,4%)**, más la mecánica Z sobre cualquiera de ellos. Los
-únicos dos que quedan fuera son `beat-up` y `shadow-half`.
+**Cobertura final: 583 con poder fijo + 39 de poder variable = 622 de los 660
+movimientos de daño (94,2%)**, más la mecánica Z sobre cualquiera de ellos.
+
+> **Corregido al implementarlo.** Este spec decía antes "599 de 676". Estaba
+> mal: **16 movimientos de estado llevan `power: 0`**, y como `0` no es `null`,
+> la comprobación `power != null` los contaba como movimientos de daño. Las
+> cifras buenas son 660 de daño y 583 con poder fijo.
+
+Fuera quedan `beat-up`, `shadow-half` y **los 11 movimientos de tipo Sombra**,
+un tipo 19 de Colosseum/XD que está en `moves.json` pero no en la tabla de
+tipos ni en la de movimientos Z, las dos de 18.
 
 ### Los otros números del alcance completo
 
