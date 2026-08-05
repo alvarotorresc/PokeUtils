@@ -132,20 +132,37 @@ Es el equivalente en este sub-bloque al `genderRate: 0` del 4a: el sitio donde
 un error da respuestas confiadas y equivocadas en vez de un fallo visible. Lo
 comprueba `check-forms.mjs` con `charizard-mega-x`.
 
-### Cuando la API no trae el nombre
+### La etiqueta oficial no siempre sirve de nombre
 
-**148 de las 326** no tienen nombre en español. La respuesta **no** es traducir
-148 formas a mano, sino **55 sufijos**, porque se repiten: `mega` cubre 38,
-`gmax` 30, `hisui` 16 y `totem` 8 — **92 de las 148 con cuatro entradas**.
+**148 de las 326** no tienen nombre en español. Y de las 178 que sí, hay dos
+formas distintas de etiqueta, medidas:
 
-> **[decidido sin preguntar]** El respaldo va **por sufijo**, no por forma:
-> `SUFFIX_NAMES = { mega: {es: 'Mega', en: 'Mega'}, gmax: {es: 'Gigamax', ...} }`.
-> Son 55 claves y 110 cadenas, y cualquier forma nueva que traiga PokeAPI con un
-> sufijo ya conocido queda nombrada sola.
+| | Cuántas | Ejemplo |
+|---|---|---|
+| Solo la etiqueta de forma | **121** | `deoxys-attack` → "Forma Ataque" |
+| El nombre completo, con la especie dentro | **57** | `charizard-mega-x` → "Mega-Charizard X" |
 
-> **[decidido sin preguntar]** El orden es: nombre oficial de `form_names` si
-> existe; si no, el sufijo traducido; si tampoco, el sufijo crudo. Nunca el slug
-> entero, que es lo que se ve hoy cuando algo falla y no se entiende.
+"Forma Ataque" no dice de quién, y "Mega-Charizard X" no cabe bien en una
+pestaña. Así que se guardan **dos campos**, no uno:
+
+- **`nameEs` / `nameEn`** — el nombre completo, para buscar y para listar.
+- **`formEs` / `formEn`** — la etiqueta corta, para la tira de pestañas.
+
+> **[decidido sin preguntar]** El nombre completo sale así: la etiqueta oficial
+> si ya lleva la especie dentro; si no la lleva, `especie + etiqueta`
+> ("Deoxys Forma Ataque"); y si no hay etiqueta, `especie + sufijo traducido`
+> ("Charizard Gigamax"). **Nunca el slug crudo**, que es lo que se ve hoy cuando
+> algo falla y no se entiende.
+
+> **[decidido sin preguntar]** El respaldo va **por sufijo, no por forma**:
+> `SUFFIX_NAMES = { mega: { es: 'Mega', en: 'Mega' }, gmax: { es: 'Gigamax', … } }`.
+> Hacen falta **64 sufijos, 128 cadenas** — los que no tienen etiqueta oficial
+> más aquellos cuya etiqueta lleva la especie y por tanto no vale de pestaña.
+> Los otros **79 sufijos se resuelven solos** con la etiqueta de la API.
+>
+> Cuidado con lo contrario: **las etiquetas oficiales no son intercambiables
+> entre especies del mismo sufijo.** "Mega-Venusaur" es la de Venusaur, no la de
+> `mega`. Heredarlas por sufijo pondría "Forma Tótem" en Landorus.
 
 ---
 
