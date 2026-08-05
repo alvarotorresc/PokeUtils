@@ -206,3 +206,43 @@ compartir un cálculo.
    generación de referencia (Gen 9) para que se sepa contra qué se escribió.
 3. **La pestaña IV/EV no debe romperse.** Es código que funciona y que Álvaro
    ya usa; B1 lo mueve sin tocar su lógica.
+
+---
+
+## Estado al cierre del 2026-08-05
+
+**Hecho y verificado en el navegador:**
+
+- **Etapa A completa.** `evYield` en los 1025 y en la ficha de Pokédex.
+- **Etapa B completa.** Pestañas, fórmula de captura, tabla de 27 balls y UI.
+- **C1, C2 y C4.** Núcleo de la fórmula, tablas de modificadores (clima,
+  terreno, pantallas, Terastal, 25 objetos, 34 habilidades) y la pestaña de
+  daño funcionando de punta a punta.
+
+La calculadora de daño ya responde la pregunta para la que existe. Verificado
+contra el ejemplo canónico publicado (Glaceon → Garchomp = 168–196) y a mano
+end to end (Charizard Lanzallamas vs Venusaur = 110–132, base 44).
+
+**Pendiente, por orden de valor:**
+
+1. **C3 · poder variable** — las 11 familias. Sin esto, los 41 movimientos sin
+   `power` fijo no se pueden elegir en la calculadora. La tabla del spec ya
+   tiene la fórmula de cada familia.
+2. **C3b · mecánica Z** — `Z_MOVES` y `zPower()` ya están escritos y
+   verificados en `battle-data.js`; falta la casilla en la UI que transforme el
+   movimiento elegido.
+3. **C6 · multigolpe y drenaje** — los 27 con `minHits` y los 22 con `drain`.
+4. **Estado en la URL** para poder compartir un cálculo, como hace `#/team`.
+
+**Desviaciones respecto al plan, con su motivo:**
+
+- **Los nombres de balls, objetos y habilidades se copiaron a
+  `battle-data.js`** en vez de leerlos de `items.json`. Ese fichero pesa 596 KB
+  y la calculadora habría pagado el total por 27 nombres.
+- **El buscador de movimientos no filtra por learnset.** `learnsets.json` son
+  otros 375 KB, y calcular un movimiento hipotético es una consulta legítima.
+- **Los IVs están fijos a 31** en la pestaña de daño. Por debajo de eso la
+  pregunta deja de ser sobre el enfrentamiento.
+- **El orden de la quemadura y de "other" dentro de la fórmula está puesto por
+  lectura de la referencia, no anclado a un ejemplo publicado**, al contrario
+  que STAB y tipo, que sí lo están por el caso de Glaceon.
