@@ -10,6 +10,9 @@
 // the Pokemon way: a fractional part of exactly 0.5 rounds DOWN, unlike
 // Math.round.
 import { CHART, TYPES } from './data.js';
+import {
+  weatherById, terrainById, screenById, itemById, abilityById,
+} from './battle-data.js';
 
 // Round half down, the rounding the games use after each modifier.
 export function pokeRound(n) {
@@ -184,4 +187,130 @@ export function calcDamage(ctx) {
     koChance,
     effectiveness: ctx.effectiveness ?? 1,
   };
+}
+
+// ===== COMPOSITION =====
+//
+// Turns the choices made in the UI into the multipliers calcDamage() expects.
+// Kept here, next to the formula, because it is still pure: it reads the tables
+// and returns numbers, and never touches the DOM.
+
+/**
+ * @param {object} input
+ * @param {object} input.attacker {types, attack, defenseless stats already
+ *   computed, boost, item, ability, teraType, burned}
+ * @param {object} input.defender {types, defense, boost, item, ability,
+ *   teraType, hp, hpCurrent, grounded}
+ * @param {object} input.move     {type, category, power}
+ * @param {object} input.field    {weather, terrain, screen, doubles, critical}
+ */
+export function resolveDamage({ attacker, defender, move, field = {} }) {
+  const weather = weatherById(field.weather);
+  const terrain = terrainById(field.terrain);
+  const screen = screenById(field.screen);
+  const atkItem = itemById(attacker.item);
+  const atkAbility = abilityById(attacker.ability);
+  const defAbility = abilityById(defender.ability);
+
+  const notes = [];
+
+  // An ability that grants immunity wins over everything else.
+  if (defAbility.immuneTo?.includes(move.type)) {
+    return {
+      ...calcDamage({ power: 0, defenderHP: defender.hp, effectiveness: 0 }),
+      effectiveness: 0,
+      immuneBy: defAbility.id,
+      notes,
+    };
+  }
+
+  const effectiveness = typeEffectiveness(
+    move.type,
+    // Terastallising replaces the defender's types outright.
+    defender.teraType ? [defender.teraType] : defender.types
+  );
+
+  const stab = stabMultiplier({
+    moveType: move.type,
+    attackerTypes: attacker.types,
+    teraType: attacker.teraType,
+    adaptability: atkAbility.adaptability,
+  });
+
+  // Weather multiplies the move, terrain multiplies or weakens it.
+  let weatherMult = weather.boosts?.[move.type] ?? 1;
+  let other = 1;
+
+  if (terrain.boosts?.[move.type] && attacker.grounded !== false) {
+    other *= terrain.boosts[move.type];
+  }
+  if (terrain.weakens?.[move.type] && defender.grounded !== false) {
+    other *= terrain.weakens[move.type];
+  }
+
+  // Screens are ignored by a critical hit, which is the point of them.
+  if (screen.id !== 'none' && !field.critical) {
+    if (screen.category === null || screen.category === move.category) {
+      other *= field.doubles ? screen.multDoubles : screen.mult;
+    }
+  }
+
+  // Attacker's item.
+  if (atkItem.mult && atkItem.id !== 'none') {
+    const typeOk = !atkItem.type || atkItem.type === move.type;
+    const catOk = !atkItem.category || atkItem.category === move.category;
+    const seOk = !atkItem.superEffectiveOnly || effectiveness > 1;
+    if (typeOk && catOk && seOk) other *= atkItem.mult;
+  }
+
+  // Attacker's ability.
+  if (atkAbility.mult && atkAbility.id !== 'none') {
+    const typeOk = !atkAbility.type || atkAbility.type === move.type;
+    const powerOk = !atkAbility.maxPower || move.power <= atkAbility.maxPower;
+    const nveOk = !atkAbility.notVeryEffectiveOnly || (effectiveness > 0 && effectiveness < 1);
+    if (typeOk && powerOk && nveOk) other *= atkAbility.mult;
+    if (atkAbility.note) notes.push(atkAbility.note);
+  }
+
+  // Defender's ability.
+  if (defAbility.mult && defAbility.id !== 'none') {
+    const typeOk = !defAbility.types || defAbility.types.includes(move.type);
+    const catOk = !defAbility.category || defAbility.category === move.category;
+    const seOk = !defAbility.superEffectiveOnly || effectiveness > 1;
+    if (typeOk && catOk && seOk) other *= defAbility.mult;
+    if (defAbility.note) notes.push(defAbility.note);
+  }
+
+  // Stat-doubling abilities act on the stat, not on the damage.
+  let attack = attacker.attack;
+  let defense = defender.defense;
+  if (atkAbility.statMult) attack = Math.floor(attack * atkAbility.statMult);
+  if (defAbility.statMult) defense = Math.floor(defense * defAbility.statMult);
+
+  // Sandstorm and snow raise a defensive stat instead of scaling the move.
+  const defBoost = weather.defBoost;
+  if (defBoost && defender.types.some(x => defBoost.types.includes(x))
+      && ((defBoost.stat === 'spd' && move.category === 'special')
+       || (defBoost.stat === 'def' && move.category === 'physical'))) {
+    defense = Math.floor(defense * defBoost.mult);
+  }
+
+  const result = calcDamage({
+    level: attacker.level,
+    power: move.power,
+    attack,
+    defense,
+    attackBoost: attacker.boost ?? 0,
+    defenseBoost: defender.boost ?? 0,
+    critical: Boolean(field.critical),
+    stab,
+    effectiveness,
+    burned: Boolean(attacker.burned) && move.category === 'physical',
+    targets: field.doubles && move.spread ? 0.75 : 1,
+    weather: weatherMult,
+    other,
+    defenderHP: defender.hp,
+  });
+
+  return { ...result, notes, recoil: atkItem.recoil ?? 0 };
 }

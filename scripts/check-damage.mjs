@@ -6,7 +6,7 @@
 // carries STAB and a x4 type multiplier.
 import {
   calcDamage, damageRolls, pokeRound, boostMultiplier,
-  typeEffectiveness, stabMultiplier,
+  typeEffectiveness, stabMultiplier, resolveDamage,
 } from '../js/damage.js';
 
 let failed = 0;
@@ -134,6 +134,67 @@ checkTrue('odds strictly between 0 and 1', coinFlip.koChance > 0 && coinFlip.koC
 
 // The odds must be a multiple of 1/16 for a single hit.
 checkTrue('single-hit odds are n/16', Math.abs(coinFlip.koChance * 16 - Math.round(coinFlip.koChance * 16)) < 1e-9);
+
+console.log('\nModifier tables\n');
+
+const fight = (over = {}) => resolveDamage({
+  attacker: { types: ['fire'], level: 50, attack: 200, boost: 0, ...over.attacker },
+  defender: { types: ['grass'], defense: 150, boost: 0, hp: 300, ...over.defender },
+  move: { type: 'fire', category: 'special', power: 90, ...over.move },
+  field: { ...over.field },
+});
+
+const clean = fight();
+checkTrue('a plain hit does damage', clean.min > 0);
+check('STAB and x2 type are in', clean.effectiveness, 2);
+
+checkTrue('Life Orb raises it', fight({ attacker: { item: 'life-orb' } }).min > clean.min);
+check('Life Orb reports its recoil', fight({ attacker: { item: 'life-orb' } }).recoil, 0.1);
+check('Choice Band does nothing to a special move',
+  fight({ attacker: { item: 'choice-band' } }).rolls, clean.rolls);
+checkTrue('Choice Specs does',
+  fight({ attacker: { item: 'choice-specs' } }).min > clean.min);
+checkTrue('Expert Belt applies when super effective',
+  fight({ attacker: { item: 'expert-belt' } }).min > clean.min);
+check('Expert Belt does nothing on a neutral hit',
+  fight({ attacker: { item: 'expert-belt' }, defender: { types: ['normal'] } }).rolls,
+  fight({ defender: { types: ['normal'] } }).rolls);
+
+checkTrue('sun boosts Fire', fight({ field: { weather: 'sun' } }).min > clean.min);
+checkTrue('rain weakens Fire', fight({ field: { weather: 'rain' } }).min < clean.min);
+checkTrue('grassy terrain boosts Grass',
+  fight({ move: { type: 'grass' }, field: { terrain: 'grassy' } }).min
+  > fight({ move: { type: 'grass' } }).min);
+
+checkTrue('Light Screen halves a special move',
+  fight({ field: { screen: 'lightscreen' } }).min < clean.min);
+check('Reflect does nothing to a special move',
+  fight({ field: { screen: 'reflect' } }).rolls, clean.rolls);
+check('a crit goes through Light Screen',
+  fight({ field: { screen: 'lightscreen', critical: true } }).rolls,
+  fight({ field: { critical: true } }).rolls);
+
+check('Levitate is immune to Ground',
+  fight({ move: { type: 'ground' }, defender: { ability: 'levitate' } }).max, 0);
+check('and reports which ability did it',
+  fight({ move: { type: 'ground' }, defender: { ability: 'levitate' } }).immuneBy, 'levitate');
+checkTrue('Thick Fat halves Fire',
+  fight({ defender: { ability: 'thick-fat' } }).min < clean.min);
+checkTrue('Fur Coat doubles Defense against physical',
+  fight({ move: { category: 'physical' }, defender: { ability: 'fur-coat' } }).min
+  < fight({ move: { category: 'physical' } }).min);
+checkTrue('Huge Power doubles Attack',
+  fight({ attacker: { ability: 'huge-power' } }).min > clean.min);
+checkTrue('Technician only helps weak moves',
+  fight({ move: { power: 50 }, attacker: { ability: 'technician' } }).min
+  > fight({ move: { power: 50 } }).min);
+check('Technician does nothing at 90 power',
+  fight({ attacker: { ability: 'technician' } }).rolls, clean.rolls);
+
+check('Tera replaces the defender types',
+  fight({ defender: { teraType: 'water' } }).effectiveness, 0.5);
+checkTrue('Adaptability raises a STAB move',
+  fight({ attacker: { ability: 'adaptability' } }).min > clean.min);
 
 console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);
