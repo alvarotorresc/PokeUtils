@@ -157,7 +157,7 @@ async function route() {
       renderNatures(app);
     } else if (path === '/calculator') {
       updateActiveNav('calculator');
-      renderCalculator(app);
+      renderCalculator(app, query);
     } else {
       updateActiveNav('');
       app.innerHTML = `
