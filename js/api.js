@@ -148,9 +148,11 @@ export async function searchPokemon(term) {
       nameEn: p.nameEn,
       stats: p.stats,
       // The capture tab needs both: the rate to run the formula, and the weight
-      // because the Heavy Ball bonus is a function of it.
+      // because the Heavy Ball bonus is a function of it. The damage tab needs
+      // the types, for STAB and for the type chart.
       captureRate: p.captureRate,
       weight: p.weight,
+      types: p.types,
     }));
 }
 

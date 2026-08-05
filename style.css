@@ -2373,3 +2373,165 @@ a.evo-node:hover {
   font-size: 0.45rem;
   color: var(--text-muted);
 }
+
+/* ===== DAMAGE CALCULATOR ===== */
+
+/* Attacker and defender side by side once there is room for two columns. */
+.dmg-sides {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 900px) {
+  .dmg-sides {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.dmg-hit {
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.42rem;
+}
+
+.dmg-hit img {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+}
+
+.dmg-chosen {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0 12px;
+}
+
+.dmg-chosen img {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+}
+
+.dmg-chosen-name {
+  font-size: 0.5rem;
+  color: var(--accent);
+}
+
+.dmg-chosen-types {
+  font-size: 0.42rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Field modifiers are folded away: most questions never touch them. */
+.dmg-field {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+}
+
+.dmg-field summary {
+  padding: 14px 16px;
+  font-size: 0.48rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  list-style: none;
+}
+
+.dmg-field summary::before {
+  content: '[+] ';
+  color: var(--accent);
+}
+
+.dmg-field[open] summary::before {
+  content: '[-] ';
+}
+
+.dmg-field-body {
+  padding: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dmg-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.dmg-toggles label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.44rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.dmg-toggles input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.dmg-empty {
+  text-align: center;
+  font-size: 0.46rem;
+  color: var(--text-dim);
+}
+
+.dmg-headline {
+  font-size: 1.1rem;
+  line-height: 1.3;
+}
+
+.dmg-immune {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.dmg-sub {
+  font-size: 0.5rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* Two stacked segments: the guaranteed part of the roll, then the luck. */
+.dmg-bar {
+  display: flex;
+  height: 14px;
+  margin: 16px 0 12px;
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dmg-bar-min {
+  height: 100%;
+}
+
+.dmg-bar-max {
+  height: 100%;
+  opacity: 0.45;
+}
+
+.dmg-ko {
+  font-size: 0.5rem;
+  color: var(--text);
+}
+
+.dmg-eff,
+.dmg-notes {
+  font-size: 0.42rem;
+  color: var(--text-muted);
+  margin-top: 10px;
+  line-height: 1.9;
+}
