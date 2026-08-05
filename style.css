@@ -529,6 +529,22 @@ a:hover {
   margin-top: 8px;
 }
 
+.spd-head { display: flex; align-items: center; gap: 16px; margin: 16px 0; }
+.spd-head h2 { font-family: var(--font-retro); font-size: 0.7rem; margin: 0; }
+.spd-spreads { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 24px; }
+@media (min-width: 640px) { .spd-spreads { grid-template-columns: repeat(4, 1fr); } }
+.spd-spread { background: var(--bg-surface); border: 2px solid var(--border); border-radius: 10px; padding: 12px 8px; text-align: center; }
+.spd-spread.best { border-color: var(--accent); }
+.spd-spread .label { font-family: var(--font-retro); font-size: 0.4rem; color: var(--text-dim); line-height: 1.6; }
+.spd-spread .value { font-family: var(--font-retro); font-size: 0.8rem; color: var(--accent); margin-top: 8px; }
+.spd-tiers { display: grid; grid-template-columns: 1fr; gap: 20px; }
+@media (min-width: 640px) { .spd-tiers { grid-template-columns: repeat(2, 1fr); } }
+.spd-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-size: 0.8rem; }
+.spd-row:hover { background: rgba(255,255,255,0.04); text-decoration: none; }
+.spd-row img { width: 32px; height: 32px; image-rendering: pixelated; }
+.spd-name { flex: 1; }
+.spd-value { font-family: var(--font-retro); font-size: 0.5rem; color: var(--accent); }
+
 .cmp-chips {
   display: flex;
   flex-wrap: wrap;
