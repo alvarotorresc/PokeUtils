@@ -485,11 +485,25 @@ a:hover {
   margin-top: 12px;
 }
 
+.home-group {
+  margin: 28px 0 0;
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
 .home-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin-top: 30px;
+}
+
+/* A grid under its own heading sits close to it: the 30px above is meant for a
+   grid that stands alone, and doubles up with the heading's own margin. */
+.home-group + .home-grid {
+  margin-top: 12px;
 }
 
 @media (min-width: 640px) {

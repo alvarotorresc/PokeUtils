@@ -1,65 +1,35 @@
 // ===== HOME PAGE =====
+//
+// Every tool has a card here, grouped by the same categories as the nav bar, so
+// the app reads the same from the top as from the menu. The cards come from
+// tools.js: this file decides how they look, not which ones there are.
+import { CATEGORIES, toolsIn } from './tools.js';
 import { t } from './i18n.js';
 
 export function renderHome(container) {
+  const groups = CATEGORIES.map(category => {
+    const tools = toolsIn(category.id);
+    if (!tools.length) return '';
+    return `
+      <h2 class="home-group">${t(`hub.${category.id}.title`)}</h2>
+      <div class="home-grid">
+        ${tools.map(tool => `
+          <a href="${tool.route}" class="home-card">
+            <div class="icon">${tool.icon}</div>
+            <div class="label">${t(tool.label)}</div>
+            <div class="desc">${t(tool.desc)}</div>
+          </a>
+        `).join('')}
+      </div>
+    `;
+  }).join('');
+
   container.innerHTML = `
     <div class="home-hero">
       <div class="pokeball-icon-lg"></div>
       <h1>POKE<span class="accent">UTILS</span></h1>
       <p>${t('home.tagline')}</p>
     </div>
-
-    <div class="home-grid">
-      <a href="#/pokedex" class="home-card">
-        <div class="icon">📖</div>
-        <div class="label">${t('nav.pokedex')}</div>
-        <div class="desc">${t('home.pokedex.desc')}</div>
-      </a>
-      <a href="#/types" class="home-card">
-        <div class="icon">⚡</div>
-        <div class="label">${t('nav.types')}</div>
-        <div class="desc">${t('home.types.desc')}</div>
-      </a>
-      <a href="#/team" class="home-card">
-        <div class="icon">🛡️</div>
-        <div class="label">${t('nav.team')}</div>
-        <div class="desc">${t('home.team.desc')}</div>
-      </a>
-      <a href="#/moves" class="home-card">
-        <div class="icon">💥</div>
-        <div class="label">${t('nav.moves')}</div>
-        <div class="desc">${t('home.moves.desc')}</div>
-      </a>
-      <a href="#/abilities" class="home-card">
-        <div class="icon">✨</div>
-        <div class="label">${t('nav.abilities')}</div>
-        <div class="desc">${t('home.abilities.desc')}</div>
-      </a>
-      <a href="#/items" class="home-card">
-        <div class="icon">🎒</div>
-        <div class="label">${t('nav.items')}</div>
-        <div class="desc">${t('home.items.desc')}</div>
-      </a>
-      <a href="#/natures" class="home-card">
-        <div class="icon">🧬</div>
-        <div class="label">${t('nav.natures')}</div>
-        <div class="desc">${t('home.natures.desc')}</div>
-      </a>
-      <a href="#/calculator" class="home-card">
-        <div class="icon">🔢</div>
-        <div class="label">${t('nav.calculator')}</div>
-        <div class="desc">${t('home.calculator.desc')}</div>
-      </a>
-      <a href="#/calculator?tab=damage" class="home-card">
-        <div class="icon">⚔️</div>
-        <div class="label">${t('calc.tab.damage')}</div>
-        <div class="desc">${t('home.damage.desc')}</div>
-      </a>
-      <a href="#/calculator?tab=catch" class="home-card">
-        <div class="icon">🥎</div>
-        <div class="label">${t('calc.tab.catch')}</div>
-        <div class="desc">${t('home.capture.desc')}</div>
-      </a>
-    </div>
+    ${groups}
   `;
 }
