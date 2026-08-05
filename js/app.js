@@ -11,6 +11,7 @@ import { renderItems } from './items.js';
 import { renderNatures } from './natures.js';
 import { renderCalculator } from './calculator.js';
 import { renderHub } from './hub.js';
+import { CATEGORIES, categoryOf, targetOf } from './tools.js';
 import { t, getLang, setLang, onLangChange } from './i18n.js';
 import { ErrorKind, purgeLegacyCache } from './api.js';
 
@@ -50,20 +51,17 @@ function updateLangBtn() {
 }
 
 function updateNavLabels() {
-  const labels = {
-    home: t('nav.home'),
-    pokedex: t('nav.pokedex'),
-    types: t('nav.types'),
-    team: t('nav.team'),
-    moves: t('nav.moves'),
-    abilities: t('nav.abilities'),
-    items: t('nav.items'),
-    natures: t('nav.natures'),
-    calculator: t('nav.calculator'),
-  };
   document.querySelectorAll('.nav-link').forEach(link => {
     const page = link.dataset.page;
-    if (labels[page]) link.textContent = labels[page];
+    if (page === 'home') {
+      link.textContent = t('nav.home');
+      return;
+    }
+    const category = CATEGORIES.find(c => c.id === page);
+    if (!category) return;
+    link.textContent = t(category.label);
+    // A category with a single tool links straight to it; targetOf decides.
+    link.setAttribute('href', targetOf(category.id));
   });
 }
 
@@ -105,66 +103,52 @@ function parseHash() {
   return { path: '/' + parts.join('/'), parts, query: new URLSearchParams(queryPart) };
 }
 
-function updateActiveNav(page) {
+// The tab that lights up is the tool's category, which the path does not carry:
+// #/moves has to light up Datos. tools.js holds that map.
+function updateActiveNav(path) {
+  const active = path === '/' || path === '/home' ? 'home' : categoryOf(path);
   document.querySelectorAll('.nav-link').forEach(link => {
-    const linkPage = link.dataset.page;
-    if (linkPage === page || (page === '' && linkPage === 'home')) {
-      link.classList.add('active');
-    } else {
-      link.classList.remove('active');
-    }
+    link.classList.toggle('active', link.dataset.page === active);
   });
 }
 
 async function route() {
   const { path, parts, query } = parseHash();
+  updateActiveNav(path);
   app.innerHTML = '';
   app.className = 'main fade-in';
   window.scrollTo(0, 0);
 
   try {
     if (path === '/' || path === '/home') {
-      updateActiveNav('home');
       renderHome(app);
     } else if (path === '/types') {
-      updateActiveNav('types');
       renderTypeChart(app);
     } else if (path === '/team') {
-      updateActiveNav('team');
       await renderTeam(app, query);
     } else if (parts[0] === 'pokedex' && parts[1]) {
-      updateActiveNav('pokedex');
       await renderPokedexDetail(app, parseInt(parts[1]));
     } else if (path === '/pokedex') {
-      updateActiveNav('pokedex');
       await renderPokedex(app, query);
     } else if (parts[0] === 'moves' && parts[1]) {
-      updateActiveNav('moves');
       await renderMoveDetail(app, parseInt(parts[1], 10));
     } else if (path === '/moves') {
-      updateActiveNav('moves');
       await renderMoves(app, query);
     } else if (parts[0] === 'abilities' && parts[1]) {
-      updateActiveNav('abilities');
       await renderAbilities(app, decodeURIComponent(parts[1]));
     } else if (path === '/abilities') {
-      updateActiveNav('abilities');
       await renderAbilities(app);
     } else if (path === '/items') {
-      updateActiveNav('items');
       await renderItems(app);
     } else if (path === '/natures') {
-      updateActiveNav('natures');
       renderNatures(app);
     } else if (path === '/data') {
       renderHub(app, 'data');
     } else if (path === '/competitive') {
       renderHub(app, 'competitive');
     } else if (path === '/calculator') {
-      updateActiveNav('calculator');
       renderCalculator(app, query);
     } else {
-      updateActiveNav('');
       app.innerHTML = `
         <div class="no-results">
           <div class="icon">❓</div>
