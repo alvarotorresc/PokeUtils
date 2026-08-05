@@ -533,10 +533,13 @@ a:hover {
 .ct-row { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 6px; text-decoration: none; font-size: 0.8rem; }
 .ct-row:hover { background: rgba(255,255,255,0.04); text-decoration: none; }
 .ct-row img { width: 36px; height: 36px; image-rendering: pixelated; }
-.ct-name { flex: 1; }
-.ct-fast { font-size: 0.9rem; }
-.ct-hits { font-family: var(--font-retro); font-size: 0.4rem; color: var(--text-dim); }
-.ct-power { font-family: var(--font-retro); font-size: 0.5rem; color: var(--accent); min-width: 40px; text-align: right; }
+/* min-width:0 lets the name give way instead of pushing the row past the
+   screen: at 360 px "Electrofuria" plus the count, the power and the bolt need
+   344 px for 320 available. */
+.ct-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ct-fast { font-size: 0.9rem; flex: none; }
+.ct-hits { font-family: var(--font-retro); font-size: 0.4rem; color: var(--text-dim); flex: none; white-space: nowrap; }
+.ct-power { font-family: var(--font-retro); font-size: 0.5rem; color: var(--accent); min-width: 40px; text-align: right; flex: none; }
 
 .sv-pickers { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 24px; }
 @media (min-width: 640px) { .sv-pickers { grid-template-columns: repeat(3, 1fr); } }

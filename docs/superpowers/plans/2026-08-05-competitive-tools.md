@@ -45,7 +45,7 @@ dependencias. Verificación con `node scripts/check-*.mjs` y con el navegador.
 **Interfaces:**
 - Produces: `getLevel() -> 50|100`, `setLevel(n)`, `onLevelChange(cb)`.
 
-- [ ] **Step 1: Escribir `js/level.js`**
+- [x] **Step 1: Escribir `js/level.js`**
 
 ```js
 // ===== FORMAT LEVEL =====
@@ -74,7 +74,7 @@ export function setLevel(next) {
 export const onLevelChange = cb => listeners.push(cb);
 ```
 
-- [ ] **Step 2: El botón en `index.html`**
+- [x] **Step 2: El botón en `index.html`**
 
 Dentro de `<div class="nav-toggles" id="navToggles">`, **antes** del de idioma:
 
@@ -82,7 +82,7 @@ Dentro de `<div class="nav-toggles" id="navToggles">`, **antes** del de idioma:
         <button class="nav-toggle-btn" id="levelToggle" title="Nivel 50 / 100">Nv50</button>
 ```
 
-- [ ] **Step 3: Engancharlo en `js/app.js`**
+- [x] **Step 3: Engancharlo en `js/app.js`**
 
 Import junto a los demás:
 
@@ -109,14 +109,14 @@ onLevelChange(() => {
 updateLevelBtn();
 ```
 
-- [ ] **Step 4: Comprobar en el navegador**
+- [x] **Step 4: Comprobar en el navegador**
 
 Recargar con `?r=1`. El botón dice `Nv50`; al pulsarlo pasa a `Nv100` y
 **sobrevive a una recarga**. Y comprobar que
 `#/calculator?tab=damage&a=6&d=3&m=53&al=100&crit=1` sigue dando **618 - 728**
 con el global en 50 y en 100: la calculadora no lo lee.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add js/level.js js/app.js index.html
@@ -136,7 +136,7 @@ git -c commit.gpgsign=false commit -m "feat(level): add the global 50/100 format
 - Produces: `speedSpread(p, level)`, `speedTiers(p, list, level)` desde
   `js/speed.js`, y `renderSpeed(container, query)`.
 
-- [ ] **Step 1: Escribir el check que falla**
+- [x] **Step 1: Escribir el check que falla**
 
 `scripts/check-speed.mjs`:
 
@@ -189,12 +189,12 @@ console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);
 ```
 
-- [ ] **Step 2: Ejecutarlo para verlo fallar**
+- [x] **Step 2: Ejecutarlo para verlo fallar**
 
 Run: `node scripts/check-speed.mjs`
 Expected: FAIL — `Cannot find module '../js/speed.js'`.
 
-- [ ] **Step 3: Escribir `js/speed.js`**
+- [x] **Step 3: Escribir `js/speed.js`**
 
 ```js
 // ===== SPEED =====
@@ -346,7 +346,7 @@ export async function renderSpeed(container, query = new URLSearchParams()) {
 }
 ```
 
-- [ ] **Step 4: Ruta, claves y estilos**
+- [x] **Step 4: Ruta, claves y estilos**
 
 En `js/app.js`, import `renderSpeed` y, antes de la rama de `/competitive`:
 
@@ -414,18 +414,18 @@ Estilos:
 .spd-value { font-family: var(--font-retro); font-size: 0.5rem; color: var(--accent); }
 ```
 
-- [ ] **Step 5: Ejecutar el check hasta verlo pasar**
+- [x] **Step 5: Ejecutar el check hasta verlo pasar**
 
 Run: `node scripts/check-speed.mjs`
 Expected: PASS.
 
-- [ ] **Step 6: Comprobar en el navegador**
+- [x] **Step 6: Comprobar en el navegador**
 
 `?r=2#/speed?id=6`: Charizard, máximo **167**, "le superan **127**", 15 arriba y
 15 abajo. Cambiar el nivel a 100 con el botón y ver que los números suben.
 `#/speed?id=894` (Regieleki): "Nadie le gana en velocidad".
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add js/speed.js scripts/check-speed.mjs js/app.js js/i18n.js style.css
@@ -445,7 +445,7 @@ git -c commit.gpgsign=false commit -m "feat(speed): add the relative speed tool"
 - Produces: `survives(ctx)` y `minimumSpread(ctx)` desde `js/survive.js`, y
   `renderSurvive(container, query)`.
 
-- [ ] **Step 1: Escribir el check que falla**
+- [x] **Step 1: Escribir el check que falla**
 
 `scripts/check-survive.mjs`:
 
@@ -500,11 +500,11 @@ console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);
 ```
 
-- [ ] **Step 2: Ejecutarlo para verlo fallar**
+- [x] **Step 2: Ejecutarlo para verlo fallar**
 
 Run: `node scripts/check-survive.mjs` → `Cannot find module '../js/survive.js'`.
 
-- [ ] **Step 3: Escribir el motor de `js/survive.js`**
+- [x] **Step 3: Escribir el motor de `js/survive.js`**
 
 La parte sin DOM va arriba del fichero, para que el check la importe sin
 arrastrar la página:
@@ -571,7 +571,7 @@ export function minimumSpread(ctx) {
 }
 ```
 
-- [ ] **Step 4: La página**
+- [x] **Step 4: La página**
 
 Al mismo fichero, debajo:
 
@@ -695,7 +695,7 @@ export async function renderSurvive(container, query = new URLSearchParams()) {
 }
 ```
 
-- [ ] **Step 5: Claves y estilos**
+- [x] **Step 5: Claves y estilos**
 
 `es`:
 
@@ -757,7 +757,7 @@ Estilos:
 .sv-spread { background: var(--bg-surface); border: 2px solid var(--border); border-radius: 10px; padding: 14px; font-size: 0.85rem; }
 ```
 
-- [ ] **Step 6: Ruta, check y navegador**
+- [x] **Step 6: Ruta, check y navegador**
 
 Ruta en `app.js` (`path === '/survive'`). Luego:
 
@@ -766,7 +766,7 @@ Run: `node scripts/check-survive.mjs` → PASS.
 En el navegador con `?r=3`: `#/survive`, elegir Charizard, Lanzallamas y
 Venusaur, y ver el veredicto y el reparto mínimo.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add js/survive.js scripts/check-survive.mjs js/app.js js/i18n.js style.css
@@ -786,7 +786,7 @@ git -c commit.gpgsign=false commit -m "feat(survive): add the survival check and
 - Produces: `threatensMember(attacker, member)`, `counters(team, list, level)`,
   `renderCounter(container, query)`.
 
-- [ ] **Step 1: Escribir el check que falla**
+- [x] **Step 1: Escribir el check que falla**
 
 `scripts/check-counter.mjs`:
 
@@ -837,11 +837,11 @@ console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);
 ```
 
-- [ ] **Step 2: Ejecutarlo para verlo fallar**
+- [x] **Step 2: Ejecutarlo para verlo fallar**
 
 Run: `node scripts/check-counter.mjs` → `Cannot find module '../js/counter.js'`.
 
-- [ ] **Step 3: Escribir `js/counter.js`**
+- [x] **Step 3: Escribir `js/counter.js`**
 
 ```js
 // ===== COUNTER MY TEAM =====
@@ -892,7 +892,7 @@ export function counters(team, list, level) {
 }
 ```
 
-- [ ] **Step 4: La página, en el mismo fichero**
+- [x] **Step 4: La página, en el mismo fichero**
 
 ```js
 import { fetchPokemonList } from './api.js';
@@ -1001,7 +1001,7 @@ export async function renderCounter(container, query = new URLSearchParams()) {
 }
 ```
 
-- [ ] **Step 5: El enlace desde `#/team`**
+- [x] **Step 5: El enlace desde `#/team`**
 
 En `js/team.js`, junto a la cabecera de resultados, añadir un enlace que lleve el
 equipo puesto:
@@ -1012,7 +1012,7 @@ equipo puesto:
 
 (usar el nombre real de la variable de estado del equipo en ese fichero).
 
-- [ ] **Step 6: Claves y estilos**
+- [x] **Step 6: Claves y estilos**
 
 `es`:
 
@@ -1060,7 +1060,7 @@ Estilos:
 .ct-power { font-family: var(--font-retro); font-size: 0.5rem; color: var(--accent); min-width: 40px; text-align: right; }
 ```
 
-- [ ] **Step 7: Ruta, check y navegador**
+- [x] **Step 7: Ruta, check y navegador**
 
 Ruta en `app.js` (`path === '/counter'`).
 
@@ -1070,7 +1070,7 @@ En el navegador con `?r=4`:
 `#/counter?ids=9,130,131,134,230,745` tiene que decir **232** y empezar por
 Kartana. `#/counter?ids=1,4,7,25,143,150` tiene que decir **26**.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add js/counter.js scripts/check-counter.mjs js/app.js js/team.js js/i18n.js style.css
@@ -1084,7 +1084,7 @@ git -c commit.gpgsign=false commit -m "feat(counter): add the team threat finder
 **Files:**
 - Modify: `js/tools.js`, `scripts/check-tools.mjs`
 
-- [ ] **Step 1: Las tres herramientas en la tabla**
+- [x] **Step 1: Las tres herramientas en la tabla**
 
 En `TOOLS`, junto a la de `team`:
 
@@ -1099,7 +1099,7 @@ Y a la de `team`, su etiqueta corta: `tab: 'team.tab'` (`'EQUIPO'` / `'TEAM'`).
 Competitivo llega a **4**, así que `targetOf` deja de ir directo a `#/team` y
 abre el hub por sí solo: no hay que marcar nada.
 
-- [ ] **Step 2: Actualizar `scripts/check-tools.mjs`**
+- [x] **Step 2: Actualizar `scripts/check-tools.mjs`**
 
 Sustituir:
 
@@ -1117,11 +1117,11 @@ check('Competitivo tiene cuatro herramientas',
   toolsIn('competitive').map(t => t.id), ['team', 'counter', 'speed', 'survive']);
 ```
 
-- [ ] **Step 3: Los dos checks**
+- [x] **Step 3: Los dos checks**
 
 Run: `node scripts/check-tools.mjs` → PASS.
 
-- [ ] **Step 4: Navegador**
+- [x] **Step 4: Navegador**
 
 Con `?r=5`: la pestaña COMPETITIVO abre `#/competitive` y su hub lista **4**
 tarjetas. El home tiene **15**. A 360 px las cuatro pestañas de la tira **no
@@ -1132,7 +1132,7 @@ pinta, sólo el hub.
 > nuevas y la tira se sale a 360 px, quitarla de ellas y dejar sólo el hub. Es
 > exactamente lo que dice la regla medida.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add js/tools.js scripts/check-tools.mjs
@@ -1143,7 +1143,7 @@ git -c commit.gpgsign=false commit -m "feat(nav): turn competitive into a real h
 
 ### Task 6: Verificación completa
 
-- [ ] **Step 1: Los nueve scripts en verde**
+- [x] **Step 1: Los nueve scripts en verde**
 
 ```bash
 for s in tools egg-groups speed survive counter damage-url variable-power damage capture; do
@@ -1151,11 +1151,11 @@ for s in tools egg-groups speed survive counter damage-url variable-power damage
 done
 ```
 
-- [ ] **Step 2: Las 20 rutas responden**
+- [x] **Step 2: Las 20 rutas responden**
 
 Las 17 de antes más `#/speed`, `#/survive` y `#/counter`.
 
-- [ ] **Step 3: Lo que no puede haber cambiado**
+- [x] **Step 3: Lo que no puede haber cambiado**
 
 ```
 #/calculator?tab=damage&a=6&d=3&m=53&al=100&crit=1  -> 618 - 728
@@ -1165,21 +1165,21 @@ Las 17 de antes más `#/speed`, `#/survive` y `#/counter`.
 #/egg/ground                                        -> 278
 ```
 
-- [ ] **Step 4: El nivel global**
+- [x] **Step 4: El nivel global**
 
 Cambiarlo a 100 y confirmar que `#/speed?id=6` sube sus números, que sobrevive
 al recargar, y que **la calculadora sigue dando 618 - 728**.
 
-- [ ] **Step 5: Los dos idiomas**
+- [x] **Step 5: Los dos idiomas**
 
 Recorrer `#/speed?id=6`, `#/survive`, `#/counter?ids=1,4,7` en EN sin que
 aparezca ninguna clave cruda.
 
-- [ ] **Step 6: Anchos y consola**
+- [x] **Step 6: Anchos y consola**
 
 A 360 px nada se sale; consola sin errores ni avisos.
 
-- [ ] **Step 7: Commit de lo corregido**
+- [x] **Step 7: Commit de lo corregido**
 
 ---
 
