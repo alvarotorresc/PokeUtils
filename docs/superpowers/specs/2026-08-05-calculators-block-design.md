@@ -142,8 +142,17 @@ La familia 11 se desglosa así, y es la única con partes que no entran:
 > regenerando datos en este bloque. Dejarlos fuera habría sido heredar una
 > suposición del backlog de ayer sin comprobarla.
 
-**Cobertura final: 583 con poder fijo + 39 de poder variable = 622 de los 660
-movimientos de daño (94,2%)**, más la mecánica Z sobre cualquiera de ellos.
+**Cobertura final: 572 con poder fijo + 39 de poder variable = 611 movimientos
+que la calculadora puede ofrecer**, más la mecánica Z sobre cualquiera de ellos.
+
+> **Corregido al medirlo, 2026-08-05.** Este párrafo decía "583 + 39 = 622 de
+> los 660 (94,2%)", que mezclaba dos denominadores. De los 660 de daño, 13 no
+> son de serie principal y **36 son las entradas Z que PokeAPI lista como
+> movimientos propios**, sin poder y duplicadas en físico y especial. El
+> denominador honrado es 647, y de esos son elegibles 611 (94,4%): los 36
+> restantes son las entradas Z, que por decisión de este mismo spec van por
+> casilla y no por lista. Hasta corregirlo se colaban en el buscador y solo
+> podían responder "no soportado". Lo filtra `isCalculable()`.
 
 > **Corregido al implementarlo.** Este spec decía antes "599 de 676". Estaba
 > mal: **16 movimientos de estado llevan `power: 0`**, y como `0` no es `null`,
@@ -242,8 +251,10 @@ Colector) y las que cambian el clima.
 
 ## Fuera de alcance
 
-- **`beat-up` y `shadow-half`**, los dos únicos movimientos de daño que quedan
-  sin cubrir.
+- **`beat-up` y `shadow-half`**, los dos únicos movimientos **de serie
+  principal y elegibles** que quedan sin cubrir: el primero necesita el equipo
+  entero y el segundo es de XD. Los 11 de tipo `shadow` y las 36 entradas Z no
+  entran en esta cuenta porque el buscador ni los ofrece.
 - **Dinamax y Gigamax**: mecánica de Gen 8. A diferencia de los Z, el poder Max
   de un movimiento **no se deriva por regla del poder base** sino de una tabla
   propia por tipo y por movimiento, y PokeAPI no la expone.
