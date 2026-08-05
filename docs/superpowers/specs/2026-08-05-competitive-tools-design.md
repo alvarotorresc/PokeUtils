@@ -40,10 +40,14 @@ Un equipo mono-tipo devuelve **232 nombres**: una lista así no se lee. Y al
 revés, un equipo bien repartido devuelve **cero** a 4+, así que un corte fijo
 tampoco vale.
 
-**La salida se ordena por poder ofensivo** (el mayor de Ataque y At. Especial),
-que es lo que separa una amenaza real de un Pokémon que comparte tipo y nada
-más. Con el mismo equipo mono-agua, ordenar así saca Kartana (181), Xurkitree
-(173) y Zekrom (150) en vez de Swinub.
+**La salida se ordena por cuántos miembros amenaza y, a igualdad, por poder
+ofensivo** (el mayor de Ataque y At. Especial), que es lo que separa una amenaza
+real de un Pokémon que comparte tipo y nada más. Con el mismo equipo mono-agua,
+ordenar así encabeza con **Zekrom, Ferropalmas y Electrofuria** —los que golpean
+a **5 de los 6**— en vez de con Swinub.
+
+(Kartana pega más fuerte, 181, pero solo amenaza a 4: por eso el conteo va
+primero y el poder solo desempata.)
 
 ---
 

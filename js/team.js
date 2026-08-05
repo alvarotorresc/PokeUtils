@@ -64,6 +64,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
       <input type="text" class="search-input" id="teamSearch" placeholder="${t('team.search')}">
     </div>
     <div id="teamResults" class="team-results"></div>
+    <p class="back-link" id="teamCounterLink" hidden></p>
     <div id="teamAnalysis"></div>
   `;
 
@@ -72,6 +73,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
   const searchInput = container.querySelector('#teamSearch');
   const resultsEl = container.querySelector('#teamResults');
   const analysisEl = container.querySelector('#teamAnalysis');
+  const counterLink = container.querySelector('#teamCounterLink');
 
   const members = () => state.ids.map(id => byId.get(id));
 
@@ -80,6 +82,11 @@ export async function renderTeam(container, query = new URLSearchParams()) {
       ids: state.ids.join(','),
       atk: state.atk.join(','),
     });
+    // The counter tool takes the same ids, so the team travels there as a link
+    // instead of being typed a second time. Hidden with an empty team, where it
+    // would lead to a page with nothing to say.
+    counterLink.hidden = state.ids.length === 0;
+    counterLink.innerHTML = `<a href="#/counter?ids=${state.ids.join(',')}">${t('counter.fromteam')}</a>`;
   }
 
   function renderSlots() {

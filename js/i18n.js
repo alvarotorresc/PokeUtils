@@ -54,6 +54,18 @@ const translations = {
     'survive.impossible': 'Ningun reparto de EVs lo aguanta.',
     'home.survive.desc': 'Si aguanta el golpe y con cuantos EVs',
 
+    'counter.title': 'Contrarrestar mi equipo',
+    'counter.subtitle': 'Quien le hace dano a tu equipo, y quien ademas llega antes',
+    'counter.search': 'Anadir al equipo...',
+    'counter.full': 'El equipo ya tiene 6',
+    'counter.pick': 'Anade Pokemon a tu equipo para ver quien lo amenaza.',
+    'counter.summary': '{total} Pokemon pegan super efectivo a {half} o mas de tus {size}. Estos son los que mas pegan:',
+    'counter.hits': '{n} miembros',
+    'counter.faster': 'Ademas le gana en velocidad a la mitad del equipo',
+    'counter.legend': 'Ordenado por cuantos miembros amenaza y, a igualdad, por su mejor stat de ataque. El rayo marca a los que ademas llegan antes.',
+    'counter.fromteam': 'Ver quien contrarresta este equipo ▶',
+    'home.counter.desc': 'Quien amenaza a tu equipo y quien llega antes',
+
     // Hubs
     'hub.pokedex.title': 'Pokedex',
     'hub.pokedex.subtitle': 'Las 1025 especies y las herramientas que salen de ellas',
@@ -581,6 +593,18 @@ const translations = {
     'survive.nothingneeded': 'None: it already takes it with nothing invested.',
     'survive.impossible': 'No EV spread takes it.',
     'home.survive.desc': 'Whether it takes the hit, and with how many EVs',
+
+    'counter.title': 'Counter my team',
+    'counter.subtitle': 'Who hurts your team, and who also moves first',
+    'counter.search': 'Add to the team...',
+    'counter.full': 'The team already has 6',
+    'counter.pick': 'Add Pokemon to your team to see what threatens it.',
+    'counter.summary': '{total} Pokemon hit {half} or more of your {size} super effectively. These hit hardest:',
+    'counter.hits': '{n} members',
+    'counter.faster': 'And outspeeds half the team',
+    'counter.legend': 'Sorted by how many members it threatens and, on a tie, by its best attacking stat. The bolt marks the ones that also move first.',
+    'counter.fromteam': 'See what counters this team ▶',
+    'home.counter.desc': 'What threatens your team, and what moves first',
 
     'hub.pokedex.title': 'Pokedex',
     'hub.pokedex.subtitle': 'All 1025 species and the tools built on them',

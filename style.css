@@ -529,6 +529,15 @@ a:hover {
   margin-top: 8px;
 }
 
+.ct-rows { display: flex; flex-direction: column; gap: 4px; margin: 16px 0; }
+.ct-row { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 6px; text-decoration: none; font-size: 0.8rem; }
+.ct-row:hover { background: rgba(255,255,255,0.04); text-decoration: none; }
+.ct-row img { width: 36px; height: 36px; image-rendering: pixelated; }
+.ct-name { flex: 1; }
+.ct-fast { font-size: 0.9rem; }
+.ct-hits { font-family: var(--font-retro); font-size: 0.4rem; color: var(--text-dim); }
+.ct-power { font-family: var(--font-retro); font-size: 0.5rem; color: var(--accent); min-width: 40px; text-align: right; }
+
 .sv-pickers { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 24px; }
 @media (min-width: 640px) { .sv-pickers { grid-template-columns: repeat(3, 1fr); } }
 .sv-picker { display: flex; flex-direction: column; gap: 6px; }

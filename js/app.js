@@ -15,6 +15,7 @@ import { renderEggIndex, renderEggGroup } from './egg-pages.js';
 import { renderCompare } from './compare.js';
 import { renderSpeed } from './speed.js';
 import { renderSurvive } from './survive.js';
+import { renderCounter } from './counter.js';
 import { CATEGORIES, categoryOf, targetOf } from './tools.js';
 import { getLevel, setLevel, onLevelChange } from './level.js';
 import { t, getLang, setLang, onLangChange } from './i18n.js';
@@ -162,6 +163,8 @@ async function route() {
       await renderItems(app);
     } else if (path === '/natures') {
       renderNatures(app);
+    } else if (path === '/counter') {
+      await renderCounter(app, query);
     } else if (path === '/survive') {
       await renderSurvive(app, query);
     } else if (path === '/speed') {
