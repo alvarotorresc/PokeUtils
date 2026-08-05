@@ -74,12 +74,15 @@ Las dos direcciones, como eligió él:
 - **El mínimo de EVs** de PS y Defensa (o Def. Especial) que hacen falta para
   aguantarlo.
 
-> **[decidido sin preguntar]** El barrido va **de PS primero y Defensa después**,
-> y devuelve el reparto que sobrevive con **menos EVs en total**. Con Charizard
-> a tope usando un físico de 90 sobre Venusaur, salen **0 en PS y 124 en
-> Defensa**. Empatar en total y preferir PS sería igual de defendible, pero los
-> EVs de PS ayudan contra todo y los de Defensa solo contra lo físico: se
-> devuelve **el más barato**, y se enseña el reparto entero para que se vea.
+> **[decidido sin preguntar]** Devuelve el reparto que sobrevive con **menos EVs
+> en total**, no el primero que aparece barriendo. Con Charizard a tope usando un
+> físico de 90 sobre Venusaur salen **12 en PS y 100 en Defensa**, que suman
+> **112**.
+>
+> **La diferencia no es teórica**: barriendo y quedándose con el primero salen
+> 0 en PS y 124 en Defensa, **12 EVs desperdiciados**. Esa era la cifra que yo
+> mismo había medido, y la cazó el propio check al comprobar que ningún reparto
+> más barato sobrevive.
 
 > **[decidido sin preguntar]** Reutiliza `resolveDamage` tal cual, con el mismo
 > panel de campo reducido (clima, terreno, pantallas) que ya tiene la
@@ -146,7 +149,9 @@ Global, guardado como el tema y el idioma, con **50 por defecto**, como decidió
   amenazas a 3+ y **196** a 4+; el Kanto inicial, **26** y **0**. Son los dos
   extremos que justifican el orden por poder.
 - `node scripts/check-survive.mjs`: el caso medido —Charizard a tope, físico de
-  90, contra Venusaur— pide **0 EVs de PS y 124 de Defensa**.
+  90, contra Venusaur— pide **12 EVs de PS y 100 de Defensa**, y **ningún reparto
+  más barato sobrevive**, que es la comprobación que de verdad protege el
+  algoritmo.
 - `node scripts/check-tools.mjs` en verde con las tres herramientas nuevas y
   `targetOf('competitive')` ya en `'#/competitive'`.
 - En el navegador, cambiando la URL en cada comprobación: `#/speed?id=6`,

@@ -475,9 +475,11 @@ const ctx = {
 
 console.log('\nEl caso medido\n');
 
+// 12 y 100 suman 112, y no 0 y 124 que suman 124: el primer reparto que
+// sobrevive barriendo no es el mas barato.
 const min = minimumSpread(ctx);
-check('EVs de PS que hacen falta', min.hpEv, 0);
-check('EVs de Defensa que hacen falta', min.defEv, 124);
+check('EVs de PS que hacen falta', min.hpEv, 12);
+check('EVs de Defensa que hacen falta', min.defEv, 100);
 check('sobrevive con ese reparto', survives({ ...ctx, hpEv: min.hpEv, defEv: min.defEv }).survives, true);
 check('no sobrevive con 4 EVs menos en Defensa',
   survives({ ...ctx, hpEv: min.hpEv, defEv: min.defEv - 4 }).survives, false);
