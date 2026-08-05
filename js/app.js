@@ -14,6 +14,7 @@ import { renderHub } from './hub.js';
 import { renderEggIndex, renderEggGroup } from './egg-pages.js';
 import { renderCompare } from './compare.js';
 import { CATEGORIES, categoryOf, targetOf } from './tools.js';
+import { getLevel, setLevel, onLevelChange } from './level.js';
 import { t, getLang, setLang, onLangChange } from './i18n.js';
 import { ErrorKind, purgeLegacyCache } from './api.js';
 
@@ -24,6 +25,7 @@ const navToggle = document.getElementById('navToggle');
 const navLinks = document.getElementById('navLinks');
 const langToggle = document.getElementById('langToggle');
 const themeToggle = document.getElementById('themeToggle');
+const levelToggle = document.getElementById('levelToggle');
 
 // ===== THEME =====
 function initTheme() {
@@ -79,6 +81,20 @@ onLangChange(() => {
 
 updateLangBtn();
 updateNavLabels();
+
+// ===== FORMAT LEVEL =====
+function updateLevelBtn() {
+  levelToggle.textContent = `Nv${getLevel()}`;
+}
+
+levelToggle.addEventListener('click', () => setLevel(getLevel() === 50 ? 100 : 50));
+
+onLevelChange(() => {
+  updateLevelBtn();
+  route(); // the tools that read the level repaint
+});
+
+updateLevelBtn();
 
 // ===== NAV TOGGLE =====
 navToggle.addEventListener('click', () => {
