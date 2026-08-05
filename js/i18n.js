@@ -55,6 +55,18 @@ const translations = {
     'egg.gender.male': 'Siempre macho',
     'egg.gender.female': 'Siempre hembra',
 
+    'compare.title': 'Comparador',
+    'compare.subtitle': 'Hasta 4 Pokemon lado a lado, por stats base',
+    'compare.search': 'Buscar y anadir...',
+    'compare.full': 'Ya hay 4: quita uno para anadir otro',
+    'compare.need2': 'Anade al menos dos Pokemon para compararlos.',
+    'compare.remove': 'Quitar',
+    'compare.total': 'Total',
+    'compare.height': 'Altura',
+    'compare.weight': 'Peso',
+    'compare.weak4': 'Debil x4',
+    'compare.weak2': 'Debil x2',
+
     // Home
     'home.tagline': 'Tu guia Pokemon retro definitiva',
     'home.pokedex.desc': 'Los 1025 Pokemon con stats, tipos y habilidades',
@@ -523,6 +535,18 @@ const translations = {
     'egg.gender.none': 'Genderless (Ditto only)',
     'egg.gender.male': 'Always male',
     'egg.gender.female': 'Always female',
+
+    'compare.title': 'Compare',
+    'compare.subtitle': 'Up to 4 Pokemon side by side, on base stats',
+    'compare.search': 'Search and add...',
+    'compare.full': 'Four already: remove one to add another',
+    'compare.need2': 'Add at least two Pokemon to compare them.',
+    'compare.remove': 'Remove',
+    'compare.total': 'Total',
+    'compare.height': 'Height',
+    'compare.weight': 'Weight',
+    'compare.weak4': 'Weak x4',
+    'compare.weak2': 'Weak x2',
 
     'home.tagline': 'Your ultimate retro Pokemon guide',
     'home.pokedex.desc': 'All 1025 Pokemon with stats, types and abilities',

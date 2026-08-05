@@ -529,6 +529,69 @@ a:hover {
   margin-top: 8px;
 }
 
+.cmp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 20px;
+}
+
+.cmp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 6px 4px 4px;
+  font-size: 0.75rem;
+}
+
+.cmp-chip img { width: 32px; height: 32px; image-rendering: pixelated; }
+
+.cmp-remove {
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.cmp-remove:hover { color: var(--accent); }
+
+.cmp-results {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.cmp-hit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+.cmp-hit:hover { border-color: var(--accent); }
+.cmp-hit img { width: 32px; height: 32px; image-rendering: pixelated; }
+
+.cmp-table th a { text-decoration: none; color: var(--text); }
+.cmp-sprite { width: 56px; height: 56px; image-rendering: pixelated; display: block; margin: 0 auto; }
+.cmp-table td { text-align: center; }
+.cmp-best { color: var(--accent); font-weight: bold; }
+.cmp-types { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
+.cmp-total th, .cmp-total td { border-top: 2px solid var(--border); }
+
 .egg-section {
   background: var(--bg-surface);
   border: 2px solid var(--border);

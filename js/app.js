@@ -12,6 +12,7 @@ import { renderNatures } from './natures.js';
 import { renderCalculator } from './calculator.js';
 import { renderHub } from './hub.js';
 import { renderEggIndex, renderEggGroup } from './egg-pages.js';
+import { renderCompare } from './compare.js';
 import { CATEGORIES, categoryOf, targetOf } from './tools.js';
 import { t, getLang, setLang, onLangChange } from './i18n.js';
 import { ErrorKind, purgeLegacyCache } from './api.js';
@@ -143,6 +144,8 @@ async function route() {
       await renderItems(app);
     } else if (path === '/natures') {
       renderNatures(app);
+    } else if (path === '/compare') {
+      await renderCompare(app, query);
     } else if (parts[0] === 'egg' && parts[1]) {
       await renderEggGroup(app, decodeURIComponent(parts[1]), query);
     } else if (path === '/egg') {
