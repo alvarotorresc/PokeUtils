@@ -147,6 +147,10 @@ export async function searchPokemon(term) {
       nameEs: p.nameEs,
       nameEn: p.nameEn,
       stats: p.stats,
+      // The capture tab needs both: the rate to run the formula, and the weight
+      // because the Heavy Ball bonus is a function of it.
+      captureRate: p.captureRate,
+      weight: p.weight,
     }));
 }
 

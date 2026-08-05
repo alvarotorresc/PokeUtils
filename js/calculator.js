@@ -8,11 +8,13 @@
 //   #/calculator             -> IV/EV
 //   #/calculator?tab=catch   -> capture
 import { renderIvEv } from './calc-ivev.js';
+import { renderCapture } from './calc-capture.js';
 import { t } from './i18n.js';
 import { replaceQuery } from './app.js';
 
 const TABS = [
   { id: 'ivev', label: 'calc.tab.ivev', title: 'calc.title', subtitle: 'calc.subtitle', render: renderIvEv },
+  { id: 'catch', label: 'calc.tab.catch', title: 'capture.title', subtitle: 'capture.subtitle', render: renderCapture },
 ];
 
 export function renderCalculator(container, query) {

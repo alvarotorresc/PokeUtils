@@ -50,6 +50,11 @@ export function renderHome(container) {
         <div class="label">${t('nav.calculator')}</div>
         <div class="desc">${t('home.calculator.desc')}</div>
       </a>
+      <a href="#/calculator?tab=catch" class="home-card">
+        <div class="icon">🥎</div>
+        <div class="label">${t('calc.tab.catch')}</div>
+        <div class="desc">${t('home.capture.desc')}</div>
+      </a>
     </div>
   `;
 }
