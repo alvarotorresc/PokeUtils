@@ -25,6 +25,24 @@ const translations = {
     'hub.calculator.title': 'Calculadora',
     'hub.calculator.subtitle': 'IV/EV, dano y captura',
 
+    // Egg groups: PokeAPI keeps the old internal names, which look nothing
+    // like what a player sees.
+    'egg.group.monster': 'Monstruo',
+    'egg.group.water1': 'Agua 1',
+    'egg.group.water2': 'Agua 2',
+    'egg.group.water3': 'Agua 3',
+    'egg.group.bug': 'Bicho',
+    'egg.group.flying': 'Volador',
+    'egg.group.ground': 'Campo',
+    'egg.group.fairy': 'Hada',
+    'egg.group.plant': 'Planta',
+    'egg.group.humanshape': 'Humanoide',
+    'egg.group.mineral': 'Mineral',
+    'egg.group.indeterminate': 'Amorfo',
+    'egg.group.dragon': 'Dragon',
+    'egg.group.ditto': 'Ditto',
+    'egg.group.no-eggs': 'Desconocido',
+
     // Home
     'home.tagline': 'Tu guia Pokemon retro definitiva',
     'home.pokedex.desc': 'Los 1025 Pokemon con stats, tipos y habilidades',
@@ -465,6 +483,22 @@ const translations = {
     'hub.competitive.subtitle': 'Tools to build and measure a team',
     'hub.calculator.title': 'Calculator',
     'hub.calculator.subtitle': 'IV/EV, damage and capture',
+
+    'egg.group.monster': 'Monster',
+    'egg.group.water1': 'Water 1',
+    'egg.group.water2': 'Water 2',
+    'egg.group.water3': 'Water 3',
+    'egg.group.bug': 'Bug',
+    'egg.group.flying': 'Flying',
+    'egg.group.ground': 'Field',
+    'egg.group.fairy': 'Fairy',
+    'egg.group.plant': 'Grass',
+    'egg.group.humanshape': 'Human-Like',
+    'egg.group.mineral': 'Mineral',
+    'egg.group.indeterminate': 'Amorphous',
+    'egg.group.dragon': 'Dragon',
+    'egg.group.ditto': 'Ditto',
+    'egg.group.no-eggs': 'No Eggs',
 
     'home.tagline': 'Your ultimate retro Pokemon guide',
     'home.pokedex.desc': 'All 1025 Pokemon with stats, types and abilities',
