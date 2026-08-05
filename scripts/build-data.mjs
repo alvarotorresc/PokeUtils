@@ -11,7 +11,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const API = 'https://pokeapi.co/api/v2';
-const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'data');
+// POKEUTILS_OUT_DIR lets a build land somewhere else, so a regenerated file can
+// be diffed against the committed one before overwriting it.
+const OUT_DIR = process.env.POKEUTILS_OUT_DIR
+  || join(dirname(fileURLToPath(import.meta.url)), '..', 'data');
 const MAX_POKEMON = 1025;
 const CONCURRENCY = 8;
 // Everything except "mail" (pocket 6), which the app never showed.
@@ -110,7 +113,15 @@ async function buildPokemon() {
     if (!mon) return null;
 
     const stats = {};
-    for (const s of mon.stats) stats[STAT_KEYS[s.stat.name] || s.stat.name] = s.base_stat;
+    // Effort values ride along in the same object as the base stats. Nearly
+    // every Pokemon yields a single EV, so the zeros are dropped and a missing
+    // key reads back as zero, the same contract moves.json already uses.
+    const evYield = {};
+    for (const s of mon.stats) {
+      const key = STAT_KEYS[s.stat.name] || s.stat.name;
+      stats[key] = s.base_stat;
+      if (s.effort) evYield[key] = s.effort;
+    }
 
     return {
       id: mon.id,
@@ -119,6 +130,7 @@ async function buildPokemon() {
       nameEn: localName(species?.names || [], 'en') || mon.name,
       types: mon.types.map(t => t.type.name),
       stats,
+      evYield,
       height: mon.height / 10,
       weight: mon.weight / 10,
       abilities: mon.abilities.map(a => ({
