@@ -45,8 +45,11 @@ export function renderCalculator(container, query) {
       // replaceQuery does not fire hashchange, so the page is re-rendered here
       // rather than through the router. The rest of the query is carried over:
       // the damage tab keeps its whole calc in there, and leaving for the
-      // capture tab and back should not throw it away.
-      const carried = Object.fromEntries(query || []);
+      // capture tab and back should not throw it away. It has to be read from
+      // the hash and not from `query`, which is the copy this render was called
+      // with: the damage panel rewrites the hash as the user builds the calc,
+      // so the captured one is a snapshot of how the page was opened.
+      const carried = Object.fromEntries(new URLSearchParams(location.hash.split('?')[1] || ''));
       replaceQuery('/calculator', {
         ...carried,
         tab: btn.dataset.tab === TABS[0].id ? '' : btn.dataset.tab,

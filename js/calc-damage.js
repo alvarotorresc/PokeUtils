@@ -429,8 +429,11 @@ export function renderDamage(container, query) {
   // the plain fields exist from the start, but the per-move inputs and the Z box
   // only exist once renderMoveExtras has run for the restored move.
   async function restore() {
-    const state = decodeDamageState(query);
+    // Inside the try on purpose: a throw before it would skip the finally and
+    // leave `restoring` on for the life of the panel, and with it the URL would
+    // stop tracking the calc entirely.
     try {
+      const state = decodeDamageState(query);
       if (state.attacker || state.defender) {
         const byId = new Map((await fetchPokemonList()).map(p => [p.id, p]));
         if (byId.has(state.attacker)) choosePokemon('atk', byId.get(state.attacker));
