@@ -42,6 +42,11 @@ const translations = {
     'egg.group.dragon': 'Dragon',
     'egg.group.ditto': 'Ditto',
     'egg.group.no-eggs': 'Desconocido',
+    'egg.title': 'Grupos huevo',
+    'egg.subtitle': 'Los 15 grupos de cria y cuantos Pokemon hay en cada uno',
+    'egg.back': '◀ Todos los grupos',
+    'egg.rules': 'Compartir grupo no basta: los sin genero solo crian con Ditto, Ditto cria con todos menos con los del grupo Desconocido, y dos de un mismo unico genero no crian entre si.',
+    'egg.stale': 'Los datos de cria todavia no han llegado a este navegador. Recarga la pagina.',
 
     // Home
     'home.tagline': 'Tu guia Pokemon retro definitiva',
@@ -499,6 +504,11 @@ const translations = {
     'egg.group.dragon': 'Dragon',
     'egg.group.ditto': 'Ditto',
     'egg.group.no-eggs': 'No Eggs',
+    'egg.title': 'Egg groups',
+    'egg.subtitle': 'The 15 breeding groups and how many Pokemon each holds',
+    'egg.back': '◀ All groups',
+    'egg.rules': 'Sharing a group is not enough: genderless Pokemon breed only with Ditto, Ditto breeds with everything except the No Eggs group, and two Pokemon of the same single gender never breed.',
+    'egg.stale': 'The breeding data has not reached this browser yet. Reload the page.',
 
     'home.tagline': 'Your ultimate retro Pokemon guide',
     'home.pokedex.desc': 'All 1025 Pokemon with stats, types and abilities',

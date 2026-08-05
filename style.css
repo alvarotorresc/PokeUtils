@@ -485,6 +485,57 @@ a:hover {
   margin-top: 12px;
 }
 
+.egg-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .egg-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (min-width: 900px) {
+  .egg-grid { grid-template-columns: repeat(5, 1fr); }
+}
+
+.egg-card {
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 10px;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.egg-card:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.egg-card .label {
+  font-family: var(--font-retro);
+  font-size: 0.44rem;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.egg-card .count {
+  font-family: var(--font-retro);
+  font-size: 0.7rem;
+  color: var(--accent);
+  margin-top: 8px;
+}
+
+.egg-note {
+  margin-top: 20px;
+  font-size: 0.75rem;
+  line-height: 1.8;
+  color: var(--text-dim);
+}
+
 .home-group {
   margin: 28px 0 0;
   font-size: 0.6rem;

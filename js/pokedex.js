@@ -6,6 +6,20 @@ import { t, typeName, statName, pokeName } from './i18n.js';
 
 const PAGE_SIZE = 50;
 
+// The dex card, shared with the egg group pages so the two grids cannot drift.
+export function pokemonCardHTML(p) {
+  return `
+    <a class="pokemon-card" href="#/pokedex/${p.id}">
+      <img class="sprite" src="${spriteUrl(p.id)}" alt="${pokeName(p)}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><text x=%2248%22 y=%2260%22 text-anchor=%22middle%22 font-size=%2240%22>?</text></svg>'">
+      <div class="dex-number">#${String(p.id).padStart(4, '0')}</div>
+      <div class="poke-name">${pokeName(p)}</div>
+      <div class="types">
+        ${p.types.map(tp => `<span class="type-badge sm" data-type="${tp}">${typeName(tp)}</span>`).join('')}
+      </div>
+    </a>
+  `;
+}
+
 export function renderPokedex(container, query = new URLSearchParams()) {
   // The whole list state lives in the hash query, so leaving for a detail page
   // and coming back restores exactly what you were looking at.
@@ -245,20 +259,7 @@ export function renderPokedex(container, query = new URLSearchParams()) {
     content.innerHTML = `<div class="pokemon-grid" id="pdxGrid"></div>`;
     const grid = content.querySelector('#pdxGrid');
 
-    page.forEach(p => {
-      const card = document.createElement('a');
-      card.className = 'pokemon-card';
-      card.href = `#/pokedex/${p.id}`;
-      card.innerHTML = `
-        <img class="sprite" src="${spriteUrl(p.id)}" alt="${pokeName(p)}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><text x=%2248%22 y=%2260%22 text-anchor=%22middle%22 font-size=%2240%22>?</text></svg>'">
-        <div class="dex-number">#${String(p.id).padStart(4, '0')}</div>
-        <div class="poke-name">${pokeName(p)}</div>
-        <div class="types">
-          ${p.types.map(tp => `<span class="type-badge sm" data-type="${tp}">${typeName(tp)}</span>`).join('')}
-        </div>
-      `;
-      grid.appendChild(card);
-    });
+    grid.innerHTML = page.map(pokemonCardHTML).join('');
 
     renderPagination(content, state.p, totalPages, (p) => {
       state.p = p;
