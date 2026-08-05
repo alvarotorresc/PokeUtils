@@ -106,6 +106,7 @@ export async function fetchPokemonDetail(id) {
     height: p.height,
     weight: p.weight,
     stats: p.stats,
+    evYield: p.evYield || {},
     abilities: p.abilities.map(a => {
       const info = abilityInfo.get(a.nameEn);
       return {

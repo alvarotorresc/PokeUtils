@@ -219,6 +219,13 @@ export async function renderPokedexDetail(container, id) {
   const fmtMult = m => m === 4 ? 'x4' : m === 2 ? 'x2' : m === 0.5 ? 'x\u00BD' : m === 0.25 ? 'x\u00BC' : 'x0';
 
   const statTotal = STAT_KEYS.reduce((sum, k) => sum + (pokemon.stats[k] || 0), 0);
+
+  // Every one of the 1025 yields at least one EV, so this never renders empty.
+  // Ordered by STAT_KEYS rather than by the object's own key order, to match the
+  // rows of the table right above it.
+  const evYieldEntries = STAT_KEYS
+    .filter(k => pokemon.evYield?.[k])
+    .map(k => [k, pokemon.evYield[k]]);
   const maxStat = 255;
 
   const displayName = pokeName(pokemon);
@@ -279,6 +286,14 @@ export async function renderPokedexDetail(container, id) {
             <div></div>
             <span></span>
           </div>
+        </div>
+        <div class="ev-yield">
+          <span class="ev-yield-label">${t('pokedex.evyield')}</span>
+          ${evYieldEntries.map(([k, v]) => `
+            <span class="ev-yield-item">
+              <span class="ev-yield-dot" style="background:${STAT_COLORS[k]}"></span>${statName(k)} +${v}
+            </span>
+          `).join('')}
         </div>
       </div>
 

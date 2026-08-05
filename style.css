@@ -1294,6 +1294,43 @@ a.evo-node:hover {
   margin-bottom: -4px;
 }
 
+/* EVs awarded on defeat. Sits under the stat table because it is read together
+   with it, separated by the same rule the total row uses. */
+.ev-yield {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 2px solid var(--border);
+}
+
+/* --text-muted, not --text-dim: at this size --text-dim measured 2.34:1 against
+   the card, under the 4.5 minimum. */
+.ev-yield-label {
+  font-size: 0.4rem;
+  color: var(--text-muted);
+}
+
+/* The stat colour rides in the dot, not in the text. As text it measured 1.92:1
+   in light mode: those colours were picked for the stat bars, where they sit on
+   a dark track. The dot is decorative, since the label already names the stat. */
+.ev-yield-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.44rem;
+  color: var(--text);
+}
+
+.ev-yield-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
 @media (max-width: 767px) {
   /* Six columns do not fit at 360px, so the range drops to its own line. */
   .stat-row {

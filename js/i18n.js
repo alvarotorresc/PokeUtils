@@ -83,6 +83,7 @@ const translations = {
     'pokedex.catchrate.hard': 'Dificil de capturar',
     'pokedex.catchrate.veryhard': 'Muy dificil de capturar',
     'pokedex.range100': 'A NVL 100',
+    'pokedex.evyield': 'EVs al derrotarlo:',
 
     // Evoluciones
     'evo.title': 'LINEA EVOLUTIVA',
@@ -380,6 +381,7 @@ const translations = {
     'pokedex.catchrate.hard': 'Hard to catch',
     'pokedex.catchrate.veryhard': 'Very hard to catch',
     'pokedex.range100': 'AT LV 100',
+    'pokedex.evyield': 'EVs on defeat:',
 
     // Evolutions
     'evo.title': 'EVOLUTION LINE',
