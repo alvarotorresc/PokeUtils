@@ -529,6 +529,48 @@ a:hover {
   margin-top: 8px;
 }
 
+.egg-section {
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.egg-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+}
+
+.egg-key {
+  font-family: var(--font-retro);
+  font-size: 0.44rem;
+  color: var(--text-dim);
+  min-width: 90px;
+}
+
+.egg-chip {
+  display: inline-block;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin-right: 6px;
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+
+.egg-chip:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+}
+
 .egg-note {
   margin-top: 20px;
   font-size: 0.75rem;

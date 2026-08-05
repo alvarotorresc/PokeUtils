@@ -6,6 +6,7 @@ import { evolutionText } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
 import { rangeAt100 } from './stats.js';
 import { attachTooltip } from './tooltip.js';
+import { partnersOf, hasEggData } from './egg-groups.js';
 
 // Spanish names are missing for 616 of the 2187 items, and the build falls back
 // to the slug. Prefer English over a raw slug before giving up.
@@ -174,6 +175,44 @@ function renderMovesSection(host, currentId) {
 
 // The capture rate runs 0 (Chansey and friends) to 255 (Caterpie and friends).
 // The cut-offs are for reading, not a formula from the games.
+// Groups, gender split and how many species it can breed with. The count is a
+// number and a link on purpose: for a Field group Pokemon the list itself is
+// 278 names inside a page that is already long.
+//
+// The breeding fields are read from the raw dataset entry, not from `pokemon`:
+// fetchPokemonDetail builds its own object with the fields the page needed
+// before this feature, and eggGroups is not one of them.
+function eggSectionHTML(pokemon, all) {
+  const entry = all.find(p => p.id === pokemon.id);
+  if (!hasEggData(all) || !entry?.eggGroups) return '';
+
+  const groups = entry.eggGroups
+    .map(g => `<a class="egg-chip" href="#/egg/${g}">${t('egg.group.' + g)}</a>`)
+    .join('');
+
+  // -1 is genderless, 0 always male, 8 always female; anything between is a
+  // ratio in eighths. None of these collapse into each other.
+  //
+  // Only one side is rounded and the other is the remainder: rounding both
+  // independently prints 88% / 13% for a 7:1 split, which adds up to 101.
+  const female = Math.round(entry.genderRate / 8 * 100);
+  const gender = entry.genderRate === -1 ? t('egg.gender.none')
+    : entry.genderRate === 0 ? t('egg.gender.male')
+    : entry.genderRate === 8 ? t('egg.gender.female')
+    : `${100 - female}% ♂ / ${female}% ♀`;
+
+  const partners = partnersOf(entry, all).length;
+
+  return `
+    <h3 class="section-title">${t('egg.section')}</h3>
+    <div class="egg-section">
+      <div class="egg-row"><span class="egg-key">${t('egg.groups')}</span><span>${groups}</span></div>
+      <div class="egg-row"><span class="egg-key">${t('egg.gender')}</span><span>${gender}</span></div>
+      <div class="egg-row"><span class="egg-key">${t('egg.partners')}</span><span>${partners}</span></div>
+    </div>
+  `;
+}
+
 function catchRateLabel(rate) {
   if (rate >= 200) return t('pokedex.catchrate.veryeasy');
   if (rate >= 120) return t('pokedex.catchrate.easy');
@@ -185,7 +224,12 @@ function catchRateLabel(rate) {
 export async function renderPokedexDetail(container, id) {
   container.innerHTML = loadingHTML();
 
-  const pokemon = await fetchPokemonDetail(id);
+  // In parallel: fetchPokemonList is already memoised by api.js, so the full
+  // list the breeding section needs costs no extra request.
+  const [pokemon, allPokemon] = await Promise.all([
+    fetchPokemonDetail(id),
+    fetchPokemonList(),
+  ]);
   if (!pokemon) {
     container.innerHTML = `
       <div class="no-results">
@@ -306,6 +350,8 @@ export async function renderPokedexDetail(container, id) {
           </div>
         `).join('')}
       </div>
+
+      ${eggSectionHTML(pokemon, allPokemon)}
 
       <h3 class="section-title">${t('evo.title')}</h3>
       <div class="card" style="margin-bottom:20px" id="evoSection"></div>

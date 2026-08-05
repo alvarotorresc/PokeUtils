@@ -47,6 +47,13 @@ const translations = {
     'egg.back': '◀ Todos los grupos',
     'egg.rules': 'Compartir grupo no basta: los sin genero solo crian con Ditto, Ditto cria con todos menos con los del grupo Desconocido, y dos de un mismo unico genero no crian entre si.',
     'egg.stale': 'Los datos de cria todavia no han llegado a este navegador. Recarga la pagina.',
+    'egg.section': 'Cria',
+    'egg.groups': 'Grupos',
+    'egg.gender': 'Genero',
+    'egg.partners': 'Cria con',
+    'egg.gender.none': 'Sin genero (solo con Ditto)',
+    'egg.gender.male': 'Siempre macho',
+    'egg.gender.female': 'Siempre hembra',
 
     // Home
     'home.tagline': 'Tu guia Pokemon retro definitiva',
@@ -509,6 +516,13 @@ const translations = {
     'egg.back': '◀ All groups',
     'egg.rules': 'Sharing a group is not enough: genderless Pokemon breed only with Ditto, Ditto breeds with everything except the No Eggs group, and two Pokemon of the same single gender never breed.',
     'egg.stale': 'The breeding data has not reached this browser yet. Reload the page.',
+    'egg.section': 'Breeding',
+    'egg.groups': 'Groups',
+    'egg.gender': 'Gender',
+    'egg.partners': 'Breeds with',
+    'egg.gender.none': 'Genderless (Ditto only)',
+    'egg.gender.male': 'Always male',
+    'egg.gender.female': 'Always female',
 
     'home.tagline': 'Your ultimate retro Pokemon guide',
     'home.pokedex.desc': 'All 1025 Pokemon with stats, types and abilities',
