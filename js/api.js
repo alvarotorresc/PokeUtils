@@ -66,6 +66,7 @@ export const fetchPokemonList = () => loadDataset('pokemon');
 export const fetchMoves = () => loadDataset('moves');
 export const fetchAbilities = () => loadDataset('abilities');
 export const fetchItems = () => loadDataset('items');
+export const fetchBerries = () => loadDataset('berries');
 export const fetchEvolutions = () => loadDataset('evolutions');
 export const fetchLearnsets = () => loadDataset('learnsets');
 

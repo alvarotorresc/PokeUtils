@@ -245,3 +245,24 @@ export function toZMove(move) {
   if (!zName) return null;
   return { name: zName, power: zPower(move.power) };
 }
+
+// Which extra inputs a move needs from the user, so the UI can show exactly
+// those fields and nothing else. Empty for the 583 moves with a fixed power.
+const INPUTS = {
+  'attacker-hp': ['flail', 'reversal', 'endeavor', 'final-gambit'],
+  'defender-hp': ['super-fang', 'natures-madness', 'guardian-of-alola',
+                  'wring-out', 'crush-grip', 'endeavor'],
+  'damage-taken': Object.keys(COUNTER),
+  friendship: Object.keys(FRIENDSHIP),
+  'pp-left': ['trump-card'],
+  stockpile: ['spit-up'],
+  'fling-item': ['fling'],
+  berry: ['natural-gift'],
+};
+
+export function requiredInputs(move) {
+  if (move.power != null) return [];
+  return Object.entries(INPUTS)
+    .filter(([, moves]) => moves.includes(move.name))
+    .map(([input]) => input);
+}

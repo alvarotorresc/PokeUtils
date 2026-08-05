@@ -2535,3 +2535,33 @@ a.evo-node:hover {
   margin-top: 10px;
   line-height: 1.9;
 }
+
+/* Fields a variable-power move asks for, and the Z toggle. */
+.dmg-extras {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 2px solid var(--border);
+}
+
+.dmg-extras-title {
+  font-size: 0.42rem;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.dmg-z {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 0.44rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.dmg-z input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
