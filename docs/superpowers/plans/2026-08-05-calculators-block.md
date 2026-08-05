@@ -27,12 +27,21 @@ no solo el nuevo. Si PokeAPI ha cambiado algo desde el 2026-08-04 (nombres,
 `captureRate`, una especie nueva), entraría camuflado en un commit que dice
 "añade EV yield".
 
-Verificación obligatoria antes de commitear:
-1. Generar a un fichero temporal, no sobre `data/pokemon.json`.
-2. Diff campo a campo contra el committeado.
-3. Confirmar que **la única diferencia es `evYield`**. Si no lo es, listar lo
-   que cambió y decidir; no commitear a ciegas.
+Verificación obligatoria antes de commitear. **Comparación estructural, no
+textual**: `JSON.stringify` de 1025 objetos con una clave nueva produce un diff
+de una sola línea gigante que no dice nada.
+
+1. Generar a un directorio temporal con `POKEUTILS_OUT_DIR`, no sobre `data/`.
+2. Parsear ambos, indexar por `id` y comparar **todos los campos menos
+   `evYield`**, enumerando los ids que difieran.
+3. Contar cuántos de los 1025 traen `evYield` no vacío. Si sale 0 o sale un
+   reparto raro, algo va mal.
 4. Pikachu debe dar `{spe: 2}`.
+
+**Resultado real:** 0 diferencias fuera de `evYield` — PokeAPI no ha movido
+nada desde el 2026-08-04. Y **los 1025 dan al menos un EV**: 940 dan una sola
+stat, 75 dan dos y 10 dan tres, con un total de entre 1 y 3. El caso "no da
+EVs" no existe, así que la ficha no necesita un estado vacío para él.
 
 ### A2 · Mostrar el EV yield en la ficha de Pokémon
 
@@ -77,9 +86,13 @@ Fórmula Gen 5+:
 
 ```
 a = ((3×HPmax − 2×HPactual) × rate × ball) / (3×HPmax) × estado
-b = 65536 / (255/a)^(1/4)          [aproximación por sacudida]
+b = 65536 / (255/a)^(3/16)         [valor de sacudida]
 P(captura) = (b/65536)^4           [a ≥ 255 → captura segura]
 ```
+
+**El exponente es 3/16, no 1/4.** Con 1/4 la probabilidad sale sistemáticamente
+baja justo para los `captureRate` pequeños, que son los legendarios y el caso
+que más se consulta.
 
 `js/battle-data.js` nace aquí con `POKEBALLS`: las ~20 que se usan de verdad,
 cada una con su multiplicador y las condicionales marcadas (Malla ×3.5 solo en
@@ -143,8 +156,23 @@ Las de la tabla del spec. Cada familia es una función pura que recibe el
 contexto (atacante, objetivo, inputs) y devuelve el poder, o `null` cuando el
 movimiento no está soportado.
 
-Los 36 movimientos Z y los 4 descartados devuelven `null` con un motivo, para
-que la UI diga "no soportado" en vez de calcular basura.
+`punishment` **no lleva input propio**: sus boosts son los del objetivo, que la
+UI de C4 ya modela. `beat-up`, `shadow-half` y los 36 movimientos Z listados
+como entrada de la lista devuelven `null` con su motivo, para que la UI diga
+"no soportado" en vez de calcular basura.
+
+Requiere antes regenerar `items.json` con `fling_power` y un `berries.json`
+nuevo con `natural_gift_power` y `natural_gift_type` (74 peticiones). Mismo
+protocolo de diff estructural que A1.
+
+### C3b · La mecánica Z
+
+Tabla de 18 entradas tipo → movimiento Z (está en el spec) y la regla escalón
+de poder: ≤55 → 100, 60-65 → 120, 70-75 → 140, 80-85 → 160, 90-95 → 175,
+100 → 180, 110 → 185, 120-125 → 190, 130 → 195, 140+ → 200.
+
+En la UI es una casilla que transforma el movimiento elegido, no una entrada de
+la lista.
 
 **Verificar** con los pesos y velocidades reales de `pokemon.json`: Giro Bola de
 un Ferrothorn contra un Ninjask, Patada Baja contra un Groudon (peso 950 kg →

@@ -74,14 +74,32 @@ El alcance completo prometía los 77 movimientos sin `power`. Medido en detalle:
 | Reales | 41 | Los de siempre: Patada Baja, Giro Bola, Sísmico… |
 
 Los 36 movimientos Z están duplicados por categoría (físico y especial) y
-**PokeAPI no les da poder**: implementarlos exigiría escribir a mano los 18
-poderes Z *más* el mapeo de cada movimiento base a su versión Z. No existen en
-Gen 9 y ninguna calculadora moderna los ofrece.
+**PokeAPI no les da poder**. La primera lectura fue dejarlos fuera por coste,
+pero medirlo lo desmontó: los 36 se agrupan en **18 tipos, uno por tipo
+elemental**, exactamente uno cada uno.
 
-> **[decidido sin preguntar]** Los 36 movimientos Z quedan fuera. No es una poda
-> del alcance que eligió Álvaro: el dato no existe en el repositorio y la
-> mecánica está fuera del juego actual. La calculadora los marcará como "no
-> soportado" en vez de dar un número falso.
+| Tipo | Movimiento Z | Tipo | Movimiento Z |
+|---|---|---|---|
+| normal | breakneck-blitz | fire | inferno-overdrive |
+| fighting | all-out-pummeling | water | hydro-vortex |
+| flying | supersonic-skystrike | grass | bloom-doom |
+| poison | acid-downpour | electric | gigavolt-havoc |
+| ground | tectonic-rage | psychic | shattered-psyche |
+| rock | continental-crush | ice | subzero-slammer |
+| bug | savage-spin-out | dragon | devastating-drake |
+| ghost | never-ending-nightmare | dark | black-hole-eclipse |
+| steel | corkscrew-crash | fairy | twinkle-tackle |
+
+No hay ningún mapeo movimiento-a-movimiento que escribir: el Z que sale de un
+movimiento **se deriva de su tipo**, y el poder Z sale de una regla escalón
+sobre el poder base (≤55 → 100, 60-65 → 120, … 140+ → 200). Son 18 líneas de
+datos y una función escalón, no una etapa.
+
+> **[decidido sin preguntar]** La mecánica Z **entra**, pero no como 36 entradas
+> seleccionables en la lista de movimientos —que es como PokeAPI las expone y
+> por eso no tienen poder—, sino como una **casilla "Movimiento Z"** que
+> transforma el movimiento ya elegido. Es como funciona en el juego y en
+> Showdown: nadie elige "Hecatombe Pírica", elige Lanzallamas y su Z-cristal.
 
 ### Los 41 reales caben en 11 familias de fórmula
 
@@ -103,21 +121,28 @@ Esto es lo que convierte "41 casos especiales" en trabajo acotado:
 
 La familia 11 se desglosa así, y es la única con partes que no entran:
 
-- **Modelables con un input** (4): `final-gambit` (= PS del atacante),
-  `punishment` (60 + 20 × boosts del rival), `trump-card` (por PP restantes),
-  `spit-up` (100 × Reservas).
+- **Salen del modelo que ya existe** (2): `punishment` es 60 + 20 × boosts
+  positivos del objetivo, tope 200, y los boosts ±6 ya están en la UI de daño:
+  no necesita ningún campo nuevo. `final-gambit` es = PS del atacante.
+- **Con un input propio** (2): `trump-card` (por PP restantes), `spit-up`
+  (100 × Reservas).
 - **Aleatorios, se muestra el rango** (3): `psywave`, `present`, `magnitude`.
-- **Fuera** (4): `fling` y `natural-gift` necesitan datos que no tenemos
-  (`fling_power` de los objetos, tipo de las 74 bayas); `beat-up` necesita el
-  equipo entero como contexto; `shadow-half` es de Pokémon XD.
+- **Recuperables con datos que sí existen** (2): comprobado contra la API en
+  vivo, `fling_power` está en `/item/{id}` (Gafas de Sol → 30) y las bayas
+  traen `natural_gift_power` y `natural_gift_type` en `/berry/{id}` (Zreza →
+  60, Fuego). El backlog los había dado por perdidos sin medirlo.
+- **Fuera de verdad** (2): `beat-up` necesita el equipo entero de seis como
+  contexto, que es otra pantalla; `shadow-half` es de Pokémon XD y no existe en
+  los juegos principales.
 
-> **[decidido sin preguntar]** Esos 4 quedan fuera de la primera versión.
-> `fling` y `natural-gift` se podrían recuperar regenerando `items.json` con
-> `fling_power`, que el backlog había descartado por poco útil. Si Álvaro los
-> quiere, es una etapa aparte.
+> **[decidido sin preguntar]** `fling` y `natural-gift` entran. Cuestan una
+> línea en el builder de objetos y 74 peticiones para las bayas, y ya se está
+> regenerando datos en este bloque. Dejarlos fuera habría sido heredar una
+> suposición del backlog de ayer sin comprobarla.
 
-**Cobertura final: 599 con poder fijo + 37 de poder variable = 636 de los 676
-movimientos de daño (94%).**
+**Cobertura final: 599 con poder fijo + 39 de poder variable = 638 de los 676
+movimientos de daño (94,4%)**, más la mecánica Z sobre cualquiera de ellos. Los
+únicos dos que quedan fuera son `beat-up` y `shadow-half`.
 
 ### Los otros números del alcance completo
 
@@ -207,9 +232,11 @@ Colector) y las que cambian el clima.
 
 ## Fuera de alcance
 
-- **Los 36 movimientos Z** (dato inexistente, mecánica muerta).
-- **`fling`, `natural-gift`, `beat-up`, `shadow-half`** (4 movimientos).
-- **Dinamax y Gigamax**: mecánica de Gen 8 fuera de Gen 9, igual que los Z.
+- **`beat-up` y `shadow-half`**, los dos únicos movimientos de daño que quedan
+  sin cubrir.
+- **Dinamax y Gigamax**: mecánica de Gen 8. A diferencia de los Z, el poder Max
+  de un movimiento **no se deriva por regla del poder base** sino de una tabla
+  propia por tipo y por movimiento, y PokeAPI no la expone.
 - **Guardar cálculos**: la URL hace de guardado, como en Equipo.
 - **Combates dobles completos**: entra el ×0.75 de daño repartido, no el
   posicionamiento.
