@@ -12,6 +12,18 @@ const translations = {
     'nav.items': 'OBJETOS',
     'nav.natures': 'NATURALEZAS',
     'nav.calculator': 'CALCULADORA',
+    'nav.data': 'DATOS',
+    'nav.competitive': 'COMPETITIVO',
+
+    // Hubs
+    'hub.pokedex.title': 'Pokedex',
+    'hub.pokedex.subtitle': 'Las 1025 especies y las herramientas que salen de ellas',
+    'hub.data.title': 'Datos',
+    'hub.data.subtitle': 'Las tablas del juego: movimientos, habilidades, objetos, naturalezas y tipos',
+    'hub.competitive.title': 'Competitivo',
+    'hub.competitive.subtitle': 'Herramientas para construir y medir un equipo',
+    'hub.calculator.title': 'Calculadora',
+    'hub.calculator.subtitle': 'IV/EV, dano y captura',
 
     // Home
     'home.tagline': 'Tu guia Pokemon retro definitiva',
@@ -442,6 +454,17 @@ const translations = {
     'nav.items': 'ITEMS',
     'nav.natures': 'NATURES',
     'nav.calculator': 'CALCULATOR',
+    'nav.data': 'DATA',
+    'nav.competitive': 'COMPETITIVE',
+
+    'hub.pokedex.title': 'Pokedex',
+    'hub.pokedex.subtitle': 'All 1025 species and the tools built on them',
+    'hub.data.title': 'Data',
+    'hub.data.subtitle': 'The game tables: moves, abilities, items, natures and types',
+    'hub.competitive.title': 'Competitive',
+    'hub.competitive.subtitle': 'Tools to build and measure a team',
+    'hub.calculator.title': 'Calculator',
+    'hub.calculator.subtitle': 'IV/EV, damage and capture',
 
     'home.tagline': 'Your ultimate retro Pokemon guide',
     'home.pokedex.desc': 'All 1025 Pokemon with stats, types and abilities',
