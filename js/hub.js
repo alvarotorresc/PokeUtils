@@ -5,6 +5,19 @@
 import { CATEGORIES, toolsIn } from './tools.js';
 import { t } from './i18n.js';
 
+// The strip a category uses instead of a hub when it holds three tools or
+// fewer, which is the measured rule: at 360 px three fit on one line and four
+// do not. Same markup as the calculator's tabs, which is the precedent.
+export function toolTabsHTML(categoryId, activeToolId) {
+  return `
+    <div class="tabs tool-tabs">
+      ${toolsIn(categoryId).map(tool => `
+        <a href="${tool.route}" class="tab${tool.id === activeToolId ? ' active' : ''}">${t(tool.tab || tool.label)}</a>
+      `).join('')}
+    </div>
+  `;
+}
+
 export function renderHub(container, categoryId) {
   const category = CATEGORIES.find(c => c.id === categoryId);
   const tools = toolsIn(categoryId);

@@ -14,6 +14,8 @@ const translations = {
     'nav.calculator': 'CALCULADORA',
     'nav.data': 'DATOS',
     'nav.competitive': 'COMPETITIVO',
+    'nav.compare': 'COMPARADOR',
+    'nav.egg': 'GRUPOS HUEVO',
 
     // Hubs
     'hub.pokedex.title': 'Pokedex',
@@ -66,6 +68,11 @@ const translations = {
     'compare.weight': 'Peso',
     'compare.weak4': 'Debil x4',
     'compare.weak2': 'Debil x2',
+    'pokedex.tab': 'LISTA',
+    'compare.tab': 'COMPARADOR',
+    'egg.tab': 'HUEVOS',
+    'home.compare.desc': 'Hasta 4 Pokemon lado a lado por stats base',
+    'home.egg.desc': 'Los 15 grupos de cria y quien cria con quien',
 
     // Home
     'home.tagline': 'Tu guia Pokemon retro definitiva',
@@ -498,6 +505,8 @@ const translations = {
     'nav.calculator': 'CALCULATOR',
     'nav.data': 'DATA',
     'nav.competitive': 'COMPETITIVE',
+    'nav.compare': 'COMPARE',
+    'nav.egg': 'EGG GROUPS',
 
     'hub.pokedex.title': 'Pokedex',
     'hub.pokedex.subtitle': 'All 1025 species and the tools built on them',
@@ -547,6 +556,11 @@ const translations = {
     'compare.weight': 'Weight',
     'compare.weak4': 'Weak x4',
     'compare.weak2': 'Weak x2',
+    'pokedex.tab': 'LIST',
+    'compare.tab': 'COMPARE',
+    'egg.tab': 'EGGS',
+    'home.compare.desc': 'Up to 4 Pokemon side by side on base stats',
+    'home.egg.desc': 'The 15 breeding groups and who breeds with whom',
 
     'home.tagline': 'Your ultimate retro Pokemon guide',
     'home.pokedex.desc': 'All 1025 Pokemon with stats, types and abilities',

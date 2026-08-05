@@ -48,7 +48,13 @@ console.log('\nUna categoria con una sola herramienta va directa\n');
 // Hoy Pokedex y Competitivo tienen una sola herramienta: la pestana lleva a
 // ella y no a un hub que no ensenaria nada. Cuando el sub-bloque 4 anada las
 // suyas, estas dos comprobaciones cambian a '#/pokedex' y '#/competitive'.
-check('Pokedex va directa a su lista', targetOf('pokedex'), '#/pokedex');
+// Pokedex ya tiene tres herramientas, asi que esto ya no sale de "le queda una
+// sola": es la marca `direct` puesta a mano. Va a la lista porque #/pokedex es
+// la ruta compartida por ahi fuera y la que lleva los filtros en la URL.
+check('Pokedex sigue yendo a la lista, ahora por decision', targetOf('pokedex'), '#/pokedex');
+check('Pokedex tiene tres herramientas', toolsIn('pokedex').map(t => t.id), ['pokedex', 'compare', 'egg']);
+check('toda herramienta con pestanas tiene etiqueta corta',
+  toolsIn('pokedex').filter(t => !t.tab).map(t => t.id), []);
 check('Competitivo va directo a Equipo', targetOf('competitive'), '#/team');
 check('Datos abre su hub', targetOf('data'), '#/data');
 check('Calculadora abre su pagina de pestanas', targetOf('calculator'), '#/calculator');

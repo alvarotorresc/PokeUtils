@@ -8,11 +8,13 @@ import { fetchPokemonList, fetchAbilities } from './api.js';
 import { defensiveMatrix } from './team-analysis.js';
 import { loadingHTML, replaceQuery } from './app.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
+import { toolTabsHTML } from './hub.js';
 
 const MAX = 4;
 
 export async function renderCompare(container, query = new URLSearchParams()) {
   container.innerHTML = `
+    ${toolTabsHTML('pokedex', 'compare')}
     <div class="page-header">
       <h1>${t('compare.title')}</h1>
       <p>${t('compare.subtitle')}</p>

@@ -8,6 +8,7 @@ import { fetchPokemonList } from './api.js';
 import { pokemonCardHTML } from './pokedex.js';
 import { loadingHTML, renderPagination, replaceQuery } from './app.js';
 import { t } from './i18n.js';
+import { toolTabsHTML } from './hub.js';
 
 const PAGE_SIZE = 50;
 
@@ -29,6 +30,7 @@ function staleDataHTML() {
 
 export async function renderEggIndex(container) {
   container.innerHTML = `
+    ${toolTabsHTML('pokedex', 'egg')}
     <div class="page-header">
       <h1>${t('egg.title')}</h1>
       <p>${t('egg.subtitle')}</p>
@@ -71,6 +73,7 @@ export async function renderEggGroup(container, group, query = new URLSearchPara
   let page = Math.max(1, parseInt(query.get('p'), 10) || 1);
 
   container.innerHTML = `
+    ${toolTabsHTML('pokedex', 'egg')}
     <p class="back-link"><a href="#/egg">${t('egg.back')}</a></p>
     <div class="page-header">
       <h1>${eggGroupName(group)}</h1>

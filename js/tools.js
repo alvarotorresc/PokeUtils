@@ -8,7 +8,11 @@
 // #/moves/53 back to its category, which the path alone does not carry.
 
 export const CATEGORIES = [
-  { id: 'pokedex', route: '#/pokedex', label: 'nav.pokedex' },
+  // Pokedex holds three tools, and by the measured rule -- up to 3, tabs; 4 or
+  // more, a hub -- they go in a tab strip. Its tab therefore goes straight to
+  // the list, which is also the route already shared around and the one that
+  // carries filters in its URL.
+  { id: 'pokedex', route: '#/pokedex', label: 'nav.pokedex', direct: true },
   { id: 'data', route: '#/data', label: 'nav.data' },
   { id: 'competitive', route: '#/competitive', label: 'nav.competitive' },
   // The calculator is three tabs that already fit and already work: its tab
@@ -17,7 +21,11 @@ export const CATEGORIES = [
 ];
 
 export const TOOLS = [
-  { id: 'pokedex', category: 'pokedex', route: '#/pokedex', base: 'pokedex', icon: '📖', label: 'nav.pokedex', desc: 'home.pokedex.desc' },
+  // `tab` is the short label the tab strip uses; `label` is the full name, which
+  // is what the home card has room for.
+  { id: 'pokedex', category: 'pokedex', route: '#/pokedex', base: 'pokedex', icon: '📖', label: 'nav.pokedex', tab: 'pokedex.tab', desc: 'home.pokedex.desc' },
+  { id: 'compare', category: 'pokedex', route: '#/compare', base: 'compare', icon: '⚖️', label: 'nav.compare', tab: 'compare.tab', desc: 'home.compare.desc' },
+  { id: 'egg', category: 'pokedex', route: '#/egg', base: 'egg', icon: '🥚', label: 'nav.egg', tab: 'egg.tab', desc: 'home.egg.desc' },
 
   { id: 'moves', category: 'data', route: '#/moves', base: 'moves', icon: '💥', label: 'nav.moves', desc: 'home.moves.desc' },
   { id: 'abilities', category: 'data', route: '#/abilities', base: 'abilities', icon: '✨', label: 'nav.abilities', desc: 'home.abilities.desc' },

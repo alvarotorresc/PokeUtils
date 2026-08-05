@@ -2372,6 +2372,17 @@ a.evo-node:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
+/* The tool strip uses the same tabs as the calculator, but its entries are
+   links to other routes, not buttons switching a panel. */
+.tool-tabs {
+  margin-bottom: 20px;
+}
+
+.tool-tabs .tab {
+  text-decoration: none;
+  text-align: center;
+}
+
 .tab-content {
   display: flex;
   flex-direction: column;

@@ -3,6 +3,7 @@ import { TYPES, spriteUrl, STAT_KEYS, GENERATIONS, SORT_KEYS } from './data.js';
 import { fetchPokemonList } from './api.js';
 import { loadingHTML, renderPagination, replaceQuery } from './app.js';
 import { t, typeName, statName, pokeName } from './i18n.js';
+import { toolTabsHTML } from './hub.js';
 
 const PAGE_SIZE = 50;
 
@@ -41,6 +42,7 @@ export function renderPokedex(container, query = new URLSearchParams()) {
   let allPokemon = null;
 
   container.innerHTML = `
+    ${toolTabsHTML('pokedex', 'pokedex')}
     <div class="page-header">
       <h1>${t('pokedex.title')}</h1>
       <p>${t('pokedex.subtitle')}</p>
