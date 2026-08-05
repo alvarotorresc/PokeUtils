@@ -314,3 +314,41 @@ export function resolveDamage({ attacker, defender, move, field = {} }) {
 
   return { ...result, notes, recoil: atkItem.recoil ?? 0 };
 }
+
+// ===== MULTI-HIT, DRAIN AND RECOIL =====
+
+// Gen 5+ weights for a 2-5 hit move. Two and three hits are far more common
+// than four or five, so the average is 3.1 rather than 3.5.
+const HIT_WEIGHTS = { 2: 0.35, 3: 0.35, 4: 0.15, 5: 0.15 };
+
+/**
+ * Turns a single-hit result into a multi-hit one.
+ * @param {object} result  what calcDamage/resolveDamage returned
+ * @param {number} minHits
+ * @param {number} maxHits
+ */
+export function applyMultiHit(result, minHits, maxHits) {
+  if (!minHits || maxHits === 1) return null;
+
+  const fixed = minHits === maxHits;
+  const averageHits = fixed
+    ? minHits
+    : Object.entries(HIT_WEIGHTS).reduce((sum, [hits, w]) => sum + Number(hits) * w, 0);
+
+  return {
+    minHits,
+    maxHits,
+    fixed,
+    averageHits,
+    // Worst case is every hit rolling low at the minimum count, best case the
+    // opposite. The spread of a multi-hit move is much wider than a single one.
+    totalMin: result.min * minHits,
+    totalMax: result.max * maxHits,
+  };
+}
+
+// Drain is a percentage of the damage dealt; a negative one is recoil.
+export function drainedHP(damage, drain) {
+  if (!drain) return 0;
+  return Math.max(1, Math.floor(damage * Math.abs(drain) / 100)) * Math.sign(drain);
+}

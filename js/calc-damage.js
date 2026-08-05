@@ -5,7 +5,7 @@
 import { TYPES, TYPE_NAMES_FULL, spriteUrl } from './data.js';
 import { searchPokemon, fetchMoves, fetchItems, fetchBerries } from './api.js';
 import { calcHP, calcStat } from './stats.js';
-import { resolveDamage } from './damage.js';
+import { resolveDamage, applyMultiHit, drainedHP } from './damage.js';
 import { resolvePower, toZMove, requiredInputs, isMainSeries } from './variable-power.js';
 import {
   WEATHER, TERRAIN, SCREENS, DAMAGE_ITEMS, DAMAGE_ABILITIES,
@@ -468,7 +468,7 @@ export function renderDamage(container) {
       },
     });
 
-    renderResult(result);
+    renderResult(result, move);
   }
 
   function renderSpecial({ kind, key, damage, hp, range, note }) {
@@ -516,7 +516,7 @@ export function renderDamage(container) {
       </div>`;
   }
 
-  function renderResult(r) {
+  function renderResult(r, m) {
     const resultEl = $('#dmgResult');
 
     if (r.effectiveness === 0) {
@@ -556,6 +556,8 @@ export function renderDamage(container) {
           <div class="dmg-eff">${t('dmg.effectiveness')}: x${r.effectiveness}</div>
         ` : ''}
 
+        ${extraLines(r, m)}
+
         ${r.notes.length ? `
           <div class="dmg-notes">
             ${r.notes.map(n => `<div>⚠ ${t(n)}</div>`).join('')}
@@ -563,6 +565,33 @@ export function renderDamage(container) {
         ` : ''}
       </div>
     `;
+  }
+
+  // Multi-hit totals, drain and recoil: the three things that make the single
+  // roll an incomplete answer.
+  function extraLines(r, m) {
+    const lines = [];
+    const meta = m.meta || {};
+
+    const multi = applyMultiHit(r, meta.minHits, meta.maxHits);
+    if (multi) {
+      const hits = multi.fixed
+        ? t('dmg.hits.fixed').replace('{n}', multi.minHits)
+        : t('dmg.hits.range')
+            .replace('{min}', multi.minHits)
+            .replace('{max}', multi.maxHits)
+            .replace('{avg}', multi.averageHits.toFixed(1));
+      lines.push(`${hits} · <strong>${multi.totalMin} - ${multi.totalMax}</strong>`);
+    }
+
+    if (meta.drain) {
+      const low = drainedHP(r.min, meta.drain);
+      const high = drainedHP(r.max, meta.drain);
+      const key = meta.drain > 0 ? 'dmg.drain' : 'dmg.recoil';
+      lines.push(t(key).replace('{min}', Math.abs(low)).replace('{max}', Math.abs(high)));
+    }
+
+    return lines.length ? `<div class="dmg-eff">${lines.map(l => `<div>${l}</div>`).join('')}</div>` : '';
   }
 
   update();
