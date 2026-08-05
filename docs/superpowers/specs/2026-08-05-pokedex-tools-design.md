@@ -188,10 +188,12 @@ Dos rutas, y una sección en la ficha:
 > nombres dentro de una ficha que ya es larga; el número enlaza a su grupo, que
 > es la página hecha para enseñarlos.
 
-> **[decidido sin preguntar]** La sección de la ficha va **plegada**, como la de
-> movimientos aprendidos. La ficha ya tiene stats, habilidades, evolución,
-> aprendizaje y efectividades; una sección más abierta la alarga sin que nadie
-> la haya pedido.
+> **[decidido sin preguntar, corrigiendo este mismo spec]** La sección de la
+> ficha va **abierta**. La primera versión decía plegada, por simetría con la de
+> movimientos aprendidos; al escribir el plan se cae sola: aquélla está plegada
+> porque abrirla descarga `learnsets.json`, **375 KB**, y ésta son **tres filas
+> con datos que ya están en memoria**. Plegarla cobraría un clic a cambio de
+> nada.
 
 > **[decidido sin preguntar]** Iconos: **⚖️** para el comparador y **🥚** para
 > grupos huevo. Ninguno choca con los diez que ya hay.
