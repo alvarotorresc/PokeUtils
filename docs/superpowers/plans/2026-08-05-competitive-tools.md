@@ -8,10 +8,18 @@ ninguna ruta ni ningún enlace compartido de los que ya existen.
 
 **Architecture:** `js/level.js` guarda el nivel del formato como se guardan el
 tema y el idioma, y las tres herramientas nuevas lo leen; la calculadora no.
-`js/speed.js`, `js/survive.js` y `js/counter.js` son una página cada uno y no
-reimplementan fórmulas: usan `calcStat`, `calcHP` y `resolveDamage`. La decisión
-de qué amenaza a un miembro del equipo vive en **una sola función** para poder
-cambiarla por los datos de Smogon sin tocar la página.
+Cada herramienta se parte en **motor y página**, como ya hacen `team-analysis.js`
+y `team.js`: `speed-tiers.js`/`speed.js`, `survival.js`/`survive.js` y
+`threats.js`/`counter.js`. Ninguno reimplementa fórmulas: usan `calcStat`,
+`calcHP` y `resolveDamage`. La decisión de qué amenaza a un miembro del equipo
+vive en **una sola función** para poder cambiarla por los datos de Smogon sin
+tocar la página.
+
+> **Corregido durante la ejecución.** El plan ponía cada herramienta en un solo
+> fichero y hacía que su check lo importara. **No funciona**: la página importa
+> `app.js`, que toca el DOM al cargarse, y `node` revienta. El motor tiene que
+> quedar en un módulo sin DOM para que el check pueda importarlo, que es
+> exactamente el reparto que el repositorio ya seguía.
 
 **Tech Stack:** JavaScript de módulos ES sin build, servido estático. Sin
 dependencias. Verificación con `node scripts/check-*.mjs` y con el navegador.
@@ -1128,9 +1136,10 @@ tarjetas. El home tiene **15**. A 360 px las cuatro pestañas de la tira **no
 caben** — por eso Competitivo es hub y no pestañas: en sus páginas la tira no se
 pinta, sólo el hub.
 
-> Si `toolTabsHTML('competitive', ...)` se está usando en las tres páginas
-> nuevas y la tira se sale a 360 px, quitarla de ellas y dejar sólo el hub. Es
-> exactamente lo que dice la regla medida.
+> **Resuelto durante la ejecución:** las tres páginas nuevas **no llevan tira de
+> pestañas**. Competitivo es hub precisamente porque cuatro no caben, así que
+> pintarla habría sido contradecir la regla que justifica el hub. Las páginas se
+> alcanzan desde el hub y desde el home.
 
 - [x] **Step 5: Commit**
 
