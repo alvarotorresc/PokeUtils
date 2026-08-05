@@ -208,9 +208,9 @@ Con la estructura ya ordenada y los datos ya puestos:
 |---|---|---|
 | **Comparador** | cero datos nuevos | `#/compare`, hasta 4 |
 | **Grupos huevo** | 0 peticiones: vienen en el `/pokemon-species` que ya se descarga; 15 grupos | sección en ficha + página de grupo |
-| **Velocidad** | 0,8 ms para los 1.025 desde `stats.spe` | pestaña de Competitivo |
+| **Velocidad** | **0,55 ms** para los 1.025 desde `stats.spe` (remedido) | pestaña de Competitivo |
 | **¿Sobrevive esto?** | fuerza bruta de 65 valores por stat sobre `damage.js` | pestaña de Competitivo |
-| **Contrarrestar equipo** | 0,3 ms recorriendo 1.025 × 6 | sección de `#/team` |
+| **Contrarrestar equipo** | **2,5 a 5,2 ms** recorriendo 1.025 × 6 (remedido; el 0,3 anterior era optimista por un orden de magnitud) | ruta propia `#/counter` |
 
 **Dos reglas de cría que casi todo el mundo se salta** y que el diseño tiene que
 recoger desde el principio:
