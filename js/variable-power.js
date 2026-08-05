@@ -113,9 +113,18 @@ const UNSUPPORTED = {
   'shadow-half': 'vp.unsupported.xd',
 };
 
-// Shadow is a 19th type from Colosseum/XD. It is present in moves.json but in
-// neither the type chart nor the Z table, so its 11 moves cannot be calculated.
-export const isMainSeries = move => move.type !== 'shadow' && !UNSUPPORTED[move.name];
+// What the move picker is allowed to offer: everything this module can turn
+// into a number. Three things fall outside it.
+//
+//   - Shadow, a 19th type from Colosseum/XD, present in moves.json but in
+//     neither the type chart nor the Z table. Its 11 moves have nowhere to go.
+//   - `beat-up` and `shadow-half`, which need data the panel does not have.
+//   - The 36 Z entries PokeAPI lists as moves of their own (`--physical` /
+//     `--special`). They are the same 18 moves twice over, they carry no power,
+//     and the mechanic is the checkbox on a normal move. Offering them means
+//     offering 36 dead ends.
+export const isCalculable = move =>
+  move.type !== 'shadow' && !UNSUPPORTED[move.name] && !move.name.includes('--');
 
 /**
  * @param {object} move    the moves.json record

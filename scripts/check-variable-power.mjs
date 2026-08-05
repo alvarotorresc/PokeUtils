@@ -1,7 +1,7 @@
 // Checks the variable-power families against real Pokemon data.
 // Run with: node scripts/check-variable-power.mjs
 import { readFile } from 'node:fs/promises';
-import { resolvePower, toZMove } from '../js/variable-power.js';
+import { resolvePower, toZMove, isCalculable } from '../js/variable-power.js';
 
 const pokemon = JSON.parse(await readFile(new URL('../data/pokemon.json', import.meta.url)));
 const moves = JSON.parse(await readFile(new URL('../data/moves.json', import.meta.url)));
@@ -135,6 +135,22 @@ check('a status move has no Z damage', toZMove(move('swords-dance')), null);
 // data but in neither the type chart nor the Z table, both of which are 18.
 const noZ = damaging.filter(m => m.power != null && !m.name.includes('--') && !toZMove(m));
 check('only the Shadow type has no Z form', noZ.map(m => m.type), new Array(11).fill('shadow'));
+
+console.log('\nWhat the move picker may offer\n');
+
+// Every move the picker offers has to end in a number. Anything that can only
+// answer "unsupported" is noise in the search box, and the Z entries are 36 of
+// them: the same 18 moves twice, physical and special.
+const offered = damaging.filter(isCalculable);
+const deadEnds = offered.filter(m => resolvePower(m, ctx).unsupported);
+check('nothing offered is a dead end', deadEnds.map(m => m.name), []);
+check('the 36 Z entries are filtered out',
+  damaging.filter(m => m.name.includes('--')).filter(isCalculable).length, 0);
+check('Shadow moves are filtered out',
+  damaging.filter(m => m.type === 'shadow').filter(isCalculable).length, 0);
+check('beat-up and shadow-half are filtered out',
+  ['beat-up', 'shadow-half'].filter(n => isCalculable(move(n))), []);
+check('what is left is the whole calculable set', offered.length, 611);
 
 console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);

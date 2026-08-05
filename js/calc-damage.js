@@ -6,7 +6,7 @@ import { TYPES, TYPE_NAMES_FULL, spriteUrl } from './data.js';
 import { searchPokemon, fetchMoves, fetchItems, fetchBerries, fetchPokemonList } from './api.js';
 import { calcHP, calcStat } from './stats.js';
 import { resolveDamage, applyMultiHit, drainedHP } from './damage.js';
-import { resolvePower, toZMove, requiredInputs, isMainSeries } from './variable-power.js';
+import { resolvePower, toZMove, requiredInputs, isCalculable } from './variable-power.js';
 import {
   WEATHER, TERRAIN, SCREENS, DAMAGE_ITEMS, DAMAGE_ABILITIES,
 } from './battle-data.js';
@@ -260,7 +260,7 @@ export function renderDamage(container, query) {
     moveTimer = setTimeout(async () => {
       if (!allMoves) allMoves = await fetchMoves();
       const hits = allMoves
-        .filter(m => m.category !== 'status' && isMainSeries(m))
+        .filter(m => m.category !== 'status' && isCalculable(m))
         .filter(m => m.name.includes(term)
           || m.nameEs.toLowerCase().includes(term)
           || m.nameEn.toLowerCase().includes(term))
@@ -447,7 +447,7 @@ export function renderDamage(container, query) {
       if (state.move) {
         if (!allMoves) allMoves = await fetchMoves();
         const chosen = allMoves.find(m =>
-          m.id === state.move && m.category !== 'status' && isMainSeries(m));
+          m.id === state.move && m.category !== 'status' && isCalculable(m));
         if (chosen) await chooseMove(chosen);
       }
 
