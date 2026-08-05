@@ -110,6 +110,13 @@ mantiene todas las tarjetas.
 
 Captura queda fuera de Competitivo a propósito: es de partida normal.
 
+**Esto cambia la regla de paridad, y conviene dejarlo escrito.** Hasta ahora era
+nav ↔ home: cada herramienta, su enlace y su tarjeta. Con hubs eso ya no aplica,
+porque hay 4 pestañas contra 14 tarjetas. **La paridad pasa a ser página de hub
+↔ tarjetas del home**: toda herramienta sigue teniendo su tarjeta con icono y
+descripción, y además aparece listada en el hub de su categoría. Ninguna
+herramienta puede quedar sin las dos cosas.
+
 **Coste**: media tarde. Toca `index.html`, `home.js`, `app.js` y una plantilla de
 hub nueva. **Cero datos.** Es lo primero porque sin él cada herramienta nueva
 vuelve a pelear por la barra.
@@ -162,15 +169,36 @@ objetos, movimientos, spreads de EVs con naturaleza, tipo Tera, compañeros y
 Alimenta además **contrarrestar-mi-equipo** con amenazas reales en vez de
 teóricas, que era su punto débil.
 
+`gen9championsvgc2026regmb` no es una elección entre varios: es **el único
+formato con forma de VGC** publicado en 2026-07, y sus 1,76 M de partidas no lo
+hacen precisamente una escalera marginal.
+
+**Licencia, comprobado antes de dar nada por hecho.** Importa porque esto se
+publicaría en pokeutils.alvarotc.com como ficheros estáticos, que es
+redistribuir, no consultar. La distinción que hace la propia comunidad de
+Showdown (proyecto `pkmn/smogon`) es limpia:
+
+- **Las estadísticas agregadas de uso están en el dominio público.** Es
+  exactamente lo que usaríamos: los porcentajes de `chaos/`.
+- **Los análisis y los sets redactados por Smogon tienen copyright** de Smogon y
+  sus colaboradores. Eso **no** entra: no copiamos sus sets curados ni sus
+  textos, derivamos el nuestro de los porcentajes.
+
+Aun así lleva atribución visible, que es lo correcto y lo que piden los
+proyectos que consumen estos datos.
+
 **Lo que cambia en el proyecto, y hay que asumirlo:**
 - **Envejece.** Todo lo demás es dato del juego, que no cambia. Esto es la foto
   de un mes y hay que mostrar cuál.
-- **Es de terceros.** Lleva atribución visible a Smogon.
 - **Deja de ser solo dato objetivo**: pasa a decir lo que la gente juega.
 
-**Riesgo**: los nombres de forma de Showdown no casan con los de PokeAPI
-(`ogerpon-wellspring` frente a `ogerpon-wellspring-mask`). Hay tabla de mapeo a
-mano, y es donde se van a esconder los fallos.
+**Riesgos**:
+- Los nombres de forma de Showdown no casan con los de PokeAPI
+  (`ogerpon-wellspring` frente a `ogerpon-wellspring-mask`). Hay tabla de mapeo
+  a mano, y es donde se van a esconder los fallos.
+- **Smogon no publica una API oficial** y puede cambiar la estructura de estos
+  ficheros sin avisar. El builder tiene que fallar de forma legible cuando eso
+  pase, no generar datos silenciosamente vacíos.
 
 ### Sub-bloque 4 · Las cinco herramientas
 
@@ -197,14 +225,20 @@ ambos casos.
 ## 4. Orden y dependencias
 
 ```
-1. Navegación  ──►  4. Las cinco herramientas
-                         ▲
-2. Formas  ──►  3. Sets del meta
+1. Navegación ──┬──────────────────────────► 4. Las cinco herramientas
+                │                                        ▲
+                └──► 2. Formas ──► 3. Sets del meta ──────┘
 ```
 
 - **1 antes que todo**: es lo que abre sitio.
 - **2 antes que 3**: sin formas, los sets tienen el agujero del 37%.
-- **4 al final**: es donde las decisiones de ubicación ya están resueltas.
+- **4 el último**: depende de 1 por la ubicación de cada herramienta, y de 3
+  porque contrarrestar-mi-equipo sale mucho mejor con los *checks and counters*
+  reales que con amenazas teóricas.
+
+Si se quisiera algo utilizable antes, el corte natural es **1 → 4**, dejando
+formas y sets para después: las cinco herramientas funcionan sin ellos, solo que
+contrarrestar-equipo se queda en la versión teórica.
 
 El más caro y arriesgado es el **2**, porque toca cinco páginas a la vez. El más
 barato es el **1**.
@@ -213,7 +247,13 @@ barato es el **1**.
 
 ## 5. Lo que sigue pendiente de Álvaro
 
-1. **Revisar y subir los 69 commits.** Ninguno está en `main`. Él sube.
-2. **Las decisiones marcadas `[decidido sin preguntar]`** en los specs de los
+1. **Revisar y subir lo que hay en local.** Eran **70 commits** al escribir
+   esto, ninguno en `main`; el número sube con cada commit, así que la cifra
+   viva es `git log --oneline main..HEAD | wc -l`. Él sube.
+2. **Decidir la rama del sub-bloque 1.** Quedó sin contestar y ahora importa
+   más: la navegación reescribe `index.html`, `app.js` y `home.js`, encima de 70
+   commits que nadie ha revisado. O se revisa antes, o el sub-bloque 1 va en una
+   rama aparte a partir de esta.
+3. **Las decisiones marcadas `[decidido sin preguntar]`** en los specs de los
    bloques 2 y 3 — diez en total, todas implementadas y verificadas.
-3. **Confirmar el orden** de los cuatro sub-bloques de arriba.
+4. **Confirmar el orden** de los cuatro sub-bloques de arriba.
