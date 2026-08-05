@@ -3,24 +3,29 @@
 // One of the three panels of #/calculator. All the maths lives in damage.js and
 // battle-data.js; this module collects inputs and renders the result.
 import { TYPES, TYPE_NAMES_FULL, spriteUrl } from './data.js';
-import { searchPokemon, fetchMoves, fetchItems, fetchBerries } from './api.js';
+import { searchPokemon, fetchMoves, fetchItems, fetchBerries, fetchPokemonList } from './api.js';
 import { calcHP, calcStat } from './stats.js';
 import { resolveDamage, applyMultiHit, drainedHP } from './damage.js';
 import { resolvePower, toZMove, requiredInputs, isMainSeries } from './variable-power.js';
 import {
   WEATHER, TERRAIN, SCREENS, DAMAGE_ITEMS, DAMAGE_ABILITIES,
 } from './battle-data.js';
+import { FIELDS, VP_FIELDS, encodeDamageState, decodeDamageState } from './damage-url.js';
+import { replaceQuery } from './app.js';
 import { t, getLang, pokeName, categoryName, typeName } from './i18n.js';
 
 // A neutral, average-ish pair so the panel shows a real number before the user
 // touches anything.
 const DEFAULT_LEVEL = 50;
 
-export function renderDamage(container) {
+export function renderDamage(container, query) {
   let attacker = null;
   let defender = null;
   let move = null;
   let allMoves = null;
+  // While a shared link is being rebuilt the panel must not write the hash: the
+  // half-restored state would overwrite the very URL it is reading.
+  let restoring = true;
 
   container.innerHTML = `
     <div class="calc-form">
@@ -156,12 +161,30 @@ export function renderDamage(container) {
 
   const $ = id => container.querySelector(id);
 
+  // Choosing a side is its own function because a shared link picks the same
+  // Pokemon without anyone typing in the search box.
+  function choosePokemon(side, poke) {
+    if (side === 'atk') attacker = poke;
+    else defender = poke;
+
+    const selected = $(`#dmg${side}Selected`);
+    selected.style.display = '';
+    selected.innerHTML = `
+      <div class="dmg-chosen">
+        <img src="${spriteUrl(poke.id)}" alt="${pokeName(poke)}">
+        <div>
+          <div class="dmg-chosen-name">${pokeName(poke)}</div>
+          <div class="dmg-chosen-types">${poke.types.map(ty => TYPE_NAMES_FULL[ty]).join(' / ')}</div>
+        </div>
+      </div>
+    `;
+    $(`#dmg${side}Form`).style.display = '';
+  }
+
   // ===== Pokemon search, one per side =====
-  function wirePokemonSearch(side, assign) {
+  function wirePokemonSearch(side) {
     const input = $(`#dmg${side}Search`);
     const results = $(`#dmg${side}Results`);
-    const selected = $(`#dmg${side}Selected`);
-    const form = $(`#dmg${side}Form`);
     let found = [];
     let timer;
 
@@ -182,21 +205,9 @@ export function renderDamage(container) {
 
           results.querySelectorAll('.dmg-hit').forEach(el => {
             el.onclick = () => {
-              const poke = found.find(p => p.id === Number(el.dataset.id));
-              assign(poke);
+              choosePokemon(side, found.find(p => p.id === Number(el.dataset.id)));
               results.style.display = 'none';
               input.value = '';
-              selected.style.display = '';
-              selected.innerHTML = `
-                <div class="dmg-chosen">
-                  <img src="${spriteUrl(poke.id)}" alt="${pokeName(poke)}">
-                  <div>
-                    <div class="dmg-chosen-name">${pokeName(poke)}</div>
-                    <div class="dmg-chosen-types">${poke.types.map(ty => TYPE_NAMES_FULL[ty]).join(' / ')}</div>
-                  </div>
-                </div>
-              `;
-              form.style.display = '';
               update();
             };
           });
@@ -208,8 +219,8 @@ export function renderDamage(container) {
     });
   }
 
-  wirePokemonSearch('atk', p => { attacker = p; });
-  wirePokemonSearch('def', p => { defender = p; });
+  wirePokemonSearch('atk');
+  wirePokemonSearch('def');
 
   // ===== move search =====
   //
@@ -219,6 +230,28 @@ export function renderDamage(container) {
   const moveResults = $('#dmgMoveResults');
   const moveSelected = $('#dmgMoveSelected');
   let moveTimer;
+
+  // Returns the promise from renderMoveExtras so a restore can wait for the
+  // per-move fields to exist before filling them in.
+  function chooseMove(chosen) {
+    move = chosen;
+    moveSelected.style.display = '';
+    moveSelected.innerHTML = `
+      <div class="dmg-chosen">
+        <span class="type-badge sm" data-type="${move.type}">${typeName(move.type)}</span>
+        <div>
+          <div class="dmg-chosen-name">${getLang() === 'es' ? move.nameEs : move.nameEn}</div>
+          <div class="dmg-chosen-types">
+            ${categoryName(move.category)} · ${t('moves.col.pow')} ${move.power ?? t('vp.variable')}
+          </div>
+        </div>
+      </div>
+    `;
+    // renderMoveExtras is async and may load a data file, so it calls update()
+    // itself once its fields exist. Calling update() here too would run before
+    // the selects are in the DOM and read them as empty.
+    return renderMoveExtras();
+  }
 
   moveInput.addEventListener('input', (e) => {
     clearTimeout(moveTimer);
@@ -244,25 +277,9 @@ export function renderDamage(container) {
 
       moveResults.querySelectorAll('.dmg-hit').forEach(el => {
         el.onclick = () => {
-          move = hits.find(m => m.id === Number(el.dataset.id));
           moveResults.style.display = 'none';
           moveInput.value = '';
-          moveSelected.style.display = '';
-          moveSelected.innerHTML = `
-            <div class="dmg-chosen">
-              <span class="type-badge sm" data-type="${move.type}">${typeName(move.type)}</span>
-              <div>
-                <div class="dmg-chosen-name">${getLang() === 'es' ? move.nameEs : move.nameEn}</div>
-                <div class="dmg-chosen-types">
-                  ${categoryName(move.category)} · ${t('moves.col.pow')} ${move.power ?? t('vp.variable')}
-                </div>
-              </div>
-            </div>
-          `;
-          // renderMoveExtras is async and may load a data file, so it calls
-          // update() itself once its fields exist. Calling update() here too
-          // would run before the selects are in the DOM and read them as empty.
-          renderMoveExtras();
+          chooseMove(hits.find(m => m.id === Number(el.dataset.id)));
         };
       });
     }, 300);
@@ -359,6 +376,97 @@ export function renderDamage(container) {
     return el ? el.value : null;
   };
 
+  // Z is a checkbox that only counts while the selected move actually has a Z
+  // form; the wrapper being hidden is what says it does not.
+  const zOn = () => !!$('#dmgZ')?.checked && $('#dmgZWrap').style.display !== 'none';
+
+  // ===== the calc in the URL =====
+  //
+  // Read out of the panel, straight into the hash, so any calc can be pasted to
+  // someone else. replaceQuery does not fire hashchange, so this never re-enters
+  // the router mid-calculation.
+  function readState() {
+    const fields = {};
+    for (const field of FIELDS) {
+      const el = $(field.el);
+      if (!el) continue;
+      fields[field.param] = field.kind === 'bool'
+        ? (field.param === 'z' ? zOn() : el.checked)
+        : el.value;
+    }
+
+    const vp = {};
+    for (const key of Object.keys(VP_FIELDS)) {
+      const value = vpValue(key);
+      if (value != null) vp[key] = value;
+    }
+
+    return { attacker: attacker?.id, defender: defender?.id, move: move?.id, fields, vp };
+  }
+
+  function syncUrl() {
+    if (restoring) return;
+    replaceQuery('/calculator', encodeDamageState(readState()));
+  }
+
+  function applyField(param, value) {
+    const field = FIELDS.find(f => f.param === param);
+    const el = field && $(field.el);
+    if (!el) return;
+
+    if (field.kind === 'bool') {
+      el.checked = !!value;
+      return;
+    }
+    el.value = String(value);
+    // A select silently keeps its old value when the option is not there, which
+    // is how an attacker ability lands in the defender's list. Fall back to the
+    // first option, the "none" every one of these selects opens with.
+    if (el.tagName === 'SELECT' && el.value !== String(value)) el.selectedIndex = 0;
+  }
+
+  // A shared link rebuilds the panel in the order the DOM allows: the sides and
+  // the plain fields exist from the start, but the per-move inputs and the Z box
+  // only exist once renderMoveExtras has run for the restored move.
+  async function restore() {
+    const state = decodeDamageState(query);
+    try {
+      if (state.attacker || state.defender) {
+        const byId = new Map((await fetchPokemonList()).map(p => [p.id, p]));
+        if (byId.has(state.attacker)) choosePokemon('atk', byId.get(state.attacker));
+        if (byId.has(state.defender)) choosePokemon('def', byId.get(state.defender));
+      }
+
+      for (const [param, value] of Object.entries(state.fields)) {
+        if (param !== 'z') applyField(param, value);
+      }
+
+      if (state.move) {
+        if (!allMoves) allMoves = await fetchMoves();
+        const chosen = allMoves.find(m =>
+          m.id === state.move && m.category !== 'status' && isMainSeries(m));
+        if (chosen) await chooseMove(chosen);
+      }
+
+      // Both of these are wiped by renderMoveExtras, so they go last.
+      for (const [key, value] of Object.entries(state.vp)) {
+        const el = $(`[data-vp="${key}"]`);
+        if (!el) continue;
+        el.value = value;
+        const label = container.querySelector(`[data-vp-label="${key}"]`);
+        if (label) label.textContent = `${el.value}%`;
+      }
+      if (state.fields.z && $('#dmgZWrap').style.display !== 'none') applyField('z', true);
+    } catch (err) {
+      // A shared link that cannot be rebuilt should leave a usable panel, not an
+      // error page: the router does not await this render.
+      console.error('Damage restore failed:', err);
+    } finally {
+      restoring = false;
+      update();
+    }
+  }
+
   // ===== recalculate on any change =====
   container.addEventListener('input', (e) => {
     if (e.target.matches('select, input[type="number"], input[type="checkbox"]')) update();
@@ -377,6 +485,11 @@ export function renderDamage(container) {
   }
 
   function update() {
+    // First thing, before the five early returns below: a Fissure or a Sonic
+    // Boom is exactly the kind of calc worth sharing, and syncing at the end
+    // would leave those links empty.
+    syncUrl();
+
     const resultEl = $('#dmgResult');
     if (!attacker || !defender || !move) {
       resultEl.innerHTML = `
@@ -401,8 +514,7 @@ export function renderDamage(container) {
 
     // Work out the power first: 41 moves do not carry one, and some of them do
     // not go through the damage formula at all.
-    const zOn = $('#dmgZ')?.checked && $('#dmgZWrap').style.display !== 'none';
-    const zForm = zOn ? toZMove(move) : null;
+    const zForm = zOn() ? toZMove(move) : null;
 
     const resolved = zForm
       ? { power: zForm.power }
@@ -595,4 +707,7 @@ export function renderDamage(container) {
   }
 
   update();
+  // Kept out of the render's own signature: renderCalculator does not await it,
+  // so a rejected promise here would escape the router's error handling.
+  restore();
 }

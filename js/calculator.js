@@ -4,9 +4,11 @@
 // in TABS with its own header text and render function, so adding one is a
 // single entry rather than a change to the router or the navigation bar.
 //
-// The active tab lives in the hash query, like the Pokedex and Moves list state:
-//   #/calculator             -> IV/EV
-//   #/calculator?tab=catch   -> capture
+// The active tab lives in the hash query, like the Pokedex and Moves list state,
+// and each tab gets the query so it can carry state of its own:
+//   #/calculator                    -> IV/EV
+//   #/calculator?tab=catch          -> capture
+//   #/calculator?tab=damage&a=6&... -> a shared damage calc
 import { renderIvEv } from './calc-ivev.js';
 import { renderCapture } from './calc-capture.js';
 import { renderDamage } from './calc-damage.js';
@@ -41,11 +43,17 @@ export function renderCalculator(container, query) {
   container.querySelectorAll('.tab[data-tab]').forEach(btn => {
     btn.onclick = () => {
       // replaceQuery does not fire hashchange, so the page is re-rendered here
-      // rather than through the router.
-      replaceQuery('/calculator', { tab: btn.dataset.tab === TABS[0].id ? '' : btn.dataset.tab });
+      // rather than through the router. The rest of the query is carried over:
+      // the damage tab keeps its whole calc in there, and leaving for the
+      // capture tab and back should not throw it away.
+      const carried = Object.fromEntries(query || []);
+      replaceQuery('/calculator', {
+        ...carried,
+        tab: btn.dataset.tab === TABS[0].id ? '' : btn.dataset.tab,
+      });
       renderCalculator(container, new URLSearchParams(location.hash.split('?')[1] || ''));
     };
   });
 
-  active.render(container.querySelector('#calcPanel'));
+  active.render(container.querySelector('#calcPanel'), query);
 }
