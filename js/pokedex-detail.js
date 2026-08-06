@@ -8,6 +8,9 @@ import { rangeAt100 } from './stats.js';
 import { attachTooltip } from './tooltip.js';
 import { partnersOf, hasEggData } from './egg-groups.js';
 import { formsOf, spriteIdFor } from './forms.js';
+import { fetchMeta } from './api.js';
+import { metaSetOf, defaultFormat, MONTH } from './meta.js';
+import { getLevel } from './level.js';
 
 // Spanish names are missing for 616 of the 2187 items, and the build falls back
 // to the slug. Prefer English over a raw slug before giving up.
@@ -212,6 +215,25 @@ function formLabels(variants, speciesSlug, lang) {
   });
 }
 
+// El set mas jugado, si este Pokemon esta en el formato. 1051 de las 1351
+// entradas no lo estan, asi que la seccion no aparece en vez de poner un cartel
+// de "sin datos" en tres cuartas partes de las fichas.
+function metaSectionHTML(pokemon, meta, format) {
+  const set = metaSetOf(pokemon.id, format, meta);
+  if (!set) return '';
+  const spread = set.s[0];
+  const evs = STAT_KEYS.map((k, i) => [k, spread.e[i]]).filter(([, v]) => v > 0);
+  return `
+    <h3 class="section-title">${t('meta.section')}</h3>
+    <div class="card" style="margin-bottom:20px">
+      <div class="meta-line"><span class="egg-key">${t('meta.usage')}</span> ${set.u}% ${t('meta.in')} ${t(`meta.format.${format}`)}</div>
+      <div class="meta-line"><span class="egg-key">${t('meta.spread')}</span> ${spread.n} · ${evs.map(([k, v]) => `${v} ${statName(k)}`).join(' / ')}</div>
+      <div class="meta-line"><span class="egg-key">${t('meta.moves')}</span> ${set.m.slice(0, 4).map(([slug, p]) => `${slug} (${p}%)`).join(', ')}</div>
+      <p class="egg-note" style="margin-top:10px"><a href="#/meta?f=${format}&id=${pokemon.id}">${t('meta.more')}</a> · ${t('meta.from', { month: MONTH })}</p>
+    </div>
+  `;
+}
+
 function eggSectionHTML(pokemon, all) {
   // Breeding is the species'. A form inherits eggGroups, so reading it off the
   // form would give the same answer today, but partnersOf already counts
@@ -259,9 +281,13 @@ export async function renderPokedexDetail(container, id) {
 
   // In parallel: fetchPokemonList is already memoised by api.js, so the full
   // list the breeding section needs costs no extra request.
-  const [pokemon, allPokemon] = await Promise.all([
+  const format = defaultFormat(getLevel());
+  const [pokemon, allPokemon, meta] = await Promise.all([
     fetchPokemonDetail(id),
     fetchPokemonList(),
+    // Falla suave: si el fichero del meta no carga, la ficha se pinta entera sin
+    // su seccion. Es informacion de mas, no la razon de estar en la pagina.
+    fetchMeta(format).catch(() => null),
   ]);
   if (!pokemon) {
     container.innerHTML = `
@@ -404,6 +430,8 @@ export async function renderPokedexDetail(container, id) {
       </div>
 
       ${eggSectionHTML(pokemon, allPokemon)}
+
+      ${metaSectionHTML(pokemon, meta, format)}
 
       <h3 class="section-title">${t('evo.title')}</h3>
       <div class="card" style="margin-bottom:20px" id="evoSection"></div>
