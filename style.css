@@ -332,6 +332,18 @@ a:hover {
     margin-left: 12px;
   }
 
+  /* El logo y el menu van juntos y centrados; los ajustes se colocan absolutos
+     para no correr el centro hacia la izquierda. */
+  .nav-inner {
+    justify-content: center;
+    position: relative;
+  }
+
+  .nav-toggles {
+    position: absolute;
+    right: var(--gutter);
+  }
+
   .nav-links {
     display: flex;
     position: static;
@@ -340,7 +352,9 @@ a:hover {
     border: none;
     padding: 0;
     gap: 2px;
-    flex: 1;
+    /* Sin flex: 1 el menu ocupa lo suyo y deja centrar el bloque; con el se
+       comia todo el ancho sobrante y el centrado no se notaba. */
+    flex: 0 1 auto;
     min-width: 0;
     overflow-x: auto;
     scrollbar-width: none;
@@ -646,12 +660,12 @@ a:hover {
 }
 
 /* Fixed width so the names line up in a column instead of stepping in and out
-   with the length of each label. */
+   with the length of each label. 108px fits MOVIMIENTO, the longest of the four. */
 .gs-kind {
   font-size: 0.4rem;
   color: var(--accent-text);
   letter-spacing: 1px;
-  flex: 0 0 68px;
+  flex: 0 0 108px;
 }
 
 .gs-name {
@@ -667,7 +681,10 @@ a:hover {
 .mw-grid {
   display: grid;
   /* 200 y no 240: a 1280 las cinco tarjetas caian a cuatro mas una suelta. */
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  /* El maximo es 340 y no 360: a 1920 las cinco tarjetas sumaban 1856 sobre los
+     1832 utiles y la quinta caia sola a la fila de abajo. */
+  grid-template-columns: repeat(auto-fit, minmax(200px, 340px));
+  justify-content: center;
   gap: 14px;
 }
 
@@ -955,6 +972,7 @@ a:hover {
 }
 
 .home-group {
+  text-align: center;
   margin: 28px 0 0;
   font-size: 0.6rem;
   color: var(--text-data);
@@ -964,9 +982,11 @@ a:hover {
 
 .home-grid {
   display: grid;
-  /* auto-fill instead of fixed columns: with the width no longer capped at
-     1100px, four columns left 400px-wide cards on a 1920 screen. */
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  /* auto-fit and not auto-fill: auto-fill keeps the empty columns, so a category
+     with three tools left them stuck to the left with half the screen unused.
+     The max keeps a lonely card from stretching to 600px. */
+  grid-template-columns: repeat(auto-fit, minmax(230px, 300px));
+  justify-content: center;
   gap: 14px;
   margin-top: 30px;
 }
