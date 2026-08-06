@@ -5,6 +5,7 @@
 import { readFile } from 'node:fs/promises';
 import { threatensMember, counters } from '../js/threats.js';
 import { competitiveList, isCosmetic } from '../js/forms.js';
+import { checksOf } from '../js/meta.js';
 
 // Filtrado igual que la pagina: las especies mas las formas que cambian algo.
 const pokemon = competitiveList(
@@ -66,6 +67,26 @@ console.log('\nUn equipo de uno tambien vale\n');
 const uno = counters([byId(9)], pokemon, 50);
 check('la mitad de 1 es 1', uno.half, 1);
 check('amenazan a Blastoise', uno.total, pokemon.filter(p => threatensMember(p, byId(9))).length);
+
+console.log('\nCon el indice del meta delante\n');
+
+// El indice SUMA amenazas, no las sustituye. Sustituir hundio el total de 206 a
+// 2, porque de cada Pokemon solo se guardan sus 6 checks principales y exigir
+// que un atacante este en los de tres miembros a la vez casi nunca se cumple.
+const meta = JSON.parse(await readFile(new URL('../data/meta-ou.json', import.meta.url), 'utf8'));
+const ouTeam = [984, 1000, 983, 888, 149, 645].map(byId);
+const teorico = counters(ouTeam, pokemon, 50);
+const medido = counters(ouTeam, pokemon, 50, meta);
+
+check('el teorico de este equipo', teorico.total, 206);
+check('con el meta sube, no baja', medido.total, 210);
+check('alguna fila viene marcada', medido.rows.some(r => r.fromMeta), true);
+check('sin indice, ninguna lo esta', teorico.rows.some(r => r.fromMeta), false);
+check('Great Tusk tiene checks medidos', checksOf(984, 'ou', meta).length, 6);
+// El camino teorico no puede cambiar por existir el indice: este equipo no tiene
+// a nadie con checks, asi que el total tiene que ser identico con y sin el.
+check('un equipo sin datos del meta da lo mismo con indice y sin el',
+  counters(agua, pokemon, 50, meta).total, counters(agua, pokemon, 50).total);
 
 console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);

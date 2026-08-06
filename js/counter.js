@@ -4,8 +4,9 @@
 // moves between the two pages as a link instead of being typed twice. The
 // maths lives in threats.js.
 import { counters } from './threats.js';
-import { fetchPokemonList } from './api.js';
+import { fetchPokemonList, fetchMeta } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
+import { defaultFormat } from './meta.js';
 import { loadingHTML, replaceQuery } from './app.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
@@ -22,7 +23,12 @@ export async function renderCounter(container, query = new URLSearchParams()) {
     <div id="ctBody">${loadingHTML()}</div>
   `;
   const body = container.querySelector('#ctBody');
-  const all = competitiveList(await fetchPokemonList());
+  const format = defaultFormat(getLevel());
+  const [all, meta] = await Promise.all([
+    fetchPokemonList().then(competitiveList),
+    // Si no carga, la herramienta sigue contestando con amenazas teoricas.
+    fetchMeta(format).catch(() => null),
+  ]);
 
   let ids = (query.get('ids') || '')
     .split(',')
@@ -34,7 +40,7 @@ export async function renderCounter(container, query = new URLSearchParams()) {
     replaceQuery('/counter', { ids: ids.join(',') });
     const team = ids.map(id => all.find(p => p.id === id));
     const level = getLevel();
-    const result = counters(team, all, level);
+    const result = counters(team, all, level, meta);
     const full = ids.length >= TEAM_SIZE;
 
     body.innerHTML = `
@@ -61,6 +67,7 @@ export async function renderCounter(container, query = new URLSearchParams()) {
               <img src="${spriteUrl(spriteIdFor(r))}" alt="" loading="lazy">
               <span class="ct-name">${r.name}</span>
               ${r.faster >= result.half ? `<span class="ct-fast" title="${t('counter.faster')}">⚡</span>` : ''}
+              ${r.fromMeta ? `<span class="ct-meta" title="${t('meta.measured')}">📊</span>` : ''}
               <span class="ct-hits">${t('counter.hits', { n: r.hits })}</span>
               <span class="ct-power">${r.power}</span>
             </a>
