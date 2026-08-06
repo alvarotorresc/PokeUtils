@@ -3,6 +3,7 @@
 // Every tool has a card here, grouped by the same categories as the nav bar, so
 // the app reads the same from the top as from the menu. The cards come from
 // tools.js: this file decides how they look, not which ones there are.
+import { spriteUrl } from './data.js';
 import { CATEGORIES, toolsIn } from './tools.js';
 import { t } from './i18n.js';
 
@@ -15,7 +16,7 @@ export function renderHome(container) {
       <div class="home-grid">
         ${tools.map(tool => `
           <a href="${tool.route}" class="home-card">
-            <div class="icon">${tool.icon}</div>
+            <img class="icon" src="${spriteUrl(tool.icon)}" alt="" loading="lazy">
             <div class="label">${t(tool.label)}</div>
             <div class="desc">${t(tool.desc)}</div>
           </a>

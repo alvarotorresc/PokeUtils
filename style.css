@@ -462,6 +462,21 @@ a:hover {
   letter-spacing: 0.5px;
 }
 
+/* A sprite instead of an emoji: alt is empty on purpose, since the tool name is
+   right below and a screen reader must not read "Bulbasaur, Pokedex". */
+.home-card .icon {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+  margin: 0 auto 10px;
+  display: block;
+  transition: transform 0.2s;
+}
+
+.home-card:hover .icon {
+  transform: scale(1.12);
+}
+
 /* ===== HOME PAGE ===== */
 .home-hero {
   text-align: center;

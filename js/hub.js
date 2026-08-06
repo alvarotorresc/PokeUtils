@@ -2,6 +2,7 @@
 //
 // The middle page of a category: its tools as cards. Same markup as the home
 // grid, so it inherits the styles that already exist.
+import { spriteUrl } from './data.js';
 import { CATEGORIES, toolsIn } from './tools.js';
 import { t } from './i18n.js';
 
@@ -37,7 +38,7 @@ export function renderHub(container, categoryId) {
     <div class="home-grid">
       ${tools.map(tool => `
         <a href="${tool.route}" class="home-card">
-          <div class="icon">${tool.icon}</div>
+          <img class="icon" src="${spriteUrl(tool.icon)}" alt="" loading="lazy">
           <div class="label">${t(tool.label)}</div>
           <div class="desc">${t(tool.desc)}</div>
         </a>

@@ -20,30 +20,33 @@ export const CATEGORIES = [
   { id: 'calculator', route: '#/calculator', label: 'nav.calculator', direct: true },
 ];
 
+// `icon` is a Pokemon id, not an emoji: emoji as icons are an anti-pattern, and
+// here there are sixteen of them in a row. A sprite is more on theme and nothing
+// has to be drawn. spriteUrl(icon) turns it into the image.
 export const TOOLS = [
   // `tab` is the short label the tab strip uses; `label` is the full name, which
   // is what the home card has room for.
-  { id: 'pokedex', category: 'pokedex', route: '#/pokedex', base: 'pokedex', icon: '📖', label: 'nav.pokedex', tab: 'pokedex.tab', desc: 'home.pokedex.desc' },
-  { id: 'compare', category: 'pokedex', route: '#/compare', base: 'compare', icon: '⚖️', label: 'nav.compare', tab: 'compare.tab', desc: 'home.compare.desc' },
-  { id: 'egg', category: 'pokedex', route: '#/egg', base: 'egg', icon: '🥚', label: 'nav.egg', tab: 'egg.tab', desc: 'home.egg.desc' },
+  { id: 'pokedex', category: 'pokedex', route: '#/pokedex', base: 'pokedex', icon: 1, label: 'nav.pokedex', tab: 'pokedex.tab', desc: 'home.pokedex.desc' },
+  { id: 'compare', category: 'pokedex', route: '#/compare', base: 'compare', icon: 132, label: 'nav.compare', tab: 'compare.tab', desc: 'home.compare.desc' },
+  { id: 'egg', category: 'pokedex', route: '#/egg', base: 'egg', icon: 113, label: 'nav.egg', tab: 'egg.tab', desc: 'home.egg.desc' },
 
-  { id: 'moves', category: 'data', route: '#/moves', base: 'moves', icon: '💥', label: 'nav.moves', desc: 'home.moves.desc' },
-  { id: 'abilities', category: 'data', route: '#/abilities', base: 'abilities', icon: '✨', label: 'nav.abilities', desc: 'home.abilities.desc' },
-  { id: 'items', category: 'data', route: '#/items', base: 'items', icon: '🎒', label: 'nav.items', desc: 'home.items.desc' },
-  { id: 'natures', category: 'data', route: '#/natures', base: 'natures', icon: '🧬', label: 'nav.natures', desc: 'home.natures.desc' },
-  { id: 'types', category: 'data', route: '#/types', base: 'types', icon: '⚡', label: 'nav.types', desc: 'home.types.desc' },
+  { id: 'moves', category: 'data', route: '#/moves', base: 'moves', icon: 94, label: 'nav.moves', desc: 'home.moves.desc' },
+  { id: 'abilities', category: 'data', route: '#/abilities', base: 'abilities', icon: 151, label: 'nav.abilities', desc: 'home.abilities.desc' },
+  { id: 'items', category: 'data', route: '#/items', base: 'items', icon: 143, label: 'nav.items', desc: 'home.items.desc' },
+  { id: 'natures', category: 'data', route: '#/natures', base: 'natures', icon: 133, label: 'nav.natures', desc: 'home.natures.desc' },
+  { id: 'types', category: 'data', route: '#/types', base: 'types', icon: 25, label: 'nav.types', desc: 'home.types.desc' },
 
   // Five tools, so by the measured rule this category is a hub and not tabs:
   // four of these names already did not fit on one line at 360 px.
-  { id: 'team', category: 'competitive', route: '#/team', base: 'team', icon: '🛡️', label: 'nav.team', desc: 'home.team.desc' },
-  { id: 'counter', category: 'competitive', route: '#/counter', base: 'counter', icon: '🎯', label: 'nav.counter', desc: 'home.counter.desc' },
-  { id: 'speed', category: 'competitive', route: '#/speed', base: 'speed', icon: '💨', label: 'nav.speed', desc: 'home.speed.desc' },
-  { id: 'survive', category: 'competitive', route: '#/survive', base: 'survive', icon: '🛟', label: 'nav.survive', desc: 'home.survive.desc' },
-  { id: 'meta', category: 'competitive', route: '#/meta', base: 'meta', icon: '📊', label: 'nav.meta', desc: 'home.meta.desc' },
+  { id: 'team', category: 'competitive', route: '#/team', base: 'team', icon: 248, label: 'nav.team', desc: 'home.team.desc' },
+  { id: 'counter', category: 'competitive', route: '#/counter', base: 'counter', icon: 461, label: 'nav.counter', desc: 'home.counter.desc' },
+  { id: 'speed', category: 'competitive', route: '#/speed', base: 'speed', icon: 101, label: 'nav.speed', desc: 'home.speed.desc' },
+  { id: 'survive', category: 'competitive', route: '#/survive', base: 'survive', icon: 208, label: 'nav.survive', desc: 'home.survive.desc' },
+  { id: 'meta', category: 'competitive', route: '#/meta', base: 'meta', icon: 445, label: 'nav.meta', desc: 'home.meta.desc' },
 
-  { id: 'ivev', category: 'calculator', route: '#/calculator', base: 'calculator', icon: '🔢', label: 'nav.calculator', desc: 'home.calculator.desc' },
-  { id: 'damage', category: 'calculator', route: '#/calculator?tab=damage', base: 'calculator', icon: '⚔️', label: 'calc.tab.damage', desc: 'home.damage.desc' },
-  { id: 'capture', category: 'calculator', route: '#/calculator?tab=catch', base: 'calculator', icon: '🥎', label: 'calc.tab.catch', desc: 'home.capture.desc' },
+  { id: 'ivev', category: 'calculator', route: '#/calculator', base: 'calculator', icon: 486, label: 'nav.calculator', desc: 'home.calculator.desc' },
+  { id: 'damage', category: 'calculator', route: '#/calculator?tab=damage', base: 'calculator', icon: 409, label: 'calc.tab.damage', desc: 'home.damage.desc' },
+  { id: 'capture', category: 'calculator', route: '#/calculator?tab=catch', base: 'calculator', icon: 129, label: 'calc.tab.catch', desc: 'home.capture.desc' },
 ];
 
 export const toolsIn = categoryId => TOOLS.filter(tool => tool.category === categoryId);
