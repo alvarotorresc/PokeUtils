@@ -404,7 +404,7 @@ export async function renderPokedexDetail(container, id) {
           }).join('')}
           <div class="stat-row" style="margin-top:6px;border-top:2px solid var(--border);padding-top:10px">
             <span class="stat-label" style="color:var(--accent-text)">${t('common.total')}</span>
-            <span class="stat-value" style="color:var(--accent-text)">${statTotal}</span>
+            <span class="stat-value stat-total">${statTotal}</span>
             <div></div>
             <span></span>
           </div>
