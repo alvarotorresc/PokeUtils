@@ -477,56 +477,230 @@ a:hover {
   transform: scale(1.12);
 }
 
-/* ===== HOME PAGE ===== */
-.home-hero {
-  text-align: center;
-  padding: 40px 0 30px;
-}
-
-.home-hero .pokeball-icon-lg {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: linear-gradient(180deg, #ff1a1a 50%, #fff 50%);
-  border: 5px solid #444;
+/* ===== HOME: THE SWARM ===== */
+.swarm-wrap {
   position: relative;
-  margin: 0 auto 24px;
-  animation: float 3s ease-in-out infinite;
+  padding: 56px 0 40px;
+  margin-bottom: 30px;
 }
 
-.home-hero .pokeball-icon-lg::after {
-  content: '';
+/* The radial mask opens a clearing in the middle so the search box does not
+   fight the background. Without it the text lands on the sprites and stops
+   being readable. */
+.swarm {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #fff;
-  border: 5px solid #444;
+  inset: -30px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 12px;
+  pointer-events: none;
+  opacity: 0.34;
+  overflow: hidden;
+  -webkit-mask-image: radial-gradient(ellipse 74% 78% at 50% 42%, transparent 24%, #000 76%);
+  mask-image: radial-gradient(ellipse 74% 78% at 50% 42%, transparent 24%, #000 76%);
 }
 
-@keyframes float {
+.swarm img {
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  filter: grayscale(0.35);
+  animation: bob 7s ease-in-out infinite;
+}
+
+@keyframes bob {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  50% { transform: translateY(-9px); }
 }
 
-.home-hero h1 {
-  font-size: 1.4rem;
-  letter-spacing: 3px;
-  margin-bottom: 8px;
+.swarm-fg {
+  position: relative;
+  text-align: center;
 }
 
-.home-hero .accent {
+.swarm-fg h1 {
+  font-size: clamp(24px, 2.9vw, 44px);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  margin-bottom: 26px;
+}
+
+.swarm-fg h1 .hl {
   color: var(--accent-text);
-  text-shadow: 0 0 20px rgba(255, 204, 0, 0.4);
+  text-shadow: 0 0 22px rgba(255, 204, 0, 0.5);
 }
 
-.home-hero p {
+/* La lupa de .search-bar es absoluta respecto a su barra; aqui el cuadro es
+   flex y el icono va como un hijo mas. */
+.swarm-search .search-icon {
+  position: static;
+  transform: none;
+  flex: none;
+}
+
+.swarm-search {
+  max-width: 780px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-card);
+  border: 3px solid var(--border-accent);
+  border-radius: 14px;
+  padding: 19px 22px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+  transition: box-shadow 0.2s;
+}
+
+.swarm-search:focus-within {
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45), 0 0 36px rgba(255, 204, 0, 0.22);
+}
+
+.swarm-search input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font-data);
+  font-size: 27px;
+}
+
+.swarm-search input::placeholder {
+  color: var(--text-data);
+}
+
+.swarm-chips {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.qchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.5rem;
-  color: var(--text-muted);
-  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.16s, transform 0.16s;
+}
+
+.qchip:hover {
+  border-color: var(--border-accent);
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+
+.qchip img {
+  width: 28px;
+  height: 28px;
+  image-rendering: pixelated;
+}
+
+/* ===== HOME: MOST WANTED ===== */
+.mostwanted {
+  margin-bottom: 34px;
+}
+
+.mw-grid {
+  display: grid;
+  /* 200 y no 240: a 1280 las cinco tarjetas caian a cuatro mas una suelta. */
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.mw {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.16s, transform 0.16s;
+}
+
+.mw:hover {
+  border-color: var(--border-accent);
+  transform: translateY(-3px);
+  text-decoration: none;
+}
+
+.mw img {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  transition: transform 0.2s;
+}
+
+.mw:hover img {
+  transform: scale(1.12);
+}
+
+.mw > span {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.mw .t {
+  font-size: 0.55rem;
+  letter-spacing: 0.5px;
+}
+
+.mw .d {
+  font-family: var(--font-data);
+  font-size: 18px;
+  color: var(--text-data);
+  line-height: 1.3;
+}
+
+.mw .rank {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-family: var(--font-data);
+  font-size: 18px;
+  color: var(--text-data);
+}
+
+/* Staggered entrance: 55ms per card, which over five cards is 220ms between the
+   first and the last. */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(18px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+.stagger > * {
+  opacity: 0;
+  animation: rise 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swarm img { animation: none; }
+  .stagger > * { opacity: 1; animation: none; }
+}
+
+@media (max-width: 639px) {
+  .swarm { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); }
+  .swarm-wrap { padding: 28px 0 24px; }
+  .swarm-search { padding: 14px 16px; }
+  .swarm-search input { font-size: 21px; }
 }
 
 .egg-grid {
@@ -736,28 +910,26 @@ a:hover {
 
 .home-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  /* auto-fill instead of fixed columns: with the width no longer capped at
+     1100px, four columns left 400px-wide cards on a 1920 screen. */
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
   margin-top: 30px;
+}
+
+/* Two per row on the phone, as before: with a 230px minimum only one fits at
+   360 and the home page doubles in length. */
+@media (max-width: 639px) {
+  .home-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
 }
 
 /* A grid under its own heading sits close to it: the 30px above is meant for a
    grid that stands alone, and doubles up with the heading's own margin. */
 .home-group + .home-grid {
   margin-top: 12px;
-}
-
-@media (min-width: 640px) {
-  .home-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-  }
-}
-
-@media (min-width: 900px) {
-  .home-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
 }
 
 .home-card {

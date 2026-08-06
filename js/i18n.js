@@ -147,6 +147,11 @@ const translations = {
 
     // Home
     'home.tagline': 'Tu guia Pokemon retro definitiva',
+    'home.claim.a': '1351 Pokemon.',
+    'home.claim.b': '16 herramientas.',
+    'home.search': 'Busca un Pokemon, un movimiento, un objeto...',
+    'home.mostwanted': 'LO MAS BUSCADO',
+    'pokedex.type': 'TIPO',
     'home.pokedex.desc': 'Los 1025 Pokemon con stats, tipos y habilidades',
     'home.types.desc': 'Tabla de tipos interactiva con debilidades y resistencias',
     'home.team.desc': 'Debilidades y cobertura de tu equipo de 6',
@@ -705,6 +710,11 @@ const translations = {
     'home.egg.desc': 'The 15 breeding groups and who breeds with whom',
 
     'home.tagline': 'Your ultimate retro Pokemon guide',
+    'home.claim.a': '1351 Pokemon.',
+    'home.claim.b': '16 tools.',
+    'home.search': 'Search a Pokemon, a move, an item...',
+    'home.mostwanted': 'MOST WANTED',
+    'pokedex.type': 'TYPE',
     'home.pokedex.desc': 'All 1025 Pokemon with stats, types and abilities',
     'home.types.desc': 'Interactive type chart with weaknesses and resistances',
     'home.team.desc': 'Weaknesses and coverage for your team of 6',
