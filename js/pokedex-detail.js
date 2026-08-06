@@ -347,6 +347,8 @@ export async function renderPokedexDetail(container, id) {
     <div class="poke-detail fade-in">
       <button class="back-btn" onclick="history.back()">◀ ${t('pokedex.back')}</button>
 
+      <div class="bento">
+      <section class="b b-id">
       <div class="poke-detail-header">
         <img class="poke-detail-sprite" src="${spriteUrl(spriteIdFor(pokemon))}" alt="${displayName}"
              onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><text x=%2248%22 y=%2260%22 text-anchor=%22middle%22 font-size=%2240%22>?</text></svg>'">
@@ -375,10 +377,12 @@ export async function renderPokedexDetail(container, id) {
         </div>
       ` : ''}
 
-      ${pokemon.description ? `<div class="card" style="margin-bottom:20px"><p style="font-size:0.48rem;color:var(--text-muted);line-height:2">${pokemon.description}</p></div>` : ''}
+      ${pokemon.description ? `<p class="poke-flavour">${pokemon.description}</p>` : ''}
+      </section>
 
+      <section class="b">
       <h3 class="section-title">${t('pokedex.stats')}</h3>
-      <div class="card" style="margin-bottom:20px">
+      <div>
         <div class="stat-bars">
           <div class="stat-row stat-head">
             <span></span><span></span><span></span>
@@ -419,8 +423,11 @@ export async function renderPokedexDetail(container, id) {
         </div>
       </div>
 
+      </section>
+
+      <section class="b">
       <h3 class="section-title">${t('pokedex.abilities')}</h3>
-      <div class="card" style="margin-bottom:20px">
+      <div>
         ${pokemon.abilities.map(a => `
           <div style="margin-bottom:8px">
             <a class="ability-link" href="#/abilities/${encodeURIComponent(a.nameEn)}" data-ability="${a.nameEn}">${getLang() === 'es' ? a.nameEs : a.displayEn}</a>
@@ -429,18 +436,25 @@ export async function renderPokedexDetail(container, id) {
         `).join('')}
       </div>
 
-      ${eggSectionHTML(pokemon, allPokemon)}
+      </section>
 
-      ${metaSectionHTML(pokemon, meta, format)}
+      <section class="b">${eggSectionHTML(pokemon, allPokemon)}</section>
 
+      <section class="b">${metaSectionHTML(pokemon, meta, format)}</section>
+
+      <section class="b">
       <h3 class="section-title">${t('evo.title')}</h3>
-      <div class="card" style="margin-bottom:20px" id="evoSection"></div>
+      <div id="evoSection"></div>
+      </section>
 
+      <section class="b">
       <h3 class="section-title">${t('learn.title')}</h3>
-      <div class="card" style="margin-bottom:20px" id="mvSection"></div>
+      <div id="mvSection"></div>
+      </section>
 
+      <section class="b">
       <h3 class="section-title">${t('pokedex.matchups')}</h3>
-      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
+      <div style="display:flex;flex-direction:column;gap:12px">
         ${weak.length ? `
           <div class="result-section weakness">
             <h3><span class="result-icon">💥</span> ${t('pokedex.weak')} <span class="result-hint">x2 / x4</span></h3>
@@ -459,6 +473,9 @@ export async function renderPokedexDetail(container, id) {
             <div class="result-badges">${immune.map(i => `<span class="result-badge" data-type="${i.t}">${typeName(i.t)}</span>`).join('')}</div>
           </div>
         ` : ''}
+      </div>
+
+      </section>
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;gap:12px">

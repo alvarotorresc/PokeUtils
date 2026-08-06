@@ -1426,8 +1426,73 @@ a:hover {
 
 /* ===== POKEMON DETAIL ===== */
 .poke-detail {
-  max-width: 700px;
-  margin: 0 auto;
+  width: 100%;
+}
+
+/* ===== POKEMON DETAIL: MASONRY BY COLUMNS =====
+   With grid, the whole row takes the height of the tallest card and the short
+   ones leave a hole underneath. With columns each block takes exactly its own
+   content and the next one moves up: measured, the largest gap is the 18px
+   margin itself. Reading order becomes column by column, which a detail page can
+   afford: these are independent blocks, not a sequence. */
+.bento {
+  column-count: 1;
+  column-gap: 18px;
+}
+
+/* Without break-inside a card splits across two columns and reads as a layout
+   bug. All three properties: Firefox and Safari honour different ones. */
+.b {
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+  display: inline-block;
+  width: 100%;
+  margin: 0 0 18px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+}
+
+/* The breeding and meta blocks are empty for a Pokemon without that data, and an
+   empty block is still a bordered box. */
+.b:empty {
+  display: none;
+}
+
+.b .section-title {
+  margin-top: 0;
+}
+
+/* Those helpers bring their own surface, and the .b is already the card:
+   without this there are two borders and double the padding. */
+.b > .card,
+.b > .egg-section {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: 0;
+}
+
+.b-id {
+  text-align: center;
+}
+
+.poke-flavour {
+  font-size: 0.48rem;
+  color: var(--text-muted);
+  line-height: 2;
+  margin-top: 16px;
+  text-align: left;
+}
+
+@media (min-width: 1000px) {
+  .bento { column-count: 2; }
+}
+
+@media (min-width: 1500px) {
+  .bento { column-count: 3; }
 }
 
 .poke-detail-header {
@@ -1446,8 +1511,9 @@ a:hover {
 }
 
 .poke-detail-sprite {
-  width: 160px;
-  height: 160px;
+  width: 300px;
+  height: 300px;
+  max-width: 100%;
   image-rendering: pixelated;
   filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
   background: var(--bg-card);
@@ -1682,18 +1748,31 @@ a.evo-node:hover {
 }
 
 .evo-node img {
-  width: 64px;
-  height: 64px;
+  width: 96px;
+  height: 96px;
   image-rendering: pixelated;
+  transition: transform 0.2s;
+}
+
+a.evo-node:hover img {
+  transform: scale(1.09);
+}
+
+@media (min-width: 1000px) {
+  .evo-node img {
+    width: 140px;
+    height: 140px;
+  }
 }
 
 .evo-dex {
-  font-size: 0.36rem;
+  font-family: var(--font-data);
+  font-size: 17px;
   color: var(--text-data);
 }
 
 .evo-name {
-  font-size: 0.4rem;
+  font-size: 0.55rem;
   color: var(--text);
   text-align: center;
   line-height: 1.6;
@@ -1724,7 +1803,7 @@ a.evo-node:hover {
   font-size: 0.36rem;
   color: var(--text-muted);
   line-height: 1.7;
-  max-width: 130px;
+  max-width: 160px;
   text-align: center;
 }
 
