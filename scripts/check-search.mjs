@@ -14,6 +14,7 @@ const datasets = {
   moves: await read('moves'),
   abilities: await read('abilities'),
   items: await read('items'),
+  machines: await read('machines'),
 };
 
 let failed = 0;
@@ -42,6 +43,19 @@ check('un Pokemon, el suyo', spriteDe('pikachu'), '25.png');
 check('un movimiento, la MT de su tipo', spriteDe('surf'), 'tm-water.png');
 check('una habilidad, la Capsula Habilidad', spriteDe('levitate'), 'ability-capsule.png');
 check('un objeto, el suyo', spriteDe('master ball'), 'master-ball.png');
+
+console.log('\nUna MT dice que ensena y se busca por ello\n');
+
+const buscar = (t, n = 8) => searchAll(datasets, t, n);
+
+check('mt01 trae su movimiento en el nombre', first('mt01').name, 'MT01 · Derribo');
+check('y el sprite del tipo del movimiento', spriteDe('mt01'), 'tm-normal.png');
+check('lanzallamas encuentra su MT',
+  buscar('lanzallamas', 20).some(r => r.kind === 'item' && r.name.includes('Lanzallamas')), true);
+check('y esa MT lleva la MT de fuego',
+  (buscar('lanzallamas', 20).find(r => r.kind === 'item')?.sprite || '').split('/').pop(), 'tm-fire.png');
+check('sin machines cargado no revienta',
+  searchAll({ items: datasets.items }, 'mt01', 3)[0].name, 'MT01');
 
 console.log('\nLo exacto gana a lo que solo empieza igual\n');
 
