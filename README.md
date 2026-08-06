@@ -28,9 +28,10 @@ actually shows up.
 
 The home page carries a **global search** that is not a tool either: it crosses
 the four datasets at once — 1351 Pokemon, 937 moves, 313 abilities and 2187
-items — and goes straight to whichever page holds the answer. Only
-`pokemon.json` loads with the page; the other three are fetched on the first
-character typed.
+items — and goes straight to whichever page holds the answer. A TM also carries
+the move it teaches, so searching "lanzallamas" finds both the move and the two
+machines that teach it. Only `pokemon.json` loads with the page; the rest are
+fetched on the first character typed.
 
 ### Pokedex
 
@@ -81,8 +82,8 @@ Zero dependencies. Zero build step. Pure HTML + CSS + JS (ES Modules).
 
 ## Updating the data
 
-The files in `data/` are generated, not hand-edited. There are two builders,
-because there are two sources with very different lifetimes.
+The files in `data/` are generated, not hand-edited. There are three builders,
+because there are sources with very different lifetimes.
 
 ### Game data — regenerate when a generation ships
 
@@ -96,6 +97,19 @@ Targets: `pokemon`, `moves`, `abilities`, `items`, `berries`, `evolutions`,
 
 It reads the REST API (no rate limit) and takes a few minutes. Bump
 `MAX_POKEMON` in the script when the National Dex grows.
+
+### TM moves — regenerate alongside `items`
+
+```bash
+node scripts/build-machines.mjs
+```
+
+Writes `data/machines.json`: which move each of the 338 TMs, HMs and TRs
+teaches, with its type. It lives apart from `items.json` on purpose — that file
+is 619 KB and the home page never needs it, while this is 51 KB the search only
+pulls once you type. PokeAPI hands the relation out one machine at a time, so
+this is ~676 requests and takes a minute. It reads `items.json` and `moves.json`
+first, so run it **after** `build-data.mjs items moves`.
 
 ### Meta sets — regenerate when you want a newer month
 
