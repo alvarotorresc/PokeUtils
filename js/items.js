@@ -18,9 +18,11 @@ const CATEGORY_MAP = {
   'key': 'cat.items-key',
 };
 
-export function renderItems(container) {
+export function renderItems(container, query = new URLSearchParams()) {
   let currentPage = 1;
-  let searchTerm = '';
+  // An item has no page of its own, so the global search opens this list already
+  // filtered by the name it found.
+  let searchTerm = (query.get('q') || '').trim().toLowerCase();
   let catFilter = '';
   let allItems = null;
   let categories = [];
@@ -33,7 +35,7 @@ export function renderItems(container) {
     </div>
     <div class="search-bar">
       <span class="search-icon">🔍</span>
-      <input type="text" class="search-input" id="itSearch" placeholder="${t('items.search')}">
+      <input type="text" class="search-input" id="itSearch" placeholder="${t('items.search')}" value="${searchTerm.replace(/"/g, '&quot;')}">
     </div>
     <div class="filter-row" id="itFilters"></div>
     <div id="itContent"></div>

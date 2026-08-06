@@ -6,6 +6,7 @@
 import { spriteUrl } from './data.js';
 import { CATEGORIES, TOOLS, toolsIn } from './tools.js';
 import { t } from './i18n.js';
+import { attachGlobalSearch } from './global-search.js';
 
 // The background is made of real sprites from the app, not an illustration: 100
 // of the 1351 already being served. It is the part of this home page nobody
@@ -87,12 +88,5 @@ export function renderHome(container) {
     ${groups}
   `;
 
-  // Until the global search exists, Enter goes to the Pokedex carrying the term:
-  // the home works without it, it just searches less.
-  const search = container.querySelector('#globalSearch');
-  search.addEventListener('keydown', e => {
-    if (e.key !== 'Enter') return;
-    const term = search.value.trim();
-    location.hash = term ? `/pokedex?q=${encodeURIComponent(term)}` : '/pokedex';
-  });
+  attachGlobalSearch(container.querySelector('#globalSearch'));
 }

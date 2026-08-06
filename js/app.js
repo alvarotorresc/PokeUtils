@@ -161,7 +161,7 @@ async function route() {
     } else if (path === '/abilities') {
       await renderAbilities(app);
     } else if (path === '/items') {
-      await renderItems(app);
+      await renderItems(app, query);
     } else if (path === '/natures') {
       renderNatures(app);
     } else if (path === '/counter') {
