@@ -16,6 +16,7 @@
 // genderless, which is why all five are written out.
 //
 // Every consumer calls canBreed. The rules live here and nowhere else.
+import { isForm } from './forms.js';
 
 // PokeAPI keeps the old internal names: `ground` is the Field group, `plant` is
 // Grass, `humanshape` is Human-Like and `indeterminate` is Amorphous. The
@@ -44,11 +45,20 @@ export function canBreed(a, b) {
   return groupsOf(a).some(group => groupsOf(b).includes(group));
 }
 
+// Breeding belongs to the species, so every list that comes out of here drops
+// the alternate forms. They inherit `eggGroups` from their species -- they had
+// to, or an absent one would read as unknown -- and that inheritance is exactly
+// what makes them wrong here: Mega Charizard X breeds as Charizard breeds, so
+// listing both is listing the same Pokemon twice. Left in, the Field group went
+// from 278 members to 369 and `no-eggs` from 151 to 216.
+const speciesOnly = list => list.filter(p => !isForm(p));
+
 // Every species `p` can breed with, itself included when it has both genders:
 // a Charizard does breed with another Charizard.
-export const partnersOf = (p, list) => list.filter(other => canBreed(p, other));
+export const partnersOf = (p, list) => speciesOnly(list).filter(other => canBreed(p, other));
 
-export const membersOf = (group, list) => list.filter(p => groupsOf(p).includes(group));
+export const membersOf = (group, list) =>
+  speciesOnly(list).filter(p => groupsOf(p).includes(group));
 
 export const groupCounts = list =>
   EGG_GROUPS.map(group => ({ group, count: membersOf(group, list).length }));

@@ -81,15 +81,21 @@ const cuenta = Object.fromEntries(groupCounts(pokemon).map(g => [g.group, g.coun
 check('Campo es el mayor', cuenta['ground'], 278);
 check('Ditto esta solo en su grupo', cuenta['ditto'], 1);
 check('no-eggs', cuenta['no-eggs'], 151);
+// Contra las especies, no contra el fichero entero: desde que estan las 326
+// formas, `pokemon` trae 1351 entradas y las formas heredan los eggGroups de su
+// especie. La cria es de la especie, asi que membersOf y partnersOf las dejan
+// fuera y estos dos esperados tienen que mirar lo mismo que ellas miran.
+const especies = pokemon.filter(p => !p.speciesId);
+
 check('la suma de los grupos cuadra',
   Object.values(cuenta).reduce((a, b) => a + b, 0),
-  pokemon.reduce((n, p) => n + p.eggGroups.length, 0));
+  especies.reduce((n, p) => n + p.eggGroups.length, 0));
 check('membersOf y groupCounts dicen lo mismo', membersOf('ditto', pokemon).map(p => p.id), [132]);
 
 console.log('\nCon cuantos puede criar\n');
 
 check('Ditto cria con todos menos con los no-eggs y consigo mismo',
-  partnersOf(ditto, pokemon).length, pokemon.length - cuenta['no-eggs'] - 1);
+  partnersOf(ditto, pokemon).length, especies.length - cuenta['no-eggs'] - 1);
 check('Porygon solo con Ditto', partnersOf(porygon, pokemon).map(p => p.id), [132]);
 check('Mewtwo con nadie', partnersOf(mewtwo, pokemon).length, 0);
 
