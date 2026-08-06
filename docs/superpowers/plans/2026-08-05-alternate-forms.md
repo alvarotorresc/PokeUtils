@@ -52,7 +52,7 @@ dependencias. Verificación con `node scripts/check-*.mjs` y con el navegador.
 - Produces: entradas nuevas en `data/pokemon.json` con la forma
   `{ id, name, speciesId, formEs, formEn, nameEs, nameEn, types, stats, … }`.
 
-- [ ] **Step 1: Escribir el check que falla**
+- [x] **Step 1: Escribir el check que falla**
 
 Crear `scripts/check-forms.mjs`:
 
@@ -146,12 +146,12 @@ console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);
 ```
 
-- [ ] **Step 2: Ejecutarlo para verlo fallar**
+- [x] **Step 2: Ejecutarlo para verlo fallar**
 
 Run: `node scripts/check-forms.mjs`
 Expected: FAIL — `Cannot find module '../js/forms.js'`.
 
-- [ ] **Step 3: La tabla de sufijos en `scripts/build-data.mjs`**
+- [x] **Step 3: La tabla de sufijos en `scripts/build-data.mjs`**
 
 Junto a las demás constantes de arriba:
 
@@ -234,7 +234,7 @@ const SUFFIX_NAMES = {
 };
 ```
 
-- [ ] **Step 4: Construir las formas**
+- [x] **Step 4: Construir las formas**
 
 En `scripts/build-data.mjs`, después de `buildPokemon`, añadir:
 
@@ -334,7 +334,7 @@ Y en `buildPokemon`, al final, encadenar las formas:
   return [...base, ...await buildForms(base)];
 ```
 
-- [ ] **Step 5: Pasar el builder contra un directorio aparte**
+- [x] **Step 5: Pasar el builder contra un directorio aparte**
 
 ```bash
 mkdir -p /tmp/build-forms
@@ -357,7 +357,7 @@ console.log('las 1025 base intactas:', o.every(b=>JSON.stringify(n.find(x=>x.id=
 Expected: `1025 -> 1351` y `las 1025 base intactas: true`. **Si alguna base
 cambió, parar**: este sub-bloque no toca las especies.
 
-- [ ] **Step 6: Instalar y ejecutar el check**
+- [x] **Step 6: Instalar y ejecutar el check**
 
 ```bash
 cp /tmp/build-forms/pokemon.json data/pokemon.json
@@ -367,7 +367,7 @@ node scripts/check-forms.mjs
 Expected: PASS. Si falla el nombre de `charizard-mega-x`, el builder está
 pidiendo `/pokemon-form` por id en vez de seguir el enlace.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add data/pokemon.json scripts/build-data.mjs scripts/check-forms.mjs js/forms.js
@@ -390,7 +390,7 @@ git -c commit.gpgsign=false commit -m "feat(data): add the 326 alternate forms t
 
 **Se ejecuta antes que la Task 1**, por lo dicho arriba.
 
-- [ ] **Step 1: Escribir `js/forms.js`**
+- [x] **Step 1: Escribir `js/forms.js`**
 
 ```js
 // ===== ALTERNATE FORMS =====
@@ -440,12 +440,12 @@ export function competitiveList(list) {
 export const spriteIdFor = p => (p.noSprite && p.speciesId ? p.speciesId : p.id);
 ```
 
-- [ ] **Step 2: Comprobar que `node` lo carga**
+- [x] **Step 2: Comprobar que `node` lo carga**
 
 Run: `node -e "import('./js/forms.js').then(m => console.log(Object.keys(m).join(', ')))"`
 Expected: `isForm, speciesOf, formsOf, isCosmetic, competitiveList, spriteIdFor`.
 
-- [ ] **Step 3: Commit** (junto con la Task 1, ver su Step 7)
+- [x] **Step 3: Commit** (junto con la Task 1, ver su Step 7)
 
 ---
 
@@ -458,7 +458,7 @@ Expected: `isForm, speciesOf, formsOf, isCosmetic, competitiveList, spriteIdFor`
 **Interfaces:**
 - Consumes: `formsOf`, `spriteIdFor`, `isForm`, `speciesOf` (Task 2).
 
-- [ ] **Step 1: La tira y el intercambio de forma**
+- [x] **Step 1: La tira y el intercambio de forma**
 
 En `js/pokedex-detail.js`, importar:
 
@@ -492,7 +492,7 @@ Y una tira justo debajo de la cabecera, solo cuando hay formas:
       ` : ''}
 ```
 
-- [ ] **Step 2: Que cambiar de pestaña repinte sin cambiar de página**
+- [x] **Step 2: Que cambiar de pestaña repinte sin cambiar de página**
 
 Al final de `renderPokedexDetail`, con los demás manejadores:
 
@@ -511,12 +511,12 @@ Al final de `renderPokedexDetail`, con los demás manejadores:
 `renderPokedexDetail` acepta el id de una forma porque busca en la lista
 completa; lo que no cambia es la URL.
 
-- [ ] **Step 3: Los sprites de las once sin sprite propio**
+- [x] **Step 3: Los sprites de las once sin sprite propio**
 
 Sustituir cada `spriteUrl(pokemon.id)` de este fichero por
 `spriteUrl(spriteIdFor(pokemon))`.
 
-- [ ] **Step 4: Claves y estilos**
+- [x] **Step 4: Claves y estilos**
 
 `es`: `'form.base': 'Normal'` · `en`: `'form.base': 'Base'`.
 
@@ -526,7 +526,7 @@ Sustituir cada `spriteUrl(pokemon.id)` de este fichero por
 .form-tabs .tab { flex: 0 0 auto; white-space: nowrap; }
 ```
 
-- [ ] **Step 5: Comprobar en el navegador**
+- [x] **Step 5: Comprobar en el navegador**
 
 Con `?r=1` en `#/pokedex/6`: cuatro pestañas —Normal, Mega X, Mega Y, Gigamax—.
 Pulsar Mega X y ver que **los stats y los tipos cambian**, que la URL **sigue
@@ -534,7 +534,7 @@ siendo `#/pokedex/6`**, y que evolución, movimientos y cría **no cambian**.
 Probar `#/pokedex/718` (Zygarde) y ver que la forma sin sprite enseña el de
 Zygarde y no un interrogante.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add js/pokedex-detail.js js/i18n.js style.css
@@ -548,7 +548,7 @@ git -c commit.gpgsign=false commit -m "feat(forms): show a species' forms as tab
 **Files:**
 - Modify: `js/pokedex.js`
 
-- [ ] **Step 1: La lista base excluye las formas, la búsqueda no**
+- [x] **Step 1: La lista base excluye las formas, la búsqueda no**
 
 En `render()` de `js/pokedex.js`, antes de los demás filtros:
 
@@ -565,17 +565,17 @@ Y el import:
 import { isForm, spriteIdFor } from './forms.js';
 ```
 
-- [ ] **Step 2: Que la tarjeta use el sprite correcto**
+- [x] **Step 2: Que la tarjeta use el sprite correcto**
 
 En `pokemonCardHTML`, cambiar `spriteUrl(p.id)` por `spriteUrl(spriteIdFor(p))`.
 
-- [ ] **Step 3: Comprobar en el navegador**
+- [x] **Step 3: Comprobar en el navegador**
 
 Con `?r=2`: `#/pokedex` dice **1025**; escribir "charizard" da **4** (Charizard,
 Mega X, Mega Y, Gigamax); borrar la búsqueda vuelve a 1025. `#/pokedex?gen=1`
 sigue dando 151.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add js/pokedex.js
@@ -590,7 +590,7 @@ git -c commit.gpgsign=false commit -m "feat(forms): find forms by search without
 - Modify: `js/compare.js`, `js/speed.js`, `js/counter.js`, `js/survive.js`
 - Modify: `scripts/check-speed.mjs`, `scripts/check-counter.mjs`
 
-- [ ] **Step 1: Cambiar la lista en las cuatro**
+- [x] **Step 1: Cambiar la lista en las cuatro**
 
 En cada una, donde hoy hace `const all = await fetchPokemonList();`, envolverla:
 
@@ -604,7 +604,7 @@ En `compare.js` la llamada está dentro de un `Promise.all` con las habilidades;
 envolver solo el resultado de la lista. Y en las cuatro, cambiar los
 `spriteUrl(x.id)` por `spriteUrl(spriteIdFor(x))`.
 
-- [ ] **Step 2: Actualizar los números medidos de los dos checks**
+- [x] **Step 2: Actualizar los números medidos de los dos checks**
 
 En `scripts/check-speed.mjs`:
 
@@ -637,12 +637,12 @@ check('ninguna cosmetica en la lista',
   pokemon.filter(p => p.speciesId && isCosmetic(p, pokemon.find(s => s.id === p.speciesId))).length, 0);
 ```
 
-- [ ] **Step 3: Ejecutar los checks**
+- [x] **Step 3: Ejecutar los checks**
 
 Run: `node scripts/check-speed.mjs && node scripts/check-counter.mjs && node scripts/check-forms.mjs`
 Expected: los tres en PASS.
 
-- [ ] **Step 4: Comprobar en el navegador**
+- [x] **Step 4: Comprobar en el navegador**
 
 Con `?r=3`:
 - `#/compare?ids=6,10034` compara Charizard con Mega Charizard X, y el ataque
@@ -651,7 +651,7 @@ Con `?r=3`:
 - `#/counter?ids=9,130,131,134,230,745` dice **274**.
 - En los buscadores de las cuatro, escribir "charizard" **no** ofrece Gigamax.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add js/compare.js js/speed.js js/counter.js js/survive.js scripts/check-speed.mjs scripts/check-counter.mjs
@@ -662,7 +662,7 @@ git -c commit.gpgsign=false commit -m "feat(forms): let the competitive tools se
 
 ### Task 6: Verificación completa
 
-- [ ] **Step 1: Los diez scripts en verde**
+- [x] **Step 1: Los diez scripts en verde**
 
 ```bash
 for s in tools egg-groups forms speed survive counter damage-url variable-power damage capture; do
@@ -670,11 +670,11 @@ for s in tools egg-groups forms speed survive counter damage-url variable-power 
 done
 ```
 
-- [ ] **Step 2: Las 20 rutas siguen respondiendo**
+- [x] **Step 2: Las 20 rutas siguen respondiendo**
 
 Ninguna puede caer en "no encontrado".
 
-- [ ] **Step 3: Lo que no puede haber cambiado**
+- [x] **Step 3: Lo que no puede haber cambiado**
 
 ```
 #/calculator?tab=damage&a=6&d=3&m=53&al=100&crit=1  -> 618 - 728
@@ -684,7 +684,7 @@ Ninguna puede caer en "no encontrado".
 #/pokedex                                           -> 1025
 ```
 
-- [ ] **Step 4: Lo que sí cambia, y a cuánto**
+- [x] **Step 4: Lo que sí cambia, y a cuánto**
 
 | | Antes | Ahora |
 |---|---|---|
@@ -693,19 +693,61 @@ Ninguna puede caer en "no encontrado".
 | Buscar "charizard" en la Pokédex | 1 | **4** |
 | `#/pokedex/6`, pestañas de forma | 0 | **4** |
 
-- [ ] **Step 5: Los dos idiomas**
+- [x] **Step 5: Los dos idiomas**
 
 Recorrer `#/pokedex/6` con sus cuatro pestañas y buscar "charizard" en EN, sin
 que aparezca ningún slug crudo (`charizard-mega-x`) ni ninguna clave (`form.`).
 
-- [ ] **Step 6: Anchos y consola**
+- [x] **Step 6: Anchos y consola**
 
 A 360 px la tira de formas hace scroll horizontal dentro de sí misma y **la
 página no se desborda**. Consola sin errores ni avisos.
 
-- [ ] **Step 7: Commit de lo corregido**
+- [x] **Step 7: Commit de lo corregido**
 
 ---
+
+## Donde el plan diverge del código, ejecutado el 2026-08-06
+
+Nueve cosas salieron distintas. Ninguna cambió el objetivo; seis fueron huecos
+del plan y tres, números que había que medir.
+
+1. **El plan enumeró 6 consumidores de la lista y hay 10.** Faltaban `team.js`,
+   `moves-detail.js` y las tres calculadoras vía `searchPokemon`. El filtro se
+   puso **dentro de `searchPokemon`**, que arregla las tres de una vez.
+   `moves-detail.js` se comprobó y no necesitaba nada: mapea id→Pokémon y a las
+   formas nunca las consulta.
+2. **La cría se rompió y el plan no lo vio.** Las formas heredan `eggGroups`, así
+   que Campo pasó de 278 a **369** y `no-eggs` de 151 a **216**. `membersOf` y
+   `partnersOf` filtran ahora las formas en `js/egg-groups.js`, y los dos
+   esperados de `check-egg-groups.mjs` se ataron a las especies. Sin esto, el
+   commit de datos dejaba una página mintiendo.
+3. **`fetchPokemonDetail` no propagaba `speciesId`**, así que el `isForm(pokemon)`
+   de la Task 3 habría dado **false siempre** y la tira no habría aparecido nunca.
+   Hubo que tocar `js/api.js`, que el plan no listaba.
+4. **Todo lo numerado por Pokédex tenía que colgar de la especie**, no del id
+   10000: número, vecinos, descripción, evolución, movimientos y cría. El plan
+   solo mencionaba los sprites.
+5. **Diez pestañas eran indistinguibles.** Minior repite "Forma Meteorito" seis
+   veces, Zygarde y Darmanitan una cada uno. Las repetidas caen al sufijo del
+   slug, que no se puede recortar con el slug de la especie porque ese ya lleva
+   sufijo propio (`minior-red-meteor`, `zygarde-50`).
+6. **La tarjeta de la Pokédex enseñaba `#10034`** mientras la ficha enseñaba
+   `#0006`. Ahora las dos dan el número de la especie.
+7. **La captura quedó fuera, y no estaba decidido.** Una Mega no se captura y
+   hereda el `captureRate` de su especie, así que ofrecerla devolvía un
+   porcentaje real para algo que ninguna ball toca. `searchPokemon` acepta
+   `{ speciesOnly: true }` y solo la pestaña `catch` lo usa.
+8. **Tres números del spec estaban mal, y por la misma razón**: sus categorías no
+   son una partición. Totem **11 → 12** y gorras **7 → 8**, que son justo las dos
+   formas que cuentan doble (`raticate-totem-alola` y `pikachu-alola-cap`).
+9. **Tres medidos que el plan no predijo**: el Kanto inicial **26 → 32** (el plan
+   ya pedía medirlo), las velocidades base distintas **119 → 129**, y el primer
+   contrarrestador del equipo mono-agua pasa de **Zekrom a Mega-Ampharos** —
+   mismos 5 miembros amenazados, y desempata por poder, 165 contra 150. Es
+   exactamente lo que este sub-bloque venía a arreglar.
+
+`pokemon.json` quedó en **556 KB**, no en los ~539 previstos.
 
 ## Lo que este plan NO hace
 
