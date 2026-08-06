@@ -103,6 +103,83 @@ const STAT_KEYS = {
   'speed': 'spe',
 };
 
+// Display names for form suffixes, for the 64 that PokeAPI either does not
+// translate or translates into a full name ("Mega-Charizard X") that is too long
+// to sit in a tab. The other 79 suffixes resolve from the API's own label.
+//
+// Keyed by SUFFIX, not by form: a new Charizard-style mega arriving in a future
+// generation gets named without touching this table.
+//
+// Careful with the reverse: the API's labels are NOT interchangeable between
+// species sharing a suffix. "Mega-Venusaur" belongs to Venusaur, not to `mega`,
+// and inheriting labels by suffix would put "Forma Totem" on Landorus.
+const SUFFIX_NAMES = {
+  mega: { es: 'Mega', en: 'Mega' },
+  'mega-x': { es: 'Mega X', en: 'Mega X' },
+  'mega-y': { es: 'Mega Y', en: 'Mega Y' },
+  'mega-z': { es: 'Mega Z', en: 'Mega Z' },
+  'male-mega': { es: 'Mega macho', en: 'Male Mega' },
+  'female-mega': { es: 'Mega hembra', en: 'Female Mega' },
+  'original-mega': { es: 'Mega original', en: 'Original Mega' },
+  'curly-mega': { es: 'Mega rizado', en: 'Curly Mega' },
+  'droopy-mega': { es: 'Mega caido', en: 'Droopy Mega' },
+  'stretchy-mega': { es: 'Mega estirado', en: 'Stretchy Mega' },
+  gmax: { es: 'Gigamax', en: 'Gigantamax' },
+  'amped-gmax': { es: 'Gigamax agudo', en: 'Amped Gigantamax' },
+  'low-key-gmax': { es: 'Gigamax grave', en: 'Low Key Gigantamax' },
+  'single-strike-gmax': { es: 'Gigamax brusco', en: 'Single Strike Gigantamax' },
+  'rapid-strike-gmax': { es: 'Gigamax fluido', en: 'Rapid Strike Gigantamax' },
+  hisui: { es: 'Forma de Hisui', en: 'Hisuian Form' },
+  paldea: { es: 'Forma de Paldea', en: 'Paldean Form' },
+  'paldea-combat-breed': { es: 'Paldea Combate', en: 'Paldean Combat Breed' },
+  'paldea-blaze-breed': { es: 'Paldea Llama', en: 'Paldean Blaze Breed' },
+  'paldea-aqua-breed': { es: 'Paldea Agua', en: 'Paldean Aqua Breed' },
+  totem: { es: 'Dominante', en: 'Totem' },
+  'totem-alola': { es: 'Dominante de Alola', en: 'Alolan Totem' },
+  'totem-disguised': { es: 'Dominante disfrazado', en: 'Disguised Totem' },
+  'totem-busted': { es: 'Dominante descubierto', en: 'Busted Totem' },
+  'o-totem': { es: 'Dominante', en: 'Totem' },
+  therian: { es: 'Forma Avatar', en: 'Therian Forme' },
+  origin: { es: 'Forma Origen', en: 'Origin Forme' },
+  unbound: { es: 'Forma Liberada', en: 'Unbound' },
+  ultra: { es: 'Ultraente', en: 'Ultra' },
+  female: { es: 'Hembra', en: 'Female' },
+  'battle-bond': { es: 'Fuerte Afecto', en: 'Battle Bond' },
+  'own-tempo': { es: 'Ritmo Propio', en: 'Own Tempo' },
+  'white-striped': { es: 'Forma Raya Blanca', en: 'White-Striped' },
+  'three-segment': { es: 'Tres Segmentos', en: 'Three-Segment' },
+  'family-of-three': { es: 'Familia de Tres', en: 'Family of Three' },
+  hero: { es: 'Forma Heroica', en: 'Hero Form' },
+  roaming: { es: 'Errante', en: 'Roaming' },
+  droopy: { es: 'Caido', en: 'Droopy' },
+  stretchy: { es: 'Estirado', en: 'Stretchy' },
+  'blue-plumage': { es: 'Plumaje Azul', en: 'Blue Plumage' },
+  'yellow-plumage': { es: 'Plumaje Amarillo', en: 'Yellow Plumage' },
+  'white-plumage': { es: 'Plumaje Blanco', en: 'White Plumage' },
+  black: { es: 'Negro', en: 'Black' },
+  white: { es: 'Blanco', en: 'White' },
+  heat: { es: 'Lavandera Calor', en: 'Heat Rotom' },
+  wash: { es: 'Lavandera Lavado', en: 'Wash Rotom' },
+  frost: { es: 'Lavandera Frio', en: 'Frost Rotom' },
+  fan: { es: 'Lavandera Ventilador', en: 'Fan Rotom' },
+  mow: { es: 'Lavandera Corte', en: 'Mow Rotom' },
+  starter: { es: 'Inicial', en: 'Starter' },
+  'rock-star': { es: 'Roquera', en: 'Rock Star' },
+  belle: { es: 'Aristocrata', en: 'Belle' },
+  'pop-star': { es: 'Superstar', en: 'Pop Star' },
+  phd: { es: 'Erudita', en: 'Ph.D.' },
+  libre: { es: 'Enmascarada', en: 'Libre' },
+  cosplay: { es: 'Coqueta', en: 'Cosplay' },
+  'limited-build': { es: 'Forma Limitada', en: 'Limited Build' },
+  'sprinting-build': { es: 'Forma Carrera', en: 'Sprinting Build' },
+  'swimming-build': { es: 'Forma Nado', en: 'Swimming Build' },
+  'gliding-build': { es: 'Forma Planeo', en: 'Gliding Build' },
+  'low-power-mode': { es: 'Modo Reposo', en: 'Low Power Mode' },
+  'drive-mode': { es: 'Modo Carrera', en: 'Drive Mode' },
+  'aquatic-mode': { es: 'Modo Nado', en: 'Aquatic Mode' },
+  'glide-mode': { es: 'Modo Planeo', en: 'Glide Mode' },
+};
+
 // ===== builders =====
 
 async function buildPokemon() {
@@ -159,7 +236,95 @@ async function buildPokemon() {
     };
   }, 'pokemon');
 
-  return pokemon.filter(Boolean);
+  const base = pokemon.filter(Boolean);
+  return [...base, ...await buildForms(base)];
+}
+
+// A form's slug is its species' slug plus a suffix: charizard-mega-x. The
+// species slug can already carry one of its own (deoxys-normal), so the root
+// comes from /pokemon-species, never from the base entry's name.
+function suffixOf(formSlug, speciesSlug) {
+  return formSlug.startsWith(speciesSlug + '-') ? formSlug.slice(speciesSlug.length + 1) : formSlug;
+}
+
+// The API's label is sometimes the whole name ("Mega-Charizard X") and
+// sometimes only the form part ("Forma Ataque"), measured at 57 and 121 of the
+// 178 it translates at all. Both cases have to end up as a full name and a
+// short tab label.
+function formNames(label, speciesName, suffix, lang) {
+  const fallback = SUFFIX_NAMES[suffix]?.[lang] || suffix.replace(/-/g, ' ');
+  if (!label) return { full: `${speciesName} ${fallback}`, tab: fallback };
+  const carriesSpecies = label.toLowerCase().includes(speciesName.toLowerCase().split('-')[0]);
+  return carriesSpecies
+    ? { full: label, tab: fallback }
+    : { full: `${speciesName} ${label}`, tab: label };
+}
+
+async function buildForms(base) {
+  const bySpecies = new Map(base.map(p => [p.id, p]));
+  const all = await getJson(`${API}/pokemon?limit=20000`);
+  const ids = all.results
+    .map(r => Number(r.url.replace(/\/$/, '').split('/').pop()))
+    .filter(id => id > 10000);
+
+  const forms = await mapLimit(ids, async (id) => {
+    const mon = await getJson(`${API}/pokemon/${id}`);
+    if (!mon) return null;
+
+    const speciesId = Number(mon.species.url.replace(/\/$/, '').split('/').pop());
+    const species = bySpecies.get(speciesId);
+    if (!species) return null;
+
+    // THE trap: /pokemon-form does not share numbering with /pokemon. Asking
+    // for /pokemon-form/10034 expecting Mega Charizard X returns burmy-sandy,
+    // with valid data and no error at all. Follow the link the API gives.
+    const form = mon.forms?.[0]?.url ? await getJson(mon.forms[0].url) : null;
+    const labelEs = form?.form_names?.find(n => n.language.name === 'es')?.name || null;
+    const labelEn = form?.form_names?.find(n => n.language.name === 'en')?.name || null;
+
+    const suffix = suffixOf(mon.name, mon.species.name);
+    const es = formNames(labelEs, species.nameEs, suffix, 'es');
+    const en = formNames(labelEn, species.nameEn, suffix, 'en');
+
+    const stats = {};
+    const evYield = {};
+    for (const s of mon.stats) {
+      const key = STAT_KEYS[s.stat.name] || s.stat.name;
+      stats[key] = s.base_stat;
+      if (s.effort) evYield[key] = s.effort;
+    }
+
+    return {
+      id: mon.id,
+      name: mon.name,
+      speciesId,
+      nameEs: es.full,
+      nameEn: en.full,
+      formEs: es.tab,
+      formEn: en.tab,
+      types: mon.types.map(t => t.type.name),
+      stats,
+      evYield,
+      height: mon.height / 10,
+      weight: mon.weight / 10,
+      abilities: mon.abilities.map(a => ({ nameEn: a.ability.name, isHidden: a.is_hidden })),
+      // Breeding and capture belong to the species, not the form: PokeAPI
+      // serves them from /pokemon-species. Mega Charizard X breeds exactly as
+      // Charizard does. They are copied rather than left absent because
+      // egg-groups.js reads an absent genderRate as unknown, which here is a
+      // lie.
+      captureRate: species.captureRate,
+      isLegendary: species.isLegendary,
+      isMythical: species.isMythical,
+      ...(species.eggGroups ? { eggGroups: species.eggGroups } : {}),
+      ...(typeof species.genderRate === 'number' ? { genderRate: species.genderRate } : {}),
+      // Eleven forms have no sprite of their own; the page falls back to the
+      // species sprite, which reads as the Pokemon rather than as a bug.
+      ...(mon.sprites?.front_default ? {} : { noSprite: true }),
+    };
+  }, 'forms');
+
+  return forms.filter(Boolean);
 }
 
 // PokeAPI sends every field on every move, nearly always at its default value.
