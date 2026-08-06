@@ -26,6 +26,12 @@ The list below also covers the detail pages a tool leads to — a Pokemon's page
 a move's page — which are not tools of their own but are where most of the data
 actually shows up.
 
+The home page carries a **global search** that is not a tool either: it crosses
+the four datasets at once — 1351 Pokemon, 937 moves, 313 abilities and 2187
+items — and goes straight to whichever page holds the answer. Only
+`pokemon.json` loads with the page; the other three are fetched on the first
+character typed.
+
 ### Pokedex
 
 - **Pokedex** - All 1025 Pokemon (Gen I-IX) with sprites, stats, types, abilities and defensive matchups. Filter by generation and rarity, sort by any base stat, and share the view: every filter lives in the URL
@@ -67,7 +73,9 @@ Zero dependencies. Zero build step. Pure HTML + CSS + JS (ES Modules).
 - Lists ship as static JSON in `data/`, served from the CDN — browsing costs zero API calls
 - Pokemon flavor text comes from the [PokeAPI REST API](https://pokeapi.co), which is CDN-cached and has no rate limit
 - Pixel sprites from the PokeAPI sprite repository
-- [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) font for the retro aesthetic
+- [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) for headings and UI, and [VT323](https://fonts.google.com/specimen/VT323) for data and numbers: same pixel family, but Press Start 2P stops being readable below 11px
+- Fluid width with no cap, and desktop breakpoints at 1000, 1280 and 1500
+- Every piece of text clears 4.5:1 contrast in both themes, checked by `scripts/check-contrast.mjs`
 - Fully responsive (mobile hamburger menu, adaptive grids)
 - All Pokemon names, moves, abilities and items in Spanish
 
@@ -109,12 +117,13 @@ fewer than 100 Pokemon, or if any name fails to map to our dex.
 
 Every dataset has a script that pins its measured numbers. Run them all after
 regenerating; they are the thing that catches a builder that "worked" but
-returned different data:
+returned different data. Two of the thirteen check the interface instead of the
+data: `check-contrast.mjs` sweeps every text colour against the three surfaces
+in both themes, and `check-search.mjs` pins the global search ranking.
 
 ```bash
-for s in tools egg-groups forms meta speed survive counter \
-         damage-url variable-power damage capture; do
-  node scripts/check-$s.mjs > /dev/null && echo "$s OK" || echo "$s FAILED"
+for s in scripts/check-*.mjs; do
+  node "$s" > /dev/null && echo "$(basename $s) OK" || echo "$(basename $s) FAILED"
 done
 ```
 
@@ -171,7 +180,9 @@ running the previous code after an edit, with nothing in the console to say so.
     ├── data.js           # Types, natures, generations, static tables
     ├── i18n.js           # Every string in Spanish and English
     ├── tools.js          # The tool table: feeds home cards, hubs and nav
-    ├── home.js           # Landing page with every tool's card
+    ├── home.js           # Landing page: the sprite swarm, the search and every tool's card
+    ├── global-search.js  # The home search box: lazy loading and the results panel
+    ├── search-index.js   # Ranking across Pokemon, moves, abilities and items
     ├── hub.js            # A category's page, listing its tools
     ├── level.js          # The global 50/100 format level
     ├── tooltip.js        # Reusable hover/touch bubble
