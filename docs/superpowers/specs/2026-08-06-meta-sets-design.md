@@ -191,11 +191,18 @@ El set del meta del Pokémon que se está viendo, si lo tiene, con enlace a
 
 ### 6. `threats.js` con amenazas reales
 
-`counters()` acepta un índice del meta opcional. Para cada par atacante/miembro:
+`counters()` acepta un índice del meta opcional. Un atacante amenaza a un miembro
+si **está en sus checks medidos O si le pega super efectivo**. El meta **suma**
+amenazas; no las sustituye.
 
-1. Si el **miembro** tiene checks reales en el formato activo, `threatensMember`
-   contesta mirando esa lista.
-2. Si no, cae al tipo super efectivo de hoy.
+> **[corregido al implementar, y es el error más caro de este sub-bloque]** La
+> primera versión de esta sección decía *sustituir*: si el miembro tenía checks,
+> se miraban solo esos. Medido con un equipo de OU, **el total se hundió de 206 a
+> 2**. La causa es que de cada Pokémon se guardan sus **6 checks principales**, y
+> exigir que un atacante esté en los seis primeros de **tres miembros a la vez**
+> casi nunca se cumple. Sumando, ese mismo equipo pasa de 206 a **210**, y un
+> equipo sin nadie en el meta se queda **exactamente igual**, que es la propiedad
+> que hay que preservar.
 
 Cada fila del resultado lleva **`fromMeta`**, verdadero si alguno de sus aciertos
 salió del meta, y la página lo marca.
