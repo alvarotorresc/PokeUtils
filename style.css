@@ -1128,6 +1128,74 @@ a:hover {
   }
 }
 
+/* ===== POKEDEX: THE SIDEBAR ===== */
+/* Below 1000px there is no sidebar: the filters stay stacked over the grid,
+   which is what already works on a phone. */
+.dex-split {
+  display: block;
+}
+
+.dex-side-title {
+  font-size: 0.44rem;
+  color: var(--text-data);
+  letter-spacing: 1.5px;
+  margin: 18px 0 10px;
+}
+
+.dex-topbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+@media (min-width: 1000px) {
+  .dex-split {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .dex-side {
+    position: sticky;
+    top: calc(var(--nav-height) + 12px);
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    max-height: calc(100vh - var(--nav-height) - 32px);
+    overflow-y: auto;
+  }
+
+  /* Without this the grid refuses to shrink below its content and pushes the
+     sidebar off the screen. */
+  .dex-main {
+    min-width: 0;
+  }
+
+  /* Stacked in a 250px column: the type filters go two per row and the selects
+     one per row, instead of the wrapping strip they are on a phone. */
+  .dex-side .filter-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .dex-side .pdx-controls {
+    display: grid;
+    gap: 8px;
+  }
+
+  .dex-side .search-bar {
+    margin-bottom: 0;
+  }
+
+  .dex-side .pdx-clear {
+    width: 100%;
+    margin-top: 14px;
+  }
+}
+
 /* ===== TYPE BADGE ===== */
 .type-badge {
   font-family: var(--font-retro);

@@ -42,42 +42,52 @@ export function renderPokedex(container, query = new URLSearchParams()) {
   const currentDir = () => state.dir || defaultDir();
   let allPokemon = null;
 
+  // The controls move into a sidebar, but keep every id they had: the handlers
+  // below find them the same way and none of the behaviour changes.
   container.innerHTML = `
     ${toolTabsHTML('pokedex', 'pokedex')}
     <div class="page-header">
       <h1>${t('pokedex.title')}</h1>
       <p>${t('pokedex.subtitle')}</p>
     </div>
-    <div class="search-bar">
-      <span class="search-icon">🔍</span>
-      <input type="text" class="search-input" id="pdxSearch" placeholder="${t('pokedex.search')}" value="${state.q.replace(/"/g, '&quot;')}">
+    <div class="dex-split">
+      <aside class="dex-side">
+        <div class="search-bar">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="pdxSearch" placeholder="${t('pokedex.search')}" value="${state.q.replace(/"/g, '&quot;')}">
+        </div>
+        <h4 class="dex-side-title">${t('pokedex.type')}</h4>
+        <div class="filter-row" id="pdxFilters">
+          <button class="filter-btn${state.type === '' ? ' active' : ''}" data-type="">${t('common.all')}</button>
+          ${TYPES.map(tp => `<button class="filter-btn${state.type === tp ? ' active' : ''}" data-type="${tp}"><span class="type-badge sm" data-type="${tp}" style="padding:3px 6px;font-size:0.42rem">${typeName(tp)}</span></button>`).join('')}
+        </div>
+        <h4 class="dex-side-title">${t('pokedex.sort')}</h4>
+        <div class="pdx-controls">
+          <select class="pdx-select" id="pdxGen" aria-label="${t('pokedex.gen')}">
+            <option value="">${t('pokedex.gen')}: ${t('pokedex.gen.all')}</option>
+            ${GENERATIONS.map(g => `<option value="${g.id}">${t('pokedex.gen')}: ${g.name.replace('Gen ', '')}</option>`).join('')}
+          </select>
+          <select class="pdx-select" id="pdxRare" aria-label="${t('pokedex.rarity')}">
+            <option value="">${t('pokedex.rarity')}: ${t('pokedex.rarity.all')}</option>
+            <option value="normal">${t('pokedex.rarity')}: ${t('pokedex.rarity.normal')}</option>
+            <option value="legendary">${t('pokedex.rarity')}: ${t('pokedex.rarity.legendary')}</option>
+            <option value="mythical">${t('pokedex.rarity')}: ${t('pokedex.rarity.mythical')}</option>
+          </select>
+          <select class="pdx-select" id="pdxSort" aria-label="${t('pokedex.sort')}">
+            ${SORT_KEYS.map(k => {
+              const label = (k === 'id' || k === 'total') ? t('pokedex.sort.' + k) : statName(k);
+              return `<option value="${k}">${t('pokedex.sort')}: ${label}</option>`;
+            }).join('')}
+          </select>
+          <button class="pdx-dir" id="pdxDir"></button>
+        </div>
+        <button class="filter-btn pdx-clear" id="pdxClear" hidden>${t('pokedex.clear')}</button>
+      </aside>
+      <div class="dex-main">
+        <div class="dex-topbar"><span class="pdx-count" id="pdxCount"></span></div>
+        <div id="pdxContent"></div>
+      </div>
     </div>
-    <div class="filter-row" id="pdxFilters">
-      <button class="filter-btn${state.type === '' ? ' active' : ''}" data-type="">${t('common.all')}</button>
-      ${TYPES.map(tp => `<button class="filter-btn${state.type === tp ? ' active' : ''}" data-type="${tp}"><span class="type-badge sm" data-type="${tp}" style="padding:3px 6px;font-size:0.42rem">${typeName(tp)}</span></button>`).join('')}
-    </div>
-    <div class="pdx-controls">
-      <select class="pdx-select" id="pdxGen" aria-label="${t('pokedex.gen')}">
-        <option value="">${t('pokedex.gen')}: ${t('pokedex.gen.all')}</option>
-        ${GENERATIONS.map(g => `<option value="${g.id}">${t('pokedex.gen')}: ${g.name.replace('Gen ', '')}</option>`).join('')}
-      </select>
-      <select class="pdx-select" id="pdxRare" aria-label="${t('pokedex.rarity')}">
-        <option value="">${t('pokedex.rarity')}: ${t('pokedex.rarity.all')}</option>
-        <option value="normal">${t('pokedex.rarity')}: ${t('pokedex.rarity.normal')}</option>
-        <option value="legendary">${t('pokedex.rarity')}: ${t('pokedex.rarity.legendary')}</option>
-        <option value="mythical">${t('pokedex.rarity')}: ${t('pokedex.rarity.mythical')}</option>
-      </select>
-      <select class="pdx-select" id="pdxSort" aria-label="${t('pokedex.sort')}">
-        ${SORT_KEYS.map(k => {
-          const label = (k === 'id' || k === 'total') ? t('pokedex.sort.' + k) : statName(k);
-          return `<option value="${k}">${t('pokedex.sort')}: ${label}</option>`;
-        }).join('')}
-      </select>
-      <button class="pdx-dir" id="pdxDir"></button>
-      <span class="pdx-count" id="pdxCount"></span>
-      <button class="filter-btn pdx-clear" id="pdxClear" hidden>${t('pokedex.clear')}</button>
-    </div>
-    <div id="pdxContent"></div>
   `;
 
   const content = container.querySelector('#pdxContent');
