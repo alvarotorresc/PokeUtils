@@ -17,18 +17,20 @@
 // de las tres calculadoras.
 //
 // Run with: node scripts/check-contrast.mjs
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 
-// Los tokens salen de style.css, pero el uso se busca tambien en los ocho JS que
-// meten color inline: si solo se mirase el CSS, un var(--text-dim) olvidado en
-// items.js dejaria el barrido en verde.
-const INLINE = ['natures', 'moves', 'abilities', 'items', 'calc-capture',
-  'calc-ivev', 'calc-damage', 'pokedex-detail'];
-
+// Los tokens salen de style.css, pero el uso se busca en todo js/: los estilos
+// inline estan repartidos y una lista escrita a mano se queda corta en cuanto
+// alguien mete un color en un fichero que no estaba en ella.
 const css = await readFile(new URL('../style.css', import.meta.url), 'utf8');
-const inline = (await Promise.all(INLINE.map(name =>
-  readFile(new URL(`../js/${name}.js`, import.meta.url), 'utf8')))).join('\n');
-const all = css + '\n' + inline;
+const jsDir = new URL('../js/', import.meta.url);
+const inline = (await Promise.all(
+  (await readdir(jsDir)).filter(f => f.endsWith('.js'))
+    .map(f => readFile(new URL(f, jsDir), 'utf8')))).join('\n');
+// index.html tambien lleva color inline, y por no mirarlo se colo un
+// --text-dim a 2,65:1 en el pie durante toda la migracion.
+const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+const all = css + '\n' + inline + '\n' + html;
 
 const MIN = 4.5;
 const SURFACES = ['--bg', '--bg-surface', '--bg-card'];
