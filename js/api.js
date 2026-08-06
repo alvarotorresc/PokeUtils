@@ -71,6 +71,9 @@ export const fetchItems = () => loadDataset('items');
 export const fetchBerries = () => loadDataset('berries');
 export const fetchEvolutions = () => loadDataset('evolutions');
 export const fetchLearnsets = () => loadDataset('learnsets');
+// Un fichero por formato, y solo se descarga el que se esta mirando: son 72 y
+// 64 KB y casi nadie mira los dos en la misma visita.
+export const fetchMeta = format => loadDataset(`meta-${format}`);
 
 // ===== POKEMON DETAIL =====
 const idFromUrl = url => Number(url.replace(/\/$/, '').split('/').pop());
