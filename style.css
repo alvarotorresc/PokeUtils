@@ -2794,3 +2794,23 @@ a.evo-node:hover {
   accent-color: var(--accent);
   cursor: pointer;
 }
+
+/* ===== META SETS ===== */
+.meta-set-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.meta-set-head img { width: 72px; height: 72px; image-rendering: pixelated; }
+.meta-set-head h3 { font-size: 0.6rem; margin: 0 0 4px; }
+.meta-usage { font-size: 0.46rem; color: var(--text-muted); }
+.meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 16px; }
+.meta-line { font-size: 0.46rem; color: var(--text); line-height: 1.9; }
+.meta-pct { color: var(--text-dim); font-size: 0.42rem; }
+.meta-moves { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 4px 14px; }
+.meta-rank { display: flex; flex-direction: column; gap: 4px; }
+.meta-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 10px; background: var(--bg-surface); border: 2px solid var(--border); border-radius: 8px; cursor: pointer; font-family: var(--font-retro); }
+.meta-row:hover, .meta-row.active { border-color: var(--accent); }
+.meta-row img { width: 32px; height: 32px; image-rendering: pixelated; }
+.meta-pos { font-size: 0.42rem; color: var(--text-dim); min-width: 22px; text-align: right; }
+/* El nombre se queda con el hueco que sobra y no empuja el porcentaje fuera de
+   una pantalla de 360 px, que es lo que le paso a la fila de contrarrestar. */
+.meta-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font-size: 0.46rem; color: var(--text); }
+.meta-credit { margin-top: 20px; font-size: 0.4rem; }
+.ct-meta { font-size: 0.5rem; opacity: 0.85; }

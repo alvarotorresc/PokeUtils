@@ -16,6 +16,7 @@ import { renderCompare } from './compare.js';
 import { renderSpeed } from './speed.js';
 import { renderSurvive } from './survive.js';
 import { renderCounter } from './counter.js';
+import { renderMeta } from './meta-page.js';
 import { CATEGORIES, categoryOf, targetOf } from './tools.js';
 import { getLevel, setLevel, onLevelChange } from './level.js';
 import { t, getLang, setLang, onLangChange } from './i18n.js';
@@ -171,6 +172,8 @@ async function route() {
       await renderSpeed(app, query);
     } else if (path === '/compare') {
       await renderCompare(app, query);
+    } else if (path === '/meta') {
+      await renderMeta(app, query);
     } else if (parts[0] === 'egg' && parts[1]) {
       await renderEggGroup(app, decodeURIComponent(parts[1]), query);
     } else if (path === '/egg') {
