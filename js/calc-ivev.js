@@ -53,7 +53,7 @@ export function renderIvEv(container) {
         </div>
 
         <div id="calcModeIvEvPanel">
-          <div style="font-size:0.44rem;color:var(--text-dim);margin-bottom:12px">
+          <div style="font-size:0.44rem;color:var(--text-data);margin-bottom:12px">
             ${t('calc.ivev.hint')}
           </div>
           <div class="data-table-wrap">
@@ -76,7 +76,7 @@ export function renderIvEv(container) {
         </div>
 
         <div id="calcModeStatPanel" style="display:none">
-          <div style="font-size:0.44rem;color:var(--text-dim);margin-bottom:12px">
+          <div style="font-size:0.44rem;color:var(--text-data);margin-bottom:12px">
             ${t('calc.stat.hint')}
           </div>
           <div class="data-table-wrap">
@@ -140,7 +140,7 @@ export function renderIvEv(container) {
         searchResults = await searchPokemon(term);
         renderSearchResults();
       } catch (err) {
-        searchResultsEl.innerHTML = `<div style="font-size:0.46rem;color:var(--danger);padding:8px">${t('calc.searcherr')}</div>`;
+        searchResultsEl.innerHTML = `<div style="font-size:0.46rem;color:var(--danger-text);padding:8px">${t('calc.searcherr')}</div>`;
         searchResultsEl.style.display = '';
       }
     }, 400);
@@ -148,7 +148,7 @@ export function renderIvEv(container) {
 
   function renderSearchResults() {
     if (!searchResults.length) {
-      searchResultsEl.innerHTML = `<div style="font-size:0.46rem;color:var(--text-dim);padding:8px">${t('calc.notfound')}</div>`;
+      searchResultsEl.innerHTML = `<div style="font-size:0.46rem;color:var(--text-data);padding:8px">${t('calc.notfound')}</div>`;
       searchResultsEl.style.display = '';
       return;
     }
@@ -158,7 +158,7 @@ export function renderIvEv(container) {
         <img src="${spriteUrl(p.id)}" style="width:40px;height:40px;image-rendering:pixelated" alt="${pokeName(p)}">
         <div>
           <div style="font-size:0.42rem">${pokeName(p)}</div>
-          <div style="font-size:0.42rem;color:var(--text-dim)">#${String(p.id).padStart(4, '0')} · ${p.name}</div>
+          <div style="font-size:0.42rem;color:var(--text-data)">#${String(p.id).padStart(4, '0')} · ${p.name}</div>
         </div>
       </div>
     `).join('');
@@ -182,8 +182,8 @@ export function renderIvEv(container) {
       <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
         <img src="${spriteUrl(poke.id)}" style="width:56px;height:56px;image-rendering:pixelated" alt="${pokeName(poke)}">
         <div>
-          <div style="font-size:0.5rem;color:var(--accent)">${pokeName(poke)}</div>
-          <div style="font-size:0.44rem;color:var(--text-dim)">#${String(poke.id).padStart(4, '0')} · ${poke.name}</div>
+          <div style="font-size:0.5rem;color:var(--accent-text)">${pokeName(poke)}</div>
+          <div style="font-size:0.44rem;color:var(--text-data)">#${String(poke.id).padStart(4, '0')} · ${poke.name}</div>
         </div>
       </div>
     `;

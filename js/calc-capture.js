@@ -105,7 +105,7 @@ export function renderCapture(container) {
         searchResults = await searchPokemon(term, { speciesOnly: true });
         renderSearchResults();
       } catch {
-        searchResultsEl.innerHTML = `<div style="font-size:0.46rem;color:var(--danger);padding:8px">${t('calc.searcherr')}</div>`;
+        searchResultsEl.innerHTML = `<div style="font-size:0.46rem;color:var(--danger-text);padding:8px">${t('calc.searcherr')}</div>`;
         searchResultsEl.style.display = '';
       }
     }, 400);
@@ -114,7 +114,7 @@ export function renderCapture(container) {
   function renderSearchResults() {
     searchResultsEl.style.display = '';
     if (!searchResults.length) {
-      searchResultsEl.innerHTML = `<div style="font-size:0.46rem;color:var(--text-dim);padding:8px">${t('calc.notfound')}</div>`;
+      searchResultsEl.innerHTML = `<div style="font-size:0.46rem;color:var(--text-data);padding:8px">${t('calc.notfound')}</div>`;
       return;
     }
     searchResultsEl.innerHTML = searchResults.map(p => `
@@ -122,7 +122,7 @@ export function renderCapture(container) {
         <img src="${spriteUrl(p.id)}" style="width:40px;height:40px;image-rendering:pixelated" alt="${pokeName(p)}">
         <div>
           <div style="font-size:0.42rem">${pokeName(p)}</div>
-          <div style="font-size:0.42rem;color:var(--text-dim)">${t('capture.rate')}: ${p.captureRate}</div>
+          <div style="font-size:0.42rem;color:var(--text-data)">${t('capture.rate')}: ${p.captureRate}</div>
         </div>
       </div>
     `).join('');
@@ -142,8 +142,8 @@ export function renderCapture(container) {
       <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
         <img src="${spriteUrl(poke.id)}" style="width:56px;height:56px;image-rendering:pixelated" alt="${pokeName(poke)}">
         <div>
-          <div style="font-size:0.5rem;color:var(--accent)">${pokeName(poke)}</div>
-          <div style="font-size:0.44rem;color:var(--text-dim)">
+          <div style="font-size:0.5rem;color:var(--accent-text)">${pokeName(poke)}</div>
+          <div style="font-size:0.44rem;color:var(--text-data)">
             ${t('capture.rate')}: ${poke.captureRate} · ${poke.weight} kg
           </div>
         </div>

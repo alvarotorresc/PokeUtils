@@ -231,7 +231,7 @@ export function renderMoves(container, query = new URLSearchParams()) {
         <td>
           <div style="font-size:0.42rem;color:var(--text)">${pokeName(m)}</div>
           ${(m.statChanges || []).length ? `<div class="mv-chips">${m.statChanges.map(c => `<span class="mv-chip ${c[1] > 0 ? 'up' : 'down'}">${statChangeLabel(c)}</span>`).join('')}</div>` : ''}
-          ${desc ? `<div style="font-size:0.42rem;color:var(--text-dim);margin-top:4px;line-height:1.8;max-width:300px">${desc}</div>` : ''}
+          ${desc ? `<div style="font-size:0.42rem;color:var(--text-data);margin-top:4px;line-height:1.8;max-width:300px">${desc}</div>` : ''}
         </td>
         <td><span class="type-badge sm" data-type="${m.type}">${typeName(m.type)}</span></td>
         <td><span class="move-category ${m.category}">${categoryName(m.category)}</span></td>

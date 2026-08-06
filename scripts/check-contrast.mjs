@@ -83,9 +83,12 @@ function ratio(fg, bg) {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-// Todo token que el CSS o un estilo inline use como color de texto.
+// Todo token que el CSS o un estilo inline use como color de texto. El
+// lookbehind es imprescindible: sin el, "border-color" y "accent-color"
+// contienen "color:" y cuentan como texto, que es un falso positivo por cada
+// borde de acento de la app.
 const used = new Set();
-for (const [, token] of all.matchAll(/color\s*:\s*var\((--[\w-]+)\)/g)) {
+for (const [, token] of all.matchAll(/(?<![-\w])color\s*:\s*var\((--[\w-]+)\)/g)) {
   if (!NOT_TEXT.has(token)) used.add(token);
 }
 

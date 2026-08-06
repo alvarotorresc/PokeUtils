@@ -18,6 +18,17 @@
   --text: #e8e8f0;
   --text-muted: #8888aa;
   --text-dim: #555577;
+  /* An accent has two jobs and one value cannot do both: as a fill with dark ink
+     on top it measures 12.48:1 and works, but as text on the light card it fell
+     to 2.58:1. Same split as --stat-up / --stat-down, already made for this. */
+  --accent-text: #ffcc00;
+  /* The data font needs a grey that reads: --text-dim measured 2.12:1 on the
+     card, so it stays for separators and watermarks and leaves text alone. */
+  --text-data: #a6a6c8;
+  /* Error and success as text. --danger and --success are tuned for fills and
+     for the dark surface: on the light card they measure 2.17 and 1.55. */
+  --danger-text: #FB7185;
+  --success-text: #34D399;
   --border: rgba(255, 255, 255, 0.08);
   --border-accent: rgba(255, 204, 0, 0.3);
   --danger: #FB7185;
@@ -64,6 +75,10 @@
   --text: #1a1a3e;
   --text-muted: #555577;
   --text-dim: #8888aa;
+  --accent-text: #845f00;
+  --text-data: #5f5f7d;
+  --danger-text: #B3123C;
+  --success-text: #0B6B4A;
   --border: rgba(0, 0, 0, 0.1);
   --border-accent: rgba(184, 136, 0, 0.3);
   --stat-up: #0B6B4A;   /* 5.27:1 on #e6e6f0 */
@@ -111,7 +126,7 @@ body {
 }
 
 a {
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
 }
 
@@ -159,7 +174,7 @@ a:hover {
   align-items: center;
   gap: 10px;
   font-size: 0.7rem;
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
   font-family: var(--font-retro);
   white-space: nowrap;
@@ -217,7 +232,7 @@ a:hover {
 
 .nav-toggle-btn:hover {
   border-color: var(--border-accent);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .nav-toggle {
@@ -287,7 +302,7 @@ a:hover {
 }
 
 .nav-link.active {
-  color: var(--accent);
+  color: var(--accent-text);
   background: rgba(255, 204, 0, 0.08);
 }
 
@@ -348,7 +363,7 @@ a:hover {
 
 .footer p {
   font-size: 0.46rem;
-  color: var(--text-dim);
+  color: var(--text-data);
   letter-spacing: 0.5px;
   line-height: 1.6;
 }
@@ -364,7 +379,7 @@ a:hover {
 }
 
 .footer-hint {
-  color: var(--text-dim) !important;
+  color: var(--text-data) !important;
   font-size: 0.44rem !important;
 }
 
@@ -421,7 +436,7 @@ a:hover {
 
 .page-header h1 {
   font-size: 1rem;
-  color: var(--accent);
+  color: var(--accent-text);
   text-shadow: 0 0 20px rgba(255, 204, 0, 0.3);
   letter-spacing: 2px;
   margin-bottom: 8px;
@@ -475,7 +490,7 @@ a:hover {
 }
 
 .home-hero .accent {
-  color: var(--accent);
+  color: var(--accent-text);
   text-shadow: 0 0 20px rgba(255, 204, 0, 0.4);
 }
 
@@ -525,7 +540,7 @@ a:hover {
 .egg-card .count {
   font-family: var(--font-retro);
   font-size: 0.7rem;
-  color: var(--accent);
+  color: var(--accent-text);
   margin-top: 8px;
 }
 
@@ -538,8 +553,8 @@ a:hover {
    344 px for 320 available. */
 .ct-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ct-fast { font-size: 0.9rem; flex: none; }
-.ct-hits { font-family: var(--font-retro); font-size: 0.4rem; color: var(--text-dim); flex: none; white-space: nowrap; }
-.ct-power { font-family: var(--font-retro); font-size: 0.5rem; color: var(--accent); min-width: 40px; text-align: right; flex: none; }
+.ct-hits { font-family: var(--font-retro); font-size: 0.4rem; color: var(--text-data); flex: none; white-space: nowrap; }
+.ct-power { font-family: var(--font-retro); font-size: 0.5rem; color: var(--accent-text); min-width: 40px; text-align: right; flex: none; }
 
 .sv-pickers { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 24px; }
 @media (min-width: 640px) { .sv-pickers { grid-template-columns: repeat(3, 1fr); } }
@@ -551,7 +566,7 @@ a:hover {
 .sv-result.ok .sv-verdict { color: #4ade80; }
 .sv-result.ko .sv-verdict { color: #f87171; }
 .sv-line { font-size: 0.8rem; color: var(--text-muted); line-height: 1.8; }
-.sv-dim { color: var(--text-dim); font-size: 0.72rem; }
+.sv-dim { color: var(--text-data); font-size: 0.72rem; }
 .sv-spread { background: var(--bg-surface); border: 2px solid var(--border); border-radius: 10px; padding: 14px; font-size: 0.85rem; line-height: 1.7; }
 
 .spd-head { display: flex; align-items: center; gap: 16px; margin: 16px 0; }
@@ -560,15 +575,15 @@ a:hover {
 @media (min-width: 640px) { .spd-spreads { grid-template-columns: repeat(4, 1fr); } }
 .spd-spread { background: var(--bg-surface); border: 2px solid var(--border); border-radius: 10px; padding: 12px 8px; text-align: center; }
 .spd-spread.best { border-color: var(--accent); }
-.spd-spread .label { font-family: var(--font-retro); font-size: 0.4rem; color: var(--text-dim); line-height: 1.6; }
-.spd-spread .value { font-family: var(--font-retro); font-size: 0.8rem; color: var(--accent); margin-top: 8px; }
+.spd-spread .label { font-family: var(--font-retro); font-size: 0.4rem; color: var(--text-data); line-height: 1.6; }
+.spd-spread .value { font-family: var(--font-retro); font-size: 0.8rem; color: var(--accent-text); margin-top: 8px; }
 .spd-tiers { display: grid; grid-template-columns: 1fr; gap: 20px; }
 @media (min-width: 640px) { .spd-tiers { grid-template-columns: repeat(2, 1fr); } }
 .spd-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-size: 0.8rem; }
 .spd-row:hover { background: rgba(255,255,255,0.04); text-decoration: none; }
 .spd-row img { width: 32px; height: 32px; image-rendering: pixelated; }
 .spd-name { flex: 1; }
-.spd-value { font-family: var(--font-retro); font-size: 0.5rem; color: var(--accent); }
+.spd-value { font-family: var(--font-retro); font-size: 0.5rem; color: var(--accent-text); }
 
 .cmp-chips {
   display: flex;
@@ -593,14 +608,14 @@ a:hover {
 .cmp-remove {
   border: none;
   background: transparent;
-  color: var(--text-dim);
+  color: var(--text-data);
   cursor: pointer;
   font-size: 1rem;
   line-height: 1;
   padding: 0 2px;
 }
 
-.cmp-remove:hover { color: var(--accent); }
+.cmp-remove:hover { color: var(--accent-text); }
 
 .cmp-results {
   display: flex;
@@ -629,7 +644,7 @@ a:hover {
 .cmp-table th a { text-decoration: none; color: var(--text); }
 .cmp-sprite { width: 56px; height: 56px; image-rendering: pixelated; display: block; margin: 0 auto; }
 .cmp-table td { text-align: center; }
-.cmp-best { color: var(--accent); font-weight: bold; }
+.cmp-best { color: var(--accent-text); font-weight: bold; }
 .cmp-types { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
 .cmp-total th, .cmp-total td { border-top: 2px solid var(--border); }
 
@@ -655,7 +670,7 @@ a:hover {
 .egg-key {
   font-family: var(--font-retro);
   font-size: 0.44rem;
-  color: var(--text-dim);
+  color: var(--text-data);
   min-width: 90px;
 }
 
@@ -679,13 +694,13 @@ a:hover {
   margin-top: 20px;
   font-size: 0.75rem;
   line-height: 1.8;
-  color: var(--text-dim);
+  color: var(--text-data);
 }
 
 .home-group {
   margin: 28px 0 0;
   font-size: 0.6rem;
-  color: var(--text-dim);
+  color: var(--text-data);
   letter-spacing: 1px;
   text-transform: uppercase;
 }
@@ -751,7 +766,7 @@ a:hover {
 
 .home-card .desc {
   font-size: 0.44rem;
-  color: var(--text-dim);
+  color: var(--text-data);
   line-height: 1.8;
 }
 
@@ -775,7 +790,7 @@ a:hover {
 }
 
 .search-input::placeholder {
-  color: var(--text-dim);
+  color: var(--text-data);
 }
 
 .search-input:focus {
@@ -788,7 +803,7 @@ a:hover {
   top: 50%;
   transform: translateY(-50%);
   font-size: 0.7rem;
-  color: var(--text-dim);
+  color: var(--text-data);
   pointer-events: none;
 }
 
@@ -1100,7 +1115,7 @@ a:hover {
 
 .pokemon-card .dex-number {
   font-size: 0.44rem;
-  color: var(--text-dim);
+  color: var(--text-data);
   margin-bottom: 4px;
 }
 
@@ -1162,19 +1177,19 @@ a:hover {
 
 .poke-detail-info .dex-number {
   font-size: 0.45rem;
-  color: var(--text-dim);
+  color: var(--text-data);
   margin-bottom: 6px;
 }
 
 .poke-detail-info h2 {
   font-size: 1rem;
-  color: var(--accent);
+  color: var(--accent-text);
   margin-bottom: 4px;
 }
 
 .poke-detail-info .name-en {
   font-size: 0.48rem;
-  color: var(--text-dim);
+  color: var(--text-data);
   margin-bottom: 12px;
 }
 
@@ -1221,7 +1236,7 @@ a:hover {
 }
 
 .back-btn:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 /* ===== STAT BARS ===== */
@@ -1249,7 +1264,7 @@ a:hover {
   justify-content: space-between;
   gap: 8px;
   font-size: 0.38rem;
-  color: var(--text-dim);
+  color: var(--text-data);
   margin-bottom: 10px;
   line-height: 1.8;
 }
@@ -1278,7 +1293,7 @@ a:hover {
 
 .mv-level {
   font-size: 0.38rem;
-  color: var(--accent);
+  color: var(--accent-text);
   text-align: right;
 }
 
@@ -1295,7 +1310,7 @@ a:hover {
 
 .mv-name:hover,
 .mv-name:focus-visible {
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
 }
 
@@ -1382,7 +1397,7 @@ a.evo-node:hover {
 
 .evo-dex {
   font-size: 0.36rem;
-  color: var(--text-dim);
+  color: var(--text-data);
 }
 
 .evo-name {
@@ -1423,7 +1438,7 @@ a.evo-node:hover {
 
 .evo-tip {
   font-size: 0.4rem;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .evo-none {
@@ -1456,7 +1471,7 @@ a.evo-node:hover {
   position: relative;
   display: inline-block;
   font-size: 0.45rem;
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
   border-bottom: 1px dashed var(--border-accent);
   padding-bottom: 1px;
@@ -1498,7 +1513,7 @@ a.evo-node:hover {
 }
 
 .stat-range-head {
-  color: var(--text-dim);
+  color: var(--text-data);
 }
 
 .stat-head {
@@ -1584,7 +1599,7 @@ a.evo-node:hover {
 
 .stat-total {
   font-size: 0.5rem;
-  color: var(--accent);
+  color: var(--accent-text);
   text-align: right;
 }
 
@@ -1603,7 +1618,7 @@ a.evo-node:hover {
 
 .data-table th {
   background: var(--bg-card);
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 0.46rem;
   padding: 12px 10px;
   text-align: left;
@@ -1678,7 +1693,7 @@ a.evo-node:hover {
 
 .team-slot.empty {
   border-style: dashed;
-  color: var(--text-dim);
+  color: var(--text-data);
   font-size: 0.8rem;
 }
 
@@ -1712,14 +1727,14 @@ a.evo-node:hover {
   right: 4px;
   background: none;
   border: none;
-  color: var(--text-dim);
+  color: var(--text-data);
   font-size: 0.7rem;
   cursor: pointer;
   line-height: 1;
   padding: 2px 4px;
 }
 
-.team-remove:hover { color: var(--danger); }
+.team-remove:hover { color: var(--danger-text); }
 
 .team-results {
   display: flex;
@@ -1760,7 +1775,7 @@ a.evo-node:hover {
 .team-noresults,
 .team-none {
   font-size: 0.42rem;
-  color: var(--text-dim);
+  color: var(--text-data);
   line-height: 1.9;
   padding: 6px 0;
 }
@@ -1784,7 +1799,7 @@ a.evo-node:hover {
 
 .team-hint {
   font-size: 0.4rem;
-  color: var(--text-dim);
+  color: var(--text-data);
   line-height: 1.9;
   margin-bottom: 12px;
 }
@@ -1813,7 +1828,7 @@ a.evo-node:hover {
 
 .team-matrix td.weak { color: var(--stat-down); }
 .team-matrix td.resist { color: var(--stat-up); }
-.team-matrix td.immune { color: var(--accent); }
+.team-matrix td.immune { color: var(--accent-text); }
 
 /* Rows where every member takes normal damage stay visible but quiet: hiding
    them would make the table change height as the team changes. */
@@ -1829,13 +1844,13 @@ a.evo-node:hover {
 
 .move-detail-header h2 {
   font-size: 0.9rem;
-  color: var(--accent);
+  color: var(--accent-text);
   line-height: 1.6;
 }
 
 .move-detail-header .name-en {
   font-size: 0.44rem;
-  color: var(--text-dim);
+  color: var(--text-data);
   margin: 6px 0 12px;
 }
 
@@ -1858,7 +1873,7 @@ a.evo-node:hover {
 .move-stats span {
   display: block;
   font-size: 0.38rem;
-  color: var(--text-dim);
+  color: var(--text-data);
   margin-bottom: 6px;
 }
 
@@ -1875,7 +1890,7 @@ a.evo-node:hover {
 .move-stats em {
   display: block;
   font-size: 0.34rem;
-  color: var(--text-dim);
+  color: var(--text-data);
   font-style: normal;
   margin-top: 4px;
 }
@@ -1933,7 +1948,7 @@ a.evo-node:hover {
 .learner-level {
   display: block;
   font-size: 0.34rem;
-  color: var(--accent);
+  color: var(--accent-text);
   margin-top: 4px;
 }
 
@@ -1944,7 +1959,7 @@ a.evo-node:hover {
 
 .mv-note {
   font-size: 0.34rem;
-  color: var(--text-dim);
+  color: var(--text-data);
   line-height: 1.9;
   margin-top: 14px;
   text-align: center;
@@ -2064,15 +2079,15 @@ a.evo-node:hover {
 
 /* ===== NATURE TABLE ===== */
 .nature-table .increase {
-  color: var(--success);
+  color: var(--success-text);
 }
 
 .nature-table .decrease {
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .nature-table .neutral {
-  color: var(--text-dim);
+  color: var(--text-data);
 }
 
 /* ===== CALCULATOR ===== */
@@ -2215,7 +2230,7 @@ a.evo-node:hover {
   border-radius: 8px;
   border: 2px solid var(--accent);
   background: rgba(255, 204, 0, 0.1);
-  color: var(--accent);
+  color: var(--accent-text);
   cursor: pointer;
   transition: all 0.15s;
   letter-spacing: 1px;
@@ -2297,7 +2312,7 @@ a.evo-node:hover {
 
 .page-btn:hover:not(:disabled) {
   border-color: var(--border-accent);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .page-btn:disabled {
@@ -2307,13 +2322,13 @@ a.evo-node:hover {
 
 .page-btn.active {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-text);
   background: rgba(255, 204, 0, 0.08);
 }
 
 .page-info {
   font-size: 0.48rem;
-  color: var(--text-dim);
+  color: var(--text-data);
 }
 
 /* ===== RESULT SECTIONS (Type chart) ===== */
@@ -2341,7 +2356,7 @@ a.evo-node:hover {
 
 .result-hint {
   font-size: 0.44rem;
-  color: var(--text-dim);
+  color: var(--text-data);
   font-weight: normal;
   letter-spacing: 0;
 }
@@ -2367,7 +2382,7 @@ a.evo-node:hover {
 
 .empty-state {
   font-size: 0.5rem;
-  color: var(--text-dim);
+  color: var(--text-data);
   font-style: italic;
   letter-spacing: 0.5px;
   display: none;
@@ -2416,7 +2431,7 @@ a.evo-node:hover {
 
 .tab.active {
   background: var(--bg-card);
-  color: var(--accent);
+  color: var(--accent-text);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -2473,7 +2488,7 @@ a.evo-node:hover {
 
 .blink {
   animation: blink 1s step-end infinite;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 @keyframes blink {
@@ -2544,7 +2559,7 @@ a.evo-node:hover {
 
 .ability-card h3 {
   font-size: 0.5rem;
-  color: var(--accent);
+  color: var(--accent-text);
   margin-bottom: 8px;
 }
 
@@ -2648,7 +2663,7 @@ a.evo-node:hover {
 
 .dmg-chosen-name {
   font-size: 0.5rem;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .dmg-chosen-types {
@@ -2674,7 +2689,7 @@ a.evo-node:hover {
 
 .dmg-field summary::before {
   content: '[+] ';
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .dmg-field[open] summary::before {
@@ -2713,7 +2728,7 @@ a.evo-node:hover {
 .dmg-empty {
   text-align: center;
   font-size: 0.46rem;
-  color: var(--text-dim);
+  color: var(--text-data);
 }
 
 .dmg-headline {
@@ -2802,13 +2817,13 @@ a.evo-node:hover {
 .meta-usage { font-size: 0.46rem; color: var(--text-muted); }
 .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 16px; }
 .meta-line { font-size: 0.46rem; color: var(--text); line-height: 1.9; }
-.meta-pct { color: var(--text-dim); font-size: 0.42rem; }
+.meta-pct { color: var(--text-data); font-size: 0.42rem; }
 .meta-moves { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 4px 14px; }
 .meta-rank { display: flex; flex-direction: column; gap: 4px; }
 .meta-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 10px; background: var(--bg-surface); border: 2px solid var(--border); border-radius: 8px; cursor: pointer; font-family: var(--font-retro); }
 .meta-row:hover, .meta-row.active { border-color: var(--accent); }
 .meta-row img { width: 32px; height: 32px; image-rendering: pixelated; }
-.meta-pos { font-size: 0.42rem; color: var(--text-dim); min-width: 22px; text-align: right; }
+.meta-pos { font-size: 0.42rem; color: var(--text-data); min-width: 22px; text-align: right; }
 /* El nombre se queda con el hueco que sobra y no empuja el porcentaje fuera de
    una pantalla de 360 px, que es lo que le paso a la fila de contrarrestar. */
 .meta-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font-size: 0.46rem; color: var(--text); }

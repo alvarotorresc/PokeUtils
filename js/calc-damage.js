@@ -201,7 +201,7 @@ export function renderDamage(container, query) {
               <img src="${spriteUrl(p.id)}" alt="${pokeName(p)}">
               <span>${pokeName(p)}</span>
             </div>
-          `).join('') : `<div style="font-size:0.46rem;color:var(--text-dim);padding:8px">${t('calc.notfound')}</div>`;
+          `).join('') : `<div style="font-size:0.46rem;color:var(--text-data);padding:8px">${t('calc.notfound')}</div>`;
 
           results.querySelectorAll('.dmg-hit').forEach(el => {
             el.onclick = () => {
@@ -213,7 +213,7 @@ export function renderDamage(container, query) {
           });
         } catch {
           results.style.display = '';
-          results.innerHTML = `<div style="font-size:0.46rem;color:var(--danger);padding:8px">${t('calc.searcherr')}</div>`;
+          results.innerHTML = `<div style="font-size:0.46rem;color:var(--danger-text);padding:8px">${t('calc.searcherr')}</div>`;
         }
       }, 400);
     });
@@ -271,9 +271,9 @@ export function renderDamage(container, query) {
         <div class="card card-clickable dmg-hit" data-id="${m.id}">
           <span class="type-badge sm" data-type="${m.type}">${typeName(m.type)}</span>
           <span>${getLang() === 'es' ? m.nameEs : m.nameEn}</span>
-          <span style="color:var(--text-dim);margin-left:auto">${m.power ?? '?'}</span>
+          <span style="color:var(--text-data);margin-left:auto">${m.power ?? '?'}</span>
         </div>
-      `).join('') : `<div style="font-size:0.46rem;color:var(--text-dim);padding:8px">${t('moves.empty')}</div>`;
+      `).join('') : `<div style="font-size:0.46rem;color:var(--text-data);padding:8px">${t('moves.empty')}</div>`;
 
       moveResults.querySelectorAll('.dmg-hit').forEach(el => {
         el.onclick = () => {
@@ -611,7 +611,7 @@ export function renderDamage(container, query) {
     if (kind === 'range') {
       resultEl.innerHTML = `
         <div class="card dmg-result">
-          <div class="dmg-headline" style="color:var(--accent)">${range[0]} - ${range[1]}</div>
+          <div class="dmg-headline" style="color:var(--accent-text)">${range[0]} - ${range[1]}</div>
           <div class="dmg-sub">${pctOf(range[0])}% - ${pctOf(range[1])}% ${t('dmg.ofhp')}</div>
           <div class="dmg-eff">${t('vp.rolled')}</div>
         </div>`;

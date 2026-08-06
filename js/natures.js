@@ -35,7 +35,7 @@ export function renderNatures(container) {
     </div>
 
     <h3 class="section-title" style="margin-top:30px">${t('natures.grid.title')}</h3>
-    <div style="font-size:0.44rem;color:var(--text-dim);margin-bottom:12px">
+    <div style="font-size:0.44rem;color:var(--text-data);margin-bottom:12px">
       ${t('natures.grid.hint')}
     </div>
     <div class="data-table-wrap nature-table">
@@ -57,8 +57,8 @@ export function renderNatures(container) {
     const tr = document.createElement('tr');
     const isNeutral = !n.increase;
     tr.innerHTML = `
-      <td style="font-size:0.42rem;${isNeutral ? 'color:var(--text-dim)' : ''}">${natureName(n)}</td>
-      <td style="font-size:0.46rem;color:var(--text-dim)">${natureNameAlt(n)}</td>
+      <td style="font-size:0.42rem;${isNeutral ? 'color:var(--text-data)' : ''}">${natureName(n)}</td>
+      <td style="font-size:0.46rem;color:var(--text-data)">${natureNameAlt(n)}</td>
       <td style="text-align:center" class="${isNeutral ? 'neutral' : 'increase'}">
         ${isNeutral ? '—' : statName(n.increase)}
       </td>
@@ -73,7 +73,7 @@ export function renderNatures(container) {
   const gridBody = container.querySelector('#natGrid');
   stats.forEach(rowStat => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td style="font-weight:bold;color:var(--accent);font-size:0.46rem">${statName(rowStat)}</td>`;
+    tr.innerHTML = `<td style="font-weight:bold;color:var(--accent-text);font-size:0.46rem">${statName(rowStat)}</td>`;
     stats.forEach(colStat => {
       const td = document.createElement('td');
       td.style.textAlign = 'center';

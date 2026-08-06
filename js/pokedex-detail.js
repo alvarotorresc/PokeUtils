@@ -403,8 +403,8 @@ export async function renderPokedexDetail(container, id) {
             `;
           }).join('')}
           <div class="stat-row" style="margin-top:6px;border-top:2px solid var(--border);padding-top:10px">
-            <span class="stat-label" style="color:var(--accent)">${t('common.total')}</span>
-            <span class="stat-value" style="color:var(--accent)">${statTotal}</span>
+            <span class="stat-label" style="color:var(--accent-text)">${t('common.total')}</span>
+            <span class="stat-value" style="color:var(--accent-text)">${statTotal}</span>
             <div></div>
             <span></span>
           </div>
@@ -424,7 +424,7 @@ export async function renderPokedexDetail(container, id) {
         ${pokemon.abilities.map(a => `
           <div style="margin-bottom:8px">
             <a class="ability-link" href="#/abilities/${encodeURIComponent(a.nameEn)}" data-ability="${a.nameEn}">${getLang() === 'es' ? a.nameEs : a.displayEn}</a>
-            ${a.isHidden ? `<span style="font-size:0.42rem;color:var(--text-dim);margin-left:8px">${t('pokedex.hidden')}</span>` : ''}
+            ${a.isHidden ? `<span style="font-size:0.42rem;color:var(--text-data);margin-left:8px">${t('pokedex.hidden')}</span>` : ''}
           </div>
         `).join('')}
       </div>
@@ -466,13 +466,13 @@ export async function renderPokedexDetail(container, id) {
           <span>◀</span>
           <img src="${spriteUrl(dexId - 1)}" style="width:32px;height:32px;image-rendering:pixelated" onerror="this.style.display='none'">
           <span style="display:flex;flex-direction:column;gap:2px;text-align:left">
-            <span style="font-size:0.42rem;color:var(--text-dim)">#${String(dexId - 1).padStart(4, '0')}</span>
+            <span style="font-size:0.42rem;color:var(--text-data)">#${String(dexId - 1).padStart(4, '0')}</span>
             <span style="font-size:0.46rem">${pokemon.prevName || ''}</span>
           </span>
         </a>` : '<div></div>'}
         ${dexId < 1025 ? `<a href="#/pokedex/${dexId + 1}" class="page-btn" style="display:flex;align-items:center;gap:8px;text-decoration:none">
           <span style="display:flex;flex-direction:column;gap:2px;text-align:right">
-            <span style="font-size:0.42rem;color:var(--text-dim)">#${String(dexId + 1).padStart(4, '0')}</span>
+            <span style="font-size:0.42rem;color:var(--text-data)">#${String(dexId + 1).padStart(4, '0')}</span>
             <span style="font-size:0.46rem">${pokemon.nextName || ''}</span>
           </span>
           <img src="${spriteUrl(dexId + 1)}" style="width:32px;height:32px;image-rendering:pixelated" onerror="this.style.display='none'">

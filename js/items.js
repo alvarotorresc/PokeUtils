@@ -92,8 +92,8 @@ export function renderItems(container) {
                  style="width:64px;height:64px;image-rendering:pixelated;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.4))"
                  onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><text x=%2220%22 y=%2226%22 text-anchor=%22middle%22 font-size=%2224%22>🎒</text></svg>'">
           </div>
-          <h3 style="font-size:0.55rem;color:var(--accent);text-align:center;margin-bottom:4px">${pokeName(item)}</h3>
-          <div style="font-size:0.44rem;color:var(--text-dim);text-align:center;margin-bottom:16px">${item.name}</div>
+          <h3 style="font-size:0.55rem;color:var(--accent-text);text-align:center;margin-bottom:4px">${pokeName(item)}</h3>
+          <div style="font-size:0.44rem;color:var(--text-data);text-align:center;margin-bottom:16px">${item.name}</div>
           ${catLabel ? `<div style="font-size:0.44rem;color:var(--text-muted);text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">${catLabel}</div>` : ''}
           <div style="font-size:0.48rem;color:var(--text-muted);line-height:2;text-align:center">${(getLang() === 'es' ? item.descriptionEs : item.descriptionEn) || t('items.nodesc')}</div>
         </div>

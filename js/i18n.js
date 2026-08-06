@@ -485,7 +485,7 @@ const translations = {
     // Natures
     'natures.title': 'NATURALEZAS',
     'natures.subtitle': 'Las 25 naturalezas y como afectan a las estadisticas',
-    'natures.explain': 'Cada naturaleza aumenta una estadistica un <span style="color:var(--success)">+10%</span> y reduce otra un <span style="color:var(--danger)">-10%</span>. Las naturalezas neutras no modifican ninguna estadistica.',
+    'natures.explain': 'Cada naturaleza aumenta una estadistica un <span style="color:var(--success-text)">+10%</span> y reduce otra un <span style="color:var(--danger-text)">-10%</span>. Las naturalezas neutras no modifican ninguna estadistica.',
     'natures.col.nature': 'NATURALEZA',
     'natures.col.english': 'ENGLISH',
     'natures.col.up': 'SUBE',
@@ -1037,7 +1037,7 @@ const translations = {
 
     'natures.title': 'NATURES',
     'natures.subtitle': 'All 25 natures and how they affect stats',
-    'natures.explain': 'Each nature raises one stat by <span style="color:var(--success)">+10%</span> and lowers another by <span style="color:var(--danger)">-10%</span>. Neutral natures don\'t modify any stat.',
+    'natures.explain': 'Each nature raises one stat by <span style="color:var(--success-text)">+10%</span> and lowers another by <span style="color:var(--danger-text)">-10%</span>. Neutral natures don\'t modify any stat.',
     'natures.col.nature': 'NATURE',
     'natures.col.english': 'SPANISH',
     'natures.col.up': 'UP',
