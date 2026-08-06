@@ -31,10 +31,16 @@ Todo contra la API real, no estimado.
 | Mega | 97 | 0 |
 | Regionales (Alola, Galar, Hisui, Paldea) | 60 | 1 |
 | Gigamax | 34 | **33** |
-| Totem | 11 | 10 |
-| Gorras de Pikachu | 7 | 7 |
+| Totem | 12 | 10 |
+| Gorras de Pikachu | 8 | 8 |
 | Otras | 117 | 41 |
+| En dos categorías a la vez | −2 | −1 |
 | **Total** | **326** | **92** |
+
+**Las categorías no son una partición**, y esta tabla decía 11 Dominante y 7
+gorras justo por eso: `raticate-totem-alola` es regional **y** Dominante, y
+`pikachu-alola-cap` es regional **y** gorra. Medidas una a una son **12 y 8**,
+y las dos de más son exactamente las dos del solape. Lo fija `check-forms.mjs`.
 
 **92 de las 326 son puramente cosméticas**: mismos stats y mismos tipos que su
 especie base. 201 cambian stats y 109 cambian tipos.
@@ -222,7 +228,8 @@ Charizard X cría exactamente como Charizard.
 ## Verificación
 
 - `node scripts/check-forms.mjs`: **326** formas, el reparto por categoría
-  (97 mega, 60 regionales, 34 gigamax, 11 totem, 7 gorras, 117 otras), **92**
+  (97 mega, 60 regionales, 34 gigamax, 12 totem, 8 gorras, 117 otras, con 2 que
+  cuentan en dos categorías a la vez), **92**
   cosméticas, ninguna forma sin nombre en ninguno de los dos idiomas, y
   `charizard-mega-x` nombrado correctamente —que es la que caza el fallo de
   numeración de `/pokemon-form`.
