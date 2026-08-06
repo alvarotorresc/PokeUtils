@@ -4,6 +4,7 @@
 // speed-tiers.js; this file only renders it and keeps the choice in the URL.
 import { speedSpread, speedTiers } from './speed-tiers.js';
 import { fetchPokemonList } from './api.js';
+import { competitiveList, spriteIdFor } from './forms.js';
 import { loadingHTML, replaceQuery } from './app.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
@@ -18,7 +19,7 @@ export async function renderSpeed(container, query = new URLSearchParams()) {
     <div id="spdBody">${loadingHTML()}</div>
   `;
   const body = container.querySelector('#spdBody');
-  const all = await fetchPokemonList();
+  const all = competitiveList(await fetchPokemonList());
 
   let id = parseInt(query.get('id'), 10);
   if (!all.some(p => p.id === id)) id = null;
@@ -26,7 +27,7 @@ export async function renderSpeed(container, query = new URLSearchParams()) {
   function rowHTML(o) {
     return `
       <a class="spd-row" href="#/speed?id=${o.id}">
-        <img src="${spriteUrl(o.id)}" alt="" loading="lazy">
+        <img src="${spriteUrl(spriteIdFor(o))}" alt="" loading="lazy">
         <span class="spd-name">${o.name}</span>
         <span class="spd-value">${o.speed}</span>
       </a>
@@ -62,7 +63,7 @@ export async function renderSpeed(container, query = new URLSearchParams()) {
       <div class="cmp-results" id="spdResults" hidden></div>
       ${!p ? `<p class="egg-note">${t('speed.pick')}</p>` : `
         <div class="spd-head">
-          <img class="cmp-sprite" src="${spriteUrl(p.id)}" alt="${pokeName(p)}">
+          <img class="cmp-sprite" src="${spriteUrl(spriteIdFor(p))}" alt="${pokeName(p)}">
           <div>
             <h2>${pokeName(p)}</h2>
             <p class="egg-note" style="margin:4px 0 0">${t('speed.atlevel', { level })}</p>
@@ -93,7 +94,7 @@ export async function renderSpeed(container, query = new URLSearchParams()) {
         .slice(0, 8);
       results.hidden = hits.length === 0;
       results.innerHTML = hits.map(x => `
-        <button class="cmp-hit" data-id="${x.id}"><img src="${spriteUrl(x.id)}" alt="">${pokeName(x)}</button>
+        <button class="cmp-hit" data-id="${x.id}"><img src="${spriteUrl(spriteIdFor(x))}" alt="">${pokeName(x)}</button>
       `).join('');
       results.querySelectorAll('.cmp-hit').forEach(btn => {
         btn.addEventListener('click', () => {

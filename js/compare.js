@@ -5,6 +5,7 @@
 // agree on first. Anything level-dependent is the calculator's job.
 import { STAT_KEYS, spriteUrl } from './data.js';
 import { fetchPokemonList, fetchAbilities } from './api.js';
+import { competitiveList, spriteIdFor } from './forms.js';
 import { defensiveMatrix } from './team-analysis.js';
 import { loadingHTML, replaceQuery } from './app.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
@@ -24,7 +25,8 @@ export async function renderCompare(container, query = new URLSearchParams()) {
   const body = container.querySelector('#cmpBody');
   // pokemon.json carries ability slugs only, so the names come from
   // abilities.json the same way the detail page gets them.
-  const [all, abilities] = await Promise.all([fetchPokemonList(), fetchAbilities()]);
+  const [list, abilities] = await Promise.all([fetchPokemonList(), fetchAbilities()]);
+  const all = competitiveList(list);
   const abilityByName = new Map(abilities.map(a => [a.name, a]));
   const abilityLabel = slug => {
     const info = abilityByName.get(slug);
@@ -100,7 +102,7 @@ export async function renderCompare(container, query = new URLSearchParams()) {
       <div class="cmp-chips">
         ${picks.map(p => `
           <span class="cmp-chip">
-            <img src="${spriteUrl(p.id)}" alt="">${pokeName(p)}
+            <img src="${spriteUrl(spriteIdFor(p))}" alt="">${pokeName(p)}
             <button class="cmp-remove" data-id="${p.id}" aria-label="${t('compare.remove')}">×</button>
           </span>
         `).join('')}
@@ -114,7 +116,7 @@ export async function renderCompare(container, query = new URLSearchParams()) {
                 ${picks.map(p => `
                   <th>
                     <a href="#/pokedex/${p.id}">
-                      <img class="cmp-sprite" src="${spriteUrl(p.id)}" alt="${pokeName(p)}">
+                      <img class="cmp-sprite" src="${spriteUrl(spriteIdFor(p))}" alt="${pokeName(p)}">
                       <div>${pokeName(p)}</div>
                     </a>
                     <div class="cmp-types">${p.types.map(tp => `<span class="type-badge sm" data-type="${tp}">${typeName(tp)}</span>`).join('')}</div>
@@ -159,7 +161,7 @@ export async function renderCompare(container, query = new URLSearchParams()) {
       results.hidden = hits.length === 0;
       results.innerHTML = hits.map(p => `
         <button class="cmp-hit" data-id="${p.id}">
-          <img src="${spriteUrl(p.id)}" alt="">${pokeName(p)}
+          <img src="${spriteUrl(spriteIdFor(p))}" alt="">${pokeName(p)}
         </button>
       `).join('');
       results.querySelectorAll('.cmp-hit').forEach(btn => {

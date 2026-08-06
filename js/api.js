@@ -9,6 +9,8 @@
 // 100 calls/h per IP and returns 429 without CORS headers when exhausted,
 // which surfaces in the browser as an unexplained network failure.
 
+import { competitiveList, isForm } from './forms.js';
+
 const REST_URL = 'https://pokeapi.co/api/v2';
 const DATA_URL = new URL('../data/', import.meta.url);
 
@@ -143,11 +145,20 @@ export async function fetchPokemonDetail(id) {
 }
 
 // ===== POKEMON SEARCH (for calculator) =====
-export async function searchPokemon(term) {
-  const pokemon = await loadDataset('pokemon');
+//
+// The three calculators share this one searcher, so the form rule is applied
+// here rather than three times over. They see the 1259 that fight differently
+// and not the 92 costumes, which would only offer the same Pokemon twice.
+//
+// `speciesOnly` is for the capture tab: Megas and Gigamax cannot be caught at
+// all, and they inherit their species' captureRate, so offering them there
+// would return a real-looking ball rate for something no ball ever touches.
+export async function searchPokemon(term, { speciesOnly = false } = {}) {
+  const pokemon = competitiveList(await loadDataset('pokemon'));
   const q = term.toLowerCase();
 
   return pokemon
+    .filter(p => !speciesOnly || !isForm(p))
     .filter(p =>
       p.name.toLowerCase().includes(q) ||
       p.nameEs.toLowerCase().includes(q) ||

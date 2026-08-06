@@ -5,6 +5,7 @@
 // maths lives in threats.js.
 import { counters } from './threats.js';
 import { fetchPokemonList } from './api.js';
+import { competitiveList, spriteIdFor } from './forms.js';
 import { loadingHTML, replaceQuery } from './app.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
@@ -21,7 +22,7 @@ export async function renderCounter(container, query = new URLSearchParams()) {
     <div id="ctBody">${loadingHTML()}</div>
   `;
   const body = container.querySelector('#ctBody');
-  const all = await fetchPokemonList();
+  const all = competitiveList(await fetchPokemonList());
 
   let ids = (query.get('ids') || '')
     .split(',')
@@ -47,7 +48,7 @@ export async function renderCounter(container, query = new URLSearchParams()) {
       <div class="cmp-chips">
         ${team.map(p => `
           <span class="cmp-chip">
-            <img src="${spriteUrl(p.id)}" alt="">${pokeName(p)}
+            <img src="${spriteUrl(spriteIdFor(p))}" alt="">${pokeName(p)}
             <button class="cmp-remove" data-id="${p.id}" aria-label="${t('compare.remove')}">×</button>
           </span>
         `).join('')}
@@ -57,7 +58,7 @@ export async function renderCounter(container, query = new URLSearchParams()) {
         <div class="ct-rows">
           ${result.rows.map(r => `
             <a class="ct-row" href="#/pokedex/${r.id}">
-              <img src="${spriteUrl(r.id)}" alt="" loading="lazy">
+              <img src="${spriteUrl(spriteIdFor(r))}" alt="" loading="lazy">
               <span class="ct-name">${r.name}</span>
               ${r.faster >= result.half ? `<span class="ct-fast" title="${t('counter.faster')}">⚡</span>` : ''}
               <span class="ct-hits">${t('counter.hits', { n: r.hits })}</span>
@@ -92,7 +93,7 @@ export async function renderCounter(container, query = new URLSearchParams()) {
         .slice(0, 8);
       results.hidden = hits.length === 0;
       results.innerHTML = hits.map(p => `
-        <button class="cmp-hit" data-id="${p.id}"><img src="${spriteUrl(p.id)}" alt="">${pokeName(p)}</button>
+        <button class="cmp-hit" data-id="${p.id}"><img src="${spriteUrl(spriteIdFor(p))}" alt="">${pokeName(p)}</button>
       `).join('');
       results.querySelectorAll('.cmp-hit').forEach(btn => {
         btn.addEventListener('click', () => {

@@ -99,7 +99,10 @@ export function renderCapture(container) {
     }
     searchTimeout = setTimeout(async () => {
       try {
-        searchResults = await searchPokemon(term);
+        // Species only: a Mega or a Gigamax cannot be caught, and it inherits
+        // its species' capture rate, so a ball percentage for one would be a
+        // confident answer to a question the games never ask.
+        searchResults = await searchPokemon(term, { speciesOnly: true });
         renderSearchResults();
       } catch {
         searchResultsEl.innerHTML = `<div style="font-size:0.46rem;color:var(--danger);padding:8px">${t('calc.searcherr')}</div>`;

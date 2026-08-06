@@ -4,8 +4,11 @@
 // Run with: node scripts/check-counter.mjs
 import { readFile } from 'node:fs/promises';
 import { threatensMember, counters } from '../js/threats.js';
+import { competitiveList, isCosmetic } from '../js/forms.js';
 
-const pokemon = JSON.parse(await readFile(new URL('../data/pokemon.json', import.meta.url), 'utf8'));
+// Filtrado igual que la pagina: las especies mas las formas que cambian algo.
+const pokemon = competitiveList(
+  JSON.parse(await readFile(new URL('../data/pokemon.json', import.meta.url), 'utf8')));
 const byId = id => pokemon.find(p => p.id === id);
 let failed = 0;
 
@@ -25,7 +28,8 @@ console.log('\nUn equipo bien repartido\n');
 
 const kanto = [1, 4, 7, 25, 143, 150].map(byId);
 const r1 = counters(kanto, pokemon, 50);
-check('amenazan a la mitad o mas', r1.total, 26);
+// Medido, no supuesto: 26 con las especies solas, 32 con las formas dentro.
+check('amenazan a la mitad o mas', r1.total, 32);
 check('la mitad de 6 son 3', r1.half, 3);
 check('nadie llega a 4 miembros', r1.rows.filter(r => r.hits >= 4).length, 0);
 check('se enseñan 15 como mucho', r1.rows.length, 15);
@@ -34,8 +38,14 @@ console.log('\nUn equipo mono-tipo, que es donde se rompe contar\n');
 
 const agua = [9, 130, 131, 134, 230, 745].map(byId);
 const r2 = counters(agua, pokemon, 50);
-check('amenazan a la mitad o mas', r2.total, 232);
-check('el primero es el de mas amenazas y mas poder', r2.rows[0].name, 'Zekrom');
+check('amenazan a la mitad o mas', r2.total, 274);
+// Zekrom pasa a segundo sin perder nada: Mega-Ampharos amenaza a los mismos 5
+// miembros y desempata por poder, 165 de ataque especial contra sus 150. Es la
+// razon de meter las formas aqui -- la amenaza real estaba fuera de la lista.
+check('el primero es el de mas amenazas y mas poder', r2.rows[0].name, 'Mega-Ampharos');
+check('y Zekrom sigue justo detras', r2.rows[1].name, 'Zekrom');
+check('ninguna cosmetica en la lista',
+  pokemon.filter(p => p.speciesId && isCosmetic(p, pokemon.find(s => s.id === p.speciesId))).length, 0);
 check('ordenado por amenazas y luego por poder',
   r2.rows.every((r, i, a) => i === 0 || a[i - 1].hits > r.hits
     || (a[i - 1].hits === r.hits && a[i - 1].power >= r.power)), true);

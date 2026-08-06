@@ -4,6 +4,7 @@
 // maths lives in survival.js.
 import { survives, minimumSpread, defenseKeyFor } from './survival.js';
 import { fetchPokemonList, fetchMoves } from './api.js';
+import { competitiveList, spriteIdFor } from './forms.js';
 import { loadingHTML, replaceQuery } from './app.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
@@ -34,7 +35,8 @@ export async function renderSurvive(container, query = new URLSearchParams()) {
     <div id="svBody">${loadingHTML()}</div>
   `;
   const body = container.querySelector('#svBody');
-  const [all, moves] = await Promise.all([fetchPokemonList(), fetchMoves()]);
+  const [list, moves] = await Promise.all([fetchPokemonList(), fetchMoves()]);
+  const all = competitiveList(list);
   // Only damaging moves can be survived; a status move has nothing to compute.
   const hitting = moves.filter(m => m.power > 0 && m.category !== 'status');
 
@@ -159,7 +161,7 @@ export async function renderSurvive(container, query = new URLSearchParams()) {
           <button class="cmp-hit" data-id="${x.id}">
             ${key === 'm'
               ? `<span class="type-badge sm" data-type="${x.type}">${typeName(x.type)}</span>${nameOf(key, x)} (${x.power})`
-              : `<img src="${spriteUrl(x.id)}" alt="">${nameOf(key, x)}`}
+              : `<img src="${spriteUrl(spriteIdFor(x))}" alt="">${nameOf(key, x)}`}
           </button>
         `).join('');
         results.querySelectorAll('.cmp-hit').forEach(btn => {
