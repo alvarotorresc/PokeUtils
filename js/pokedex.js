@@ -1,6 +1,7 @@
 // ===== POKEDEX PAGE =====
 import { TYPES, spriteUrl, STAT_KEYS, GENERATIONS, SORT_KEYS } from './data.js';
 import { fetchPokemonList } from './api.js';
+import { isForm, spriteIdFor } from './forms.js';
 import { loadingHTML, renderPagination, replaceQuery } from './app.js';
 import { t, typeName, statName, pokeName } from './i18n.js';
 import { toolTabsHTML } from './hub.js';
@@ -11,8 +12,8 @@ const PAGE_SIZE = 50;
 export function pokemonCardHTML(p) {
   return `
     <a class="pokemon-card" href="#/pokedex/${p.id}">
-      <img class="sprite" src="${spriteUrl(p.id)}" alt="${pokeName(p)}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><text x=%2248%22 y=%2260%22 text-anchor=%22middle%22 font-size=%2240%22>?</text></svg>'">
-      <div class="dex-number">#${String(p.id).padStart(4, '0')}</div>
+      <img class="sprite" src="${spriteUrl(spriteIdFor(p))}" alt="${pokeName(p)}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><text x=%2248%22 y=%2260%22 text-anchor=%22middle%22 font-size=%2240%22>?</text></svg>'">
+      <div class="dex-number">#${String(p.speciesId || p.id).padStart(4, '0')}</div>
       <div class="poke-name">${pokeName(p)}</div>
       <div class="types">
         ${p.types.map(tp => `<span class="type-badge sm" data-type="${tp}">${typeName(tp)}</span>`).join('')}
@@ -194,7 +195,10 @@ export function renderPokedex(container, query = new URLSearchParams()) {
     if (!allPokemon) await loadAll();
     syncUrl();
 
-    let filtered = allPokemon;
+    // The dex opens with its 1025 species. Forms answer a search and live on
+    // their species' page: putting 326 of them in the default list adds 32% of
+    // scrolling to every query that was not looking for one.
+    let filtered = state.q ? allPokemon : allPokemon.filter(p => !isForm(p));
     if (state.q) {
       filtered = filtered.filter(p =>
         p.nameEs.toLowerCase().includes(state.q) ||
