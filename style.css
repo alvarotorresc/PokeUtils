@@ -113,7 +113,7 @@
 }
 
 html, body {
-  height: 100%;
+  min-height: 100%;
 }
 
 html {
@@ -357,7 +357,6 @@ a:hover {
   width: 100%;
   padding: 24px var(--gutter) 40px;
   flex: 1;
-  overflow-x: hidden;
 }
 
 /* ===== FOOTER ===== */
@@ -394,12 +393,6 @@ a:hover {
 @media (max-width: 639px) {
   :root {
     --gutter: 16px;
-  }
-  html, body {
-    height: auto;
-  }
-  body {
-    min-height: auto;
   }
   .footer {
     padding: 12px 16px 16px;
@@ -2860,3 +2853,22 @@ a.evo-node:hover {
 .meta-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font-size: 0.46rem; color: var(--text); }
 .meta-credit { margin-top: 20px; font-size: 0.4rem; }
 .ct-meta { font-size: 0.5rem; opacity: 0.85; }
+
+/* ===== DESKTOP SCALE =====
+   In 2816 lines of CSS the highest breakpoint was 900px: above it there was not
+   a single rule, and 1000 looked the same as 1920. */
+@media (min-width: 1280px) {
+  html {
+    font-size: 19px;
+  }
+}
+
+@media (min-width: 1500px) {
+  html {
+    font-size: 20px;
+  }
+
+  :root {
+    --gutter: 56px;
+  }
+}
