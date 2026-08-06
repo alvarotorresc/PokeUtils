@@ -1339,20 +1339,20 @@ a:hover {
 /* ===== POKEMON CARD ===== */
 .pokemon-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  /* auto-fill from 150px: at 360 that is still two per row, which is the easiest
+     regression to let through. */
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
 }
 
-@media (min-width: 480px) {
-  .pokemon-grid { grid-template-columns: repeat(3, 1fr); }
-}
-
-@media (min-width: 640px) {
-  .pokemon-grid { grid-template-columns: repeat(4, 1fr); }
-}
-
-@media (min-width: 900px) {
-  .pokemon-grid { grid-template-columns: repeat(5, 1fr); }
+@media (min-width: 1000px) {
+  /* 215 and not the 260 the spec measured: that figure predates the filter
+     sidebar, which takes 250px plus its 24px gap. With 260 the grid dropped to
+     three columns at 1280, against the measured scale of four. */
+  .pokemon-grid {
+    grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+    gap: 16px;
+  }
 }
 
 .pokemon-card {
@@ -1375,12 +1375,17 @@ a:hover {
 }
 
 .pokemon-card .sprite {
-  width: 80px;
-  height: 80px;
+  width: 96px;
+  height: 96px;
   image-rendering: pixelated;
   margin: 0 auto 6px;
   display: block;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  transition: transform 0.2s;
+}
+
+.pokemon-card:hover .sprite {
+  transform: scale(1.09);
 }
 
 .pokemon-card .dex-number {
@@ -1402,6 +1407,21 @@ a:hover {
   justify-content: center;
   gap: 4px;
   flex-wrap: wrap;
+}
+
+@media (min-width: 1000px) {
+  .pokemon-card {
+    padding: 20px 16px;
+  }
+
+  .pokemon-card .sprite {
+    width: 128px;
+    height: 128px;
+  }
+
+  .pokemon-card .poke-name {
+    font-size: 0.62rem;
+  }
 }
 
 /* ===== POKEMON DETAIL ===== */
