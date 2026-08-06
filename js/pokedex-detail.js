@@ -7,6 +7,7 @@ import { t, typeName, statName, pokeName, getLang } from './i18n.js';
 import { rangeAt100 } from './stats.js';
 import { attachTooltip } from './tooltip.js';
 import { partnersOf, hasEggData } from './egg-groups.js';
+import { formsOf, spriteIdFor } from './forms.js';
 
 // Spanish names are missing for 616 of the 2187 items, and the build falls back
 // to the slug. Prefer English over a raw slug before giving up.
@@ -182,8 +183,40 @@ function renderMovesSection(host, currentId) {
 // The breeding fields are read from the raw dataset entry, not from `pokemon`:
 // fetchPokemonDetail builds its own object with the fields the page needed
 // before this feature, and eggGroups is not one of them.
+// Three species label two or more of their forms identically -- Minior repeats
+// "Forma Meteorito" six times, one per core colour, and Zygarde and Darmanitan
+// repeat one each: 10 tabs where the label alone cannot say which is which.
+// PokeAPI really does give them the same name, so rather than invent a
+// translation the repeated ones fall back to the slug's own suffix, which is
+// what actually distinguishes them.
+// The root cannot be sliced off with the species' slug, because that slug often
+// carries a suffix of its own: species 774 is `minior-red-meteor` and 718 is
+// `zygarde-50`. It is the segments the two share from the start, which also
+// keeps Kommo-o's own hyphen intact (`kommo-o` vs `kommo-o-totem`).
+function slugSuffix(formSlug, speciesSlug) {
+  const form = formSlug.split('-');
+  const species = speciesSlug.split('-');
+  let i = 0;
+  while (i < form.length && i < species.length && form[i] === species[i]) i++;
+  return form.slice(i).join(' ') || formSlug.replace(/-/g, ' ');
+}
+
+function formLabels(variants, speciesSlug, lang) {
+  const nameOf = v => v.speciesId ? (lang === 'es' ? v.formEs : v.formEn) : t('form.base');
+  const seen = {};
+  variants.forEach(v => { seen[nameOf(v)] = (seen[nameOf(v)] || 0) + 1; });
+
+  return variants.map(v => {
+    const label = nameOf(v);
+    return seen[label] < 2 ? label : slugSuffix(v.name, speciesSlug);
+  });
+}
+
 function eggSectionHTML(pokemon, all) {
-  const entry = all.find(p => p.id === pokemon.id);
+  // Breeding is the species'. A form inherits eggGroups, so reading it off the
+  // form would give the same answer today, but partnersOf already counts
+  // species only and the two should be asking about the same Pokemon.
+  const entry = all.find(p => p.id === (pokemon.speciesId || pokemon.id));
   if (!hasEggData(all) || !entry?.eggGroups) return '';
 
   const groups = entry.eggGroups
@@ -241,6 +274,15 @@ export async function renderPokedexDetail(container, id) {
     return;
   }
 
+  // A form's page is its species' page with a different tab selected: the URL
+  // stays #/pokedex/6 so every link already shared keeps working, and the
+  // species keeps owning the dex number, the neighbours, evolution, the
+  // learnset and breeding. Only what the header shows changes.
+  const dexId = pokemon.speciesId || pokemon.id;
+  const speciesEntry = allPokemon.find(p => p.id === dexId);
+  const variants = [speciesEntry, ...formsOf(dexId, allPokemon)].filter(Boolean);
+  const variantLabels = formLabels(variants, speciesEntry?.name || '', getLang());
+
   // Calculate defensive matchups
   const matchups = {};
   TYPES.forEach(atkType => {
@@ -280,10 +322,10 @@ export async function renderPokedexDetail(container, id) {
       <button class="back-btn" onclick="history.back()">◀ ${t('pokedex.back')}</button>
 
       <div class="poke-detail-header">
-        <img class="poke-detail-sprite" src="${spriteUrl(pokemon.id)}" alt="${displayName}"
+        <img class="poke-detail-sprite" src="${spriteUrl(spriteIdFor(pokemon))}" alt="${displayName}"
              onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><text x=%2248%22 y=%2260%22 text-anchor=%22middle%22 font-size=%2240%22>?</text></svg>'">
         <div class="poke-detail-info">
-          <div class="dex-number">#${String(pokemon.id).padStart(4, '0')}</div>
+          <div class="dex-number">#${String(dexId).padStart(4, '0')}</div>
           <h2>${displayName}</h2>
           <div class="name-en">${altName}</div>
           <div class="types">
@@ -296,6 +338,16 @@ export async function renderPokedexDetail(container, id) {
           </div>
         </div>
       </div>
+
+      ${variants.length > 1 ? `
+        <div class="tabs form-tabs" id="formTabs">
+          ${variants.map((v, i) => `
+            <button class="tab${v.id === pokemon.id ? ' active' : ''}" data-form="${v.id}">
+              ${variantLabels[i]}
+            </button>
+          `).join('')}
+        </div>
+      ` : ''}
 
       ${pokemon.description ? `<div class="card" style="margin-bottom:20px"><p style="font-size:0.48rem;color:var(--text-muted);line-height:2">${pokemon.description}</p></div>` : ''}
 
@@ -382,28 +434,40 @@ export async function renderPokedexDetail(container, id) {
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;gap:12px">
-        ${id > 1 ? `<a href="#/pokedex/${id - 1}" class="page-btn" style="display:flex;align-items:center;gap:8px;text-decoration:none">
+        ${dexId > 1 ? `<a href="#/pokedex/${dexId - 1}" class="page-btn" style="display:flex;align-items:center;gap:8px;text-decoration:none">
           <span>◀</span>
-          <img src="${spriteUrl(id - 1)}" style="width:32px;height:32px;image-rendering:pixelated" onerror="this.style.display='none'">
+          <img src="${spriteUrl(dexId - 1)}" style="width:32px;height:32px;image-rendering:pixelated" onerror="this.style.display='none'">
           <span style="display:flex;flex-direction:column;gap:2px;text-align:left">
-            <span style="font-size:0.42rem;color:var(--text-dim)">#${String(id - 1).padStart(4, '0')}</span>
+            <span style="font-size:0.42rem;color:var(--text-dim)">#${String(dexId - 1).padStart(4, '0')}</span>
             <span style="font-size:0.46rem">${pokemon.prevName || ''}</span>
           </span>
         </a>` : '<div></div>'}
-        ${id < 1025 ? `<a href="#/pokedex/${id + 1}" class="page-btn" style="display:flex;align-items:center;gap:8px;text-decoration:none">
+        ${dexId < 1025 ? `<a href="#/pokedex/${dexId + 1}" class="page-btn" style="display:flex;align-items:center;gap:8px;text-decoration:none">
           <span style="display:flex;flex-direction:column;gap:2px;text-align:right">
-            <span style="font-size:0.42rem;color:var(--text-dim)">#${String(id + 1).padStart(4, '0')}</span>
+            <span style="font-size:0.42rem;color:var(--text-dim)">#${String(dexId + 1).padStart(4, '0')}</span>
             <span style="font-size:0.46rem">${pokemon.nextName || ''}</span>
           </span>
-          <img src="${spriteUrl(id + 1)}" style="width:32px;height:32px;image-rendering:pixelated" onerror="this.style.display='none'">
+          <img src="${spriteUrl(dexId + 1)}" style="width:32px;height:32px;image-rendering:pixelated" onerror="this.style.display='none'">
           <span>▶</span>
         </a>` : '<div></div>'}
       </div>
     </div>
   `;
 
-  renderEvolutionSection(container.querySelector('#evoSection'), pokemon.id);
-  renderMovesSection(container.querySelector('#mvSection'), pokemon.id);
+  // The species owns both: Mega Charizard X evolves and learns exactly as
+  // Charizard does, and the learnsets were built for the 1025 species only.
+  renderEvolutionSection(container.querySelector('#evoSection'), dexId);
+  renderMovesSection(container.querySelector('#mvSection'), dexId);
+
+  container.querySelector('#formTabs')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-form]');
+    if (!btn) return;
+    const next = Number(btn.dataset.form);
+    if (next === pokemon.id) return;
+    // Repaint in place. Changing location.hash would fire route(), reload the
+    // page and lose the scroll position for a change of four numbers.
+    renderPokedexDetail(container, next);
+  });
 
   // Bubbles are attached after the markup lands. attachTooltip is a no-op when
   // the ability has no description, so it stays a plain link.

@@ -95,6 +95,10 @@ export async function fetchPokemonDetail(id) {
   const p = pokemon.find(x => x.id === id);
   if (!p) return null;
 
+  // A form's page is its species' page, so everything that is numbered by the
+  // Pokedex hangs off the species id and not off the form's 10000-range one.
+  const dexId = p.speciesId || p.id;
+
   const abilityInfo = new Map(abilities.map(a => [a.name, a]));
   const speciesName = other => pokemon.find(x => x.id === other)?.nameEs || null;
 
@@ -124,9 +128,17 @@ export async function fetchPokemonDetail(id) {
     captureRate: p.captureRate,
     isLegendary: p.isLegendary,
     isMythical: p.isMythical,
-    description: await fetchDescription(id),
-    prevName: id > 1 ? speciesName(id - 1) : null,
-    nextName: speciesName(id + 1),
+    // An alternate form travels with these four fields and nothing else: the
+    // page needs to know which variant is on screen, but the dex number, the
+    // description and the neighbours all stay the species'. Without speciesId
+    // here, isForm() on this object would answer false for every form.
+    ...(p.speciesId ? { speciesId: p.speciesId, formEs: p.formEs, formEn: p.formEn } : {}),
+    ...(p.noSprite ? { noSprite: true } : {}),
+    // dexId, not id: #10034 has no description of its own and no neighbours
+    // worth showing -- asking for 10033 would offer an unrelated form.
+    description: await fetchDescription(dexId),
+    prevName: dexId > 1 ? speciesName(dexId - 1) : null,
+    nextName: speciesName(dexId + 1),
   };
 }
 

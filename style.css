@@ -2407,6 +2407,13 @@ a.evo-node:hover {
   background: rgba(255, 255, 255, 0.04);
 }
 
+/* A species can carry eight forms (Pikachu has eight caps), far past what fits
+   at 360px. The strip scrolls inside itself rather than widening the page, and
+   its tabs keep their own width instead of splitting the row into slivers. */
+.form-tabs { margin: 0 0 20px; overflow-x: auto; scrollbar-width: none; }
+.form-tabs::-webkit-scrollbar { display: none; }
+.form-tabs .tab { flex: 0 0 auto; white-space: nowrap; }
+
 .tab.active {
   background: var(--bg-card);
   color: var(--accent);
