@@ -1,0 +1,125 @@
+// Comprueba que ningun token usado como color de texto baje de 4,5:1 sobre las
+// tres superficies, en los dos temas. Es el unico trozo automatizable de la
+// verificacion del redisenio: el resto es manual, ancho por ancho.
+//
+// Limites conocidos, a proposito:
+//   - No ve colores literales inline desde JS (STAT_COLORS, los --type-*).
+//     Esos ya se resolvieron aparte con --stat-up/--stat-down y con el punto de
+//     color del EV yield.
+//   - Asume que cualquier texto puede caer sobre cualquiera de las tres
+//     superficies. Es conservador: prefiere un falso positivo a un texto gris
+//     sobre gris en produccion.
+//
+// Al escribirlo (2026-08-06) fallaban 15 pares. Los tres que el spec midio a
+// mano: --accent claro 2,58 sobre la tarjeta, --text-dim claro 2,76, --text-dim
+// oscuro 2,12. Y dos que nadie habia medido: --success en claro cae a 1,55 y
+// --danger a 2,17, los dos en la tabla de naturalezas y en los mensajes de error
+// de las tres calculadoras.
+//
+// Run with: node scripts/check-contrast.mjs
+import { readFile } from 'node:fs/promises';
+
+// Los tokens salen de style.css, pero el uso se busca tambien en los ocho JS que
+// meten color inline: si solo se mirase el CSS, un var(--text-dim) olvidado en
+// items.js dejaria el barrido en verde.
+const INLINE = ['natures', 'moves', 'abilities', 'items', 'calc-capture',
+  'calc-ivev', 'calc-damage', 'pokedex-detail'];
+
+const css = await readFile(new URL('../style.css', import.meta.url), 'utf8');
+const inline = (await Promise.all(INLINE.map(name =>
+  readFile(new URL(`../js/${name}.js`, import.meta.url), 'utf8')))).join('\n');
+const all = css + '\n' + inline;
+
+const MIN = 4.5;
+const SURFACES = ['--bg', '--bg-surface', '--bg-card'];
+
+// Tokens que no son texto aunque aparezcan en una declaracion color:, y por que.
+const NOT_TEXT = new Set([
+  '--on-accent',   // tinta sobre un relleno --accent, que mide 12,48:1
+  '--bg',          // texto del color del fondo: iconos y trucos de recorte
+  '--bg-surface',
+  '--bg-card',
+]);
+
+// Excepciones medidas y aceptadas. Cada una lleva su motivo: sin motivo, no
+// entra. Se imprimen como "nota", no como ok.
+const ALLOW = {
+  '--text-muted@dark@--bg-card': 'Mide 4,41 (a 0,09 del minimo). Subirlo cambia el tono de todas las descripciones de la app para ganar una centesima. 2026-08-06.',
+};
+
+function parseBlock(selector) {
+  const at = css.indexOf(selector);
+  if (at === -1) throw new Error(`No encuentro el bloque ${selector} en style.css`);
+  const body = css.slice(css.indexOf('{', at) + 1, css.indexOf('}', at));
+  const tokens = {};
+  for (const [, name, value] of body.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) {
+    tokens[name] = value.trim();
+  }
+  return tokens;
+}
+
+// El tema claro solo redefine parte de los tokens: hereda el resto de :root.
+const dark = parseBlock(':root {');
+const light = { ...dark, ...parseBlock('.light {') };
+
+function rgb(value) {
+  const hex = value.trim();
+  if (!/^#[0-9a-f]{6}$/i.test(hex)) return null; // rgba() y gradientes no son texto
+  return [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
+}
+
+function luminance(value) {
+  const parts = rgb(value);
+  if (!parts) return null;
+  const [r, g, b] = parts.map(c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function ratio(fg, bg) {
+  const a = luminance(fg);
+  const b = luminance(bg);
+  if (a === null || b === null) return null;
+  const [hi, lo] = a > b ? [a, b] : [b, a];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+// Todo token que el CSS o un estilo inline use como color de texto.
+const used = new Set();
+for (const [, token] of all.matchAll(/color\s*:\s*var\((--[\w-]+)\)/g)) {
+  if (!NOT_TEXT.has(token)) used.add(token);
+}
+
+let failed = 0;
+let annotated = 0;
+
+console.log(`\nTokens usados como color de texto: ${used.size}\n`);
+
+for (const [themeName, theme] of [['dark', dark], ['light', light]]) {
+  for (const token of [...used].sort()) {
+    const value = theme[token];
+    if (value === undefined) {
+      console.log(`  FAIL ${token} no existe en el tema ${themeName}`);
+      failed++;
+      continue;
+    }
+    for (const surface of SURFACES) {
+      const r = ratio(value, theme[surface]);
+      if (r === null) continue; // no es un hex solido: no se puede medir
+      const key = `${token}@${themeName}@${surface}`;
+      const label = `${token} ${value} sobre ${surface} (${themeName})`;
+      if (r >= MIN) {
+        console.log(`  ok   ${label}: ${r.toFixed(2)}`);
+      } else if (ALLOW[key]) {
+        console.log(`  nota ${label}: ${r.toFixed(2)} — ${ALLOW[key]}`);
+        annotated++;
+      } else {
+        console.log(`  FAIL ${label}: ${r.toFixed(2)} (minimo ${MIN})`);
+        failed++;
+      }
+    }
+  }
+}
+
+console.log(`\n${failed ? `${failed} por debajo de ${MIN}:1` : 'Todo pasa 4,5:1'}` +
+  `${annotated ? ` · ${annotated} anotados a proposito` : ''}\n`);
+process.exit(failed ? 1 : 0);
