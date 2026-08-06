@@ -67,6 +67,9 @@
      data and numbers in VT323. */
   --font-data: 'VT323', monospace;
   --nav-height: 56px;
+  /* The content takes the whole width minus this margin. Measured in
+     production: with the 1100px cap, 1920 left 820px dead, 43% of the screen. */
+  --gutter: 40px;
 }
 
 /* ===== LIGHT THEME ===== */
@@ -171,9 +174,7 @@ a:hover {
 }
 
 .nav-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 16px;
+  padding: 0 var(--gutter);
   display: flex;
   align-items: center;
   height: var(--nav-height);
@@ -353,10 +354,8 @@ a:hover {
 
 /* ===== MAIN ===== */
 .main {
-  max-width: 1100px;
   width: 100%;
-  margin: 0 auto;
-  padding: 24px 16px 40px;
+  padding: 24px var(--gutter) 40px;
   flex: 1;
   overflow-x: hidden;
 }
@@ -364,11 +363,9 @@ a:hover {
 /* ===== FOOTER ===== */
 .footer {
   text-align: center;
-  padding: 20px 16px 30px;
+  padding: 20px var(--gutter) 30px;
   border-top: 2px solid var(--border);
   width: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
   flex-shrink: 0;
 }
 
@@ -395,6 +392,9 @@ a:hover {
 }
 
 @media (max-width: 639px) {
+  :root {
+    --gutter: 16px;
+  }
   html, body {
     height: auto;
   }
@@ -437,6 +437,16 @@ a:hover {
   border-radius: 50%;
   background: #fff;
   border: 1.5px solid #666;
+}
+
+/* The grid uses the whole width; prose does not. 68 characters is where the eye
+   finds the start of the next line without hunting for it. */
+.page-header p,
+.footer-hint,
+.card > p {
+  max-width: 68ch;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* ===== PAGE HEADER ===== */
