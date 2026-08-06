@@ -51,7 +51,15 @@ const SOURCES = [
   },
 ];
 
-export function searchAll(datasets, term, limit = 8) {
+// El nombre que se ensena no es el que hizo la coincidencia, sino el del idioma
+// activo: buscar "char" acertaba por nameEn y devolvia "Charizard" cuando la app
+// estaba en espanol y la ficha lo llama igual, pero con "Wooper" y "Wooper de
+// Paldea" la lista salia entera en ingles.
+function labelOf(row, lang) {
+  return (lang === 'es' ? row.nameEs : row.nameEn) || row.nameEn || row.nameEs || row.name;
+}
+
+export function searchAll(datasets, term, limit = 8, lang = 'es') {
   const q = norm(term).trim();
   // One letter matches a third of the dataset and answers nothing.
   if (q.length < 2) return [];
@@ -61,17 +69,15 @@ export function searchAll(datasets, term, limit = 8) {
     const rows = datasets[source.key];
     if (!Array.isArray(rows)) continue; // dataset not loaded yet
     for (const row of rows) {
+      // Se busca en los tres nombres para que "surf" encuentre a Surfista y
+      // "levitacion" a Levitate, pero se ensena uno solo.
       let best = 0;
-      let label = '';
       for (const name of source.names(row)) {
         const s = score(name, q);
-        if (s > best) {
-          best = s;
-          label = name;
-        }
+        if (s > best) best = s;
       }
       if (best > 0) {
-        hits.push({ kind: source.kind, id: row.id, name: label, route: source.route(row), score: best });
+        hits.push({ kind: source.kind, id: row.id, name: labelOf(row, lang), route: source.route(row), score: best });
       }
     }
   }

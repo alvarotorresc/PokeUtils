@@ -9,7 +9,7 @@
 // asking twice costs nothing.
 import { searchAll } from './search-index.js';
 import { fetchPokemonList, fetchMoves, fetchAbilities, fetchItems } from './api.js';
-import { t } from './i18n.js';
+import { getLang, t } from './i18n.js';
 
 const KIND_KEY = {
   pokemon: 'search.kind.pokemon',
@@ -18,7 +18,32 @@ const KIND_KEY = {
   item: 'search.kind.item',
 };
 
-export function attachGlobalSearch(input) {
+// Lo que se abre desde el buscador se guarda aqui y sustituye a las sugerencias
+// fijas: los chips pasan a ser lo ultimo que miraste.
+const HISTORIAL = 'pkutils_search_history';
+const MAX_HISTORIAL = 6;
+
+export function leerHistorial() {
+  try {
+    const guardado = JSON.parse(localStorage.getItem(HISTORIAL) || '[]');
+    return Array.isArray(guardado) ? guardado.slice(0, MAX_HISTORIAL) : [];
+  } catch {
+    return []; // un localStorage corrupto no puede tumbar la home
+  }
+}
+
+function apuntar(entrada) {
+  const sin = leerHistorial().filter(e => e.route !== entrada.route);
+  const lista = [entrada, ...sin].slice(0, MAX_HISTORIAL);
+  try {
+    localStorage.setItem(HISTORIAL, JSON.stringify(lista));
+  } catch {
+    // Modo privado con la cuota a cero: el buscador sigue funcionando.
+  }
+  return lista;
+}
+
+export function attachGlobalSearch(input, alGuardar) {
   const panel = document.createElement('div');
   panel.className = 'gs-panel';
   panel.hidden = true;
@@ -27,6 +52,20 @@ export function attachGlobalSearch(input) {
   const datasets = {};
   let cursor = -1;
   let timer;
+  let ultimos = [];
+
+  // Se apunta al abrir un resultado, no al escribir: lo que interesa recordar es
+  // lo que se llego a mirar.
+  const recordar = i => {
+    const r = ultimos[i];
+    if (!r) return;
+    alGuardar?.(apuntar({ kind: r.kind, id: r.id, name: r.name, route: r.route }));
+  };
+
+  panel.addEventListener('click', e => {
+    const fila = e.target.closest('.gs-row');
+    if (fila) recordar(+fila.dataset.i);
+  });
 
   async function loadPokemon() {
     if (!datasets.pokemon) datasets.pokemon = await fetchPokemonList();
@@ -41,6 +80,7 @@ export function attachGlobalSearch(input) {
   function draw(results) {
     cursor = -1;
     panel.hidden = results.length === 0;
+    ultimos = results;
     panel.innerHTML = results.map((r, i) => `
       <a class="gs-row" href="${r.route}" data-i="${i}">
         <span class="gs-kind">${t(KIND_KEY[r.kind])}</span>
@@ -59,9 +99,9 @@ export function attachGlobalSearch(input) {
     // milliseconds on an ordinary connection.
     await loadPokemon();
     if (input.value.trim() !== term) return;
-    draw(searchAll(datasets, term, 8));
+    draw(searchAll(datasets, term, 8, getLang()));
     await loadRest();
-    if (input.value.trim() === term) draw(searchAll(datasets, term, 8));
+    if (input.value.trim() === term) draw(searchAll(datasets, term, 8, getLang()));
   }
 
   input.addEventListener('focus', loadPokemon, { once: true });
@@ -82,6 +122,7 @@ export function attachGlobalSearch(input) {
       // term, which is what the box did before this existed.
       const term = input.value.trim();
       const marked = rows[cursor]?.getAttribute('href');
+      if (marked) recordar(cursor);
       location.hash = marked ? marked.slice(1)
         : (term ? `/pokedex?q=${encodeURIComponent(term)}` : '/pokedex');
       panel.hidden = true;
