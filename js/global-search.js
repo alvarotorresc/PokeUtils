@@ -59,7 +59,7 @@ export function attachGlobalSearch(input, alGuardar) {
   const recordar = i => {
     const r = ultimos[i];
     if (!r) return;
-    alGuardar?.(apuntar({ kind: r.kind, id: r.id, name: r.name, route: r.route }));
+    alGuardar?.(apuntar({ kind: r.kind, id: r.id, name: r.name, route: r.route, sprite: r.sprite }));
   };
 
   panel.addEventListener('click', e => {
@@ -83,6 +83,8 @@ export function attachGlobalSearch(input, alGuardar) {
     ultimos = results;
     panel.innerHTML = results.map((r, i) => `
       <a class="gs-row" href="${r.route}" data-i="${i}">
+        <img class="gs-sprite" src="${r.sprite}" alt="" loading="lazy"
+             onerror="this.style.visibility='hidden'">
         <span class="gs-kind">${t(KIND_KEY[r.kind])}</span>
         <span class="gs-name">${r.name}</span>
       </a>`).join('');

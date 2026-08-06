@@ -54,18 +54,17 @@ function fillSwarm(swarm) {
 }
 
 const chipHTML = (href, name, sprite) =>
-  `<a class="qchip" href="${href}">${sprite ? `<img src="${sprite}" alt="" loading="lazy">` : ''}${name}</a>`;
+  `<a class="qchip" href="${href}">${sprite
+    ? `<img src="${sprite}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : ''}${name}</a>`;
 
-// Un movimiento o un objeto no tienen sprite propio, asi que el chip se queda
-// con el nombre solo en vez de ensenar una imagen rota.
+// Todos los dominios traen sprite: el suyo los Pokemon y los objetos, la MT de
+// su tipo los movimientos y la Capsula Habilidad las habilidades.
 const chipsHTML = () => {
   const historial = leerHistorial();
   if (!historial.length) {
     return QUICK.map(([id, name]) => chipHTML(`#/pokedex/${id}`, name, spriteUrl(id))).join('');
   }
-  return historial
-    .map(e => chipHTML(e.route, e.name, e.kind === 'pokemon' ? spriteUrl(e.id) : ''))
-    .join('');
+  return historial.map(e => chipHTML(e.route, e.name, e.sprite || spriteUrl(e.id))).join('');
 };
 
 const wantedHTML = () => WANTED.map((id, i) => {

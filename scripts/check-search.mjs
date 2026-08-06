@@ -34,6 +34,15 @@ check('una habilidad', first('levitate').kind, 'ability');
 check('un objeto', first('master ball').kind, 'item');
 check('y por su nombre en espanol', first('restos').kind, 'item');
 
+console.log('\nCada dominio trae su sprite\n');
+
+const spriteDe = t => (first(t).sprite || '').split('/').pop();
+
+check('un Pokemon, el suyo', spriteDe('pikachu'), '25.png');
+check('un movimiento, la MT de su tipo', spriteDe('surf'), 'tm-water.png');
+check('una habilidad, la Capsula Habilidad', spriteDe('levitate'), 'ability-capsule.png');
+check('un objeto, el suyo', spriteDe('master ball'), 'master-ball.png');
+
 console.log('\nLo exacto gana a lo que solo empieza igual\n');
 
 // El caso que lo demuestra: "growl" es un movimiento exacto y ademas el

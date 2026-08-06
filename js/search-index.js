@@ -10,6 +10,10 @@
 // \p{M} rather than a range of combining marks typed by hand: with the literal
 // characters in the source, any trip through an editor that normalises the file
 // stops matching without raising a single error.
+// El sprite viene de aqui y no del componente porque cada dominio lo saca de un
+// sitio distinto, y es la fuente la que sabe de donde.
+import { spriteUrl, itemSpriteUrl } from './data.js';
+
 const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
 
 // Exact 100, starts-with 60, contains 30. The gap between exact and starts-with
@@ -30,11 +34,15 @@ const SOURCES = [
     key: 'pokemon', kind: 'pokemon',
     names: p => [p.nameEs, p.nameEn, p.name],
     route: p => `#/pokedex/${p.id}`,
+    sprite: p => spriteUrl(p.id),
   },
   {
     key: 'moves', kind: 'move',
     names: m => [m.nameEs, m.nameEn, m.name],
     route: m => `#/moves/${m.id}`,
+    // La MT de su tipo: un movimiento no tiene sprite propio, pero la maquina
+    // tecnica lleva el color del tipo y de paso lo dice.
+    sprite: m => itemSpriteUrl(`tm-${m.type || 'normal'}`),
   },
   {
     // The abilities page takes a name, not an id: that is the route the detail
@@ -42,12 +50,15 @@ const SOURCES = [
     key: 'abilities', kind: 'ability',
     names: a => [a.nameEs, a.nameEn, a.name],
     route: a => `#/abilities/${encodeURIComponent(a.nameEn || a.name)}`,
+    // La Capsula Habilidad, que es literalmente el objeto que cambia una.
+    sprite: () => itemSpriteUrl('ability-capsule'),
   },
   {
     // Items have no page of their own: the list opens filtered by the name.
     key: 'items', kind: 'item',
     names: i => [i.nameEs, i.nameEn, i.name],
     route: i => `#/items?q=${encodeURIComponent(i.nameEs || i.name)}`,
+    sprite: i => itemSpriteUrl(i.name),
   },
 ];
 
@@ -55,8 +66,23 @@ const SOURCES = [
 // activo: buscar "char" acertaba por nameEn y devolvia "Charizard" cuando la app
 // estaba en espanol y la ficha lo llama igual, pero con "Wooper" y "Wooper de
 // Paldea" la lista salia entera en ingles.
+// 409 objetos traen el nombre tecnico en nameEs porque el builder lo copio tal
+// cual al no encontrar traduccion: "lajet-ball" en vez de "Jet Ball". De esos,
+// 402 si tienen el ingles bien escrito, asi que ese es mejor que maquillar el
+// tecnico. Los 7 restantes se formatean.
+const esTecnico = s => /^[a-z0-9]+(-[a-z0-9]+)+$/.test(s || '');
+
+const desdeTecnico = name => (name || '')
+  .split('-')
+  .map(p => p.charAt(0).toUpperCase() + p.slice(1))
+  .join(' ');
+
 function labelOf(row, lang) {
-  return (lang === 'es' ? row.nameEs : row.nameEn) || row.nameEn || row.nameEs || row.name;
+  const propio = lang === 'es' ? row.nameEs : row.nameEn;
+  const otro = lang === 'es' ? row.nameEn : row.nameEs;
+  if (propio && !esTecnico(propio)) return propio;
+  if (otro && !esTecnico(otro)) return otro;
+  return desdeTecnico(propio || otro || row.name);
 }
 
 export function searchAll(datasets, term, limit = 8, lang = 'es') {
@@ -77,7 +103,8 @@ export function searchAll(datasets, term, limit = 8, lang = 'es') {
         if (s > best) best = s;
       }
       if (best > 0) {
-        hits.push({ kind: source.kind, id: row.id, name: labelOf(row, lang), route: source.route(row), score: best });
+        hits.push({ kind: source.kind, id: row.id, name: labelOf(row, lang),
+          route: source.route(row), sprite: source.sprite(row), score: best });
       }
     }
   }
