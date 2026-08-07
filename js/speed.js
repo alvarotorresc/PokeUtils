@@ -61,7 +61,7 @@ export async function renderSpeed(container, query = new URLSearchParams()) {
         <input type="text" class="search-input" id="spdSearch" placeholder="${t('speed.search')}">
       </div>
       <div class="cmp-results" id="spdResults" hidden></div>
-      ${!p ? `<p class="egg-note">${t('speed.pick')}</p>` : `
+      ${!p ? `<p class="egg-note note-center">${t('speed.pick')}</p>` : `
         <div class="spd-head">
           <img class="cmp-sprite" src="${spriteUrl(spriteIdFor(p))}" alt="${pokeName(p)}">
           <div>

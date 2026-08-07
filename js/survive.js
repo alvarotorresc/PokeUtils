@@ -133,7 +133,7 @@ export async function renderSurvive(container, query = new URLSearchParams()) {
       <div id="svResult">${
         attacker && move && defender
           ? resultHTML(attacker, move, defender, level)
-          : `<p class="egg-note">${t('survive.pickall')}</p>`
+          : `<p class="egg-note note-center">${t('survive.pickall')}</p>`
       }</div>
     `;
 

@@ -59,8 +59,8 @@ export async function renderCounter(container, query = new URLSearchParams()) {
           </span>
         `).join('')}
       </div>
-      ${!team.length ? `<p class="egg-note">${t('counter.pick')}</p>` : `
-        <p class="egg-note">${t('counter.summary', { total: result.total, half: result.half, size: team.length })}</p>
+      ${!team.length ? `<p class="egg-note note-center">${t('counter.pick')}</p>` : `
+        <p class="egg-note note-center">${t('counter.summary', { total: result.total, half: result.half, size: team.length })}</p>
         <div class="ct-rows">
           ${result.rows.map(r => `
             <a class="ct-row" href="#/pokedex/${r.id}">
@@ -73,7 +73,7 @@ export async function renderCounter(container, query = new URLSearchParams()) {
             </a>
           `).join('')}
         </div>
-        <p class="egg-note">${t('counter.legend')}</p>
+        <p class="egg-note note-center">${t('counter.legend')}</p>
       `}
     `;
 
