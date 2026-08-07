@@ -185,6 +185,14 @@ a:hover {
   gap: 16px;
 }
 
+/* The bar has no room to spare on a phone: the same 16px gap that reads well on
+   a desktop is what takes the menu button off the edge. */
+@media (max-width: 899px) {
+  .nav-inner {
+    gap: 12px;
+  }
+}
+
 .nav-logo {
   display: flex;
   align-items: center;
@@ -259,7 +267,10 @@ a:hover {
   border: none;
   cursor: pointer;
   padding: 8px;
-  margin-left: 8px;
+  /* No margin here: at 360px the logo, the three toggles and this button add up
+     to 346px plus the gutter, and the 8px that used to sit here pushed the
+     button 2px past the edge of the screen. The row gap already separates it. */
+  margin-left: 0;
 }
 
 .nav-toggle span {
