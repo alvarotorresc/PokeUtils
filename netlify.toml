@@ -28,4 +28,8 @@
 [[headers]]
   for = "/sprites/*"
   [headers.values]
+    # Netlify no cachea de oficio lo que sale de un proxy, y sin esta linea cada
+    # visita cruzaria hasta GitHub otra vez. La de abajo es para el navegador; la
+    # de arriba, solo para el borde, que es quien tenia que dejar de viajar.
+    Netlify-CDN-Cache-Control = "public, max-age=2592000, stale-while-revalidate=31536000"
     Cache-Control = "public, max-age=604800, stale-while-revalidate=2592000"
