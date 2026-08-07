@@ -1782,12 +1782,18 @@ a:hover {
   text-align: left;
 }
 
+/* Dos columnas y no tres a partir de 1500. Con tres, un Pokemon sin set del
+   meta dejaba la del medio en 457px contra 1030 la de la derecha: 573px de
+   hueco a media pagina. Y no es cosa del reparto, es que las seis tarjetas no
+   se dejan repartir -- miden 492, 457, 260, 197, 605 y 425, con la de
+   movimientos indivisible, y no hay corte en tres columnas contiguas que
+   equilibre. Con el set del meta puesto si cuadraba, y por eso solo se veia en
+   los que no se juegan.
+
+   Medido a 1920: el hueco pasa de 573 a 54 sin meta y de 87 a 7 con el. La
+   ficha se alarga entre 215 y 420px, que se recorre con la rueda. */
 @media (min-width: 1000px) {
   .bento { column-count: 2; }
-}
-
-@media (min-width: 1500px) {
-  .bento { column-count: 3; }
 }
 
 .poke-detail-header {
