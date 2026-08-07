@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PokeUtils · propuestas de rediseño</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   PROPUESTAS DE REDISEÑO - maqueta, no toca la app
+   Estilo: Retro-Futurism (pixel art, scanlines, glow), que es lo que ya hay.
+   Tokens de style.css tal cual.
+   ========================================================================== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0f0f23; --bg-surface: #1a1a3e; --bg-card: #22224a; --bg-card-hover: #2a2a5a;
+  --accent: #ffcc00; --accent-dim: #b8940a; --on-accent: #0f0f23;
+  --text: #e8e8f0; --text-muted: #8888aa; --text-dim: #555577;
+  --border: rgba(255,255,255,0.08); --border-accent: rgba(255,204,0,0.3);
+  --type-normal:#A8A77A; --type-fire:#EE8130; --type-water:#6390F0; --type-electric:#F7D02C;
+  --type-grass:#7AC74C; --type-ice:#96D9D6; --type-fighting:#C22E28; --type-poison:#A33EA1;
+  --type-ground:#E2BF65; --type-flying:#A98FF3; --type-psychic:#F95587; --type-bug:#A6B91A;
+  --type-rock:#B6A136; --type-ghost:#735797; --type-dragon:#6F35FC; --type-dark:#705746;
+  --type-steel:#B7B7CE; --type-fairy:#D685AD;
+
+  /* Press Start 2P para titulos y UI. VT323 para datos: es pixel igual, pero
+     legible a 16-18px donde Press Start 2P ya no se lee. */
+  --font-retro: 'Press Start 2P', monospace;
+  --font-data: 'VT323', monospace;
+  --nav-height: 56px;
+  --gutter: 40px;
+  --text-data: #a6a6c8;   /* 6.38:1 sobre --bg-card */
+}
+.light {
+  --bg:#eeeef5; --bg-surface:#ffffff; --bg-card:#e6e6f0; --bg-card-hover:#dddde8;
+  --accent:#b88800; --accent-dim:#7a5a00; --on-accent:#ffffff;
+  --text:#1a1a3e; --text-muted:#555577; --text-dim:#8888aa;
+  --border:rgba(0,0,0,0.1); --border-accent:rgba(184,136,0,0.3);
+  --text-data:#5f5f7d;    /* 4.95:1 sobre #e6e6f0 */
+}
+
+body { font-family: var(--font-retro); background: var(--bg); color: var(--text); font-size:16px; line-height:1.6; -webkit-font-smoothing:none; }
+img { image-rendering: pixelated; }
+
+/* Scanlines: ya existen en la app, aqui solo se respetan. */
+.scanlines { position: fixed; inset: 0; pointer-events: none; z-index: 200;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.13) 0 1px, transparent 1px 3px); opacity: .45; }
+.light .scanlines { opacity: .1; }
+
+/* ===== NAV ===== */
+.nav { position: sticky; top:0; z-index:100; background: var(--bg-surface); border-bottom: 2px solid var(--border); }
+.nav-inner { padding: 0 var(--gutter); display:flex; align-items:center; height: var(--nav-height); gap: 20px; }
+.nav-logo { display:flex; align-items:center; gap:10px; font-size:12px; color: var(--accent); text-decoration:none; letter-spacing:1px; }
+.pokeball { width:22px; height:22px; border-radius:50%; background: linear-gradient(to bottom,#e63946 0 45%,#1a1a1a 45% 55%,#f8f9fa 55% 100%); border:2px solid #1a1a1a; }
+.nav-links { display:flex; gap:4px; margin-left:10px; }
+.nav-link { font-size:11px; color: var(--text-muted); text-decoration:none; padding:8px 12px; border-radius:6px; }
+.nav-link.active { color: var(--accent); background: rgba(255,204,0,.1); }
+.nav-toggles { margin-left:auto; display:flex; gap:6px; }
+.nav-btn { font-family: var(--font-retro); font-size:10px; padding:7px 10px; background: var(--bg-card); color: var(--text-data); border:2px solid var(--border); border-radius:6px; cursor:pointer; }
+
+/* ===== BARRA DE LA MAQUETA (no es diseño) ===== */
+.mockbar { position: sticky; top: var(--nav-height); z-index:99; display:flex; gap:6px; align-items:center; flex-wrap:wrap;
+  padding:9px var(--gutter); background:#2a1a3e; border-bottom:2px solid var(--border-accent); }
+.light .mockbar { background:#f3ecff; }
+.mockbar b { font-size:10px; color: var(--accent); letter-spacing:1px; margin-right:6px; }
+.mockbar button { font-family: var(--font-retro); font-size:10px; padding:7px 11px; background: var(--bg-card); color: var(--text-data); border:2px solid var(--border); border-radius:6px; cursor:pointer; }
+.mockbar button.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.mockbar .sep { width:2px; height:22px; background: var(--border); margin:0 6px; }
+
+.page { padding: 30px var(--gutter) 0; }
+.screen { display:none; } .screen.on { display:block; }
+.muted { color: var(--text-muted); }
+
+/* Datos en VT323: el numero grande se lee, el pixel se mantiene. */
+.data { font-family: var(--font-data); letter-spacing: .5px; }
+
+/* ===== ENTRADA ESCALONADA (Stagger List: 300-450ms, back.out) ===== */
+@keyframes rise { from { opacity:0; transform: translateY(18px) scale(.96); } to { opacity:1; transform:none; } }
+.stagger > * { opacity:0; animation: rise .42s cubic-bezier(.34,1.56,.64,1) forwards; animation-delay: calc(var(--i,0) * 55ms); }
+@keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+@keyframes floaty2 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-22px); } }
+@media (prefers-reduced-motion: reduce) {
+  .stagger > * { opacity:1; animation:none; }
+  .hero-mon, .hero-mon * { animation: none !important; }
+}
+
+/* ==========================================================================
+   HOME A - Hero partido, sprite gigante. La referencia de poketools,
+   pero con el sprite pixelado a lo bestia en vez de artwork.
+   ========================================================================== */
+.heroA { display:grid; grid-template-columns: 1.1fr .9fr; gap:40px; align-items:center; min-height: 62vh; padding: 10px 0 40px; }
+.eyebrow { font-size:11px; color: var(--accent); letter-spacing:2px; margin-bottom:20px; display:flex; align-items:center; gap:10px; }
+.eyebrow::before { content:''; width:34px; height:2px; background: var(--accent); }
+.heroA h1 { font-size: clamp(30px, 3.6vw, 58px); line-height:1.35; letter-spacing:1px; margin-bottom:22px; }
+.heroA h1 .hl { color: var(--accent); text-shadow: 0 0 18px rgba(255,204,0,.45); }
+.heroA .sub { font-family: var(--font-data); font-size:22px; color: var(--text-muted); max-width: 46ch; line-height:1.5; margin-bottom:28px; }
+.cta-row { display:flex; gap:12px; flex-wrap:wrap; }
+.btn { font-family: var(--font-retro); font-size:12px; padding:16px 22px; border-radius:8px; border:2px solid transparent; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:10px; transition: transform .15s, box-shadow .15s; }
+.btn:hover { transform: translateY(-2px); }
+.btn-primary { background: var(--accent); color: var(--on-accent); box-shadow: 0 0 0 rgba(255,204,0,0); }
+.btn-primary:hover { box-shadow: 0 6px 24px rgba(255,204,0,.3); }
+.btn-ghost { background: var(--bg-card); color: var(--text); border-color: var(--border); }
+.btn-ghost:hover { border-color: var(--border-accent); }
+
+/* Contenido a 520px: con el ancho libre del grid los sprites se dispersaban
+   y el centro quedaba vacio. */
+.hero-art { position:relative; height: 470px; width:100%; max-width:520px; margin:0 auto; display:grid; place-items:center; }
+.hero-ring { position:absolute; width: 330px; height:330px; border-radius:50%; border:2px solid var(--border);
+  background: radial-gradient(circle at 50% 40%, rgba(255,204,0,.07), transparent 62%); }
+.hero-ring::after { content:''; position:absolute; inset:-46px; border-radius:50%; border:2px dashed var(--border); opacity:.5; }
+.hero-mon { position:absolute; }
+.hero-mon img { width: 100%; height:auto; }
+.hero-mon.m1 { width: 270px; z-index:3; animation: floaty 5s ease-in-out infinite; }
+.hero-mon.m2 { width: 150px; top: 8px; left: -6px; animation: floaty2 6.5s ease-in-out infinite; }
+.hero-mon.m3 { width: 150px; top: 16px; right: -8px; animation: floaty 6s ease-in-out infinite .6s; }
+.hero-mon.m4 { width: 136px; bottom: 18px; left: 2px; animation: floaty2 7s ease-in-out infinite .3s; }
+.hero-mon.m5 { width: 136px; bottom: 10px; right: 0px; animation: floaty 5.5s ease-in-out infinite .9s; }
+
+/* Tira de estadisticas bajo el hero */
+.statstrip { display:grid; grid-template-columns: repeat(auto-fit, minmax(170px,1fr)); gap:2px; background: var(--border); border:2px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:44px; }
+.statstrip div { background: var(--bg-surface); padding:20px 18px; text-align:center; }
+.statstrip .n { font-family: var(--font-data); font-size:38px; color: var(--accent); line-height:1; }
+.statstrip .l { font-size:10px; color: var(--text-data); letter-spacing:1px; margin-top:8px; }
+
+/* ==========================================================================
+   HOME B - El buscador manda. "Claramente lo que buscas".
+   ========================================================================== */
+.heroB { padding: 54px 0 40px; text-align:center; }
+.heroB h1 { font-size: clamp(22px,2.6vw,38px); line-height:1.4; margin-bottom:14px; letter-spacing:1px; }
+.heroB h1 .hl { color: var(--accent); }
+.heroB .sub { font-family: var(--font-data); font-size:22px; color: var(--text-muted); margin-bottom:30px; }
+.bigsearch { max-width: 900px; margin: 0 auto 18px; display:flex; align-items:center; gap:16px;
+  background: var(--bg-card); border:2px solid var(--border-accent); border-radius:14px; padding:20px 24px;
+  box-shadow: 0 0 0 rgba(255,204,0,0); transition: box-shadow .2s, border-color .2s; }
+.bigsearch:focus-within { box-shadow: 0 0 30px rgba(255,204,0,.18); }
+.bigsearch input { flex:1; background:none; border:none; outline:none; color: var(--text); font-family: var(--font-data); font-size:26px; }
+.bigsearch input::placeholder { color: var(--text-dim); }
+.bigsearch .k { font-size:10px; color: var(--text-data); border:2px solid var(--border); border-radius:6px; padding:6px 9px; }
+.suggest { max-width:900px; margin:0 auto 40px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+.suggest span { font-size:10px; color: var(--text-data); padding:8px 12px; border:2px solid var(--border); border-radius:20px; cursor:pointer; }
+.suggest span:hover { border-color: var(--border-accent); color: var(--text); }
+
+/* ==========================================================================
+   HOME C - Arcade. Mosaico de accesos, sin hero decorativo.
+   ========================================================================== */
+.arcade { display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; margin-bottom:40px; }
+.tile { position:relative; overflow:hidden; background: var(--bg-card); border:2px solid var(--border); border-radius:14px; padding:24px; text-decoration:none; color:inherit; min-height:190px; display:flex; flex-direction:column; justify-content:flex-end; transition: border-color .18s, transform .18s; }
+.tile:hover { border-color: var(--border-accent); transform: translateY(-3px); }
+.tile.big { grid-column: span 2; grid-row: span 2; min-height: 396px; }
+.tile .mon { position:absolute; right:-10px; top:-6px; width:110px; opacity:.5; transition: transform .25s, opacity .25s; }
+.tile:hover .mon { transform: scale(1.08) rotate(-4deg); opacity:.85; }
+.tile.big .mon { width: 230px; right:-18px; top:10px; opacity:.62; }
+.tile h3 { font-size:13px; letter-spacing:1px; margin-bottom:8px; position:relative; }
+.tile.big h3 { font-size:20px; }
+.tile p { font-family: var(--font-data); font-size:19px; color: var(--text-muted); line-height:1.35; position:relative; }
+.tile .tag { position:absolute; top:18px; left:24px; font-size:9px; color: var(--accent); letter-spacing:1.5px; }
+
+/* ===== Secciones de categoria (comunes a las tres homes) ===== */
+.cat { margin-bottom: 34px; }
+.cat-head { display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+.cat-head h2 { font-size:13px; color: var(--accent); letter-spacing:1.5px; }
+.cat-head .rule { flex:1; height:2px; background: var(--border); }
+.cat-head .n { font-family: var(--font-data); font-size:20px; color: var(--text-data); }
+.tool-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(250px,1fr)); gap:14px; }
+.tool-card { position:relative; overflow:hidden; background: var(--bg-card); border:2px solid var(--border); border-radius:10px; padding:18px; text-decoration:none; color:inherit; transition: border-color .16s, transform .16s; }
+.tool-card:hover { border-color: var(--border-accent); transform: translateY(-2px); }
+.tool-card .mon { position:absolute; right:-6px; bottom:-6px; width:64px; opacity:.35; transition: transform .22s, opacity .22s; }
+.tool-card:hover .mon { transform: scale(1.12) translateY(-3px); opacity:.7; }
+.tool-card h3 { font-size:12px; margin-bottom:8px; letter-spacing:.5px; position:relative; }
+.tool-card p { font-family: var(--font-data); font-size:18px; color: var(--text-muted); line-height:1.35; position:relative; padding-right:52px; }
+
+
+/* ==========================================================================
+   HOME D1 - LA CONSOLA. La home es una Pokedex de verdad: marco, luces y
+   pantalla. El buscador vive DENTRO de la pantalla. No es un hero de SaaS
+   con el arte a un lado, que es lo que hace poketools: es el objeto.
+   ========================================================================== */
+.dex-device { border:3px solid var(--border-accent); border-radius:20px; background: var(--bg-surface);
+  padding:22px; margin: 6px 0 34px; position:relative; box-shadow: 0 0 60px rgba(255,204,0,.06); }
+.dev-top { display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+.led-big { width:46px; height:46px; border-radius:50%; background: radial-gradient(circle at 34% 30%, #9fd8ff, #2b7fd4 62%, #14508c);
+  border:3px solid var(--border); box-shadow: 0 0 22px rgba(80,170,255,.45); flex-shrink:0; animation: ledpulse 3.4s ease-in-out infinite; }
+@keyframes ledpulse { 0%,100% { box-shadow:0 0 18px rgba(80,170,255,.35);} 50% { box-shadow:0 0 34px rgba(80,170,255,.7);} }
+.led-sm { display:flex; gap:7px; }
+.led-sm i { width:13px; height:13px; border-radius:50%; display:block; }
+.dev-title { margin-left:auto; font-size:10px; color: var(--text-data); letter-spacing:2px; }
+.dev-screen { background: var(--bg); border:3px solid var(--border); border-radius:12px; padding: 34px 30px; position:relative; overflow:hidden; }
+.dev-screen::before { content:''; position:absolute; inset:0; pointer-events:none;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 4px); }
+.dev-screen h1 { font-size: clamp(20px,2.1vw,30px); line-height:1.45; margin-bottom:8px; letter-spacing:1px; position:relative; }
+.dev-screen h1 .hl { color: var(--accent); }
+.dev-screen .sub { font-family: var(--font-data); font-size:21px; color: var(--text-muted); margin-bottom:22px; position:relative; }
+.dev-search { display:flex; align-items:center; gap:14px; background: var(--bg-card); border:3px solid var(--border-accent);
+  border-radius:12px; padding:18px 20px; position:relative; transition: box-shadow .2s; }
+.dev-search:focus-within { box-shadow: 0 0 34px rgba(255,204,0,.22); }
+.dev-search input { flex:1; background:none; border:none; outline:none; color: var(--text); font-family: var(--font-data); font-size:27px; }
+.dev-search input::placeholder { color: var(--text-dim); }
+.caret { width:12px; height:26px; background: var(--accent); animation: blink 1.05s steps(1) infinite; }
+@keyframes blink { 0%,49% { opacity:1; } 50%,100% { opacity:0; } }
+.dev-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:18px; position:relative; }
+.qchip { display:flex; align-items:center; gap:9px; font-size:10px; color: var(--text-data); background: var(--bg-card);
+  border:2px solid var(--border); border-radius:22px; padding:8px 14px 8px 8px; cursor:pointer; text-decoration:none; transition: border-color .15s, transform .15s; }
+.qchip:hover { border-color: var(--border-accent); color: var(--text); transform: translateY(-2px); }
+.qchip img { width:26px; height:26px; }
+.dev-bottom { display:flex; align-items:center; gap:16px; margin-top:18px; flex-wrap:wrap; }
+.dev-pad { display:grid; grid-template-columns:repeat(3,14px); grid-template-rows:repeat(3,14px); gap:3px; }
+.dev-pad i { background: var(--border); border-radius:2px; display:block; }
+.dev-pad i:nth-child(2),.dev-pad i:nth-child(4),.dev-pad i:nth-child(5),.dev-pad i:nth-child(6),.dev-pad i:nth-child(8) { background: var(--text-dim); }
+.dev-stats { margin-left:auto; display:flex; gap:26px; flex-wrap:wrap; }
+.dev-stats div { text-align:right; }
+.dev-stats .n { font-family: var(--font-data); font-size:27px; color: var(--accent); line-height:1; }
+.dev-stats .l { font-size:9px; color: var(--text-data); letter-spacing:1px; margin-top:3px; }
+
+/* ==========================================================================
+   HOME D2 - EL ENJAMBRE. El buscador flota sobre un campo de sprites que se
+   difumina hacia los bordes. Lo que se ve detras es el propio contenido de
+   la app, sus 1351 sprites, no una ilustracion prestada.
+   ========================================================================== */
+.swarm-wrap { position:relative; padding: 56px 0 40px; margin-bottom: 30px; }
+.swarm { position:absolute; inset:-30px 0 0; display:grid; grid-template-columns: repeat(auto-fill, minmax(96px,1fr));
+  gap:12px; pointer-events:none; opacity:.34;
+  -webkit-mask-image: radial-gradient(ellipse 74% 78% at 50% 42%, transparent 24%, #000 76%);
+  mask-image: radial-gradient(ellipse 74% 78% at 50% 42%, transparent 24%, #000 76%); }
+.swarm img { width:100%; height:auto; filter: grayscale(.35); animation: bob 7s ease-in-out infinite; }
+@keyframes bob { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-9px);} }
+.swarm-fg { position:relative; text-align:center; }
+.swarm-fg h1 { font-size: clamp(24px,2.9vw,44px); line-height:1.4; letter-spacing:1px; margin-bottom:10px; }
+.swarm-fg h1 .hl { color: var(--accent); text-shadow: 0 0 22px rgba(255,204,0,.5); }
+.swarm-fg .sub { font-family: var(--font-data); font-size:23px; color: var(--text-muted); margin-bottom:26px; }
+.swarm-search { max-width: 780px; margin: 0 auto; display:flex; align-items:center; gap:14px;
+  background: var(--bg-card); border:3px solid var(--border-accent); border-radius:14px; padding:19px 22px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.45); transition: box-shadow .2s; }
+.swarm-search:focus-within { box-shadow: 0 18px 60px rgba(0,0,0,.45), 0 0 36px rgba(255,204,0,.22); }
+.swarm-search input { flex:1; background:none; border:none; outline:none; color: var(--text); font-family: var(--font-data); font-size:27px; }
+.swarm-search input::placeholder { color: var(--text-dim); }
+.swarm-chips { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:20px; }
+
+.mostwanted { margin-bottom:34px; }
+.mw-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:14px; }
+.mw { position:relative; overflow:hidden; display:flex; align-items:center; gap:14px; background: var(--bg-card);
+  border:2px solid var(--border); border-radius:12px; padding:16px; text-decoration:none; color:inherit; transition: border-color .16s, transform .16s; }
+.mw:hover { border-color: var(--border-accent); transform: translateY(-3px); }
+.mw img { width:52px; height:52px; flex-shrink:0; transition: transform .2s; }
+.mw:hover img { transform: scale(1.12); }
+.mw > span { display:flex; flex-direction:column; gap:5px; min-width:0; }
+.mw .t { display:block; font-size:11px; letter-spacing:.5px; }
+.mw .d { display:block; font-family: var(--font-data); font-size:17px; color: var(--text-muted); line-height:1.3; }
+.mw .rank { position:absolute; top:8px; right:12px; font-family: var(--font-data); font-size:17px; color: var(--text-dim); }
+
+/* ==========================================================================
+   POKEDEX + tres opciones de filtro
+   ========================================================================== */
+.dex-bar { display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap; }
+.dex-search { flex:1 1 300px; display:flex; align-items:center; gap:10px; background: var(--bg-card); border:2px solid var(--border); border-radius:8px; padding:12px 15px; }
+.dex-search input { flex:1; background:none; border:none; outline:none; color: var(--text); font-family: var(--font-data); font-size:20px; }
+.dex-search input::placeholder { color: var(--text-dim); }
+.sel { font-family: var(--font-retro); font-size:11px; padding:12px; background: var(--bg-card); color: var(--text-data); border:2px solid var(--border); border-radius:8px; cursor:pointer; }
+.dex-count { font-family: var(--font-data); font-size:22px; color: var(--accent); margin-left:auto; }
+
+/* F1: desplegable con multiseleccion */
+.f-drop { position:relative; }
+.f-drop > button { font-family: var(--font-retro); font-size:11px; padding:12px 14px; background: var(--bg-card); color: var(--text-data); border:2px solid var(--border); border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:9px; }
+.f-drop.open > button { border-color: var(--border-accent); color: var(--text); }
+.f-panel { display:none; position:absolute; top:calc(100% + 8px); left:0; z-index:20; width: 470px; padding:14px; background: var(--bg-surface); border:2px solid var(--border-accent); border-radius:12px; box-shadow:0 16px 50px rgba(0,0,0,.5); }
+.f-drop.open .f-panel { display:grid; grid-template-columns: repeat(3,1fr); gap:7px; }
+.f-count { background: var(--accent); color: var(--on-accent); border-radius:20px; padding:2px 8px; font-family: var(--font-data); font-size:15px; }
+
+/* F2: panel plegable de filtros */
+.f-collapse { border:2px solid var(--border); border-radius:12px; margin-bottom:16px; overflow:hidden; }
+.f-collapse > summary { list-style:none; cursor:pointer; padding:14px 18px; font-size:11px; letter-spacing:1px; color: var(--text-data); background: var(--bg-card); display:flex; align-items:center; gap:10px; }
+.f-collapse > summary::-webkit-details-marker { display:none; }
+.f-collapse[open] > summary { border-bottom:2px solid var(--border); color: var(--text); }
+.f-body { padding:18px; display:grid; grid-template-columns: repeat(auto-fill,minmax(120px,1fr)); gap:8px; background: var(--bg-surface); }
+
+/* F3: barra lateral */
+.dex-split { display:grid; grid-template-columns: 250px 1fr; gap:24px; align-items:start; }
+.side { position:sticky; top:calc(var(--nav-height) + 58px); background: var(--bg-card); border:2px solid var(--border); border-radius:12px; padding:18px; }
+.side h4 { font-size:10px; color: var(--text-data); letter-spacing:1.5px; margin:0 0 12px; }
+.side + div { min-width:0; }
+.side-types { display:grid; grid-template-columns: repeat(2,1fr); gap:6px; }
+
+.tchip { font-family: var(--font-retro); font-size:10px; padding:9px 6px; border-radius:6px; border:2px solid transparent; cursor:pointer; text-align:center; letter-spacing:.5px; }
+.type-row { display:flex; gap:7px; overflow-x:auto; padding-bottom:10px; margin-bottom:18px; }
+.type-row .tchip { flex:0 0 auto; padding:10px 14px; }
+
+.dex-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap:16px; }
+.poke { background: var(--bg-card); border:2px solid var(--border); border-radius:12px; padding:20px 16px; text-align:center; text-decoration:none; color:inherit; transition: border-color .16s, transform .16s; }
+.poke:hover { border-color: var(--border-accent); transform: translateY(-3px); }
+.poke img { width:132px; height:132px; transition: transform .2s; }
+.poke:hover img { transform: scale(1.09); }
+.poke .num { font-family: var(--font-data); font-size:19px; color: var(--text-data); margin-top:6px; }
+.poke .name { font-size:14px; margin:6px 0 12px; letter-spacing:.5px; }
+.chips { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
+.chip { font-size:10px; padding:6px 10px; border-radius:5px; letter-spacing:.5px; }
+
+/* ==========================================================================
+   FICHA - bento que se acomoda: cada bloque ocupa lo que necesita
+   ========================================================================== */
+/* Masonry de verdad: con grid, la fila entera toma la altura de la tarjeta mas
+   alta y quedan huecos debajo de las cortas. Con columnas, cada bloque ocupa
+   exactamente su contenido y el siguiente sube. Es lo que se pidio con lo de
+   las bubbles. El orden de lectura pasa a ser por columnas. */
+.bento { column-count: 3; column-gap: 18px; }
+.b { break-inside: avoid; -webkit-column-break-inside: avoid; page-break-inside: avoid;
+     display: inline-block; width: 100%; margin: 0 0 18px;
+     background: var(--bg-card); border:2px solid var(--border); border-radius:14px; padding:22px; }
+.b h3 { font-size:12px; color: var(--accent); letter-spacing:1.5px; margin-bottom:16px; }
+.b-id { text-align:center; }
+@media (max-width: 1500px) { .bento { column-count: 2; } }
+@media (max-width: 1000px) { .bento { column-count: 1; } }
+
+.b-id img.main { width: 260px; height:260px; }
+.b-id .dex { font-family: var(--font-data); font-size:24px; color: var(--text-data); }
+.b-id h2 { font-size:26px; margin:6px 0 10px; letter-spacing:1px; }
+.meta-row { display:flex; gap:20px; justify-content:center; margin-top:16px; flex-wrap:wrap; }
+.meta-row .k { font-size:9px; color: var(--text-data); letter-spacing:1px; display:block; margin-bottom:4px; }
+.meta-row .v { font-family: var(--font-data); font-size:24px; color: var(--text); }
+.form-tabs { display:flex; gap:6px; margin-top:16px; flex-wrap:wrap; justify-content:center; }
+.form-tab { font-family: var(--font-retro); font-size:10px; padding:8px 11px; border-radius:6px; border:2px solid var(--border); background: var(--bg-surface); color: var(--text-data); cursor:pointer; }
+.form-tab.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+
+.st { display:grid; grid-template-columns: 108px 52px 1fr; align-items:center; gap:12px; margin-bottom:12px; }
+.st .k { font-size:10px; color: var(--text-data); letter-spacing:.5px; }
+.st .v { font-family: var(--font-data); font-size:26px; text-align:right; line-height:1; }
+.bar { height:12px; background: var(--bg-surface); border-radius:6px; overflow:hidden; }
+.bar span { display:block; height:100%; border-radius:6px; }
+.tot { display:flex; justify-content:space-between; align-items:center; margin-top:14px; padding-top:14px; border-top:2px solid var(--border); }
+.tot .k { font-size:11px; color: var(--accent); letter-spacing:1px; }
+.tot .v { font-family: var(--font-data); font-size:34px; color: var(--accent); line-height:1; }
+
+/* La evolucion ocupa lo que necesita: 3 fases no reservan sitio para 8. */
+.evo { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.evo-n { display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 14px; border-radius:10px; text-decoration:none; color:inherit; }
+.evo-n.cur { background: var(--bg-surface); border:2px solid var(--border-accent); }
+.evo-n img { width:104px; height:104px; transition: transform .2s; }
+.evo-n:hover img { transform: scale(1.09); }
+.evo-n .d { font-family: var(--font-data); font-size:18px; color: var(--text-data); }
+.evo-n .m { font-size:12px; letter-spacing:.5px; }
+.evo-a { display:flex; flex-direction:column; align-items:center; gap:2px; }
+.evo-a .c { font-family: var(--font-data); font-size:17px; color: var(--accent); }
+.evo-a .t { color: var(--text-data); font-size:13px; }
+
+.wr { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:14px; }
+.wr-k { font-size:9px; color: var(--text-data); letter-spacing:1.5px; margin-bottom:8px; }
+.kv { display:flex; justify-content:space-between; gap:14px; padding:9px 0; border-bottom:1px solid var(--border); }
+.kv:last-child { border-bottom:none; }
+.kv .k { font-size:10px; color: var(--text-data); letter-spacing:.5px; }
+.kv .v { font-family: var(--font-data); font-size:20px; text-align:right; }
+
+.footer { margin-top:44px; padding:24px var(--gutter) 34px; border-top:2px solid var(--border); }
+.footer p { font-family: var(--font-data); font-size:17px; color: var(--text-data); text-align:center; }
+.footer .legal { margin-top:12px; padding-top:12px; border-top:1px solid var(--border); }
+.footer .legal p { font-size:15px; color: var(--text-dim); }
+
+@media (max-width: 1100px) { .heroA { grid-template-columns:1fr; } .hero-art { height:340px; } .arcade { grid-template-columns: repeat(2,1fr); } .tile.big { grid-column: span 2; grid-row: span 1; min-height:230px; } .dex-split { grid-template-columns:1fr; } .side { position:static; } }
+@media (max-width: 620px) {
+  :root { --gutter: 16px; }
+  .nav-links { display:none; }
+  .arcade { grid-template-columns:1fr; } .tile.big { grid-column: span 1; }
+  .dex-grid { grid-template-columns: repeat(auto-fill,minmax(140px,1fr)); }
+  .poke img { width:84px; height:84px; }
+  .b-id img.main { width:170px; height:170px; }
+  .evo-n img { width:74px; height:74px; }
+}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+
+<nav class="nav"><div class="nav-inner">
+  <a href="#" class="nav-logo"><span class="pokeball"></span><span>POKEUTILS</span></a>
+  <div class="nav-links">
+    <a href="#" class="nav-link active">INICIO</a><a href="#" class="nav-link">POKEDEX</a>
+    <a href="#" class="nav-link">DATOS</a><a href="#" class="nav-link">COMPETITIVO</a><a href="#" class="nav-link">CALCULADORA</a>
+  </div>
+  <div class="nav-toggles"><button class="nav-btn">Nv50</button><button class="nav-btn">EN</button><button class="nav-btn" id="theme">☀</button></div>
+</div></nav>
+
+<div class="mockbar">
+  <b>HOME</b>
+  <button class="on" data-go="homeA">A · Hero partido</button>
+  <button data-go="homeB">B · Buscador</button>
+  <button data-go="homeC">C · Arcade</button>
+  <button data-go="homeD1">D1 · Consola</button>
+  <button data-go="homeD2">D2 · Enjambre</button>
+  <span class="sep"></span>
+  <b>POKEDEX</b>
+  <button data-go="dex1">F1 · Desplegable</button>
+  <button data-go="dex2">F2 · Plegable</button>
+  <button data-go="dex3">F3 · Lateral</button>
+  <span class="sep"></span>
+  <b>FICHA</b>
+  <button data-go="ficha">Bento</button>
+</div>
+
+<div class="page">
+
+<!-- ======================= HOME A ======================= -->
+<section class="screen on" id="homeA">
+  <div class="heroA">
+    <div>
+      <div class="eyebrow">HECHO POR UN ENTRENADOR</div>
+      <h1>Todo lo que necesitas<br>para <span class="hl">competir</span>.</h1>
+      <p class="sub">Calculadora de daño, análisis de equipo, velocidad, sets del meta y once herramientas más. Las 1025 especies y sus 326 formas.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#">ABRIR POKEDEX →</a>
+        <a class="btn btn-ghost" href="#">CALCULADORA DE DAÑO</a>
+      </div>
+    </div>
+    <div class="hero-art">
+      <div class="hero-ring"></div>
+      <div class="hero-mon m2"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/445.png" alt=""></div>
+      <div class="hero-mon m3"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png" alt=""></div>
+      <div class="hero-mon m4"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/448.png" alt=""></div>
+      <div class="hero-mon m5"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/150.png" alt=""></div>
+      <div class="hero-mon m1"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png" alt=""></div>
+    </div>
+  </div>
+  <div class="statstrip stagger">
+    <div style="--i:0"><div class="n">1351</div><div class="l">POKEMON Y FORMAS</div></div>
+    <div style="--i:1"><div class="n">16</div><div class="l">HERRAMIENTAS</div></div>
+    <div style="--i:2"><div class="n">919</div><div class="l">MOVIMIENTOS</div></div>
+    <div style="--i:3"><div class="n">1.7M</div><div class="l">PARTIDAS DEL META</div></div>
+  </div>
+  <div id="catsA"></div>
+</section>
+
+<!-- ======================= HOME B ======================= -->
+<section class="screen" id="homeB">
+  <div class="heroB">
+    <h1>¿Qué buscas, <span class="hl">entrenador</span>?</h1>
+    <p class="sub">Un buscador para Pokémon, movimientos, objetos y habilidades.</p>
+    <div class="bigsearch">
+      <span style="font-size:22px">🔍</span>
+      <input placeholder="Charizard, Danza Dragón, Banda Elegida...">
+      <span class="k">ENTER</span>
+    </div>
+    <div class="suggest">
+      <span>Great Tusk</span><span>Sets de OU</span><span>Calcular daño</span>
+      <span>Grupos huevo</span><span>Tabla de tipos</span><span>Mi equipo</span>
+    </div>
+  </div>
+  <div class="statstrip stagger">
+    <div style="--i:0"><div class="n">1351</div><div class="l">POKEMON Y FORMAS</div></div>
+    <div style="--i:1"><div class="n">919</div><div class="l">MOVIMIENTOS</div></div>
+    <div style="--i:2"><div class="n">367</div><div class="l">HABILIDADES</div></div>
+    <div style="--i:3"><div class="n">2187</div><div class="l">OBJETOS</div></div>
+  </div>
+  <div id="catsB"></div>
+</section>
+
+<!-- ======================= HOME C ======================= -->
+<section class="screen" id="homeC">
+  <div class="arcade stagger">
+    <a class="tile big" href="#" style="--i:0">
+      <img class="mon" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png" alt="">
+      <span class="tag">LO MAS USADO</span>
+      <h3>POKEDEX</h3><p>Las 1025 especies y sus 326 formas, con stats, tipos, evoluciones y todo lo que aprenden.</p>
+    </a>
+    <a class="tile" href="#" style="--i:1"><img class="mon" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/68.png" alt=""><h3>DAÑO</h3><p>La fórmula real con clima y objetos</p></a>
+    <a class="tile" href="#" style="--i:2"><img class="mon" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/143.png" alt=""><h3>EQUIPO</h3><p>Seis Pokémon y sus debilidades</p></a>
+    <a class="tile" href="#" style="--i:3"><img class="mon" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/101.png" alt=""><h3>VELOCIDAD</h3><p>Quién llega antes que tú</p></a>
+    <a class="tile" href="#" style="--i:4"><img class="mon" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/448.png" alt=""><h3>SETS DEL META</h3><p>Lo que la gente juega de verdad</p></a>
+  </div>
+  <div id="catsC"></div>
+</section>
+
+
+<!-- ======================= HOME D1 · LA CONSOLA ======================= -->
+<section class="screen" id="homeD1">
+  <div class="dex-device">
+    <div class="dev-top">
+      <span class="led-big"></span>
+      <span class="led-sm"><i style="background:#e63946"></i><i style="background:#f7d02c"></i><i style="background:#7ac74c"></i></span>
+      <span class="dev-title">POKEUTILS v2 · 1351 REGISTROS</span>
+    </div>
+    <div class="dev-screen">
+      <h1>¿A quién <span class="hl">buscas</span>?</h1>
+      <p class="sub">Pokémon, movimientos, objetos y habilidades. Todo en un sitio.</p>
+      <div class="dev-search">
+        <span style="font-size:23px">🔍</span>
+        <input placeholder="Charizard, Danza Dragón, Banda Elegida...">
+        <span class="caret"></span>
+      </div>
+      <div class="dev-row" id="d1chips"></div>
+    </div>
+    <div class="dev-bottom">
+      <span class="dev-pad"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+      <div class="dev-stats">
+        <div><div class="n">1351</div><div class="l">POKEMON</div></div>
+        <div><div class="n">16</div><div class="l">HERRAMIENTAS</div></div>
+        <div><div class="n">919</div><div class="l">MOVIMIENTOS</div></div>
+        <div><div class="n">1.7M</div><div class="l">PARTIDAS</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="mostwanted">
+    <div class="cat-head"><h2>LO MAS BUSCADO</h2><span class="rule"></span></div>
+    <div class="mw-grid stagger" id="d1mw"></div>
+  </div>
+  <div id="catsD1"></div>
+</section>
+
+<!-- ======================= HOME D2 · EL ENJAMBRE ======================= -->
+<section class="screen" id="homeD2">
+  <div class="swarm-wrap">
+    <div class="swarm" id="swarm"></div>
+    <div class="swarm-fg">
+      <h1>1351 Pokémon.<br><span class="hl">16 herramientas.</span></h1>
+      <p class="sub">Empieza escribiendo.</p>
+      <div class="swarm-search">
+        <span style="font-size:23px">🔍</span>
+        <input placeholder="Busca un Pokémon, un movimiento, un objeto...">
+        <span class="caret"></span>
+      </div>
+      <div class="swarm-chips" id="d2chips"></div>
+    </div>
+  </div>
+  <div class="mostwanted">
+    <div class="cat-head"><h2>LO MAS BUSCADO</h2><span class="rule"></span></div>
+    <div class="mw-grid stagger" id="d2mw"></div>
+  </div>
+  <div id="catsD2"></div>
+</section>
+
+<!-- ======================= POKEDEX F1 ======================= -->
+<section class="screen" id="dex1">
+  <div class="dex-bar">
+    <div class="dex-search"><span>🔍</span><input placeholder="Buscar por nombre o número..."></div>
+    <div class="f-drop" id="fd">
+      <button onclick="document.getElementById('fd').classList.toggle('open')">TIPO <span class="f-count">2</span> ▾</button>
+      <div class="f-panel" id="fdPanel"></div>
+    </div>
+    <select class="sel"><option>GEN: TODAS</option></select>
+    <select class="sel"><option>RAREZA: TODAS</option></select>
+    <select class="sel"><option>ORDEN: N.º DEX</option></select>
+    <span class="dex-count">1025 POKEMON</span>
+  </div>
+  <div class="dex-grid stagger" data-grid></div>
+</section>
+
+<!-- ======================= POKEDEX F2 ======================= -->
+<section class="screen" id="dex2">
+  <div class="dex-bar">
+    <div class="dex-search"><span>🔍</span><input placeholder="Buscar por nombre o número..."></div>
+    <span class="dex-count">1025 POKEMON</span>
+  </div>
+  <details class="f-collapse">
+    <summary>▸ FILTROS · 18 tipos, generación y rareza</summary>
+    <div class="f-body" id="f2Body"></div>
+  </details>
+  <div class="dex-grid stagger" data-grid></div>
+</section>
+
+<!-- ======================= POKEDEX F3 ======================= -->
+<section class="screen" id="dex3">
+  <div class="dex-bar">
+    <div class="dex-search"><span>🔍</span><input placeholder="Buscar por nombre o número..."></div>
+    <span class="dex-count">1025 POKEMON</span>
+  </div>
+  <div class="dex-split">
+    <aside class="side">
+      <h4>TIPO</h4>
+      <div class="side-types" id="f3Types"></div>
+      <h4 style="margin-top:18px">GENERACION</h4>
+      <select class="sel" style="width:100%"><option>TODAS</option></select>
+      <h4 style="margin-top:18px">ORDEN</h4>
+      <select class="sel" style="width:100%"><option>N.º DEX</option></select>
+    </aside>
+    <div><div class="dex-grid stagger" data-grid></div></div>
+  </div>
+</section>
+
+<!-- ======================= FICHA BENTO ======================= -->
+<section class="screen" id="ficha">
+  <div class="bento">
+    <div class="b b-id" style="--i:0">
+      <img class="main" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png" alt="Charizard">
+      <div class="dex">#0006</div>
+      <h2>Charizard</h2>
+      <div class="chips" style="justify-content:center">
+        <span class="chip" style="background:var(--type-fire);color:#0f0f23">FUEGO</span>
+        <span class="chip" style="background:var(--type-flying);color:#0f0f23">VOLADOR</span>
+      </div>
+      <div class="meta-row">
+        <div><span class="k">ALTURA</span><span class="v">1.7 m</span></div>
+        <div><span class="k">PESO</span><span class="v">90.5 kg</span></div>
+        <div><span class="k">CAPTURA</span><span class="v">45</span></div>
+      </div>
+      <div class="form-tabs">
+        <button class="form-tab on">Normal</button><button class="form-tab">Mega X</button>
+        <button class="form-tab">Mega Y</button><button class="form-tab">Gigamax</button>
+      </div>
+    </div>
+
+    <div class="b b-stats" style="--i:1">
+      <h3>ESTADISTICAS BASE</h3>
+      <div class="st"><span class="k">PS</span><span class="v">78</span><span class="bar"><span style="width:30.6%;background:var(--type-grass)"></span></span></div>
+      <div class="st"><span class="k">ATAQUE</span><span class="v">84</span><span class="bar"><span style="width:32.9%;background:var(--type-electric)"></span></span></div>
+      <div class="st"><span class="k">DEFENSA</span><span class="v">78</span><span class="bar"><span style="width:30.6%;background:var(--type-fire)"></span></span></div>
+      <div class="st"><span class="k">AT. ESP.</span><span class="v">109</span><span class="bar"><span style="width:42.7%;background:var(--type-water)"></span></span></div>
+      <div class="st"><span class="k">DEF. ESP.</span><span class="v">85</span><span class="bar"><span style="width:33.3%;background:var(--type-flying)"></span></span></div>
+      <div class="st"><span class="k">VELOCIDAD</span><span class="v">100</span><span class="bar"><span style="width:39.2%;background:var(--type-psychic)"></span></span></div>
+      <div class="tot"><span class="k">TOTAL</span><span class="v">534</span></div>
+    </div>
+
+    <div class="b b-types" style="--i:2">
+      <h3>DEFENSA</h3>
+      <div class="wr-k">DEBIL A</div>
+      <div class="wr">
+        <span class="chip" style="background:var(--type-rock);color:#0f0f23">ROCA x4</span>
+        <span class="chip" style="background:var(--type-water);color:#0f0f23">AGUA x2</span>
+        <span class="chip" style="background:var(--type-electric);color:#0f0f23">ELEC. x2</span>
+      </div>
+      <div class="wr-k">RESISTE</div>
+      <div class="wr">
+        <span class="chip" style="background:var(--type-grass);color:#0f0f23">PLANTA ¼</span>
+        <span class="chip" style="background:var(--type-bug);color:#0f0f23">BICHO ¼</span>
+        <span class="chip" style="background:var(--type-fighting);color:#fff">LUCHA ½</span>
+        <span class="chip" style="background:var(--type-fire);color:#0f0f23">FUEGO ½</span>
+        <span class="chip" style="background:var(--type-fairy);color:#0f0f23">HADA ½</span>
+        <span class="chip" style="background:var(--type-steel);color:#0f0f23">ACERO ½</span>
+      </div>
+      <div class="wr-k">INMUNE</div>
+      <div class="wr"><span class="chip" style="background:var(--type-ground);color:#0f0f23">TIERRA x0</span></div>
+    </div>
+
+    <div class="b b-evo" style="--i:3">
+      <h3>LINEA EVOLUTIVA</h3>
+      <div class="evo">
+        <a class="evo-n" href="#"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png" alt=""><span class="d">#0004</span><span class="m">Charmander</span></a>
+        <div class="evo-a"><span class="c">Nv.16</span><span class="t">▶</span></div>
+        <a class="evo-n" href="#"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/5.png" alt=""><span class="d">#0005</span><span class="m">Charmeleon</span></a>
+        <div class="evo-a"><span class="c">Nv.36</span><span class="t">▶</span></div>
+        <span class="evo-n cur"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png" alt=""><span class="d">#0006</span><span class="m">Charizard</span></span>
+      </div>
+    </div>
+
+    <div class="b b-breed" style="--i:4">
+      <h3>CRIA</h3>
+      <div class="kv"><span class="k">GRUPOS</span><span class="v">Monstruo · Dragón</span></div>
+      <div class="kv"><span class="k">GENERO</span><span class="v">87.5% ♂</span></div>
+      <div class="kv"><span class="k">CRIA CON</span><span class="v">133 Pokémon</span></div>
+    </div>
+
+    <div class="b b-meta" style="--i:5">
+      <h3>SET DEL META · OU</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:20px">
+        <div><div class="wr-k">USO</div><div class="data" style="font-size:26px">0.1%</div></div>
+        <div><div class="wr-k">NATURALEZA Y EVS</div><div class="data" style="font-size:21px">Jolly · 20/236/0/0/0/252</div></div>
+        <div><div class="wr-k">OBJETO</div><div class="data" style="font-size:21px">Choice Specs · 41.7%</div></div>
+        <div><div class="wr-k">TERA</div><div class="data" style="font-size:21px">Fuego · 34%</div></div>
+      </div>
+      <div class="wr-k" style="margin-top:18px">MOVIMIENTOS</div>
+      <div class="data" style="font-size:21px;color:var(--text)">overheat 56% · solar-beam 45.6% · weather-ball 34.9% · belly-drum 33.6%</div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<footer class="footer">
+  <p>Datos de <span style="color:var(--accent-dim)">PokeAPI</span> y <span style="color:var(--accent-dim)">Smogon</span> · Made with 🔴 by <span style="color:var(--accent)">Alvaro Torres</span></p>
+  <div class="legal"><p>PokeUtils is an unofficial fan made app, NOT affiliated with Nintendo, GAME FREAK or The Pokemon company. Pokemon &copy; 2002-2026 Pokemon.</p></div>
+</footer>
+
+<script>
+const T = { normal:'NORMAL', fire:'FUEGO', water:'AGUA', electric:'ELECTRICO', grass:'PLANTA', ice:'HIELO',
+  fighting:'LUCHA', poison:'VENENO', ground:'TIERRA', flying:'VOLADOR', psychic:'PSIQUICO', bug:'BICHO',
+  rock:'ROCA', ghost:'FANTASMA', dragon:'DRAGON', dark:'SINIESTRO', steel:'ACERO', fairy:'HADA' };
+// Tipos de fondo oscuro: tinta clara. El resto, tinta oscura. Psiquico va oscuro:
+// con blanco se queda en 3.15:1.
+const DARK = new Set(['fighting','poison','ghost','dragon','dark']);
+const ink = t => DARK.has(t) ? '#fff' : '#0f0f23';
+const chip = t => `<span class="tchip" style="background:var(--type-${t});color:${ink(t)}">${T[t]}</span>`;
+
+document.getElementById('fdPanel').innerHTML = Object.keys(T).map(chip).join('');
+document.getElementById('f2Body').innerHTML = Object.keys(T).map(chip).join('');
+document.getElementById('f3Types').innerHTML = Object.keys(T).map(chip).join('');
+
+const MONS = [[1,'Bulbasaur',['grass','poison']],[4,'Charmander',['fire']],[6,'Charizard',['fire','flying']],
+ [7,'Squirtle',['water']],[25,'Pikachu',['electric']],[94,'Gengar',['ghost','poison']],
+ [130,'Gyarados',['water','flying']],[143,'Snorlax',['normal']],[149,'Dragonite',['dragon','flying']],
+ [150,'Mewtwo',['psychic']],[248,'Tyranitar',['rock','dark']],[384,'Rayquaza',['dragon','flying']],
+ [445,'Garchomp',['dragon','ground']],[448,'Lucario',['fighting','steel']],[658,'Greninja',['water','dark']],
+ [887,'Dragapult',['dragon','ghost']],[983,'Kingambit',['dark','steel']],[984,'Great Tusk',['ground','fighting']]];
+
+const cardHTML = ([id,name,types], i) => `
+  <a class="poke" href="#" style="--i:${i}">
+    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png" alt="${name}" loading="lazy">
+    <div class="num">#${String(id).padStart(4,'0')}</div>
+    <div class="name">${name}</div>
+    <div class="chips">${types.map(t=>`<span class="chip" style="background:var(--type-${t});color:${ink(t)}">${T[t]}</span>`).join('')}</div>
+  </a>`;
+document.querySelectorAll('[data-grid]').forEach(g => g.innerHTML = MONS.map(cardHTML).join(''));
+
+const TOOLS = [
+  ['POKEDEX','pokedex',[['POKEDEX','Las 1025 especies con stats y tipos',1],['COMPARADOR','Hasta 4 lado a lado',9],['GRUPOS HUEVO','Los 15 grupos y quién cría con quién',132]]],
+  ['DATOS','data',[['MOVIMIENTOS','Cada movimiento con tipo y potencia',94],['HABILIDADES','Lista completa con efectos',479],['OBJETOS','Catálogo con sprites',54],['NATURALEZAS','Las 25 y sus modificadores',132],['TIPOS','Tabla de efectividades',25]]],
+  ['COMPETITIVO','comp',[['EQUIPO','Seis Pokémon y sus debilidades',143],['CONTRARRESTAR','Quién amenaza a tu equipo',248],['VELOCIDAD','Quién llega antes',101],['SOBREVIVE?','Si aguanta el golpe',213],['SETS DEL META','Lo que la gente juega',448]]],
+  ['CALCULADORA','calc',[['IV / EV','Stats finales o IVs posibles',132],['DAÑO','La fórmula con clima y objetos',68],['CAPTURA','Probabilidad por ball',129]]],
+];
+const catsHTML = TOOLS.map(([label, id, tools]) => `
+  <div class="cat">
+    <div class="cat-head"><h2>${label}</h2><span class="rule"></span><span class="n">${tools.length}</span></div>
+    <div class="tool-grid stagger">
+      ${tools.map(([n,d,mon],i) => `<a class="tool-card" href="#" style="--i:${i}">
+        <img class="mon" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${mon}.png" alt="" loading="lazy">
+        <h3>${n}</h3><p>${d}</p></a>`).join('')}
+    </div>
+  </div>`).join('');
+['catsA','catsB','catsC'].forEach(id => document.getElementById(id).innerHTML = catsHTML);
+
+
+// Chips de acceso rapido, con su sprite: no son texto suelto, son el contenido.
+const QUICK = [[984,'Great Tusk'],[983,'Kingambit'],[6,'Charizard'],[445,'Garchomp'],[448,'Lucario'],[130,'Gyarados']];
+const qchips = QUICK.map(([id,n]) => `<a class="qchip" href="#"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png" alt="">${n}</a>`).join('');
+['d1chips','d2chips'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = qchips; });
+
+const MW = [['POKEDEX','Las 1025 especies y sus formas',1,'01'],['DAÑO','La fórmula real con clima y objetos',68,'02'],
+  ['SETS DEL META','Lo que la gente juega de verdad',448,'03'],['EQUIPO','Seis Pokémon y sus debilidades',143,'04'],
+  ['VELOCIDAD','Quién llega antes que tú',101,'05']];
+const mwHTML = MW.map(([t,d,mon,r],i) => `<a class="mw" href="#" style="--i:${i}">
+  <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${mon}.png" alt="">
+  <span><span class="t">${t}</span><span class="d">${d}</span></span><span class="rank">${r}</span></a>`).join('');
+['d1mw','d2mw'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = mwHTML; });
+
+// El fondo del enjambre son sprites reales de la app, no una ilustracion.
+const SWARM = [1,4,7,25,39,52,54,63,66,74,92,95,104,111,116,129,133,143,147,152,155,158,175,183,196,197,214,246,252,255,258,280,304,309,327,349,355,363,387,390,393,403,417,447,479,495,498,501,506,524,532,543,554,559,570,574,595,610,624,633,650,653,656,667,674,679,686,690,694,700,704,714,722,725,728,736,742,747,757,765,772,777,782,789,793,799,804,810,813,816,821,827,831,835,843,846,850,856,868,872];
+const sw = document.getElementById('swarm');
+if (sw) sw.innerHTML = SWARM.map((id,i) => `<img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png" alt="" loading="lazy" style="animation-delay:${(i%11)*0.42}s">`).join('');
+
+['catsD1','catsD2'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = catsHTML; });
+
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-go]').forEach(x => x.classList.toggle('on', x === b));
+  const t = b.dataset.go;
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === t));
+  // Relanzar la entrada escalonada al cambiar de pantalla
+  document.querySelectorAll('.screen.on .stagger').forEach(g => { g.style.animation='none'; void g.offsetWidth;
+    [...g.children].forEach((c,i) => { c.style.animation='none'; void c.offsetWidth; c.style.animation=''; c.style.setProperty('--i', i); }); });
+  scrollTo({ top: 0 });
+}));
+document.getElementById('theme').addEventListener('click', e => {
+  document.body.classList.toggle('light');
+  e.target.textContent = document.body.classList.contains('light') ? '🌙' : '☀';
+});
+</script>
+</body>
+</html>

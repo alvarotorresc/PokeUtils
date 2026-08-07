@@ -105,6 +105,58 @@ export const CATEGORY_NAMES = {
   status: 'Estado',
 };
 
+// PokeAPI exposes no localized names at the version group level, so they live
+// here. Only the ones the learnset builder can pick are listed.
+export const VERSION_GROUP_NAMES = {
+  'scarlet-violet': 'Escarlata/Purpura',
+  'brilliant-diamond-shining-pearl': 'Diamante Brillante/Perla Reluciente',
+  'legends-arceus': 'Leyendas: Arceus',
+  'sword-shield': 'Espada/Escudo',
+  'ultra-sun-ultra-moon': 'Ultrasol/Ultraluna',
+  'sun-moon': 'Sol/Luna',
+  'omega-ruby-alpha-sapphire': 'Rubi Omega/Zafiro Alfa',
+  'x-y': 'X/Y',
+  'black-2-white-2': 'Negro 2/Blanco 2',
+  'black-white': 'Negro/Blanco',
+  'heartgold-soulsilver': 'HeartGold/SoulSilver',
+  'platinum': 'Platino',
+  'diamond-pearl': 'Diamante/Perla',
+  'emerald': 'Esmeralda',
+  'firered-leafgreen': 'Rojo Fuego/Verde Hoja',
+  'ruby-sapphire': 'Rubi/Zafiro',
+  'crystal': 'Cristal',
+  'gold-silver': 'Oro/Plata',
+  'yellow': 'Amarillo',
+  'red-blue': 'Rojo/Azul',
+};
+
+export const VERSION_GROUP_NAMES_EN = {
+  'scarlet-violet': 'Scarlet/Violet',
+  'brilliant-diamond-shining-pearl': 'Brilliant Diamond/Shining Pearl',
+  'legends-arceus': 'Legends: Arceus',
+  'sword-shield': 'Sword/Shield',
+  'ultra-sun-ultra-moon': 'Ultra Sun/Ultra Moon',
+  'sun-moon': 'Sun/Moon',
+  'omega-ruby-alpha-sapphire': 'Omega Ruby/Alpha Sapphire',
+  'x-y': 'X/Y',
+  'black-2-white-2': 'Black 2/White 2',
+  'black-white': 'Black/White',
+  'heartgold-soulsilver': 'HeartGold/SoulSilver',
+  'platinum': 'Platinum',
+  'diamond-pearl': 'Diamond/Pearl',
+  'emerald': 'Emerald',
+  'firered-leafgreen': 'FireRed/LeafGreen',
+  'ruby-sapphire': 'Ruby/Sapphire',
+  'crystal': 'Crystal',
+  'gold-silver': 'Gold/Silver',
+  'yellow': 'Yellow',
+  'red-blue': 'Red/Blue',
+};
+
+// Keys the Pokedex can be sorted by. 'id' is the dex number and 'total' the
+// sum of the six base stats.
+export const SORT_KEYS = ['id', 'total', ...STAT_KEYS];
+
 // Generation names
 export const GENERATIONS = [
   { id: 1, name: 'Gen I', range: [1, 151] },

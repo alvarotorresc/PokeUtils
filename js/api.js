@@ -9,6 +9,8 @@
 // 100 calls/h per IP and returns 429 without CORS headers when exhausted,
 // which surfaces in the browser as an unexplained network failure.
 
+import { competitiveList, isForm } from './forms.js';
+
 const REST_URL = 'https://pokeapi.co/api/v2';
 const DATA_URL = new URL('../data/', import.meta.url);
 
@@ -66,6 +68,16 @@ export const fetchPokemonList = () => loadDataset('pokemon');
 export const fetchMoves = () => loadDataset('moves');
 export const fetchAbilities = () => loadDataset('abilities');
 export const fetchItems = () => loadDataset('items');
+export const fetchBerries = () => loadDataset('berries');
+export const fetchEvolutions = () => loadDataset('evolutions');
+export const fetchLearnsets = () => loadDataset('learnsets');
+// Un fichero por formato, y solo se descarga el que se esta mirando: son 72 y
+// 64 KB y casi nadie mira los dos en la misma visita.
+export const fetchMeta = format => loadDataset(`meta-${format}`);
+// Como se llaman en cada idioma los 721 movimientos, objetos y habilidades que
+// salen en los sets. 39 KB, contra los 706 de bajarse items.json y
+// abilities.json solo para leer seis nombres.
+export const fetchMetaNames = () => loadDataset('meta-names');
 
 // ===== POKEMON DETAIL =====
 const idFromUrl = url => Number(url.replace(/\/$/, '').split('/').pop());
@@ -92,7 +104,11 @@ export async function fetchPokemonDetail(id) {
   const p = pokemon.find(x => x.id === id);
   if (!p) return null;
 
-  const spanishAbility = new Map(abilities.map(a => [a.name, a.nameEs]));
+  // A form's page is its species' page, so everything that is numbered by the
+  // Pokedex hangs off the species id and not off the form's 10000-range one.
+  const dexId = p.speciesId || p.id;
+
+  const abilityInfo = new Map(abilities.map(a => [a.name, a]));
   const speciesName = other => pokemon.find(x => x.id === other)?.nameEs || null;
 
   return {
@@ -104,23 +120,52 @@ export async function fetchPokemonDetail(id) {
     height: p.height,
     weight: p.weight,
     stats: p.stats,
-    abilities: p.abilities.map(a => ({
-      name: spanishAbility.get(a.nameEn) || a.nameEn,
-      nameEn: a.nameEn,
-      isHidden: a.isHidden,
-    })),
-    description: await fetchDescription(id),
-    prevName: id > 1 ? speciesName(id - 1) : null,
-    nextName: speciesName(id + 1),
+    evYield: p.evYield || {},
+    abilities: p.abilities.map(a => {
+      const info = abilityInfo.get(a.nameEn);
+      return {
+        name: info?.nameEs || a.nameEn,
+        nameEs: info?.nameEs || a.nameEn,
+        nameEn: a.nameEn,
+        displayEn: info?.nameEn || a.nameEn,
+        isHidden: a.isHidden,
+        descriptionEs: info?.descriptionEs || '',
+        descriptionEn: info?.descriptionEn || '',
+        effect: info?.effect || '',
+      };
+    }),
+    captureRate: p.captureRate,
+    isLegendary: p.isLegendary,
+    isMythical: p.isMythical,
+    // An alternate form travels with these four fields and nothing else: the
+    // page needs to know which variant is on screen, but the dex number, the
+    // description and the neighbours all stay the species'. Without speciesId
+    // here, isForm() on this object would answer false for every form.
+    ...(p.speciesId ? { speciesId: p.speciesId, formEs: p.formEs, formEn: p.formEn } : {}),
+    ...(p.noSprite ? { noSprite: true } : {}),
+    // dexId, not id: #10034 has no description of its own and no neighbours
+    // worth showing -- asking for 10033 would offer an unrelated form.
+    description: await fetchDescription(dexId),
+    prevName: dexId > 1 ? speciesName(dexId - 1) : null,
+    nextName: speciesName(dexId + 1),
   };
 }
 
 // ===== POKEMON SEARCH (for calculator) =====
-export async function searchPokemon(term) {
-  const pokemon = await loadDataset('pokemon');
+//
+// The three calculators share this one searcher, so the form rule is applied
+// here rather than three times over. They see the 1259 that fight differently
+// and not the 92 costumes, which would only offer the same Pokemon twice.
+//
+// `speciesOnly` is for the capture tab: Megas and Gigamax cannot be caught at
+// all, and they inherit their species' captureRate, so offering them there
+// would return a real-looking ball rate for something no ball ever touches.
+export async function searchPokemon(term, { speciesOnly = false } = {}) {
+  const pokemon = competitiveList(await loadDataset('pokemon'));
   const q = term.toLowerCase();
 
   return pokemon
+    .filter(p => !speciesOnly || !isForm(p))
     .filter(p =>
       p.name.toLowerCase().includes(q) ||
       p.nameEs.toLowerCase().includes(q) ||
@@ -133,6 +178,12 @@ export async function searchPokemon(term) {
       nameEs: p.nameEs,
       nameEn: p.nameEn,
       stats: p.stats,
+      // The capture tab needs both: the rate to run the formula, and the weight
+      // because the Heavy Ball bonus is a function of it. The damage tab needs
+      // the types, for STAB and for the type chart.
+      captureRate: p.captureRate,
+      weight: p.weight,
+      types: p.types,
     }));
 }
 

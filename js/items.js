@@ -18,9 +18,11 @@ const CATEGORY_MAP = {
   'key': 'cat.items-key',
 };
 
-export function renderItems(container) {
+export function renderItems(container, query = new URLSearchParams()) {
   let currentPage = 1;
-  let searchTerm = '';
+  // An item has no page of its own, so the global search opens this list already
+  // filtered by the name it found.
+  let searchTerm = (query.get('q') || '').trim().toLowerCase();
   let catFilter = '';
   let allItems = null;
   let categories = [];
@@ -33,7 +35,7 @@ export function renderItems(container) {
     </div>
     <div class="search-bar">
       <span class="search-icon">🔍</span>
-      <input type="text" class="search-input" id="itSearch" placeholder="${t('items.search')}">
+      <input type="text" class="search-input" id="itSearch" placeholder="${t('items.search')}" value="${searchTerm.replace(/"/g, '&quot;')}">
     </div>
     <div class="filter-row" id="itFilters"></div>
     <div id="itContent"></div>
@@ -92,10 +94,10 @@ export function renderItems(container) {
                  style="width:64px;height:64px;image-rendering:pixelated;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.4))"
                  onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><text x=%2220%22 y=%2226%22 text-anchor=%22middle%22 font-size=%2224%22>🎒</text></svg>'">
           </div>
-          <h3 style="font-size:0.55rem;color:var(--accent);text-align:center;margin-bottom:4px">${pokeName(item)}</h3>
-          <div style="font-size:0.44rem;color:var(--text-dim);text-align:center;margin-bottom:16px">${item.name}</div>
-          ${catLabel ? `<div style="font-size:0.44rem;color:var(--text-muted);text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">${catLabel}</div>` : ''}
-          <div style="font-size:0.48rem;color:var(--text-muted);line-height:2;text-align:center">${(getLang() === 'es' ? item.descriptionEs : item.descriptionEn) || t('items.nodesc')}</div>
+          <h3 style="font-size:0.55rem;color:var(--accent-text);text-align:center;margin-bottom:4px">${pokeName(item)}</h3>
+          <div style="font-size:0.44rem;color:var(--ink-3);text-align:center;margin-bottom:16px">${item.name}</div>
+          ${catLabel ? `<div style="font-size:0.44rem;color:var(--ink-3);text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">${catLabel}</div>` : ''}
+          <div style="font-size:0.48rem;color:var(--ink-2);line-height:2;text-align:center">${(getLang() === 'es' ? item.descriptionEs : item.descriptionEn) || t('items.nodesc')}</div>
         </div>
       </div>
     `;
@@ -117,7 +119,15 @@ export function renderItems(container) {
   async function loadAll() {
     if (allItems) return;
     content.innerHTML = loadingHTML(t('items.loading'));
-    allItems = await fetchItems();
+    // Fuera las 338 MT. Aqui una se llama "MT01" y debajo lleva la descripcion
+    // del movimiento que ensena, sin decir cual es: una lista de numeros con
+    // texto suelto. Lo que se querria saber de ellas -- que ensena cada una --
+    // ya esta en Movimientos, y con nombre.
+    //
+    // Se filtra al leer y no en el builder: items.json se sirve cacheado una
+    // hora con stale-while-revalidate de una semana, asi que regenerarlo
+    // dejaria una ventana en la que las MT seguirian saliendo.
+    allItems = (await fetchItems()).filter(i => i.category !== 'machines');
 
     // Extract unique categories preserving order
     const seen = new Set();

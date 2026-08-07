@@ -12,15 +12,57 @@
   --bg-card-hover: #2a2a5a;
   --accent: #ffcc00;
   --accent-dim: #b8940a;
-  --text: #e8e8f0;
-  --text-muted: #8888aa;
-  --text-dim: #555577;
+  /* Ink for text sitting on an --accent fill. Stays dark in both themes on
+     purpose: following --bg would put near-white on gold at 2.77:1. */
+  --on-accent: #0f0f23;
+  /* Tinta para los badges de tipo claros. Los dieciocho colores de tipo son los
+     mismos en los dos temas, asi que su tinta tampoco cambia. */
+  --on-type-light: #1a1a2e;
+  /* ===== TRES TINTAS =====
+     Habia cuatro grises y se leian como uno solo: sobre --bg-card median 12.35,
+     9.95, 6.38 y 4.41, o sea saltos de 1.24, 1.56 y 1.45 entre vecinos. Y el
+     ultimo ni siquiera llegaba a AA.
+
+     Con color no se puede hacer mucho mejor: entre el suelo de AA (4.5) y el
+     blanco puro (15.05) sobre --bg-card cabe un factor 3.3, que repartido en
+     dos saltos da 1.83 como maximo teorico. Asi que el nivel de un texto se
+     senala en tres canales a la vez, y los otros dos ya estaban aqui: la
+     division Press Start 2P / VT323 y el escalon de tamano.
+
+     Medidos contra --bg / --bg-surface / --bg-card. Saltos de 1.77 y 1.77. */
+  --ink-1: #fcfcff;   /* 18.43 / 16.26 / 14.69 - el dato que responde */
+  --ink-2: #bebedc;   /* 10.41 /  9.19 /  8.30 - lo que se lee de corrido */
+  --ink-3: #8c8cb8;   /*  5.89 /  5.20 /  4.70 - lo que nombra a un dato */
+  /* Un control apagado no es contenido. Compartia gris con las etiquetas, y por
+     eso subir el de una etiqueta subia tambien el de un boton. */
+  --ink-ui: #9a9ac2;  /*  6.99 /  6.16 /  5.57 */
+
+  /* El amarillo no es un cuarto gris: destaca por ser de otro color, no por ser
+     mas claro (9.95 cae entre --ink-1 y --ink-2). Marca una cosa y solo una:
+     esto es lo que has venido a mirar, o esto se puede pulsar. Pierde el sentido
+     si aparece dos veces en el mismo bloque.
+     Dos valores porque uno no puede hacer los dos trabajos: como relleno con
+     tinta oscura encima mide 12.48, pero como texto sobre la tarjeta clara caia
+     a 2.58. Mismo reparto que --stat-up / --stat-down. */
+  --accent-text: #ffcc00;
+  /* Error and success as text. --danger and --success are tuned for fills and
+     for the dark surface: on the light card they measure 2.17 and 1.55. */
+  --danger-text: #FB7185;
+  --success-text: #34D399;
+  --info-text: #60A5FA;
+  --special-text: #A78BFA;
+  --warning-text: #F59E0B;
   --border: rgba(255, 255, 255, 0.08);
   --border-accent: rgba(255, 204, 0, 0.3);
   --danger: #FB7185;
   --success: #34D399;
   --info: #60A5FA;
   --warning: #F59E0B;
+  /* Stat-change chips. Their own variables because --success and --danger are
+     tuned for the dark surface only: on the light card #34D399 lands at
+     1.55:1, which is invisible. Measured against --bg-card in each theme. */
+  --stat-up: #34D399;   /* 7.83:1 on #22224a */
+  --stat-down: #FB7185; /* 5.59:1 on #22224a */
 
   --type-normal: #A8A77A;
   --type-fire: #EE8130;
@@ -42,7 +84,15 @@
   --type-fairy: #D685AD;
 
   --font-retro: 'Press Start 2P', monospace;
+  /* Press Start 2P stops being readable below 11px, and that is where "the data
+     looks small" came from: it was the face, not the size. VT323 is pixel too,
+     same arcade family, and reads at 20-26px. Headings and UI in Press Start 2P,
+     data and numbers in VT323. */
+  --font-data: 'VT323', monospace;
   --nav-height: 56px;
+  /* The content takes the whole width minus this margin. Measured in
+     production: with the 1100px cap, 1920 left 820px dead, 43% of the screen. */
+  --gutter: 40px;
 }
 
 /* ===== LIGHT THEME ===== */
@@ -53,11 +103,28 @@
   --bg-card-hover: #dddde8;
   --accent: #b88800;
   --accent-dim: #7a5a00;
-  --text: #1a1a3e;
-  --text-muted: #555577;
-  --text-dim: #8888aa;
+  /* En claro no habia jerarquia apretada: habia jerarquia al reves. --text-muted
+     media 5.74 sobre la tarjeta y --text-data 4.95, o sea que la etiqueta pesaba
+     mas que el texto, con saltos de 1.06 y 1.16 entre vecinos. Tres tonos que a
+     ojo eran uno. Medidos contra --bg / --bg-surface / --bg-card, saltos de
+     1.78 y 1.72. */
+  --ink-1: #181822;   /* 15.25 / 17.61 / 14.21 */
+  --ink-2: #3e3e6e;   /*  8.58 /  9.91 /  7.99 */
+  --ink-3: #62628c;   /*  4.99 /  5.76 /  4.65 */
+  --ink-ui: #565676;  /*  6.08 /  7.03 /  5.67 */
+  /* Sube desde #845f00, que medido sobre la tarjeta clara daba 4.68 y pasaba AA
+     por cuatro centesimas. Si el amarillo va a marcar mas cosas, no puede ser el
+     texto mas justo de la pagina. */
+  --accent-text: #6f4f00;  /* 6.51 / 7.52 / 6.06 */
+  --danger-text: #B3123C;
+  --success-text: #0B6B4A;
+  --info-text: #1D4ED8;
+  --special-text: #6D28D9;
+  --warning-text: #8A5200;
   --border: rgba(0, 0, 0, 0.1);
   --border-accent: rgba(184, 136, 0, 0.3);
+  --stat-up: #0B6B4A;   /* 5.27:1 on #e6e6f0 */
+  --stat-down: #B3123C; /* 5.52:1 on #e6e6f0 */
 }
 
 .light .scanlines {
@@ -80,7 +147,7 @@
 }
 
 html, body {
-  height: 100%;
+  min-height: 100%;
 }
 
 html {
@@ -92,7 +159,7 @@ html {
 body {
   font-family: var(--font-retro);
   background: var(--bg);
-  color: var(--text);
+  color: var(--ink-1);
   min-height: 100%;
   overflow-x: hidden;
   line-height: 1.6;
@@ -101,12 +168,18 @@ body {
 }
 
 a {
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
 }
 
 a:hover {
   text-decoration: underline;
+}
+
+/* A number in VT323 reads at twice the size while taking up the same room. */
+.data {
+  font-family: var(--font-data);
+  letter-spacing: 0.5px;
 }
 
 /* ===== SCANLINES ===== */
@@ -135,13 +208,19 @@ a:hover {
 }
 
 .nav-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 16px;
+  padding: 0 var(--gutter);
   display: flex;
   align-items: center;
   height: var(--nav-height);
   gap: 16px;
+}
+
+/* The bar has no room to spare on a phone: the same 16px gap that reads well on
+   a desktop is what takes the menu button off the edge. */
+@media (max-width: 899px) {
+  .nav-inner {
+    gap: 12px;
+  }
 }
 
 .nav-logo {
@@ -149,7 +228,7 @@ a:hover {
   align-items: center;
   gap: 10px;
   font-size: 0.7rem;
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
   font-family: var(--font-retro);
   white-space: nowrap;
@@ -198,7 +277,7 @@ a:hover {
   border-radius: 5px;
   border: 2px solid var(--border);
   background: var(--bg-card);
-  color: var(--text-muted);
+  color: var(--ink-ui);
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
@@ -207,7 +286,7 @@ a:hover {
 
 .nav-toggle-btn:hover {
   border-color: var(--border-accent);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .nav-toggle {
@@ -218,14 +297,17 @@ a:hover {
   border: none;
   cursor: pointer;
   padding: 8px;
-  margin-left: 8px;
+  /* No margin here: at 360px the logo, the three toggles and this button add up
+     to 346px plus the gutter, and the 8px that used to sit here pushed the
+     button 2px past the edge of the screen. The row gap already separates it. */
+  margin-left: 0;
 }
 
 .nav-toggle span {
   display: block;
   width: 20px;
   height: 2px;
-  background: var(--text-muted);
+  background: var(--ink-ui);
   transition: all 0.2s;
 }
 
@@ -261,7 +343,7 @@ a:hover {
 .nav-link {
   font-family: var(--font-retro);
   font-size: 0.5rem;
-  color: var(--text-muted);
+  color: var(--ink-ui);
   text-decoration: none;
   padding: 10px 12px;
   border-radius: 6px;
@@ -271,13 +353,13 @@ a:hover {
 }
 
 .nav-link:hover {
-  color: var(--text);
+  color: var(--ink-1);
   background: rgba(255, 255, 255, 0.04);
   text-decoration: none;
 }
 
 .nav-link.active {
-  color: var(--accent);
+  color: var(--accent-text);
   background: rgba(255, 204, 0, 0.08);
 }
 
@@ -291,6 +373,18 @@ a:hover {
     margin-left: 12px;
   }
 
+  /* El logo y el menu van juntos y centrados; los ajustes se colocan absolutos
+     para no correr el centro hacia la izquierda. */
+  .nav-inner {
+    justify-content: center;
+    position: relative;
+  }
+
+  .nav-toggles {
+    position: absolute;
+    right: var(--gutter);
+  }
+
   .nav-links {
     display: flex;
     position: static;
@@ -299,7 +393,9 @@ a:hover {
     border: none;
     padding: 0;
     gap: 2px;
-    flex: 1;
+    /* Sin flex: 1 el menu ocupa lo suyo y deja centrar el bloque; con el se
+       comia todo el ancho sobrante y el centrado no se notaba. */
+    flex: 0 1 auto;
     min-width: 0;
     overflow-x: auto;
     scrollbar-width: none;
@@ -317,28 +413,23 @@ a:hover {
 
 /* ===== MAIN ===== */
 .main {
-  max-width: 1100px;
   width: 100%;
-  margin: 0 auto;
-  padding: 24px 16px 40px;
+  padding: 24px var(--gutter) 40px;
   flex: 1;
-  overflow-x: hidden;
 }
 
 /* ===== FOOTER ===== */
 .footer {
   text-align: center;
-  padding: 20px 16px 30px;
+  padding: 20px var(--gutter) 30px;
   border-top: 2px solid var(--border);
   width: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
   flex-shrink: 0;
 }
 
 .footer p {
   font-size: 0.46rem;
-  color: var(--text-dim);
+  color: var(--ink-2);
   letter-spacing: 0.5px;
   line-height: 1.6;
 }
@@ -354,16 +445,13 @@ a:hover {
 }
 
 .footer-hint {
-  color: var(--text-dim) !important;
+  color: var(--ink-2) !important;
   font-size: 0.44rem !important;
 }
 
 @media (max-width: 639px) {
-  html, body {
-    height: auto;
-  }
-  body {
-    min-height: auto;
+  :root {
+    --gutter: 16px;
   }
   .footer {
     padding: 12px 16px 16px;
@@ -403,6 +491,16 @@ a:hover {
   border: 1.5px solid #666;
 }
 
+/* The grid uses the whole width; prose does not. 68 characters is where the eye
+   finds the start of the next line without hunting for it. */
+.page-header p,
+.footer-hint,
+.card > p {
+  max-width: 68ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* ===== PAGE HEADER ===== */
 .page-header {
   text-align: center;
@@ -411,7 +509,7 @@ a:hover {
 
 .page-header h1 {
   font-size: 1rem;
-  color: var(--accent);
+  color: var(--accent-text);
   text-shadow: 0 0 20px rgba(255, 204, 0, 0.3);
   letter-spacing: 2px;
   margin-bottom: 8px;
@@ -419,80 +517,607 @@ a:hover {
 
 .page-header p {
   font-size: 0.45rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
   letter-spacing: 0.5px;
 }
 
-/* ===== HOME PAGE ===== */
-.home-hero {
-  text-align: center;
-  padding: 40px 0 30px;
+/* A sprite instead of an emoji: alt is empty on purpose, since the tool name is
+   right below and a screen reader must not read "Bulbasaur, Pokedex". */
+.home-card .icon {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+  margin: 0 auto 10px;
+  display: block;
+  transition: transform 0.2s;
 }
 
-.home-hero .pokeball-icon-lg {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: linear-gradient(180deg, #ff1a1a 50%, #fff 50%);
-  border: 5px solid #444;
+.home-card:hover .icon {
+  transform: scale(1.12);
+}
+
+/* ===== HOME: THE SWARM ===== */
+.swarm-wrap {
   position: relative;
-  margin: 0 auto 24px;
-  animation: float 3s ease-in-out infinite;
+  padding: 56px 0 40px;
+  margin-bottom: 30px;
 }
 
-.home-hero .pokeball-icon-lg::after {
-  content: '';
+/* The radial mask opens a clearing in the middle so the search box does not
+   fight the background. Without it the text lands on the sprites and stops
+   being readable. */
+.swarm {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #fff;
-  border: 5px solid #444;
+  inset: -30px 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 12px;
+  pointer-events: none;
+  opacity: 0.34;
+  overflow: hidden;
+  -webkit-mask-image: radial-gradient(ellipse 74% 78% at 50% 42%, transparent 24%, #000 76%);
+  mask-image: radial-gradient(ellipse 74% 78% at 50% 42%, transparent 24%, #000 76%);
 }
 
-@keyframes float {
+.swarm img {
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+  filter: grayscale(0.35);
+  animation: bob 7s ease-in-out infinite;
+}
+
+@keyframes bob {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  50% { transform: translateY(-9px); }
 }
 
-.home-hero h1 {
-  font-size: 1.4rem;
-  letter-spacing: 3px;
-  margin-bottom: 8px;
+.swarm-fg {
+  position: relative;
+  text-align: center;
 }
 
-.home-hero .accent {
-  color: var(--accent);
-  text-shadow: 0 0 20px rgba(255, 204, 0, 0.4);
+.swarm-fg h1 {
+  font-size: clamp(24px, 2.9vw, 44px);
+  line-height: 1.4;
+  letter-spacing: 1px;
+  margin-bottom: 26px;
 }
 
-.home-hero p {
+.swarm-fg h1 .hl {
+  color: var(--accent-text);
+  text-shadow: 0 0 22px rgba(255, 204, 0, 0.5);
+}
+
+/* La lupa de .search-bar es absoluta respecto a su barra; aqui el cuadro es
+   flex y el icono va como un hijo mas. */
+.swarm-search .search-icon {
+  position: static;
+  transform: none;
+  flex: none;
+}
+
+.swarm-search {
+  max-width: 780px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-card);
+  border: 3px solid var(--border-accent);
+  border-radius: 14px;
+  padding: 19px 22px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+  transition: box-shadow 0.2s;
+}
+
+.swarm-search:focus-within {
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45), 0 0 36px rgba(255, 204, 0, 0.22);
+}
+
+.swarm-search input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--ink-1);
+  font-family: var(--font-data);
+  font-size: 27px;
+}
+
+.swarm-search input::placeholder {
+  color: var(--ink-ui);
+}
+
+.swarm-chips {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.qchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.5rem;
-  color: var(--text-muted);
-  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  color: var(--ink-1);
+  text-decoration: none;
+  transition: border-color 0.16s, transform 0.16s;
+}
+
+.qchip:hover {
+  border-color: var(--border-accent);
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+
+.qchip img {
+  width: 28px;
+  height: 28px;
+  image-rendering: pixelated;
+}
+
+/* ===== GLOBAL SEARCH PANEL ===== */
+.gs-panel {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(780px, 100%);
+  margin-top: 8px;
+  z-index: 50;
+  background: var(--bg-surface);
+  border: 2px solid var(--border-accent);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.5);
+  text-align: left;
+}
+
+.gs-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  color: var(--ink-1);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+}
+
+.gs-row:last-child {
+  border-bottom: none;
+}
+
+.gs-row:hover,
+.gs-row.on {
+  background: var(--bg-card);
+  text-decoration: none;
+}
+
+/* 40px fijos: el hueco se guarda aunque el sprite falle, para que los nombres no
+   bailen de columna entre una fila y la siguiente. */
+.gs-sprite {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+
+/* Fixed width so the names line up in a column instead of stepping in and out
+   with the length of each label. 108px fits MOVIMIENTO, the longest of the four. */
+.gs-kind {
+  font-size: 0.4rem;
+  color: var(--accent-text);
+  letter-spacing: 1px;
+  flex: 0 0 108px;
+}
+
+.gs-name {
+  font-family: var(--font-data);
+  font-size: 21px;
+}
+
+/* ===== HOME: MOST WANTED ===== */
+.mostwanted {
+  margin-bottom: 34px;
+}
+
+.mw-grid {
+  display: grid;
+  /* 200 y no 240: a 1280 las cinco tarjetas caian a cuatro mas una suelta. */
+  /* El maximo es 340 y no 360: a 1920 las cinco tarjetas sumaban 1856 sobre los
+     1832 utiles y la quinta caia sola a la fila de abajo. */
+  grid-template-columns: repeat(auto-fit, minmax(200px, 340px));
+  justify-content: center;
+  gap: 14px;
+}
+
+.mw {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.16s, transform 0.16s;
+}
+
+.mw:hover {
+  border-color: var(--border-accent);
+  transform: translateY(-3px);
+  text-decoration: none;
+}
+
+.mw img {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  transition: transform 0.2s;
+}
+
+.mw:hover img {
+  transform: scale(1.12);
+}
+
+.mw > span {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.mw .t {
+  font-size: 0.55rem;
+  letter-spacing: 0.5px;
+}
+
+.mw .d {
+  font-family: var(--font-data);
+  font-size: 18px;
+  color: var(--ink-3);
+  line-height: 1.3;
+}
+
+.mw .rank {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-family: var(--font-data);
+  font-size: 18px;
+  color: var(--ink-3);
+}
+
+/* Staggered entrance: 55ms per card, which over five cards is 220ms between the
+   first and the last. */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(18px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+.stagger > * {
+  opacity: 0;
+  animation: rise 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+
+/* La Pokedex pinta 50 tarjetas de golpe, no cinco: a 55ms la ultima entraria
+   2,7s despues de la primera. 35ms sobre un indice que se corta en 11 deja la
+   entrada en 385ms, que se ve como una recolocacion y no como una espera. */
+.pokemon-grid.stagger > * {
+  animation-delay: calc(var(--i, 0) * 35ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swarm img { animation: none; }
+  .stagger > * { opacity: 1; animation: none; }
+}
+
+@media (max-width: 639px) {
+  .swarm { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); }
+  .swarm-wrap { padding: 28px 0 24px; }
+  .swarm-search { padding: 14px 16px; }
+  .swarm-search input { font-size: 21px; }
+}
+
+.egg-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .egg-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (min-width: 900px) {
+  .egg-grid { grid-template-columns: repeat(5, 1fr); }
+}
+
+.egg-card {
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 10px;
+  text-align: center;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.egg-card:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.egg-card .label {
+  font-family: var(--font-retro);
+  font-size: 0.44rem;
+  color: var(--ink-1);
+  line-height: 1.6;
+}
+
+.egg-card .count {
+  font-family: var(--font-retro);
+  font-size: 0.7rem;
+  color: var(--accent-text);
+  margin-top: 8px;
+}
+
+.ct-rows { display: flex; flex-direction: column; gap: 4px; margin: 16px 0; }
+.ct-row { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 6px; text-decoration: none; font-size: 0.8rem; }
+.ct-row:hover { background: rgba(255,255,255,0.04); text-decoration: none; }
+.ct-row img { width: 36px; height: 36px; image-rendering: pixelated; }
+/* min-width:0 lets the name give way instead of pushing the row past the
+   screen: at 360 px "Electrofuria" plus the count, the power and the bolt need
+   344 px for 320 available. */
+.ct-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ct-fast { font-size: 0.9rem; flex: none; }
+.ct-hits { font-family: var(--font-retro); font-size: 0.4rem; color: var(--ink-3); flex: none; white-space: nowrap; }
+.ct-power { font-family: var(--font-retro); font-size: 0.5rem; color: var(--accent-text); min-width: 40px; text-align: right; flex: none; }
+
+.sv-pickers { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 24px; }
+@media (min-width: 640px) { .sv-pickers { grid-template-columns: repeat(3, 1fr); } }
+.sv-picker { display: flex; flex-direction: column; gap: 6px; }
+.sv-result { border: 2px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; margin-bottom: 24px; }
+/* Estos cuatro se quedaron con el color a pelo mientras sus vecinos ya usaban
+   los tokens, y eran de los tunados para el fondo oscuro: en tema claro el
+   veredicto medía 1.41:1 en verde y 2.23:1 en rojo. Solo se ven despues de
+   elegir atacante, movimiento y defensor, que es por lo que no salian en un
+   barrido de las paginas recien cargadas. */
+.sv-result.ok { border-color: var(--success-text); }
+.sv-result.ko { border-color: var(--danger-text); }
+.sv-verdict { font-family: var(--font-retro); font-size: 0.7rem; margin-bottom: 10px; }
+.sv-result.ok .sv-verdict { color: var(--success-text); }
+.sv-result.ko .sv-verdict { color: var(--danger-text); }
+.sv-line { font-size: 0.8rem; color: var(--ink-2); line-height: 1.8; }
+.sv-dim { color: var(--ink-3); font-size: 0.72rem; }
+.sv-spread { background: var(--bg-surface); border: 2px solid var(--border); border-radius: 10px; padding: 14px; font-size: 0.85rem; line-height: 1.7; }
+
+.spd-head { display: flex; align-items: center; gap: 16px; margin: 16px 0; }
+.spd-head h2 { font-family: var(--font-retro); font-size: 0.7rem; margin: 0; }
+.spd-spreads { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 24px; }
+@media (min-width: 640px) { .spd-spreads { grid-template-columns: repeat(4, 1fr); } }
+.spd-spread { background: var(--bg-surface); border: 2px solid var(--border); border-radius: 10px; padding: 12px 8px; text-align: center; }
+.spd-spread.best { border-color: var(--accent); }
+.spd-spread .label { font-family: var(--font-retro); font-size: 0.4rem; color: var(--ink-3); line-height: 1.6; }
+.spd-spread .value { font-family: var(--font-retro); font-size: 0.8rem; color: var(--accent-text); margin-top: 8px; }
+.spd-tiers { display: grid; grid-template-columns: 1fr; gap: 20px; }
+@media (min-width: 640px) { .spd-tiers { grid-template-columns: repeat(2, 1fr); } }
+.spd-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-size: 0.8rem; }
+.spd-row:hover { background: rgba(255,255,255,0.04); text-decoration: none; }
+.spd-row img { width: 32px; height: 32px; image-rendering: pixelated; }
+.spd-name { flex: 1; }
+.spd-value { font-family: var(--font-retro); font-size: 0.5rem; color: var(--accent-text); }
+
+.cmp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 20px;
+}
+
+.cmp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 6px 4px 4px;
+  font-size: 0.75rem;
+}
+
+.cmp-chip img { width: 32px; height: 32px; image-rendering: pixelated; }
+
+.cmp-remove {
+  border: none;
+  background: transparent;
+  color: var(--ink-ui);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.cmp-remove:hover { color: var(--accent-text); }
+
+.cmp-results {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.cmp-hit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--ink-1);
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+.cmp-hit:hover { border-color: var(--accent); }
+.cmp-hit img { width: 32px; height: 32px; image-rendering: pixelated; }
+
+/* Fixed layout so the columns are the same width whatever is inside them:
+   with the automatic algorithm the first Pokemon took 504px and the third 271,
+   and nothing lined up down the table. 660px is the floor the 128px sprites
+   need at four across; below that the wrapper scrolls, as it already did. */
+.cmp-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 660px;
+}
+
+.cmp-table th:first-child { width: 130px; }
+.cmp-table tbody th { text-align: left; }
+
+/* The header is one stack: sprite, name, types, all on the column's centre
+   line. The <a> was inline, so the name fell back to the cell's left edge
+   while the sprite sat centred by its own auto margins. */
+.cmp-table thead th { text-align: center; vertical-align: bottom; }
+.cmp-table th a { text-decoration: none; color: var(--ink-1); display: block; }
+.cmp-sprite { width: 128px; height: 128px; image-rendering: pixelated; display: block; margin: 0 auto; }
+.cmp-name { display: block; text-align: center; margin-top: 6px; font-size: 0.55rem; }
+.cmp-table th a:hover .cmp-name { color: var(--accent-text); }
+.cmp-table td { text-align: center; }
+
+/* Un enlace por linea y centrado. En bloque, no en flex: .cmp-abilities es la
+   propia celda, y un <td> en flex deja de ser table-cell. */
+.cmp-abilities .ability-link {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin: 0 auto 8px;
+}
+
+.cmp-abilities .ability-link:last-child { margin-bottom: 0; }
+
+/* La burbuja cuelga del enlace, y el envoltorio de la tabla recorta lo que se
+   salga por los lados. Centrada bajo su ancla cabe dentro de la columna. */
+.cmp-abilities .tooltip-bubble {
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(240px, calc(100vw - 32px));
+}
+
+.cmp-best { color: var(--accent-text); font-weight: bold; }
+.cmp-types { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
+.cmp-table thead .cmp-types { margin-top: 8px; }
+.cmp-total th, .cmp-total td { border-top: 2px solid var(--border); }
+
+.egg-section {
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.egg-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+}
+
+.egg-key {
+  font-family: var(--font-retro);
+  font-size: 0.44rem;
+  color: var(--ink-3);
+  min-width: 90px;
+}
+
+.egg-chip {
+  display: inline-block;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin-right: 6px;
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+
+.egg-chip:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+}
+
+.egg-note {
+  margin-top: 20px;
+  font-size: 0.75rem;
+  line-height: 1.8;
+  color: var(--ink-2);
+}
+
+/* Una nota que cierra la pagina habla de todo lo que hay encima, no de su borde
+   izquierdo. Centrada y capada: medido a 1366 la frase corria los 1278px de la
+   pagina, y de ahi para arriba solo se ensancha. La usan las reglas de cria del
+   indice de grupos huevo y el aviso del comparador. */
+.note-center {
+  text-align: center;
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.home-group {
+  text-align: center;
+  margin: 28px 0 0;
+  font-size: 0.6rem;
+  color: var(--ink-3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .home-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  /* auto-fit and not auto-fill: auto-fill keeps the empty columns, so a category
+     with three tools left them stuck to the left with half the screen unused.
+     The max keeps a lonely card from stretching to 600px. */
+  grid-template-columns: repeat(auto-fit, minmax(230px, 300px));
+  justify-content: center;
+  gap: 14px;
   margin-top: 30px;
 }
 
-@media (min-width: 640px) {
+/* Two per row on the phone, as before: with a 230px minimum only one fits at
+   360 and the home page doubles in length. */
+@media (max-width: 639px) {
   .home-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
 }
 
-@media (min-width: 900px) {
-  .home-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
+/* A grid under its own heading sits close to it: the 30px above is meant for a
+   grid that stands alone, and doubles up with the heading's own margin. */
+.home-group + .home-grid {
+  margin-top: 12px;
 }
 
 .home-card {
@@ -504,7 +1129,7 @@ a:hover {
   cursor: pointer;
   transition: all 0.2s;
   text-decoration: none;
-  color: var(--text);
+  color: var(--ink-1);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -522,15 +1147,20 @@ a:hover {
   font-size: 1.8rem;
 }
 
+/* El nombre de la herramienta es el titulo de la tarjeta, no una etiqueta: iba
+   en la tinta mas apagada y a 0.45rem, con la descripcion debajo en una tinta
+   mas fuerte y a 0.44. O sea la descripcion pesaba mas que el titulo y median
+   casi lo mismo. Mismo reparto que .mw, que ya lo tenia bien: el titulo manda
+   por tinta y por tamano, la descripcion acompana. */
 .home-card .label {
-  font-size: 0.45rem;
+  font-size: 0.55rem;
   letter-spacing: 0.5px;
-  color: var(--text-muted);
+  color: var(--ink-1);
 }
 
 .home-card .desc {
   font-size: 0.44rem;
-  color: var(--text-dim);
+  color: var(--ink-2);
   line-height: 1.8;
 }
 
@@ -548,13 +1178,13 @@ a:hover {
   background: var(--bg-surface);
   border: 2px solid var(--border);
   border-radius: 8px;
-  color: var(--text);
+  color: var(--ink-1);
   outline: none;
   transition: border-color 0.2s;
 }
 
 .search-input::placeholder {
-  color: var(--text-dim);
+  color: var(--ink-ui);
 }
 
 .search-input:focus {
@@ -567,7 +1197,7 @@ a:hover {
   top: 50%;
   transform: translateY(-50%);
   font-size: 0.7rem;
-  color: var(--text-dim);
+  color: var(--ink-ui);
   pointer-events: none;
 }
 
@@ -586,7 +1216,7 @@ a:hover {
   border-radius: 5px;
   border: 2px solid var(--border);
   background: var(--bg-card);
-  color: var(--text-muted);
+  color: var(--ink-ui);
   cursor: pointer;
   transition: all 0.15s;
   text-transform: uppercase;
@@ -594,13 +1224,233 @@ a:hover {
 
 .filter-btn:hover {
   border-color: rgba(255, 255, 255, 0.15);
-  color: var(--text);
+  color: var(--ink-1);
 }
 
+/* Solid fill rather than accent-coloured text: on the light theme the old
+   treatment measured 2.58:1, below even the 3.0 minimum for UI components, so
+   an active filter was indistinguishable from an inactive one.
+   The ink is deliberately NOT var(--bg): that flips to near-white on the light
+   theme, which lands at 2.77:1 on the gold fill and fixes nothing. Both themes
+   use the same dark ink, giving 12.48:1 on dark and 5.89:1 on light. */
 .filter-btn.active {
   border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(255, 204, 0, 0.08);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* ===== POKEDEX CONTROLS ===== */
+.pdx-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.pdx-select {
+  font-family: var(--font-retro);
+  font-size: 0.46rem;
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+  color: var(--ink-ui);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
+
+.pdx-select:hover {
+  color: var(--ink-1);
+}
+
+.pdx-select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pdx-select.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.pdx-dir {
+  font-family: var(--font-retro);
+  font-size: 0.46rem;
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: 2px solid var(--border);
+  background: var(--bg-card);
+  color: var(--ink-ui);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pdx-dir:hover {
+  color: var(--ink-1);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.pdx-dir:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pdx-count {
+  font-family: var(--font-data);
+  font-size: 22px;
+  color: var(--ink-3);
+  margin-left: auto;
+}
+
+.pdx-clear[hidden],
+.pdx-select[hidden] {
+  display: none;
+}
+
+/* A grid item is min-width:auto by default, so a `1fr` column never shrinks
+   below the widest option of the select inside it: measured at 360px, the two
+   columns came out 185px each inside a 320px row and pushed the sort select and
+   the direction button 59px off the screen. minmax(0, 1fr) lets the column
+   shrink and the select follow it. */
+@media (max-width: 767px) {
+  .pdx-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pdx-controls > .pdx-select,
+  .pdx-controls > .pdx-dir,
+  .pdx-controls > .pdx-clear {
+    min-width: 0;
+    width: 100%;
+  }
+  .pdx-count {
+    grid-column: 1 / -1;
+    margin-left: 0;
+  }
+}
+
+/* Same reason on the tablet strip, where the controls are a wrapping flex row:
+   a select wider than the row does not wrap, it overflows. */
+.pdx-select,
+.pdx-dir {
+  max-width: 100%;
+}
+
+/* ===== POKEDEX: THE SIDEBAR ===== */
+/* Below 1000px there is no sidebar: the filters stay stacked over the grid,
+   which is what already works on a phone. */
+.dex-split {
+  display: block;
+}
+
+.dex-side-title {
+  font-size: 0.44rem;
+  color: var(--ink-3);
+  letter-spacing: 1.5px;
+  margin: 18px 0 10px;
+}
+
+/* The count lives in the sidebar, not over the grid: a strip above the grid
+   pushed the first card 47px below the top of the filter box, and the two
+   columns started on different lines. It is also the filters' own answer --
+   how many are left -- so it reads next to them. */
+.dex-side .pdx-count {
+  display: block;
+  margin: 10px 0 0;
+  text-align: right;
+}
+
+@media (min-width: 1000px) {
+  .dex-split {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .dex-side {
+    position: sticky;
+    top: calc(var(--nav-height) + 12px);
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    max-height: calc(100vh - var(--nav-height) - 32px);
+    overflow-y: auto;
+  }
+
+  /* Without this the grid refuses to shrink below its content and pushes the
+     sidebar off the screen. */
+  .dex-main {
+    min-width: 0;
+  }
+
+  /* Stacked in a 250px column: the type filters go two per row and the selects
+     one per row, instead of the wrapping strip they are on a phone. */
+  .dex-side .filter-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-bottom: 0;
+  }
+
+  /* The type buttons wrap a badge that already carries its own padding, so the
+     button's own 6px on top of it was padding inside padding: 34px of row for
+     19px of badge. Measured at 1366x768 the sidebar needed 700px of a 661px
+     box and grew its own scrollbar; trimming the doubled padding and the
+     margins between sections brings it to 598 and the bar disappears. */
+  .dex-side .filter-row .filter-btn {
+    padding: 3px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dex-side .filter-row .filter-btn .type-badge {
+    width: 100%;
+  }
+
+  /* One select per row, except the sort key, which shares its row with the
+     direction button it belongs to: they are one control split in two, and
+     stacking them cost a row the sidebar did not have. */
+  .dex-side .pdx-controls {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    margin-bottom: 0;
+  }
+
+  .dex-side .pdx-controls .pdx-select {
+    grid-column: 1 / -1;
+  }
+
+  .dex-side .pdx-controls .pdx-select:last-of-type {
+    grid-column: 1;
+  }
+
+  .dex-side .search-bar {
+    margin-bottom: 0;
+  }
+
+  /* Con el contador puesto y el boton de limpiar visible, que es la unica
+     combinacion en la que todo esta a la vez, la barra pedia 661px de los 676
+     que caben a 1366x768: 15px de holgura y vuelta a la barra de scroll a la
+     minima. Estos margenes dan 33. */
+  .dex-side .dex-side-title {
+    margin: 12px 0 6px;
+  }
+
+  .dex-side .pdx-count {
+    margin-top: 6px;
+  }
+
+  .dex-side .pdx-clear {
+    width: 100%;
+    margin-top: 8px;
+  }
 }
 
 /* ===== TYPE BADGE ===== */
@@ -653,12 +1503,12 @@ a:hover {
 .type-badge[data-type="normal"]   { background: var(--type-normal); }
 .type-badge[data-type="fire"]     { background: var(--type-fire); }
 .type-badge[data-type="water"]    { background: var(--type-water); }
-.type-badge[data-type="electric"] { background: var(--type-electric); color: #333; text-shadow: none; }
+.type-badge[data-type="electric"] { background: var(--type-electric); }
 .type-badge[data-type="grass"]    { background: var(--type-grass); }
-.type-badge[data-type="ice"]      { background: var(--type-ice); color: #333; text-shadow: none; }
+.type-badge[data-type="ice"]      { background: var(--type-ice); }
 .type-badge[data-type="fighting"] { background: var(--type-fighting); }
 .type-badge[data-type="poison"]   { background: var(--type-poison); }
-.type-badge[data-type="ground"]   { background: var(--type-ground); color: #333; text-shadow: none; }
+.type-badge[data-type="ground"]   { background: var(--type-ground); }
 .type-badge[data-type="flying"]   { background: var(--type-flying); }
 .type-badge[data-type="psychic"]  { background: var(--type-psychic); }
 .type-badge[data-type="bug"]      { background: var(--type-bug); }
@@ -666,7 +1516,7 @@ a:hover {
 .type-badge[data-type="ghost"]    { background: var(--type-ghost); }
 .type-badge[data-type="dragon"]   { background: var(--type-dragon); }
 .type-badge[data-type="dark"]     { background: var(--type-dark); }
-.type-badge[data-type="steel"]    { background: var(--type-steel); color: #333; text-shadow: none; }
+.type-badge[data-type="steel"]    { background: var(--type-steel); }
 .type-badge[data-type="fairy"]    { background: var(--type-fairy); }
 
 /* ===== RESULT BADGE ===== */
@@ -687,8 +1537,7 @@ a:hover {
 
 .result-badge .multiplier {
   font-size: 0.44rem;
-  opacity: 0.85;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.5);
   padding: 2px 4px;
   border-radius: 3px;
 }
@@ -696,12 +1545,12 @@ a:hover {
 .result-badge[data-type="normal"]   { background: var(--type-normal); }
 .result-badge[data-type="fire"]     { background: var(--type-fire); }
 .result-badge[data-type="water"]    { background: var(--type-water); }
-.result-badge[data-type="electric"] { background: var(--type-electric); color: #333; text-shadow: none; }
+.result-badge[data-type="electric"] { background: var(--type-electric); }
 .result-badge[data-type="grass"]    { background: var(--type-grass); }
-.result-badge[data-type="ice"]      { background: var(--type-ice); color: #333; text-shadow: none; }
+.result-badge[data-type="ice"]      { background: var(--type-ice); }
 .result-badge[data-type="fighting"] { background: var(--type-fighting); }
 .result-badge[data-type="poison"]   { background: var(--type-poison); }
-.result-badge[data-type="ground"]   { background: var(--type-ground); color: #333; text-shadow: none; }
+.result-badge[data-type="ground"]   { background: var(--type-ground); }
 .result-badge[data-type="flying"]   { background: var(--type-flying); }
 .result-badge[data-type="psychic"]  { background: var(--type-psychic); }
 .result-badge[data-type="bug"]      { background: var(--type-bug); }
@@ -709,13 +1558,44 @@ a:hover {
 .result-badge[data-type="ghost"]    { background: var(--type-ghost); }
 .result-badge[data-type="dragon"]   { background: var(--type-dragon); }
 .result-badge[data-type="dark"]     { background: var(--type-dark); }
-.result-badge[data-type="steel"]    { background: var(--type-steel); color: #333; text-shadow: none; }
+.result-badge[data-type="steel"]    { background: var(--type-steel); }
 .result-badge[data-type="fairy"]    { background: var(--type-fairy); }
 
-.result-badge[data-type="electric"] .multiplier,
-.result-badge[data-type="ice"] .multiplier,
-.result-badge[data-type="ground"] .multiplier,
-.result-badge[data-type="steel"] .multiplier {
+/* ===== TINTA DE LOS BADGES DE TIPO =====
+   Con letra blanca, trece de los dieciocho tipos no llegaban a 4.5:1: Electrico
+   media 1.50, Hielo 1.59, Tierra 1.77, Acero 1.97, Planta 2.08, Bicho 2.19,
+   Normal 2.48, Roca 2.58, Volador 2.65, Fuego 2.69, Hada 2.69, Agua 3.10 y
+   Psiquico 3.15. Cuatro ya llevaban tinta oscura sueltos por la hoja; ahora son
+   los trece y estan en un sitio.
+
+   La sombra se va con ellos: una sombra negra debajo de letra oscura es barro,
+   y ademas era lo que hacia pasar por legibles a los otros nueve -- trabajo
+   perceptual que ninguna medida de contraste cuenta.
+
+   Los cinco que se quedan en blanco (Lucha 5.65, Veneno 5.58, Fantasma 5.93,
+   Dragon 5.85, Siniestro 6.69) ya pasaban. */
+.type-badge[data-type="normal"],   .result-badge[data-type="normal"],
+.type-badge[data-type="fire"],     .result-badge[data-type="fire"],
+.type-badge[data-type="water"],    .result-badge[data-type="water"],
+.type-badge[data-type="electric"], .result-badge[data-type="electric"],
+.type-badge[data-type="grass"],    .result-badge[data-type="grass"],
+.type-badge[data-type="ice"],      .result-badge[data-type="ice"],
+.type-badge[data-type="ground"],   .result-badge[data-type="ground"],
+.type-badge[data-type="flying"],   .result-badge[data-type="flying"],
+.type-badge[data-type="psychic"],  .result-badge[data-type="psychic"],
+.type-badge[data-type="bug"],      .result-badge[data-type="bug"],
+.type-badge[data-type="rock"],     .result-badge[data-type="rock"],
+.type-badge[data-type="steel"],    .result-badge[data-type="steel"],
+.type-badge[data-type="fairy"],    .result-badge[data-type="fairy"] {
+  color: var(--on-type-light);
+  text-shadow: none;
+}
+
+/* El multiplicador se lee sobre su propio velo negro, no sobre el color del
+   tipo, asi que su tinta no sigue la del badge. Con el velo al 25% no habia
+   tinta que sirviera sobre Normal, Bicho ni Roca -- blanco daba 4.22 y oscuro
+   4.04. Al 50% el peor de los dieciocho es Electrico con 5.48 en blanco. */
+.result-badge .multiplier {
   color: #fff;
   text-shadow: none;
 }
@@ -746,20 +1626,20 @@ a:hover {
 /* ===== POKEMON CARD ===== */
 .pokemon-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  /* auto-fill from 150px: at 360 that is still two per row, which is the easiest
+     regression to let through. */
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
 }
 
-@media (min-width: 480px) {
-  .pokemon-grid { grid-template-columns: repeat(3, 1fr); }
-}
-
-@media (min-width: 640px) {
-  .pokemon-grid { grid-template-columns: repeat(4, 1fr); }
-}
-
-@media (min-width: 900px) {
-  .pokemon-grid { grid-template-columns: repeat(5, 1fr); }
+@media (min-width: 1000px) {
+  /* 215 and not the 260 the spec measured: that figure predates the filter
+     sidebar, which takes 250px plus its 24px gap. With 260 the grid dropped to
+     three columns at 1280, against the measured scale of four. */
+  .pokemon-grid {
+    grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+    gap: 16px;
+  }
 }
 
 .pokemon-card {
@@ -771,7 +1651,7 @@ a:hover {
   cursor: pointer;
   transition: all 0.2s;
   text-decoration: none;
-  color: var(--text);
+  color: var(--ink-1);
 }
 
 .pokemon-card:hover {
@@ -782,17 +1662,23 @@ a:hover {
 }
 
 .pokemon-card .sprite {
-  width: 80px;
-  height: 80px;
+  width: 96px;
+  height: 96px;
   image-rendering: pixelated;
   margin: 0 auto 6px;
   display: block;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  transition: transform 0.2s;
+}
+
+.pokemon-card:hover .sprite {
+  transform: scale(1.09);
 }
 
 .pokemon-card .dex-number {
-  font-size: 0.44rem;
-  color: var(--text-dim);
+  font-family: var(--font-data);
+  font-size: 19px;
+  color: var(--ink-3);
   margin-bottom: 4px;
 }
 
@@ -810,10 +1696,104 @@ a:hover {
   flex-wrap: wrap;
 }
 
+@media (min-width: 1000px) {
+  .pokemon-card {
+    padding: 20px 16px;
+  }
+
+  .pokemon-card .sprite {
+    width: 128px;
+    height: 128px;
+  }
+
+  .pokemon-card .poke-name {
+    font-size: 0.62rem;
+  }
+}
+
 /* ===== POKEMON DETAIL ===== */
 .poke-detail {
-  max-width: 700px;
-  margin: 0 auto;
+  width: 100%;
+}
+
+/* ===== POKEMON DETAIL: MASONRY BY COLUMNS =====
+   With grid, the whole row takes the height of the tallest card and the short
+   ones leave a hole underneath. With columns each block takes exactly its own
+   content and the next one moves up: measured, the largest gap is the 18px
+   margin itself. Reading order becomes column by column, which a detail page can
+   afford: these are independent blocks, not a sequence. */
+.bento {
+  column-count: 1;
+  column-gap: 18px;
+}
+
+/* Without break-inside a card splits across two columns and reads as a layout
+   bug. All three properties: Firefox and Safari honour different ones. */
+.b {
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+  display: inline-block;
+  width: 100%;
+  margin: 0 0 18px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+}
+
+/* The breeding and meta blocks are empty for a Pokemon without that data, and an
+   empty block is still a bordered box. */
+.b:empty {
+  display: none;
+}
+
+.b .section-title {
+  margin-top: 0;
+}
+
+/* Those helpers bring their own surface, and the .b is already the card:
+   without this there are two borders and double the padding. */
+.b > .card,
+.b > .egg-section {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: 0;
+}
+
+/* column-span only works on a block in the column flow, so this one gives up the
+   inline-block the other cards need. Placed last, it closes the bento as a band
+   without splitting the columns above it. */
+.b-wide {
+  display: block;
+  column-span: all;
+}
+
+.b-id {
+  text-align: center;
+}
+
+.poke-flavour {
+  font-size: 0.48rem;
+  color: var(--ink-2);
+  line-height: 2;
+  margin-top: 16px;
+  text-align: left;
+}
+
+/* Dos columnas y no tres a partir de 1500. Con tres, un Pokemon sin set del
+   meta dejaba la del medio en 457px contra 1030 la de la derecha: 573px de
+   hueco a media pagina. Y no es cosa del reparto, es que las seis tarjetas no
+   se dejan repartir -- miden 492, 457, 260, 197, 605 y 425, con la de
+   movimientos indivisible, y no hay corte en tres columnas contiguas que
+   equilibre. Con el set del meta puesto si cuadraba, y por eso solo se veia en
+   los que no se juegan.
+
+   Medido a 1920: el hueco pasa de 573 a 54 sin meta y de 87 a 7 con el. La
+   ficha se alarga entre 215 y 420px, que se recorre con la rueda. */
+@media (min-width: 1000px) {
+  .bento { column-count: 2; }
 }
 
 .poke-detail-header {
@@ -832,8 +1812,9 @@ a:hover {
 }
 
 .poke-detail-sprite {
-  width: 160px;
-  height: 160px;
+  width: 300px;
+  height: 300px;
+  max-width: 100%;
   image-rendering: pixelated;
   filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
   background: var(--bg-card);
@@ -853,20 +1834,21 @@ a:hover {
 }
 
 .poke-detail-info .dex-number {
-  font-size: 0.45rem;
-  color: var(--text-dim);
+  font-family: var(--font-data);
+  font-size: 24px;
+  color: var(--ink-3);
   margin-bottom: 6px;
 }
 
 .poke-detail-info h2 {
   font-size: 1rem;
-  color: var(--accent);
+  color: var(--accent-text);
   margin-bottom: 4px;
 }
 
 .poke-detail-info .name-en {
   font-size: 0.48rem;
-  color: var(--text-dim);
+  color: var(--ink-3);
   margin-bottom: 12px;
 }
 
@@ -883,12 +1865,80 @@ a:hover {
   }
 }
 
+/* Con nowrap los tres datos no cabian en los 213px que la tarjeta le deja a la
+   columna del nombre, asi que en vez de saltar de linea entre ellos se
+   comprimian a 31, 36 y 114px y cada uno partia por dentro: "0.7 m" en tres
+   renglones de 46px de alto. El salto va entre datos, no dentro de uno. */
 .poke-detail-info .meta {
   font-size: 0.48rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 6px 16px;
   justify-content: center;
+}
+
+/* Sin nowrap a proposito. Con el contenedor ya en wrap, los dos datos cortos
+   caben juntos (70 + 16 + 79 de los 213 que hay) y la frase de captura salta a
+   la linea siguiente. Ponerle nowrap a ella la sacaba 15px fuera de la tarjeta:
+   mide 252 y la columna da 213. */
+.poke-detail-info .meta > span {
+  min-width: 0;
+}
+
+/* ===== ANTERIOR / SIGUIENTE DE LA FICHA =====
+   Los dos botones llevaban su layout en atributos style y, con el nombre sin
+   limite, a 360px el de la derecha se salia 22px de la pagina. El nombre es lo
+   unico que puede encoger, asi que es lo unico que se corta. */
+.poke-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  gap: 12px;
+}
+
+.poke-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.poke-nav-btn img {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.poke-nav-arrow {
+  flex-shrink: 0;
+}
+
+.poke-nav-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  min-width: 0;
+}
+
+.poke-nav-btn.next .poke-nav-label {
+  text-align: right;
+}
+
+.poke-nav-dex {
+  font-size: 0.42rem;
+  color: var(--ink-3);
+}
+
+.poke-nav-name {
+  font-size: 0.46rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (min-width: 640px) {
@@ -900,7 +1950,7 @@ a:hover {
 .back-btn {
   font-family: var(--font-retro);
   font-size: 0.45rem;
-  color: var(--text-muted);
+  color: var(--ink-ui);
   background: none;
   border: none;
   cursor: pointer;
@@ -913,7 +1963,7 @@ a:hover {
 }
 
 .back-btn:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 /* ===== STAT BARS ===== */
@@ -925,20 +1975,423 @@ a:hover {
 
 .stat-row {
   display: grid;
-  grid-template-columns: 60px 40px 1fr 40px;
+  /* Last column widened from 40px to fit the level 100 range (e.g. "180-274"). */
+  grid-template-columns: 60px 56px 1fr 86px;
   align-items: center;
   gap: 10px;
 }
 
+/* ===== LEARNED MOVES ===== */
+.mv-tabs {
+  flex-wrap: wrap;
+}
+
+.mv-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.38rem;
+  color: var(--ink-3);
+  margin-bottom: 10px;
+  line-height: 1.8;
+  /* Dos lineas reservadas. A 360 esta linea cabe entera cuando dice "2
+     movimientos" y envuelve cuando dice "20", y esos 13px de diferencia eran
+     lo unico que movia el alto de la tarjeta al cambiar de pestana: 601 en
+     Nivel y MT contra 592 en Tutor. */
+  min-height: 25px;
+}
+
+/* Alto fijo, no maximo: con max-height la tarjeta encogia en las pestanas
+   cortas -- de Pikachu, Tutor trae 2 movimientos y MT 34 -- y saltaba cada vez
+   que se cambiaba de una a otra. A 1920 la fila mide 41.7px, asi que 420
+   ensenan diez.
+
+   Antes movil se soltaba entero, con el argumento de que una caja con scroll
+   dentro de una pagina que ya scrollea es incomoda al tacto. Sigue siendo
+   verdad, pero ahora la seccion viene desplegada y sin tope son 930px de
+   tarjeta para un Bulbasaur y mas para un Pikachu. */
+.mv-list {
+  height: 420px;
+  overflow-y: auto;
+}
+
+/* La seccion se rellena despues de que la ficha ya este pintada, y el bento es
+   column-count: si creciera al llegar los datos recolocaria todas las tarjetas
+   de su columna. Reserva desde el primer pintado lo que va a ocupar: 42 de
+   pestanas, 14 de la linea del juego, sus margenes y los 420 de la lista. */
+.mv-section {
+  min-height: 502px;
+}
+
+.mv-row {
+  display: grid;
+  /* The type column fits "Siniestro", the longest type name, which needs 87px. */
+  grid-template-columns: 52px 1fr 92px 76px 34px 44px 34px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mv-row:last-child {
+  border-bottom: none;
+}
+
+.mv-level {
+  font-size: 0.38rem;
+  color: var(--accent-text);
+  text-align: right;
+}
+
+/* A link since the move detail page exists, but styled as the plain name it
+   was: 85 underlined rows would read as a wall of links. The accent on hover
+   is what tells you it goes somewhere, same as .ability-link. */
+.mv-name {
+  font-size: 0.42rem;
+  color: var(--ink-1);
+  line-height: 1.7;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.mv-name:hover,
+.mv-name:focus-visible {
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.mv-num {
+  font-size: 0.4rem;
+  color: var(--ink-1);
+  text-align: right;
+}
+
+/* The badges carry their own padding; keep them from being clipped. */
+.mv-row .type-badge,
+.mv-row .move-category {
+  white-space: nowrap;
+  text-align: center;
+}
+
+@media (max-width: 767px) {
+  /* Aqui la lista se soltaba entera, y con la seccion ya desplegada eso son
+     930px de tarjeta para un Bulbasaur y mucho mas para un Pikachu. Mantiene
+     el alto de escritorio: la fila mide 62.1px a 360, asi que se ven casi
+     siete en vez de diez, pero la tarjeta ocupa lo mismo en los dos sitios. */
+  /* Two rows: name on top, then the five metadata cells below it. Six columns
+     so power, accuracy and PP all fit on that second line instead of the PP
+     dropping to a third row on its own. */
+  .mv-row {
+    grid-template-columns: 46px auto auto 1fr auto auto;
+    row-gap: 5px;
+    column-gap: 6px;
+    padding: 9px 2px;
+  }
+  .mv-name {
+    grid-column: 2 / -1;
+  }
+  .mv-row .type-badge {
+    grid-column: 2;
+  }
+  .mv-num {
+    text-align: right;
+  }
+}
+
+/* ===== EVOLUTION LINE ===== */
+.evo-line {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+.evo-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* El ancho sale del sprite y no de un numero suelto. Estaban puestos en dos
+   sitios: el nodo fijo en 92px y el sprite subido a 140 solo en escritorio, asi
+   que el marco amarillo del Pokemon actual se quedaba 48px mas estrecho que el
+   dibujo y el sprite se salia 24 por cada lado. Atados por la variable no
+   pueden volver a separarse. */
+.evo-node {
+  --evo-sprite: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  text-decoration: none;
+  flex-shrink: 0;
+  /* el sprite, sus 8px de padding a cada lado y los 2 del borde */
+  width: calc(var(--evo-sprite) + 20px);
+  transition: all 0.15s;
+}
+
+a.evo-node:hover {
+  border-color: var(--border-accent);
+  background: var(--bg-card);
+}
+
+.evo-node.current {
+  border-color: var(--accent);
+  background: var(--bg-card);
+}
+
+.evo-node img {
+  width: var(--evo-sprite);
+  height: var(--evo-sprite);
+  image-rendering: pixelated;
+  transition: transform 0.2s;
+}
+
+a.evo-node:hover img {
+  transform: scale(1.09);
+}
+
+@media (min-width: 1000px) {
+  .evo-node {
+    --evo-sprite: 140px;
+  }
+}
+
+.evo-dex {
+  font-family: var(--font-data);
+  font-size: 17px;
+  color: var(--ink-3);
+}
+
+.evo-name {
+  font-size: 0.55rem;
+  color: var(--ink-1);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* Branches stack vertically. 96% of chains never branch, and for the 4% that
+   do a vertical list reads better than any horizontal attempt. */
+.evo-branches {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.evo-branch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.evo-arrow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Como se evoluciona es la mitad de la respuesta, y estaba en 0.36rem gris
+   sobre gris: la letra mas pequena de toda la aplicacion para la unica frase
+   de la banda que hay que leer. Sube a 0.5rem con la tinta normal y va dentro
+   de su propia capsula, que la separa de los sprites. La banda ocupa 1230px y
+   usaba 700, asi que el sitio ya estaba. */
+.evo-cond {
+  font-size: 0.5rem;
+  color: var(--ink-1);
+  line-height: 1.8;
+  max-width: 210px;
+  text-align: center;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.evo-tip {
+  font-size: 0.7rem;
+  color: var(--accent-text);
+}
+
+.evo-arrow {
+  gap: 8px;
+}
+
+.evo-none {
+  font-size: 0.44rem;
+  color: var(--ink-2);
+  text-align: center;
+  line-height: 2;
+}
+
+@media (max-width: 767px) {
+  /* Linear chains go vertical too, so nothing ever scrolls sideways. */
+  .evo-step,
+  .evo-branch {
+    flex-direction: column;
+    align-items: center;
+  }
+  .evo-arrow {
+    flex-direction: column;
+  }
+  .evo-tip {
+    transform: rotate(90deg);
+  }
+  .evo-cond {
+    max-width: 200px;
+  }
+}
+
+/* ===== ABILITY LINK + TOOLTIP ===== */
+/* ===== ABILITIES ON THE DETAIL PAGE ===== */
+.ability-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ability-item {
+  border-left: 2px solid var(--border-accent);
+  padding-left: 12px;
+}
+
+.ability-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ability-tag {
+  font-size: 0.42rem;
+  color: var(--ink-3);
+}
+
+.ability-desc {
+  margin: 8px 0 0;
+  font-size: 0.44rem;
+  line-height: 1.9;
+  color: var(--ink-2);
+}
+
+.ability-link {
+  position: relative;
+  display: inline-block;
+  font-size: 0.45rem;
+  color: var(--accent-text);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--border-accent);
+  padding-bottom: 1px;
+  transition: border-color 0.15s;
+}
+
+.ability-link:hover,
+.ability-link:focus-visible {
+  border-bottom-color: var(--accent);
+}
+
+.tooltip-bubble {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 50;
+  /* Never wider than the viewport: at 360px a fixed width would overflow. */
+  width: max-content;
+  max-width: min(280px, calc(100vw - 32px));
+  padding: 8px 10px;
+  font-size: 0.42rem;
+  line-height: 1.9;
+  color: var(--ink-1);
+  background: var(--bg-surface);
+  border: 2px solid var(--border-accent);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  white-space: normal;
+  text-align: left;
+  pointer-events: none;
+}
+
+.stat-range,
+.stat-range-head {
+  font-family: var(--font-data);
+  font-size: 18px;
+  color: var(--ink-2);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.stat-range-head {
+  color: var(--ink-3);
+}
+
+.stat-head {
+  margin-bottom: -4px;
+}
+
+/* EVs awarded on defeat. Sits under the stat table because it is read together
+   with it, separated by the same rule the total row uses. */
+.ev-yield {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 2px solid var(--border);
+}
+
+/* --text-muted, not --text-dim: at this size --text-dim measured 2.34:1 against
+   the card, under the 4.5 minimum. */
+.ev-yield-label {
+  font-size: 0.4rem;
+  color: var(--ink-3);
+}
+
+/* The stat colour rides in the dot, not in the text. As text it measured 1.92:1
+   in light mode: those colours were picked for the stat bars, where they sit on
+   a dark track. The dot is decorative, since the label already names the stat. */
+.ev-yield-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.44rem;
+  color: var(--ink-1);
+}
+
+.ev-yield-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  /* Six columns do not fit at 360px, so the range drops to its own line. */
+  .stat-row {
+    grid-template-columns: 60px 56px 1fr;
+  }
+  .stat-range {
+    grid-column: 1 / -1;
+    margin-top: -6px;
+  }
+  .stat-head {
+    display: none;
+  }
+}
+
 .stat-label {
   font-size: 0.48rem;
-  color: var(--text-muted);
+  color: var(--ink-3);
   text-align: right;
 }
 
 .stat-value {
-  font-size: 0.5rem;
-  color: var(--text);
+  font-family: var(--font-data);
+  font-size: 26px;
+  line-height: 1;
+  color: var(--ink-1);
   text-align: right;
 }
 
@@ -956,9 +2409,13 @@ a:hover {
   min-width: 2px;
 }
 
+/* The total is the one number people compare between Pokemon, and the only one
+   the ficha shows at a size of its own. */
 .stat-total {
-  font-size: 0.5rem;
-  color: var(--accent);
+  font-family: var(--font-data);
+  font-size: 34px;
+  line-height: 1;
+  color: var(--accent-text);
   text-align: right;
 }
 
@@ -977,7 +2434,7 @@ a:hover {
 
 .data-table th {
   background: var(--bg-card);
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 0.46rem;
   padding: 12px 10px;
   text-align: left;
@@ -995,6 +2452,41 @@ a:hover {
   vertical-align: middle;
 }
 
+/* El alineado de una columna se declara una vez y lo heredan su cabecera y sus
+   celdas. Estaba puesto en dos sitios -- `text-align:left` en el `th` de aqui y
+   `text-align:center` en linea en cada `td` -- y por eso POTENCIA quedaba 45px
+   a la izquierda de sus numeros. */
+.data-table th.col-c,
+.data-table td.col-c {
+  text-align: center;
+}
+
+/* La columna del nombre se queda con todo el ancho sobrante y las de datos se
+   cinen a su contenido. Sin esto la tabla repartia a partes iguales y TIPO
+   ocupaba 292px para un badge de 60. */
+.data-table th.col-grow,
+.data-table td.col-grow {
+  width: 100%;
+}
+
+/* Ceñidas al contenido quedan pegadas unas a otras, asi que el aire que antes
+   venia del reparto a partes iguales lo pone ahora el padding. */
+.data-table th.col-c,
+.data-table td.col-c {
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+.data-table td.col-c {
+  white-space: nowrap;
+}
+
+/* El hueco de un dato que el movimiento no tiene. Estaba en --text-dim, que el
+   propio fichero reserva para separadores porque mide 2.12:1, y era texto. */
+.data-table td.col-empty {
+  color: var(--ink-3);
+}
+
 .data-table tr {
   background: var(--bg-surface);
   transition: background 0.15s;
@@ -1008,6 +2500,36 @@ a:hover {
   border-bottom: none;
 }
 
+/* ===== MOVES TABLE: NAME AND DESCRIPTION ===== */
+/* Both used to be 0.42rem, and the description's grey is close enough to the
+   name's white that the two read as one paragraph: you could not tell where
+   the move was called. The name goes up to 0.58rem and keeps the brightest
+   ink; the description drops a step and gains the accent rule down its side,
+   so the eye lands on the name first. */
+.mv-title {
+  font-size: 0.58rem;
+  color: var(--ink-1);
+  line-height: 1.5;
+  letter-spacing: 0.5px;
+}
+
+.data-table tr:hover .mv-title {
+  color: var(--accent-text);
+}
+
+.mv-desc {
+  font-size: 0.4rem;
+  color: var(--ink-2);
+  margin-top: 7px;
+  padding-left: 8px;
+  border-left: 2px solid var(--border);
+  line-height: 1.8;
+  /* La columna del nombre se queda con el ancho sobrante, asi que a 1920 son
+     1210px con la descripcion cortada a 320: cinco lineas y un hueco de 890.
+     Con 560 la misma frase cae en dos. */
+  max-width: 560px;
+}
+
 /* ===== MOVE ROW ===== */
 .move-category {
   font-size: 0.44rem;
@@ -1017,9 +2539,335 @@ a:hover {
   letter-spacing: 0.5px;
 }
 
+/* Mismo criterio que los badges de tipo: la tinta la decide el relleno. Especial
+   con letra blanca media 3.10:1; con la tinta oscura, 5.51. */
 .move-category.physical { background: #C22E28; color: #fff; }
-.move-category.special  { background: #6390F0; color: #fff; }
-.move-category.status   { background: #94A3B8; color: #1a1a3e; }
+.move-category.special  { background: #6390F0; color: var(--on-type-light); }
+.move-category.status   { background: #94A3B8; color: var(--on-type-light); }
+
+/* ===== TEAM ANALYSIS ===== */
+/* Six slots that keep their shape whether they are filled or not, so adding a
+   member never reflows the page under the cursor. */
+.team-slots {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+@media (min-width: 700px) {
+  .team-slots { grid-template-columns: repeat(6, 1fr); }
+}
+
+.team-slot {
+  position: relative;
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 4px;
+  text-align: center;
+  min-height: 118px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.team-slot.empty {
+  border-style: dashed;
+  color: var(--ink-2);
+  font-size: 0.8rem;
+}
+
+.team-slot img {
+  width: 56px;
+  height: 56px;
+  image-rendering: pixelated;
+}
+
+.team-slot-name {
+  font-size: 0.36rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.team-slot-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+}
+
+.team-slot-types .type-badge {
+  padding: 2px 4px;
+  font-size: 0.3rem;
+}
+
+.team-remove {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  background: none;
+  border: none;
+  color: var(--ink-ui);
+  font-size: 0.7rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.team-remove:hover { color: var(--danger-text); }
+
+.team-results {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.team-result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-family: var(--font-retro);
+  font-size: 0.44rem;
+  color: var(--ink-1);
+  text-align: left;
+}
+
+.team-result:hover { border-color: var(--border-accent); }
+
+.team-result img {
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+}
+
+.team-result-types {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.team-noresults,
+.team-none {
+  font-size: 0.42rem;
+  color: var(--ink-2);
+  line-height: 1.9;
+  padding: 6px 0;
+}
+
+.team-summary {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 700px) {
+  .team-summary { grid-template-columns: 1fr 1fr; }
+}
+
+.team-summary-label {
+  display: block;
+  font-size: 0.4rem;
+  color: var(--ink-3);
+  line-height: 1.8;
+  margin-bottom: 8px;
+}
+
+.team-hint {
+  font-size: 0.4rem;
+  color: var(--ink-2);
+  line-height: 1.9;
+  margin-bottom: 12px;
+}
+
+.team-atk .filter-btn[disabled] {
+  cursor: default;
+  opacity: 0.9;
+}
+
+.result-badge.dimmed { opacity: 0.55; }
+
+/* The matrix is 18 rows by up to six members, so cells stay tight and the
+   sprites in the header carry the identification. */
+.team-matrix th img {
+  width: 40px;
+  height: 40px;
+  image-rendering: pixelated;
+  display: block;
+  margin: 0 auto;
+}
+
+.team-matrix td.mult {
+  text-align: center;
+  font-size: 0.42rem;
+}
+
+.team-matrix td.weak { color: var(--stat-down); }
+.team-matrix td.resist { color: var(--stat-up); }
+.team-matrix td.immune { color: var(--accent-text); }
+
+/* Rows where every member takes normal damage stay visible but quiet: hiding
+   them would make the table change height as the team changes. */
+.team-matrix tr.row-quiet { opacity: 0.4; }
+
+/* ===== MOVE DETAIL ===== */
+/* Same shape as .poke-detail-header minus the sprite: a move has no artwork,
+   so the name carries the header on its own. */
+.move-detail-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.move-detail-header h2 {
+  font-size: 0.9rem;
+  color: var(--accent-text);
+  line-height: 1.6;
+}
+
+.move-detail-header .name-en {
+  font-size: 0.44rem;
+  color: var(--ink-3);
+  margin: 6px 0 12px;
+}
+
+.move-detail-header .types {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* auto-fit rather than fixed columns: the row has three cells for most moves
+   and four for the 56 with priority, and both should fill the card. */
+.move-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 12px;
+  text-align: center;
+}
+
+.move-stats span {
+  display: block;
+  font-size: 0.38rem;
+  color: var(--ink-3);
+  margin-bottom: 6px;
+}
+
+.move-stats strong {
+  display: block;
+  font-size: 0.6rem;
+  color: var(--ink-1);
+  font-weight: normal;
+}
+
+.move-stats .prio-up { color: var(--stat-up); }
+.move-stats .prio-down { color: var(--stat-down); }
+
+.move-stats em {
+  display: block;
+  font-size: 0.34rem;
+  color: var(--ink-2);
+  font-style: normal;
+  margin-top: 4px;
+}
+
+.move-desc {
+  font-size: 0.48rem;
+  color: var(--ink-2);
+  line-height: 2;
+}
+
+.mv-chips + .move-desc {
+  margin-top: 12px;
+}
+
+/* ===== MOVE LEARNERS ===== */
+/* A compact .pokemon-card: same surface, border and radius, but half the
+   sprite and no lift on hover, because a tab can hold 1003 of these. */
+.learner-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 8px;
+}
+
+.learner {
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 4px;
+  text-align: center;
+  text-decoration: none;
+  color: var(--ink-1);
+  transition: border-color 0.15s;
+}
+
+.learner:hover {
+  border-color: var(--border-accent);
+  text-decoration: none;
+}
+
+.learner img {
+  width: 56px;
+  height: 56px;
+  image-rendering: pixelated;
+  display: block;
+  margin: 0 auto 4px;
+}
+
+.learner-name {
+  display: block;
+  font-size: 0.36rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.learner-level {
+  display: block;
+  font-size: 0.34rem;
+  color: var(--accent-text);
+  margin-top: 4px;
+}
+
+.learner-more {
+  display: block;
+  margin: 12px auto 0;
+}
+
+.mv-note {
+  font-size: 0.34rem;
+  color: var(--ink-2);
+  line-height: 1.9;
+  margin-top: 14px;
+  text-align: center;
+}
+
+/* ===== STAT CHANGE CHIPS ===== */
+/* Outlined rather than filled: they sit inside a table cell next to the move
+   name, and a filled badge there would compete with the type badge. */
+.mv-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.mv-chip {
+  font-size: 0.38rem;
+  padding: 2px 6px;
+  border: 2px solid;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.mv-chip.up { border-color: var(--stat-up); color: var(--stat-up); }
+.mv-chip.down { border-color: var(--stat-down); color: var(--stat-down); }
 
 /* ===== ITEMS GRID ===== */
 .items-grid {
@@ -1064,7 +2912,7 @@ a:hover {
 .item-card .item-name {
   font-size: 0.46rem;
   line-height: 1.6;
-  color: var(--text);
+  color: var(--ink-1);
 }
 
 /* ===== ITEM DETAIL MODAL ===== */
@@ -1098,7 +2946,7 @@ a:hover {
   right: 12px;
   background: rgba(255,255,255,0.06);
   border: 2px solid var(--border);
-  color: var(--text-muted);
+  color: var(--ink-ui);
   font-family: var(--font-retro);
   font-size: 0.6rem;
   padding: 4px 8px;
@@ -1109,20 +2957,20 @@ a:hover {
 
 .modal-close:hover {
   background: rgba(251, 113, 133, 0.15);
-  color: #FB7185;
+  color: var(--danger-text);
 }
 
 /* ===== NATURE TABLE ===== */
 .nature-table .increase {
-  color: var(--success);
+  color: var(--success-text);
 }
 
 .nature-table .decrease {
-  color: var(--danger);
+  color: var(--danger-text);
 }
 
 .nature-table .neutral {
-  color: var(--text-dim);
+  color: var(--ink-2);
 }
 
 /* ===== CALCULATOR ===== */
@@ -1147,7 +2995,7 @@ a:hover {
 .calc-field label {
   display: block;
   font-size: 0.48rem;
-  color: var(--text-muted);
+  color: var(--ink-3);
   margin-bottom: 6px;
   letter-spacing: 0.5px;
 }
@@ -1161,7 +3009,7 @@ a:hover {
   background: var(--bg-card);
   border: 2px solid var(--border);
   border-radius: 6px;
-  color: var(--text);
+  color: var(--ink-1);
   outline: none;
   transition: border-color 0.2s;
 }
@@ -1173,7 +3021,89 @@ a:hover {
 
 .calc-field select option {
   background: var(--bg-card);
-  color: var(--text);
+  color: var(--ink-1);
+}
+
+/* ===== CAPTURE CALCULATOR ===== */
+
+.capture-hp-range {
+  width: 100%;
+  accent-color: var(--accent);
+  padding: 0;
+}
+
+/* The condition a conditional ball needs. Shown as a checkbox rather than
+   assumed, so the number never claims an underwater bonus on dry land. */
+.capture-cond {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 0.44rem;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.capture-cond input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.capture-headline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.capture-ball-sprite {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.capture-pct {
+  font-size: 1.1rem;
+  line-height: 1.3;
+}
+
+.capture-sub {
+  font-size: 0.44rem;
+  color: var(--ink-2);
+  margin-top: 4px;
+}
+
+/* Cumulative odds. Four columns on desktop, two on a phone. */
+.capture-throws {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 2px solid var(--border);
+}
+
+@media (min-width: 640px) {
+  .capture-throws {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.capture-throw {
+  text-align: center;
+}
+
+.capture-throw-n {
+  font-size: 0.4rem;
+  color: var(--ink-1);
+  margin-bottom: 6px;
+}
+
+.capture-throw-pct {
+  font-size: 0.55rem;
+  color: var(--ink-1);
 }
 
 .calc-btn {
@@ -1183,7 +3113,7 @@ a:hover {
   border-radius: 8px;
   border: 2px solid var(--accent);
   background: rgba(255, 204, 0, 0.1);
-  color: var(--accent);
+  color: var(--accent-text);
   cursor: pointer;
   transition: all 0.15s;
   letter-spacing: 1px;
@@ -1237,7 +3167,7 @@ a:hover {
 
 .loading-text {
   font-size: 0.45rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
   letter-spacing: 0.5px;
 }
 
@@ -1258,14 +3188,14 @@ a:hover {
   border-radius: 6px;
   border: 2px solid var(--border);
   background: var(--bg-card);
-  color: var(--text-muted);
+  color: var(--ink-ui);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .page-btn:hover:not(:disabled) {
   border-color: var(--border-accent);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .page-btn:disabled {
@@ -1275,13 +3205,13 @@ a:hover {
 
 .page-btn.active {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-text);
   background: rgba(255, 204, 0, 0.08);
 }
 
 .page-info {
   font-size: 0.48rem;
-  color: var(--text-dim);
+  color: var(--ink-3);
 }
 
 /* ===== RESULT SECTIONS (Type chart) ===== */
@@ -1309,22 +3239,22 @@ a:hover {
 
 .result-hint {
   font-size: 0.44rem;
-  color: var(--text-dim);
+  color: var(--ink-3);
   font-weight: normal;
   letter-spacing: 0;
 }
 
-.result-section.weakness h3 { color: #FB7185; }
+.result-section.weakness h3 { color: var(--danger-text); }
 .result-section.weakness { border-color: rgba(251, 113, 133, 0.15); }
-.result-section.resistance h3 { color: #60A5FA; }
+.result-section.resistance h3 { color: var(--info-text); }
 .result-section.resistance { border-color: rgba(96, 165, 250, 0.15); }
-.result-section.immunity h3 { color: #A78BFA; }
+.result-section.immunity h3 { color: var(--special-text); }
 .result-section.immunity { border-color: rgba(167, 139, 250, 0.15); }
-.result-section.super-effective h3 { color: #34D399; }
+.result-section.super-effective h3 { color: var(--success-text); }
 .result-section.super-effective { border-color: rgba(52, 211, 153, 0.15); }
-.result-section.not-effective h3 { color: #F59E0B; }
+.result-section.not-effective h3 { color: var(--warning-text); }
 .result-section.not-effective { border-color: rgba(245, 158, 11, 0.15); }
-.result-section.no-effect h3 { color: #94A3B8; }
+.result-section.no-effect h3 { color: var(--ink-2); }
 .result-section.no-effect { border-color: rgba(148, 163, 184, 0.15); }
 
 .result-badges {
@@ -1335,7 +3265,7 @@ a:hover {
 
 .empty-state {
   font-size: 0.5rem;
-  color: var(--text-dim);
+  color: var(--ink-2);
   font-style: italic;
   letter-spacing: 0.5px;
   display: none;
@@ -1364,21 +3294,76 @@ a:hover {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--ink-ui);
   cursor: pointer;
   transition: all 0.15s;
   letter-spacing: 0.5px;
 }
 
 .tab:hover {
-  color: var(--text);
+  color: var(--ink-1);
   background: rgba(255, 255, 255, 0.04);
+}
+
+/* A species can carry eight forms (Pikachu has eight caps), far past what fits
+   at 360px. The strip scrolls inside itself rather than widening the page, and
+   its tabs keep their own width instead of splitting the row into slivers. */
+.form-tabs { margin: 0; overflow-x: auto; scrollbar-width: none; }
+.form-tabs::-webkit-scrollbar { display: none; }
+.form-tabs .tab { flex: 0 0 auto; white-space: nowrap; }
+
+/* Nothing said the strip scrolled, so the tab at the edge just looked cut off.
+   The fades sit on the wrapper, not on the scroller: inside it they would ride
+   along with the content instead of staying at the edge. */
+.form-tabs-wrap {
+  position: relative;
+  margin: 0 0 20px;
+}
+
+.form-tabs-wrap::before,
+.form-tabs-wrap::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 40px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.form-tabs-wrap::after {
+  right: 2px;
+  border-radius: 0 6px 6px 0;
+  background: linear-gradient(to right, transparent, var(--bg-surface));
+}
+
+.form-tabs-wrap::before {
+  left: 2px;
+  border-radius: 6px 0 0 6px;
+  background: linear-gradient(to left, transparent, var(--bg-surface));
+}
+
+.form-tabs-wrap.more-right::after,
+.form-tabs-wrap.more-left::before {
+  opacity: 1;
 }
 
 .tab.active {
   background: var(--bg-card);
-  color: var(--accent);
+  color: var(--accent-text);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* The tool strip uses the same tabs as the calculator, but its entries are
+   links to other routes, not buttons switching a panel. */
+.tool-tabs {
+  margin-bottom: 20px;
+}
+
+.tool-tabs .tab {
+  text-decoration: none;
+  text-align: center;
 }
 
 .tab-content {
@@ -1417,13 +3402,13 @@ a:hover {
 
 .selected-placeholder {
   font-size: 0.5rem;
-  color: var(--text-muted);
+  color: var(--ink-ui);
   letter-spacing: 0.5px;
 }
 
 .blink {
   animation: blink 1s step-end infinite;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 @keyframes blink {
@@ -1439,7 +3424,7 @@ a:hover {
 
 .selected-label {
   font-size: 0.5rem;
-  color: var(--text-muted);
+  color: var(--ink-3);
   white-space: nowrap;
   letter-spacing: 0.5px;
 }
@@ -1453,7 +3438,7 @@ a:hover {
 .clear-btn {
   background: rgba(255, 255, 255, 0.06);
   border: 2px solid var(--border);
-  color: var(--text-muted);
+  color: var(--ink-ui);
   font-family: var(--font-retro);
   font-size: 0.6rem;
   padding: 6px 10px;
@@ -1465,16 +3450,21 @@ a:hover {
 .clear-btn:hover {
   background: rgba(251, 113, 133, 0.15);
   border-color: rgba(251, 113, 133, 0.4);
-  color: #FB7185;
+  color: var(--danger-text);
 }
 
 /* ===== SECTION TITLE ===== */
+/* El titulo de seccion es lo unico amarillo de su bloque. Estaba en la misma
+   tinta que los valores de dentro, asi que en la ficha -- que tiene ocho
+   secciones -- nada decia donde empezaba cada una. El amarillo no lo hace mas
+   brillante (9.95 cae por debajo de --ink-1) sino de otro color, que es la
+   unica senal que queda cuando la de luminancia esta agotada. */
 .section-title {
   font-size: 0.55rem;
-  color: var(--text);
+  color: var(--accent-text);
   margin-bottom: 16px;
   padding-bottom: 8px;
-  border-bottom: 2px solid var(--border);
+  border-bottom: 2px solid var(--border-accent);
   letter-spacing: 1px;
 }
 
@@ -1494,13 +3484,13 @@ a:hover {
 
 .ability-card h3 {
   font-size: 0.5rem;
-  color: var(--accent);
+  color: var(--accent-text);
   margin-bottom: 8px;
 }
 
 .ability-card .ability-desc {
   font-size: 0.46rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
   line-height: 2;
 }
 
@@ -1550,5 +3540,312 @@ a:hover {
 
 .no-results p {
   font-size: 0.45rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
+}
+
+/* ===== DAMAGE CALCULATOR ===== */
+
+/* Attacker and defender side by side once there is room for two columns. */
+.dmg-sides {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 900px) {
+  .dmg-sides {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.dmg-hit {
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.42rem;
+}
+
+.dmg-hit img {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+}
+
+.dmg-chosen {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0 12px;
+}
+
+.dmg-chosen img {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+}
+
+.dmg-chosen-name {
+  font-size: 0.5rem;
+  color: var(--accent-text);
+}
+
+.dmg-chosen-types {
+  font-size: 0.42rem;
+  color: var(--ink-2);
+  margin-top: 4px;
+}
+
+/* Field modifiers are folded away: most questions never touch them. */
+.dmg-field {
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+}
+
+.dmg-field summary {
+  padding: 14px 16px;
+  font-size: 0.48rem;
+  color: var(--ink-ui);
+  cursor: pointer;
+  list-style: none;
+}
+
+.dmg-field summary::before {
+  content: '[+] ';
+  color: var(--accent-text);
+}
+
+.dmg-field[open] summary::before {
+  content: '[-] ';
+}
+
+.dmg-field-body {
+  padding: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dmg-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.dmg-toggles label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.44rem;
+  color: var(--ink-ui);
+  cursor: pointer;
+}
+
+.dmg-toggles input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.dmg-empty {
+  text-align: center;
+  font-size: 0.46rem;
+  color: var(--ink-2);
+}
+
+.dmg-headline {
+  font-size: 1.1rem;
+  line-height: 1.3;
+}
+
+.dmg-immune {
+  color: var(--ink-2);
+  font-size: 0.7rem;
+}
+
+.dmg-sub {
+  font-size: 0.5rem;
+  color: var(--ink-2);
+  margin-top: 6px;
+}
+
+/* Two stacked segments: the guaranteed part of the roll, then the luck. */
+.dmg-bar {
+  display: flex;
+  height: 14px;
+  margin: 16px 0 12px;
+  background: var(--bg-surface);
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dmg-bar-min {
+  height: 100%;
+}
+
+.dmg-bar-max {
+  height: 100%;
+  opacity: 0.45;
+}
+
+.dmg-ko {
+  font-size: 0.5rem;
+  color: var(--ink-1);
+}
+
+.dmg-eff,
+.dmg-notes {
+  font-size: 0.42rem;
+  color: var(--ink-2);
+  margin-top: 10px;
+  line-height: 1.9;
+}
+
+/* Fields a variable-power move asks for, and the Z toggle. */
+.dmg-extras {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 2px solid var(--border);
+}
+
+.dmg-extras-title {
+  font-size: 0.42rem;
+  color: var(--ink-3);
+  margin-bottom: 10px;
+}
+
+.dmg-z {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 0.44rem;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.dmg-z input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* ===== META SETS ===== */
+.meta-set-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.meta-set-head img { width: 72px; height: 72px; image-rendering: pixelated; }
+.meta-set-head h3 { font-size: 0.6rem; margin: 0 0 4px; }
+.meta-usage { font-size: 0.46rem; color: var(--ink-2); }
+.meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 16px; }
+.meta-line { font-size: 0.46rem; color: var(--ink-1); line-height: 1.9; }
+
+/* El porcentaje iba en la misma tinta que el nombre que tiene al lado, y aunque
+   ya estaba en la fuente de datos se leian como una sola cosa. Ahora es una
+   pastilla: se distingue por forma antes que por color, que es lo que hay que
+   hacer cuando el amarillo esta reservado para una cosa por bloque -- y aqui
+   hay hasta diez porcentajes en la misma tarjeta. */
+.meta-pct {
+  font-family: var(--font-data);
+  font-size: 19px;
+  line-height: 1;
+  color: var(--ink-2);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 5px 1px;
+  display: inline-block;
+  vertical-align: 2px;
+}
+
+/* El nombre del set lleva a su pagina: la habilidad a su ficha, el movimiento a
+   la suya y el objeto a la lista filtrada. Mismo subrayado discontinuo que la
+   habilidad de la ficha, que ya era el enlace de dentro de una tarjeta. */
+.meta-name-link {
+  color: var(--ink-1);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--border-accent);
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.meta-name-link:hover,
+.meta-name-link:focus-visible {
+  color: var(--accent-text);
+  border-bottom-color: var(--accent);
+  text-decoration: none;
+}
+.meta-moves { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 4px 14px; }
+.meta-rank { display: flex; flex-direction: column; gap: 4px; }
+.meta-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 10px; background: var(--bg-surface); border: 2px solid var(--border); border-radius: 8px; cursor: pointer; font-family: var(--font-retro); }
+.meta-row:hover, .meta-row.active { border-color: var(--accent); }
+.meta-row img { width: 32px; height: 32px; image-rendering: pixelated; }
+.meta-pos { font-size: 0.42rem; color: var(--ink-3); min-width: 22px; text-align: right; }
+/* El nombre se queda con el hueco que sobra y no empuja el porcentaje fuera de
+   una pantalla de 360 px, que es lo que le paso a la fila de contrarrestar. */
+.meta-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font-size: 0.46rem; color: var(--ink-1); }
+.meta-credit { margin-top: 20px; font-size: 0.4rem; }
+.ct-meta { font-size: 0.5rem; opacity: 0.85; }
+
+/* El set en la ficha. La nota sale solo cuando el set es de un pariente, y
+   tiene que leerse como una advertencia y no como parte del set. */
+.meta-family {
+  font-size: 0.44rem;
+  line-height: 1.9;
+  color: var(--ink-2);
+  border-left: 2px solid var(--border-accent);
+  padding-left: 12px;
+  margin: 0 0 14px;
+}
+
+.meta-moveset {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0 0 0 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 2px 14px;
+}
+
+.meta-moveset li {
+  font-size: 0.46rem;
+  color: var(--ink-1);
+  line-height: 1.9;
+}
+
+.meta-moveset li::before {
+  content: '▸ ';
+  color: var(--accent-text);
+}
+
+.meta-moves-head {
+  margin-top: 10px;
+}
+
+.meta-foot {
+  margin: 14px 0 0;
+  font-size: 0.42rem;
+  line-height: 1.9;
+  color: var(--ink-3);
+}
+
+/* ===== DESKTOP SCALE =====
+   In 2816 lines of CSS the highest breakpoint was 900px: above it there was not
+   a single rule, and 1000 looked the same as 1920. */
+@media (min-width: 1280px) {
+  html {
+    font-size: 19px;
+  }
+}
+
+@media (min-width: 1500px) {
+  html {
+    font-size: 20px;
+  }
+
+  :root {
+    --gutter: 56px;
+  }
 }

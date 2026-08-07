@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PokeUtils · mockup del rediseño</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   MOCKUP DEL REDISEÑO DESKTOP - no toca la app
+   Tokens copiados tal cual de style.css: misma identidad.
+   ============================================================ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0f0f23;
+  --bg-surface: #1a1a3e;
+  --bg-card: #22224a;
+  --bg-card-hover: #2a2a5a;
+  --accent: #ffcc00;
+  --accent-dim: #b8940a;
+  --on-accent: #0f0f23;
+  --text: #e8e8f0;
+  --text-muted: #8888aa;
+  --text-dim: #555577;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-accent: rgba(255, 204, 0, 0.3);
+  --type-fire: #EE8130;
+  --type-flying: #A98FF3;
+  --type-grass: #7AC74C;
+  --type-poison: #A33EA1;
+  --type-water: #6390F0;
+  --type-dragon: #6F35FC;
+  --type-bug: #A6B91A;
+  --type-electric: #F7D02C;
+  --font-retro: 'Press Start 2P', monospace;
+  --nav-height: 56px;
+
+  /* NUEVO: el margen lateral es lo unico que limita el ancho. */
+  --gutter: 32px;
+  /* NUEVO: tope solo para texto corrido, que a 1856px seria ilegible. */
+  --measure: 68ch;
+  /* NUEVO: --text-dim (#555577) da 2.12:1 sobre --bg-card, muy por debajo del
+     4.5 minimo. Servia para adornos, no para el numero de Pokedex. Este token
+     es para datos pequenos que hay que poder leer.
+     Va con valor por tema, igual que --stat-up/--stat-down: el gris claro que
+     mide 6.38:1 sobre la tarjeta oscura se queda en 1.90:1 sobre la clara. */
+  --text-data: #a6a6c8;  /* 6.38:1 sobre #22224a */
+}
+
+.light {
+  --bg: #eeeef5;
+  --bg-surface: #ffffff;
+  --bg-card: #e6e6f0;
+  --bg-card-hover: #dddde8;
+  --accent: #b88800;
+  --accent-dim: #7a5a00;
+  --on-accent: #ffffff;
+  --text: #1a1a3e;
+  --text-muted: #555577;
+  --text-dim: #8888aa;
+  --border: rgba(0, 0, 0, 0.1);
+  --border-accent: rgba(184, 136, 0, 0.3);
+  --text-data: #5f5f7d;  /* 4.95:1 sobre #e6e6f0 */
+}
+
+body {
+  font-family: var(--font-retro);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1.6;
+  -webkit-font-smoothing: none;
+  image-rendering: pixelated;
+}
+
+/* ===== NAV: igual que la de produccion, pero a ancho completo ===== */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--bg-surface);
+  border-bottom: 2px solid var(--border);
+}
+.nav-inner {
+  /* ANTES: max-width 1100px. AHORA: todo el ancho menos el margen. */
+  padding: 0 var(--gutter);
+  display: flex; align-items: center; height: var(--nav-height); gap: 20px;
+}
+.nav-logo { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--accent); text-decoration: none; letter-spacing: 1px; }
+.pokeball { width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(to bottom, #e63946 0 45%, #1a1a1a 45% 55%, #f8f9fa 55% 100%); border: 2px solid #1a1a1a; flex-shrink: 0; }
+.nav-links { display: flex; gap: 4px; margin-left: 10px; }
+.nav-link { font-size: 11px; color: var(--text-muted); text-decoration: none; padding: 8px 12px; border-radius: 6px; letter-spacing: 0.5px; }
+.nav-link.active { color: var(--accent); background: rgba(255,204,0,0.1); }
+.nav-toggles { margin-left: auto; display: flex; gap: 6px; }
+.nav-btn { font-family: var(--font-retro); font-size: 10px; padding: 7px 10px; background: var(--bg-card); color: var(--text-muted); border: 2px solid var(--border); border-radius: 6px; cursor: pointer; }
+
+/* ===== SELECTOR DEL MOCKUP (no forma parte del diseño) ===== */
+.mockbar {
+  position: sticky; top: var(--nav-height); z-index: 99;
+  display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  padding: 10px var(--gutter);
+  background: #2a1a3e; border-bottom: 2px solid var(--border-accent);
+}
+.mockbar span { font-size: 0.42rem; color: var(--accent); letter-spacing: 1px; }
+.mockbar button { font-family: var(--font-retro); font-size: 0.42rem; padding: 8px 12px; background: var(--bg-card); color: var(--text-muted); border: 2px solid var(--border); border-radius: 6px; cursor: pointer; }
+.mockbar button.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.mockbar .note { font-size: 0.38rem; color: var(--text-muted); margin-left: auto; letter-spacing: 0.5px; }
+
+/* ===== LAYOUT: la pagina scrollea entera. Sin scroll interno. ===== */
+.page { padding: 28px var(--gutter) 0; }
+.screen { display: none; }
+.screen.on { display: block; }
+
+.section-title { font-size: 13px; color: var(--accent); letter-spacing: 1.5px; margin: 0 0 14px; }
+.muted { color: var(--text-muted); }
+
+/* ============================================================
+   HOME - sin el titulo gigante: ya esta arriba en el nav
+   ============================================================ */
+.home-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.home-head h1 { font-size: 20px; color: var(--text); letter-spacing: 1px; }
+.home-head p { font-size: 12px; color: var(--text-muted); }
+
+.cat { margin-bottom: 30px; }
+.cat-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.cat-head h2 { font-size: 13px; color: var(--accent); letter-spacing: 1.5px; }
+.cat-head .rule { flex: 1; height: 2px; background: var(--border); }
+.cat-head .count { font-size: 11px; color: var(--text-dim); }
+
+/* Las tarjetas se reparten por todo el ancho: nada de una huerfana */
+.tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.tool-card { background: var(--bg-card); border: 2px solid var(--border); border-radius: 10px; padding: 16px; display: flex; align-items: center; gap: 14px; text-decoration: none; color: inherit; transition: border-color .15s, transform .15s; }
+.tool-card:hover { border-color: var(--border-accent); transform: translateY(-2px); }
+.tool-card .ico { font-size: 1.5rem; line-height: 1; flex-shrink: 0; }
+.tool-card h3 { font-size: 13px; color: var(--text); margin-bottom: 6px; letter-spacing: 0.5px; }
+.tool-card p { font-size: 11px; color: var(--text-muted); line-height: 1.7; }
+
+/* ============================================================
+   POKEDEX - tarjetas grandes, ancho completo, filtros en una fila
+   ============================================================ */
+.dex-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+.dex-search { flex: 1 1 320px; min-width: 240px; display: flex; align-items: center; gap: 10px; background: var(--bg-card); border: 2px solid var(--border); border-radius: 8px; padding: 11px 14px; }
+.dex-search input { flex: 1; background: none; border: none; outline: none; color: var(--text); font-family: var(--font-retro); font-size: 13px; }
+.dex-search input::placeholder { color: var(--text-dim); }
+.sel { font-family: var(--font-retro); font-size: 11px; padding: 11px 12px; background: var(--bg-card); color: var(--text-muted); border: 2px solid var(--border); border-radius: 8px; cursor: pointer; }
+.dex-count { font-size: 12px; color: var(--accent); letter-spacing: 1px; margin-left: auto; }
+
+/* Los 18 tipos en UNA fila que hace scroll propio, no en dos centradas */
+.type-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 18px; scrollbar-width: thin; }
+.type-chip { flex: 0 0 auto; font-family: var(--font-retro); font-size: 11px; padding: 9px 13px; border-radius: 6px; border: 2px solid var(--border); background: var(--bg-card); color: var(--text-data); cursor: pointer; letter-spacing: 0.5px; }
+.type-chip.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+
+/* LA DECISION: tarjeta objetivo ~290px, entran las que quepan */
+/* 260 y no 290: la barra de scroll se come 15px y a 1280 el calculo caia de 4
+   columnas a 3, dejando tarjetas de 390px deformadas. Con 260 hay margen y las
+   tarjetas siguen saliendo a ~294px en 1920, que es el objetivo. */
+.dex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.poke {
+  background: var(--bg-card); border: 2px solid var(--border); border-radius: 12px;
+  padding: 20px 16px; text-align: center; text-decoration: none; color: inherit;
+  transition: border-color .15s, transform .15s;
+}
+.poke:hover { border-color: var(--border-accent); transform: translateY(-3px); }
+/* ANTES 96px. AHORA 128: el sprite es lo que se viene a ver. */
+.poke img { width: 128px; height: 128px; image-rendering: pixelated; }
+.poke .num { font-size: 11px; color: var(--text-data); margin-top: 8px; letter-spacing: 0.5px; }
+/* ANTES 0.46rem. AHORA 0.58rem. */
+.poke .name { font-size: 15px; color: var(--text); margin: 10px 0 14px; letter-spacing: 0.5px; }
+.chips { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+/* Color explicito por chip: heredar --text-muted daba 1.09:1 en Psiquico. */
+.chip { font-size: 11px; padding: 6px 11px; border-radius: 5px; color: #0f0f23; letter-spacing: 0.5px; }
+
+/* ============================================================
+   FICHA - dos columnas. Evolucion y el resto a todo el ancho.
+   ============================================================ */
+/* La derecha apila dos tarjetas: con solo las stats quedaba media columna
+   vacia, porque la de identidad es mas alta. */
+.detail-top { display: grid; grid-template-columns: minmax(340px, 1fr) minmax(460px, 1.5fr); gap: 24px; margin-bottom: 24px; align-items: start; }
+.detail-right { display: flex; flex-direction: column; gap: 24px; }
+.card { background: var(--bg-card); border: 2px solid var(--border); border-radius: 12px; padding: 22px; }
+
+.id-card { display: flex; flex-direction: column; align-items: center; text-align: center; }
+/* ANTES 160px. AHORA 300. */
+.id-card > img { width: 300px; height: 300px; image-rendering: pixelated; }
+.id-card .dex { font-size: 14px; color: var(--text-data); letter-spacing: 1px; margin-top: 6px; }
+.id-card h2 { font-size: 26px; color: var(--text); margin: 10px 0; letter-spacing: 1px; }
+.id-card .alt { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+.meta-row { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; margin-top: 16px; }
+.meta-row div { text-align: center; }
+.meta-row .k { font-size: 11px; color: var(--text-data); letter-spacing: 1px; display: block; margin-bottom: 6px; }
+.meta-row .v { font-size: 16px; color: var(--text); }
+
+.form-tabs { display: flex; gap: 6px; margin-top: 16px; flex-wrap: wrap; justify-content: center; }
+.form-tab { font-family: var(--font-retro); font-size: 11px; padding: 8px 12px; border-radius: 6px; border: 2px solid var(--border); background: var(--bg-surface); color: var(--text-muted); cursor: pointer; }
+.form-tab.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+
+.stat-line { display: grid; grid-template-columns: 165px 56px 1fr; align-items: center; gap: 14px; margin-bottom: 13px; }
+/* ANTES 8.64px (0.48rem). AHORA 0.5rem sobre 18px = 9px, pero con mas aire y contraste. */
+.stat-line .k { font-size: 12px; color: var(--text-data); letter-spacing: 0.5px; }
+.stat-line .v { font-size: 17px; color: var(--text); text-align: right; }
+.bar { height: 14px; background: var(--bg-surface); border-radius: 7px; overflow: hidden; }
+.bar span { display: block; height: 100%; border-radius: 7px; }
+.total-line { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding-top: 16px; border-top: 2px solid var(--border); }
+.total-line .k { font-size: 13px; color: var(--accent); letter-spacing: 1px; }
+.total-line .v { font-size: 22px; color: var(--accent); }
+
+/* EVOLUCION: la queja principal. Sprites de 64 a 140. */
+.evo-row { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.evo-node { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 22px; border-radius: 10px; text-decoration: none; color: inherit; }
+.evo-node.current { background: var(--bg-surface); border: 2px solid var(--border-accent); }
+.evo-node img { width: 140px; height: 140px; image-rendering: pixelated; }
+/* ANTES 6.48px el numero y 7.2px el nombre. AHORA 0.44rem y 0.6rem. */
+.evo-node .dex { font-size: 12px; color: var(--text-data); letter-spacing: 0.5px; }
+.evo-node .nm { font-size: 16px; color: var(--text); letter-spacing: 0.5px; }
+.evo-arrow { display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text-muted); }
+.evo-arrow .cond { font-size: 12px; color: var(--accent); letter-spacing: 0.5px; }
+.evo-arrow .tri { font-size: 0.9rem; color: var(--text-dim); }
+
+.two-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 24px; margin-bottom: 24px; }
+.wr { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.prose { max-width: var(--measure); font-size: 12px; color: var(--text-muted); line-height: 2; }
+
+/* ===== FOOTER: al final del scroll, fuera de la vista hasta llegar ===== */
+.footer { margin-top: 40px; padding: 24px var(--gutter) 34px; border-top: 2px solid var(--border); }
+.footer p { font-size: 11px; color: var(--text-dim); text-align: center; line-height: 1.9; }
+.footer .legal { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.04); }
+.footer .legal p { font-size: 10px; }
+
+/* ===== COLAPSO MOVIL EXPLICITO (la regla que la skill si aplica aqui) ===== */
+@media (max-width: 900px) {
+  :root { --gutter: 16px; }
+  .detail-top { grid-template-columns: 1fr; }
+  .id-card > img { width: 200px; height: 200px; }
+  .evo-node img { width: 96px; height: 96px; }
+  .two-col { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+}
+@media (max-width: 560px) {
+  /* 140 por lo mismo: con 150 el movil bajaba de 2 columnas a 1. */
+  .dex-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .poke img { width: 88px; height: 88px; }
+  .poke .name { font-size: 0.46rem; }
+  .id-card > img { width: 160px; height: 160px; }
+  .evo-row { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo"><span class="pokeball"></span><span>POKEUTILS</span></a>
+    <div class="nav-links">
+      <a href="#" class="nav-link active" data-nav="home">INICIO</a>
+      <a href="#" class="nav-link" data-nav="dex">POKEDEX</a>
+      <a href="#" class="nav-link">DATOS</a>
+      <a href="#" class="nav-link">COMPETITIVO</a>
+      <a href="#" class="nav-link">CALCULADORA</a>
+    </div>
+    <div class="nav-toggles">
+      <button class="nav-btn">Nv50</button>
+      <button class="nav-btn">EN</button>
+      <button class="nav-btn">☀️</button>
+    </div>
+  </div>
+</nav>
+
+<div class="mockbar">
+  <span>MOCKUP</span>
+  <button class="on" data-go="home">Home</button>
+  <button data-go="dex">Pokedex</button>
+  <button data-go="detail">Ficha</button>
+  <button id="themeBtn" style="margin-left:14px">Tema claro</button>
+  <span class="note">Ancho real de contenido: <b id="wOut">-</b> px &nbsp;·&nbsp; esto no es la app, es una maqueta</span>
+</div>
+
+<div class="page">
+
+  <!-- ================= HOME ================= -->
+  <section class="screen on" id="home">
+    <div class="home-head">
+      <h1>16 herramientas</h1>
+      <p class="muted">Pokedex de 1025 especies y 326 formas, datos, competitivo y calculadoras</p>
+    </div>
+
+    <div class="cat">
+      <div class="cat-head"><h2>POKEDEX</h2><span class="rule"></span><span class="count">3</span></div>
+      <div class="tool-grid">
+        <a class="tool-card" href="#"><span class="ico">📖</span><div><h3>POKEDEX</h3><p>Las 1025 especies con stats, tipos y habilidades</p></div></a>
+        <a class="tool-card" href="#"><span class="ico">⚖️</span><div><h3>COMPARADOR</h3><p>Hasta 4 Pokemon lado a lado sobre stats base</p></div></a>
+        <a class="tool-card" href="#"><span class="ico">🥚</span><div><h3>GRUPOS HUEVO</h3><p>Los 15 grupos y quien cria con quien</p></div></a>
+      </div>
+    </div>
+
+    <div class="cat">
+      <div class="cat-head"><h2>DATOS</h2><span class="rule"></span><span class="count">5</span></div>
+      <div class="tool-grid">
+        <a class="tool-card" href="#"><span class="ico">💥</span><div><h3>MOVIMIENTOS</h3><p>Cada movimiento con tipo, potencia y efecto</p></div></a>
+        <a class="tool-card" href="#"><span class="ico">✨</span><div><h3>HABILIDADES</h3><p>Lista completa con sus descripciones</p></div></a>
+        <a class="tool-card" href="#"><span class="ico">🎒</span><div><h3>OBJETOS</h3><p>Catalogo con sprites y categorias</p></div></a>
+        <a class="tool-card" href="#"><span class="ico">🧬</span><div><h3>NATURALEZAS</h3><p>Las 25 y sus modificadores</p></div></a>
+        <a class="tool-card" href="#"><span class="ico">⚡</span><div><h3>TIPOS</h3><p>Tabla interactiva de efectividades</p></div></a>
+      </div>
+    </div>
+
+    <div class="cat">
+      <div class="cat-head"><h2>COMPETITIVO</h2><span class="rule"></span><span class="count">5</span></div>
+      <div class="tool-grid">
+        <a class="tool-card" href="#"><span class="ico">🛡️</span><div><h3>EQUIPO</h3><p>Seis Pokemon y sus debilidades combinadas</p></div></a>
+        <a class="tool-card" href="#"><span class="ico">🎯</span><div><h3>CONTRARRESTAR</h3><p>Quien amenaza a tu equipo, medido en el meta</p></div></a>
+        <a class="tool-card" href="#"><span class="ico">💨</span><div><h3>VELOCIDAD</h3><p>Quien llega antes que tu Pokemon</p></div></a>
+        <a class="tool-card" href="#"><span class="ico">🛟</span><div><h3>SOBREVIVE?</h3><p>Si aguanta el golpe y los EVs minimos</p></div></a>
+        <a class="tool-card" href="#"><span class="ico">📊</span><div><h3>SETS DEL META</h3><p>Lo que la gente juega de verdad</p></div></a>
+      </div>
+    </div>
+
+    <div class="cat">
+      <div class="cat-head"><h2>CALCULADORA</h2><span class="rule"></span><span class="count">3</span></div>
+      <div class="tool-grid">
+        <a class="tool-card" href="#"><span class="ico">🔢</span><div><h3>IV / EV</h3><p>Stats finales o IVs posibles</p></div></a>
+        <a class="tool-card" href="#"><span class="ico">⚔️</span><div><h3>DANO</h3><p>La formula completa con clima y objetos</p></div></a>
+        <a class="tool-card" href="#"><span class="ico">🥎</span><div><h3>CAPTURA</h3><p>Probabilidad por ball y estado</p></div></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= POKEDEX ================= -->
+  <section class="screen" id="dex">
+    <div class="dex-bar">
+      <div class="dex-search"><span>🔍</span><input placeholder="Buscar por nombre o numero..."></div>
+      <select class="sel"><option>GEN: TODAS</option></select>
+      <select class="sel"><option>RAREZA: TODAS</option></select>
+      <select class="sel"><option>ORDEN: N.º DEX</option></select>
+      <span class="dex-count">1025 POKEMON</span>
+    </div>
+    <div class="type-row">
+      <button class="type-chip on">TODOS</button>
+      <button class="type-chip" style="background:#A8A77A;color:#0f0f23;border-color:#A8A77A">NORMAL</button>
+      <button class="type-chip" style="background:var(--type-fire);color:#0f0f23;border-color:var(--type-fire)">FUEGO</button>
+      <button class="type-chip" style="background:var(--type-water);color:#0f0f23;border-color:var(--type-water)">AGUA</button>
+      <button class="type-chip" style="background:var(--type-electric);color:#0f0f23;border-color:var(--type-electric)">ELECTRICO</button>
+      <button class="type-chip" style="background:var(--type-grass);color:#0f0f23;border-color:var(--type-grass)">PLANTA</button>
+      <button class="type-chip" style="background:#96D9D6;color:#0f0f23;border-color:#96D9D6">HIELO</button>
+      <button class="type-chip" style="background:#C22E28;color:#fff;border-color:#C22E28">LUCHA</button>
+      <button class="type-chip" style="background:var(--type-poison);color:#fff;border-color:var(--type-poison)">VENENO</button>
+      <button class="type-chip" style="background:#E2BF65;color:#0f0f23;border-color:#E2BF65">TIERRA</button>
+      <button class="type-chip" style="background:var(--type-flying);color:#0f0f23;border-color:var(--type-flying)">VOLADOR</button>
+      <button class="type-chip" style="background:#F95587;color:#0f0f23;border-color:#F95587">PSIQUICO</button>
+      <button class="type-chip" style="background:var(--type-bug);color:#0f0f23;border-color:var(--type-bug)">BICHO</button>
+      <button class="type-chip" style="background:#B6A136;color:#0f0f23;border-color:#B6A136">ROCA</button>
+      <button class="type-chip" style="background:#735797;color:#fff;border-color:#735797">FANTASMA</button>
+      <button class="type-chip" style="background:var(--type-dragon);color:#fff;border-color:var(--type-dragon)">DRAGON</button>
+      <button class="type-chip" style="background:#705746;color:#fff;border-color:#705746">SINIESTRO</button>
+      <button class="type-chip" style="background:#B7B7CE;color:#0f0f23;border-color:#B7B7CE">ACERO</button>
+      <button class="type-chip" style="background:#D685AD;color:#0f0f23;border-color:#D685AD">HADA</button>
+    </div>
+    <div class="dex-grid" id="dexGrid"></div>
+  </section>
+
+  <!-- ================= FICHA ================= -->
+  <section class="screen" id="detail">
+    <div class="detail-top">
+      <div class="card id-card">
+        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png" alt="Charizard">
+        <span class="dex">#0006</span>
+        <h2>Charizard</h2>
+        <span class="alt muted">Charizard</span>
+        <div class="chips">
+          <span class="chip" style="background:var(--type-fire);color:#0f0f23">FUEGO</span>
+          <span class="chip" style="background:var(--type-flying);color:#0f0f23">VOLADOR</span>
+        </div>
+        <div class="meta-row">
+          <div><span class="k">ALTURA</span><span class="v">1.7 m</span></div>
+          <div><span class="k">PESO</span><span class="v">90.5 kg</span></div>
+          <div><span class="k">CAPTURA</span><span class="v">45</span></div>
+        </div>
+        <div class="form-tabs">
+          <button class="form-tab on">Normal</button>
+          <button class="form-tab">Mega X</button>
+          <button class="form-tab">Mega Y</button>
+          <button class="form-tab">Gigamax</button>
+        </div>
+      </div>
+
+      <div class="detail-right">
+        <div class="card">
+        <h3 class="section-title">ESTADISTICAS BASE</h3>
+        <div class="stat-line"><span class="k">PS</span><span class="v">78</span><span class="bar"><span style="width:30.6%;background:#7AC74C"></span></span></div>
+        <div class="stat-line"><span class="k">ATAQUE</span><span class="v">84</span><span class="bar"><span style="width:32.9%;background:#F7D02C"></span></span></div>
+        <div class="stat-line"><span class="k">DEFENSA</span><span class="v">78</span><span class="bar"><span style="width:30.6%;background:#EE8130"></span></span></div>
+        <div class="stat-line"><span class="k">AT. ESPECIAL</span><span class="v">109</span><span class="bar"><span style="width:42.7%;background:#6390F0"></span></span></div>
+        <div class="stat-line"><span class="k">DEF. ESPECIAL</span><span class="v">85</span><span class="bar"><span style="width:33.3%;background:#A98FF3"></span></span></div>
+        <div class="stat-line"><span class="k">VELOCIDAD</span><span class="v">100</span><span class="bar"><span style="width:39.2%;background:#F95587"></span></span></div>
+        <div class="total-line"><span class="k">TOTAL</span><span class="v">534</span></div>
+        </div>
+        <div class="card">
+        <h3 class="section-title">DEBILIDADES Y RESISTENCIAS</h3>
+        <p style="font-size:11px;color:var(--text-data);letter-spacing:1px;margin-bottom:10px">DEBIL A</p>
+        <div class="wr">
+          <span class="chip" style="background:#B6A136;color:#0f0f23">ROCA x4</span>
+          <span class="chip" style="background:var(--type-water);color:#0f0f23">AGUA x2</span>
+          <span class="chip" style="background:var(--type-electric);color:#0f0f23">ELECTRICO x2</span>
+        </div>
+        <p style="font-size:11px;color:var(--text-data);letter-spacing:1px;margin:16px 0 10px">RESISTE</p>
+        <div class="wr">
+          <span class="chip" style="background:var(--type-grass);color:#0f0f23">PLANTA x¼</span>
+          <span class="chip" style="background:var(--type-bug);color:#0f0f23">BICHO x¼</span>
+          <span class="chip" style="background:#C22E28;color:#fff">LUCHA x½</span>
+          <span class="chip" style="background:#EE8130;color:#0f0f23">FUEGO x½</span>
+          <span class="chip" style="background:#D685AD;color:#0f0f23">HADA x½</span>
+          <span class="chip" style="background:#B7B7CE;color:#0f0f23">ACERO x½</span>
+        </div>
+        <p style="font-size:11px;color:var(--text-data);letter-spacing:1px;margin:16px 0 10px">INMUNE</p>
+        <div class="wr"><span class="chip" style="background:#E2BF65;color:#0f0f23">TIERRA x0</span></div>
+      </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px">
+      <h3 class="section-title">LINEA EVOLUTIVA</h3>
+      <div class="evo-row">
+        <a class="evo-node" href="#">
+          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png" alt="Charmander">
+          <span class="dex">#0004</span><span class="nm">Charmander</span>
+        </a>
+        <div class="evo-arrow"><span class="cond">Nv. 16</span><span class="tri">▶</span></div>
+        <a class="evo-node" href="#">
+          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/5.png" alt="Charmeleon">
+          <span class="dex">#0005</span><span class="nm">Charmeleon</span>
+        </a>
+        <div class="evo-arrow"><span class="cond">Nv. 36</span><span class="tri">▶</span></div>
+        <span class="evo-node current">
+          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png" alt="Charizard">
+          <span class="dex">#0006</span><span class="nm">Charizard</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <h3 class="section-title">CRIA Y SET DEL META</h3>
+        <div class="stat-line" style="grid-template-columns:150px 1fr"><span class="k">GRUPOS</span><span class="v" style="text-align:left;font-size:14px">Monstruo, Dragon</span></div>
+        <div class="stat-line" style="grid-template-columns:150px 1fr"><span class="k">GENERO</span><span class="v" style="text-align:left;font-size:14px">87.5% macho</span></div>
+        <div class="stat-line" style="grid-template-columns:150px 1fr"><span class="k">CRIA CON</span><span class="v" style="text-align:left;font-size:14px">133 Pokemon</span></div>
+        <div style="margin-top:18px;padding-top:16px;border-top:2px solid var(--border)">
+          <div class="stat-line" style="grid-template-columns:150px 1fr"><span class="k">USO EN OU</span><span class="v" style="text-align:left;font-size:14px">0.1%</span></div>
+          <div class="stat-line" style="grid-template-columns:150px 1fr"><span class="k">NATURALEZA</span><span class="v" style="text-align:left;font-size:14px">Jolly · 20 PS / 236 Atq / 252 Vel</span></div>
+          <p class="prose" style="margin-top:10px">overheat (56%), solar-beam (45.6%), weather-ball (34.9%), belly-drum (33.6%)</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer class="footer">
+  <p>Datos de <span style="color:var(--accent-dim)">PokeAPI</span> y <span style="color:var(--accent-dim)">Smogon</span></p>
+  <p>Made with 🔴 by <span style="color:var(--accent)">Alvaro Torres</span></p>
+  <div class="legal">
+    <p>PokeUtils is an unofficial, free fan made app and is NOT affiliated, endorsed or supported by Nintendo, GAME FREAK or The Pokemon company in any way.</p>
+    <p>Pokemon, Pokemon character and all respective names are trademarks of Nintendo. No copyright infringement intended.</p>
+    <p>Pokemon &copy; 2002-2026 Pokemon. &copy; 1995-2026 Nintendo/Creatures Inc./GAME FREAK inc.</p>
+  </div>
+</footer>
+
+<script>
+const MONS = [
+  [1,'Bulbasaur',['grass','poison']],[2,'Ivysaur',['grass','poison']],[3,'Venusaur',['grass','poison']],
+  [4,'Charmander',['fire']],[5,'Charmeleon',['fire']],[6,'Charizard',['fire','flying']],
+  [7,'Squirtle',['water']],[8,'Wartortle',['water']],[9,'Blastoise',['water']],
+  [10,'Caterpie',['bug']],[11,'Metapod',['bug']],[12,'Butterfree',['bug','flying']],
+  [25,'Pikachu',['electric']],[143,'Snorlax',['normal']],[149,'Dragonite',['dragon','flying']],
+  [150,'Mewtwo',['psychic']],[384,'Rayquaza',['dragon','flying']],[448,'Lucario',['fighting','steel']],
+];
+const ES = { grass:'PLANTA', poison:'VENENO', fire:'FUEGO', flying:'VOLADOR', water:'AGUA', bug:'BICHO',
+  electric:'ELECTRICO', normal:'NORMAL', dragon:'DRAGON', psychic:'PSIQUICO', fighting:'LUCHA', steel:'ACERO' };
+const COL = { grass:'#7AC74C', poison:'#A33EA1', fire:'#EE8130', flying:'#A98FF3', water:'#6390F0',
+  bug:'#A6B91A', electric:'#F7D02C', normal:'#A8A77A', dragon:'#6F35FC', psychic:'#F95587',
+  fighting:'#C22E28', steel:'#B7B7CE' };
+// Que tipos llevan tinta clara. Psiquico (#F95587) NO: es un rosa claro y con
+// blanco se queda en 3.15:1, por debajo del 4.5 minimo. Con tinta oscura da 6.3.
+const DARK = new Set(['poison','fighting','dragon']);
+
+document.getElementById('dexGrid').innerHTML = MONS.map(([id, name, types]) => `
+  <a class="poke" href="#">
+    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png" alt="${name}" loading="lazy">
+    <div class="num">#${String(id).padStart(4,'0')}</div>
+    <div class="name">${name}</div>
+    <div class="chips">${types.map(t => `<span class="chip" style="background:${COL[t]};color:${DARK.has(t)?'#fff':'#0f0f23'}">${ES[t]}</span>`).join('')}</div>
+  </a>
+`).join('');
+
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-go]').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('on', s.id === b.dataset.go));
+  window.scrollTo({ top: 0 });
+}));
+
+document.getElementById('themeBtn').addEventListener('click', e => {
+  document.body.classList.toggle('light');
+  e.target.textContent = document.body.classList.contains('light') ? 'Tema oscuro' : 'Tema claro';
+});
+
+const wOut = document.getElementById('wOut');
+const report = () => { wOut.textContent = document.querySelector('.page').clientWidth; };
+report(); addEventListener('resize', report);
+</script>
+</body>
+</html>
