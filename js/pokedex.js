@@ -9,9 +9,12 @@ import { toolTabsHTML } from './hub.js';
 const PAGE_SIZE = 50;
 
 // The dex card, shared with the egg group pages so the two grids cannot drift.
-export function pokemonCardHTML(p) {
+// `i` is the card's place in the page, and comes free from `list.map(...)`.
+// It only does anything when the grid carries `stagger`; on a grid without it
+// the variable sits there unused.
+export function pokemonCardHTML(p, i = 0) {
   return `
-    <a class="pokemon-card" href="#/pokedex/${p.id}">
+    <a class="pokemon-card" href="#/pokedex/${p.id}" style="--i:${Math.min(i, 11)}">
       <img class="sprite" src="${spriteUrl(spriteIdFor(p))}" alt="${pokeName(p)}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><text x=%2248%22 y=%2260%22 text-anchor=%22middle%22 font-size=%2240%22>?</text></svg>'">
       <div class="dex-number">#${String(p.speciesId || p.id).padStart(4, '0')}</div>
       <div class="poke-name">${pokeName(p)}</div>
@@ -20,6 +23,35 @@ export function pokemonCardHTML(p) {
       </div>
     </a>
   `;
+}
+
+// Lleva la rejilla del alto que tenia al que tiene, en vez de saltar. Se
+// desmonta sola al terminar para no dejar un `height` fijo puesto: una rejilla
+// con alto fijo no reacciona a un cambio de ancho de la ventana.
+function animarAlto(grid, altoPrevio) {
+  if (!altoPrevio) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const nuevo = grid.getBoundingClientRect().height;
+  if (Math.abs(nuevo - altoPrevio) < 4) return;
+
+  grid.style.height = `${altoPrevio}px`;
+  grid.style.overflow = 'hidden';
+  const soltar = () => {
+    grid.style.height = '';
+    grid.style.overflow = '';
+    grid.style.transition = '';
+  };
+  grid.addEventListener('transitionend', soltar, { once: true });
+  // Red de seguridad: si la transicion no llega a dispararse, el alto fijo se
+  // quedaria puesto para siempre.
+  setTimeout(soltar, 600);
+
+  // El reflow forzado, y no un requestAnimationFrame, es lo que fija el punto
+  // de partida: con rAF el navegador puede no darte el frame -- en headless no
+  // lo da -- y entonces los dos altos se aplican juntos y no hay transicion.
+  void grid.offsetHeight;
+  grid.style.transition = 'height 0.3s ease';
+  grid.style.height = `${nuevo}px`;
 }
 
 export function renderPokedex(container, query = new URLSearchParams()) {
@@ -279,10 +311,17 @@ export function renderPokedex(container, query = new URLSearchParams()) {
       return;
     }
 
-    content.innerHTML = `<div class="pokemon-grid" id="pdxGrid"></div>`;
+    // Se mide antes de tirar la rejilla vieja: la ultima pagina trae menos de
+    // 50 tarjetas y la pagina se acortaba de golpe bajo el cursor, que es lo
+    // que se lee como "la lista cambia de tamano".
+    const altoPrevio = content.querySelector('.pokemon-grid')?.getBoundingClientRect().height || 0;
+
+    content.innerHTML = `<div class="pokemon-grid stagger" id="pdxGrid"></div>`;
     const grid = content.querySelector('#pdxGrid');
 
     grid.innerHTML = page.map(pokemonCardHTML).join('');
+
+    animarAlto(grid, altoPrevio);
 
     renderPagination(content, state.p, totalPages, (p) => {
       state.p = p;

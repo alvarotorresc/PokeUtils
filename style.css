@@ -783,6 +783,13 @@ a:hover {
   animation-delay: calc(var(--i, 0) * 55ms);
 }
 
+/* La Pokedex pinta 50 tarjetas de golpe, no cinco: a 55ms la ultima entraria
+   2,7s despues de la primera. 35ms sobre un indice que se corta en 11 deja la
+   entrada en 385ms, que se ve como una recolocacion y no como una espera. */
+.pokemon-grid.stagger > * {
+  animation-delay: calc(var(--i, 0) * 35ms);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .swarm img { animation: none; }
   .stagger > * { opacity: 1; animation: none; }
