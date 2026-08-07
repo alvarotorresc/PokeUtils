@@ -202,14 +202,16 @@ export function renderMoves(container, query = new URLSearchParams()) {
       <div class="data-table-wrap">
         <table class="data-table">
           <thead>
+            <!-- La cabecera y su columna llevan la misma clase: el alineado se
+                 declara una vez para las dos y no puede volver a separarse. -->
             <tr>
-              <th>${t('moves.col.name')}</th>
-              <th>${t('moves.col.type')}</th>
-              <th>${t('moves.col.cat')}</th>
-              <th>${t('moves.col.pow')}</th>
-              <th>${t('moves.col.acc')}</th>
-              <th>${t('moves.col.pp')}</th>
-              ${showBattleFields ? `<th>${t('moves.col.prio')}</th>` : ''}
+              <th class="col-grow">${t('moves.col.name')}</th>
+              <th class="col-c">${t('moves.col.type')}</th>
+              <th class="col-c">${t('moves.col.cat')}</th>
+              <th class="col-c">${t('moves.col.pow')}</th>
+              <th class="col-c">${t('moves.col.acc')}</th>
+              <th class="col-c">${t('moves.col.pp')}</th>
+              ${showBattleFields ? `<th class="col-c">${t('moves.col.prio')}</th>` : ''}
             </tr>
           </thead>
           <tbody id="mvBody"></tbody>
@@ -233,17 +235,19 @@ export function renderMoves(container, query = new URLSearchParams()) {
       tr.dataset.moveId = m.id;
       const desc = getLang() === 'es' ? m.descriptionEs : m.descriptionEn;
       tr.innerHTML = `
-        <td>
+        <td class="col-grow">
           <div class="mv-title">${pokeName(m)}</div>
           ${(m.statChanges || []).length ? `<div class="mv-chips">${m.statChanges.map(c => `<span class="mv-chip ${c[1] > 0 ? 'up' : 'down'}">${statChangeLabel(c)}</span>`).join('')}</div>` : ''}
           ${desc ? `<div class="mv-desc">${desc}</div>` : ''}
         </td>
-        <td><span class="type-badge sm" data-type="${m.type}">${typeName(m.type)}</span></td>
-        <td><span class="move-category ${m.category}">${categoryName(m.category)}</span></td>
-        <td style="text-align:center;color:${m.power ? 'var(--text)' : 'var(--text-dim)'}">${m.power || '—'}</td>
-        <td style="text-align:center;color:${m.accuracy ? 'var(--text)' : 'var(--text-dim)'}">${m.accuracy ? m.accuracy + '%' : '—'}</td>
-        <td style="text-align:center">${m.pp || '—'}</td>
-        ${showBattleFields ? `<td style="text-align:center;color:${m.priority ? 'var(--text)' : 'var(--text-dim)'}">${m.priority ? priorityLabel(m.priority) : '—'}</td>` : ''}
+        <td class="col-c"><span class="type-badge sm" data-type="${m.type}">${typeName(m.type)}</span></td>
+        <td class="col-c"><span class="move-category ${m.category}">${categoryName(m.category)}</span></td>
+        <!-- El guion de "no tiene" es dato ausente, no adorno: va en la misma
+             tinta de datos que el resto y se distingue por ser un guion. -->
+        <td class="col-c${m.power ? '' : ' col-empty'}">${m.power || '—'}</td>
+        <td class="col-c${m.accuracy ? '' : ' col-empty'}">${m.accuracy ? m.accuracy + '%' : '—'}</td>
+        <td class="col-c${m.pp ? '' : ' col-empty'}">${m.pp || '—'}</td>
+        ${showBattleFields ? `<td class="col-c${m.priority ? '' : ' col-empty'}">${m.priority ? priorityLabel(m.priority) : '—'}</td>` : ''}
       `;
       tbody.appendChild(tr);
     });
