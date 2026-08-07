@@ -54,7 +54,7 @@ export async function renderEggIndex(container) {
         </a>
       `).join('')}
     </div>
-    <p class="egg-note">${t('egg.rules')}</p>
+    <p class="egg-note egg-rules">${t('egg.rules')}</p>
   `;
 }
 

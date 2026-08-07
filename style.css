@@ -992,6 +992,16 @@ a:hover {
   color: var(--text-data);
 }
 
+/* The breeding rules close the group index and belong to the whole grid, not
+   to its left edge. Centred, and capped: at 1920 the sentence ran the full
+   1840px and the eye lost the line on the way back. */
+.egg-rules {
+  text-align: center;
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .home-group {
   text-align: center;
   margin: 28px 0 0;
