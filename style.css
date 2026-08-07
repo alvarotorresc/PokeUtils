@@ -15,6 +15,9 @@
   /* Ink for text sitting on an --accent fill. Stays dark in both themes on
      purpose: following --bg would put near-white on gold at 2.77:1. */
   --on-accent: #0f0f23;
+  /* Tinta para los badges de tipo claros. Los dieciocho colores de tipo son los
+     mismos en los dos temas, asi que su tinta tampoco cambia. */
+  --on-type-light: #1a1a2e;
   /* ===== TRES TINTAS =====
      Habia cuatro grises y se leian como uno solo: sobre --bg-card median 12.35,
      9.95, 6.38 y 4.41, o sea saltos de 1.24, 1.56 y 1.45 entre vecinos. Y el
@@ -1488,12 +1491,12 @@ a:hover {
 .type-badge[data-type="normal"]   { background: var(--type-normal); }
 .type-badge[data-type="fire"]     { background: var(--type-fire); }
 .type-badge[data-type="water"]    { background: var(--type-water); }
-.type-badge[data-type="electric"] { background: var(--type-electric); color: #333; text-shadow: none; }
+.type-badge[data-type="electric"] { background: var(--type-electric); }
 .type-badge[data-type="grass"]    { background: var(--type-grass); }
-.type-badge[data-type="ice"]      { background: var(--type-ice); color: #333; text-shadow: none; }
+.type-badge[data-type="ice"]      { background: var(--type-ice); }
 .type-badge[data-type="fighting"] { background: var(--type-fighting); }
 .type-badge[data-type="poison"]   { background: var(--type-poison); }
-.type-badge[data-type="ground"]   { background: var(--type-ground); color: #333; text-shadow: none; }
+.type-badge[data-type="ground"]   { background: var(--type-ground); }
 .type-badge[data-type="flying"]   { background: var(--type-flying); }
 .type-badge[data-type="psychic"]  { background: var(--type-psychic); }
 .type-badge[data-type="bug"]      { background: var(--type-bug); }
@@ -1501,7 +1504,7 @@ a:hover {
 .type-badge[data-type="ghost"]    { background: var(--type-ghost); }
 .type-badge[data-type="dragon"]   { background: var(--type-dragon); }
 .type-badge[data-type="dark"]     { background: var(--type-dark); }
-.type-badge[data-type="steel"]    { background: var(--type-steel); color: #333; text-shadow: none; }
+.type-badge[data-type="steel"]    { background: var(--type-steel); }
 .type-badge[data-type="fairy"]    { background: var(--type-fairy); }
 
 /* ===== RESULT BADGE ===== */
@@ -1522,8 +1525,7 @@ a:hover {
 
 .result-badge .multiplier {
   font-size: 0.44rem;
-  opacity: 0.85;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.5);
   padding: 2px 4px;
   border-radius: 3px;
 }
@@ -1531,12 +1533,12 @@ a:hover {
 .result-badge[data-type="normal"]   { background: var(--type-normal); }
 .result-badge[data-type="fire"]     { background: var(--type-fire); }
 .result-badge[data-type="water"]    { background: var(--type-water); }
-.result-badge[data-type="electric"] { background: var(--type-electric); color: #333; text-shadow: none; }
+.result-badge[data-type="electric"] { background: var(--type-electric); }
 .result-badge[data-type="grass"]    { background: var(--type-grass); }
-.result-badge[data-type="ice"]      { background: var(--type-ice); color: #333; text-shadow: none; }
+.result-badge[data-type="ice"]      { background: var(--type-ice); }
 .result-badge[data-type="fighting"] { background: var(--type-fighting); }
 .result-badge[data-type="poison"]   { background: var(--type-poison); }
-.result-badge[data-type="ground"]   { background: var(--type-ground); color: #333; text-shadow: none; }
+.result-badge[data-type="ground"]   { background: var(--type-ground); }
 .result-badge[data-type="flying"]   { background: var(--type-flying); }
 .result-badge[data-type="psychic"]  { background: var(--type-psychic); }
 .result-badge[data-type="bug"]      { background: var(--type-bug); }
@@ -1544,13 +1546,44 @@ a:hover {
 .result-badge[data-type="ghost"]    { background: var(--type-ghost); }
 .result-badge[data-type="dragon"]   { background: var(--type-dragon); }
 .result-badge[data-type="dark"]     { background: var(--type-dark); }
-.result-badge[data-type="steel"]    { background: var(--type-steel); color: #333; text-shadow: none; }
+.result-badge[data-type="steel"]    { background: var(--type-steel); }
 .result-badge[data-type="fairy"]    { background: var(--type-fairy); }
 
-.result-badge[data-type="electric"] .multiplier,
-.result-badge[data-type="ice"] .multiplier,
-.result-badge[data-type="ground"] .multiplier,
-.result-badge[data-type="steel"] .multiplier {
+/* ===== TINTA DE LOS BADGES DE TIPO =====
+   Con letra blanca, trece de los dieciocho tipos no llegaban a 4.5:1: Electrico
+   media 1.50, Hielo 1.59, Tierra 1.77, Acero 1.97, Planta 2.08, Bicho 2.19,
+   Normal 2.48, Roca 2.58, Volador 2.65, Fuego 2.69, Hada 2.69, Agua 3.10 y
+   Psiquico 3.15. Cuatro ya llevaban tinta oscura sueltos por la hoja; ahora son
+   los trece y estan en un sitio.
+
+   La sombra se va con ellos: una sombra negra debajo de letra oscura es barro,
+   y ademas era lo que hacia pasar por legibles a los otros nueve -- trabajo
+   perceptual que ninguna medida de contraste cuenta.
+
+   Los cinco que se quedan en blanco (Lucha 5.65, Veneno 5.58, Fantasma 5.93,
+   Dragon 5.85, Siniestro 6.69) ya pasaban. */
+.type-badge[data-type="normal"],   .result-badge[data-type="normal"],
+.type-badge[data-type="fire"],     .result-badge[data-type="fire"],
+.type-badge[data-type="water"],    .result-badge[data-type="water"],
+.type-badge[data-type="electric"], .result-badge[data-type="electric"],
+.type-badge[data-type="grass"],    .result-badge[data-type="grass"],
+.type-badge[data-type="ice"],      .result-badge[data-type="ice"],
+.type-badge[data-type="ground"],   .result-badge[data-type="ground"],
+.type-badge[data-type="flying"],   .result-badge[data-type="flying"],
+.type-badge[data-type="psychic"],  .result-badge[data-type="psychic"],
+.type-badge[data-type="bug"],      .result-badge[data-type="bug"],
+.type-badge[data-type="rock"],     .result-badge[data-type="rock"],
+.type-badge[data-type="steel"],    .result-badge[data-type="steel"],
+.type-badge[data-type="fairy"],    .result-badge[data-type="fairy"] {
+  color: var(--on-type-light);
+  text-shadow: none;
+}
+
+/* El multiplicador se lee sobre su propio velo negro, no sobre el color del
+   tipo, asi que su tinta no sigue la del badge. Con el velo al 25% no habia
+   tinta que sirviera sobre Normal, Bicho ni Roca -- blanco daba 4.22 y oscuro
+   4.04. Al 50% el peor de los dieciocho es Electrico con 5.48 en blanco. */
+.result-badge .multiplier {
   color: #fff;
   text-shadow: none;
 }
@@ -2404,9 +2437,11 @@ a.evo-node:hover img {
   letter-spacing: 0.5px;
 }
 
+/* Mismo criterio que los badges de tipo: la tinta la decide el relleno. Especial
+   con letra blanca media 3.10:1; con la tinta oscura, 5.51. */
 .move-category.physical { background: #C22E28; color: #fff; }
-.move-category.special  { background: #6390F0; color: #fff; }
-.move-category.status   { background: #94A3B8; color: #1a1a3e; }
+.move-category.special  { background: #6390F0; color: var(--on-type-light); }
+.move-category.status   { background: #94A3B8; color: var(--on-type-light); }
 
 /* ===== TEAM ANALYSIS ===== */
 /* Six slots that keep their shape whether they are filled or not, so adding a
