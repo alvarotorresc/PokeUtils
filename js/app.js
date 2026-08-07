@@ -209,5 +209,11 @@ async function route() {
   }
 }
 
-window.addEventListener('hashchange', route);
+window.addEventListener('hashchange', () => {
+  // La altura reservada solo hace falta para la primera pintura. En cuanto el
+  // usuario navega, manda el layout de siempre: flex:1 ya pega el footer al
+  // fondo, y mantener los 100vh dejaria hueco en las rutas que caben enteras.
+  app.removeAttribute('data-reservando');
+  route();
+});
 route();

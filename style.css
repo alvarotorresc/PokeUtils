@@ -416,11 +416,15 @@ a:hover {
   width: 100%;
   padding: 24px var(--gutter) 40px;
   flex: 1;
-  /* El footer tiene que nacer bajo el pliegue. Sin esto, #app arrancaba con la
-     altura de lo que hubiera dentro (nada, o solo la portada de 414px), asi que
-     el footer entraba en pantalla y salia de golpe en cuanto el JS colgaba el
-     resto: 0,208 de CLS, el 97% del total, y sin una sola imagen implicada.
-     No hace falta reservar los 3003px que faltaban, solo los que se ven. */
+}
+
+/* El footer tiene que nacer bajo el pliegue. Con flex:1 ya se iba al fondo de la
+   ventana, que es justo el problema: quedaba tocando el borde inferior, dentro
+   de la pantalla, y salia de golpe en cuanto el JS colgaba el contenido. Eso
+   eran 0,208 de CLS, el 97% del total, y sin una sola imagen implicada.
+   Solo mientras dura la primera pintura: mantenerlo siempre metia 637px de
+   hueco y un scroll de mas en las rutas que caben enteras, como /types. */
+.main[data-reservando] {
   min-height: 100vh;
 }
 
