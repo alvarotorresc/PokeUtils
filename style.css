@@ -2913,9 +2913,46 @@ a.evo-node:hover img {
 /* A species can carry eight forms (Pikachu has eight caps), far past what fits
    at 360px. The strip scrolls inside itself rather than widening the page, and
    its tabs keep their own width instead of splitting the row into slivers. */
-.form-tabs { margin: 0 0 20px; overflow-x: auto; scrollbar-width: none; }
+.form-tabs { margin: 0; overflow-x: auto; scrollbar-width: none; }
 .form-tabs::-webkit-scrollbar { display: none; }
 .form-tabs .tab { flex: 0 0 auto; white-space: nowrap; }
+
+/* Nothing said the strip scrolled, so the tab at the edge just looked cut off.
+   The fades sit on the wrapper, not on the scroller: inside it they would ride
+   along with the content instead of staying at the edge. */
+.form-tabs-wrap {
+  position: relative;
+  margin: 0 0 20px;
+}
+
+.form-tabs-wrap::before,
+.form-tabs-wrap::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 40px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.form-tabs-wrap::after {
+  right: 2px;
+  border-radius: 0 6px 6px 0;
+  background: linear-gradient(to right, transparent, var(--bg-surface));
+}
+
+.form-tabs-wrap::before {
+  left: 2px;
+  border-radius: 6px 0 0 6px;
+  background: linear-gradient(to left, transparent, var(--bg-surface));
+}
+
+.form-tabs-wrap.more-right::after,
+.form-tabs-wrap.more-left::before {
+  opacity: 1;
+}
 
 .tab.active {
   background: var(--bg-card);

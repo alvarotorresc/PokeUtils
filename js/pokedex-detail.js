@@ -368,12 +368,14 @@ export async function renderPokedexDetail(container, id) {
       </div>
 
       ${variants.length > 1 ? `
-        <div class="tabs form-tabs" id="formTabs">
-          ${variants.map((v, i) => `
-            <button class="tab${v.id === pokemon.id ? ' active' : ''}" data-form="${v.id}">
-              ${variantLabels[i]}
-            </button>
-          `).join('')}
+        <div class="form-tabs-wrap" id="formTabsWrap">
+          <div class="tabs form-tabs" id="formTabs">
+            ${variants.map((v, i) => `
+              <button class="tab${v.id === pokemon.id ? ' active' : ''}" data-form="${v.id}">
+                ${variantLabels[i]}
+              </button>
+            `).join('')}
+          </div>
         </div>
       ` : ''}
 
@@ -506,6 +508,29 @@ export async function renderPokedexDetail(container, id) {
   // Charizard does, and the learnsets were built for the 1025 species only.
   renderEvolutionSection(container.querySelector('#evoSection'), dexId);
   renderMovesSection(container.querySelector('#mvSection'), dexId);
+
+  // Pikachu carries 17 forms and the strip only shows five of them at a time.
+  // The scrollbar is hidden, so without this the last tab is simply cut in half
+  // and reads as a bug: these classes light a fade on whichever side has more.
+  const tabsWrap = container.querySelector('#formTabsWrap');
+  const tabsStrip = container.querySelector('#formTabs');
+  if (tabsWrap && tabsStrip) {
+    const markScroll = () => {
+      // 8px, not 1: landing on the last form leaves 4px of slack and a fade
+      // over nothing reads as a tab still hiding there.
+      const max = tabsStrip.scrollWidth - tabsStrip.clientWidth;
+      tabsWrap.classList.toggle('more-right', tabsStrip.scrollLeft < max - 8);
+      tabsWrap.classList.toggle('more-left', tabsStrip.scrollLeft > 8);
+    };
+    tabsStrip.addEventListener('scroll', markScroll, { passive: true });
+    // The strip is measured after layout, and again whenever the card changes
+    // width: at 1280 it lives in a 540px masonry column, at 360 in the page.
+    new ResizeObserver(markScroll).observe(tabsStrip);
+    markScroll();
+    // The active tab is not always the first one: opening #/pokedex/10094
+    // lands on a form that sits off-screen to the right.
+    tabsStrip.querySelector('.tab.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
 
   container.querySelector('#formTabs')?.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-form]');
