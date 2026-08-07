@@ -3736,7 +3736,41 @@ a.evo-node:hover img {
 .meta-usage { font-size: 0.46rem; color: var(--ink-2); }
 .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 16px; }
 .meta-line { font-size: 0.46rem; color: var(--ink-1); line-height: 1.9; }
-.meta-pct { color: var(--ink-1); font-family: var(--font-data); font-size: 21px; }
+
+/* El porcentaje iba en la misma tinta que el nombre que tiene al lado, y aunque
+   ya estaba en la fuente de datos se leian como una sola cosa. Ahora es una
+   pastilla: se distingue por forma antes que por color, que es lo que hay que
+   hacer cuando el amarillo esta reservado para una cosa por bloque -- y aqui
+   hay hasta diez porcentajes en la misma tarjeta. */
+.meta-pct {
+  font-family: var(--font-data);
+  font-size: 19px;
+  line-height: 1;
+  color: var(--ink-2);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 5px 1px;
+  display: inline-block;
+  vertical-align: 2px;
+}
+
+/* El nombre del set lleva a su pagina: la habilidad a su ficha, el movimiento a
+   la suya y el objeto a la lista filtrada. Mismo subrayado discontinuo que la
+   habilidad de la ficha, que ya era el enlace de dentro de una tarjeta. */
+.meta-name-link {
+  color: var(--ink-1);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--border-accent);
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.meta-name-link:hover,
+.meta-name-link:focus-visible {
+  color: var(--accent-text);
+  border-bottom-color: var(--accent);
+  text-decoration: none;
+}
 .meta-moves { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 4px 14px; }
 .meta-rank { display: flex; flex-direction: column; gap: 4px; }
 .meta-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 10px; background: var(--bg-surface); border: 2px solid var(--border); border-radius: 8px; cursor: pointer; font-family: var(--font-retro); }

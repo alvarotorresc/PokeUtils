@@ -23,15 +23,39 @@ export const defaultFormat = level => (level === 100 ? 'ou' : 'vgc');
 
 export const metaSetOf = (id, format, data) => data?.[id] || null;
 
-// Los sets guardan slugs de Showdown (`life-orb`, `weather-ball`) y pintarlos
-// crudos deja la seccion en jerga. Traducirlos de verdad costaria moves.json
-// (343 KB) e items.json (595 KB) en cada ficha, que es mas de lo que vale;
-// esto los deja al menos legibles, y en ingles, que es como se nombran en
-// Smogon de todas formas.
+// Los sets guardan slugs de Showdown (`life-orb`, `weather-ball`). Esto es el
+// ultimo recurso, para cuando meta-names.json no ha llegado o no trae el slug:
+// deja el nombre legible aunque sea en ingles.
 export const prettySlug = slug => slug
   .split('-')
   .map(w => w.charAt(0).toUpperCase() + w.slice(1))
   .join(' ');
+
+// El nombre de un movimiento, objeto o habilidad de un set, en el idioma
+// activo. `names` es meta-names.json, que build-meta-names.mjs saca de los
+// datasets grandes para que la ficha no tenga que bajarselos.
+//
+// El espanol falta en 39 de los 155 objetos y en 2 de las 194 habilidades, asi
+// que cae al ingles antes que a maquillar el slug. Mismo orden que en la
+// cabecera de la ficha y en las condiciones de evolucion.
+export function metaName(kind, slug, names, lang) {
+  const entrada = names?.[kind]?.[slug];
+  if (!entrada) return prettySlug(slug);
+  if (lang === 'es') return entrada.es || entrada.en || prettySlug(slug);
+  return entrada.en || entrada.es || prettySlug(slug);
+}
+
+// La ruta a la pagina que explica ese nombre, o null si no la hay. Los objetos
+// no tienen ficha propia: su lista se abre filtrada, que es lo que ya hace el
+// buscador global.
+export function metaLink(kind, slug, names) {
+  const entrada = names?.[kind]?.[slug];
+  if (!entrada) return null;
+  if (kind === 'moves') return entrada.id ? `#/moves/${entrada.id}` : null;
+  if (kind === 'abilities') return `#/abilities/${encodeURIComponent(entrada.en)}`;
+  if (kind === 'items') return `#/items?q=${encodeURIComponent(entrada.es || entrada.en)}`;
+  return null;
+}
 
 export const hasMeta = (id, format, data) => Boolean(data?.[id]);
 

@@ -1,14 +1,14 @@
 // ===== POKEMON DETAIL =====
-import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, TYPE_NAMES_FULL, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN } from './data.js';
+import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, TYPE_NAMES_FULL, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, NATURES } from './data.js';
 import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchLearnsets, fetchMoves } from './api.js';
 import { loadingHTML, renderError } from './app.js';
 import { evolutionText } from './evolution.js';
-import { t, typeName, statName, pokeName, getLang } from './i18n.js';
+import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
 import { rangeAt100 } from './stats.js';
 import { partnersOf, hasEggData } from './egg-groups.js';
 import { formsOf, spriteIdFor } from './forms.js';
-import { fetchMeta } from './api.js';
-import { metaSetOf, defaultFormat, prettySlug, FORMATS, MONTH } from './meta.js';
+import { fetchMeta, fetchMetaNames } from './api.js';
+import { metaSetOf, defaultFormat, prettySlug, metaName, metaLink, FORMATS, MONTH } from './meta.js';
 import { getLevel } from './level.js';
 
 // Spanish names are missing for 616 of the 2187 items, and the build falls back
@@ -246,12 +246,29 @@ async function findMetaSet(dexId, format, meta, evolutions) {
   return null;
 }
 
-function metaSetHTML(found, owner) {
+function metaSetHTML(found, owner, names) {
   const { set, format } = found;
   const spread = set.s[0];
   const evs = STAT_KEYS.map((k, i) => [k, spread.e[i]]).filter(([, v]) => v > 0);
+  const lang = getLang();
   const pct = n => `<span class="meta-pct">${n}%</span>`;
-  const top = list => list?.[0] ? `${prettySlug(list[0][0])} ${pct(list[0][1])}` : '—';
+
+  // Un nombre del set, en el idioma activo y enlazado a su pagina cuando la
+  // tiene. Los objetos no tienen ficha propia y abren su lista filtrada.
+  const nombre = (kind, slug) => {
+    const texto = metaName(kind, slug, names, lang);
+    const href = metaLink(kind, slug, names);
+    return href ? `<a class="meta-name-link" href="${href}">${texto}</a>` : texto;
+  };
+  const top = (kind, list) => list?.[0]
+    ? `${nombre(kind, list[0][0])} ${pct(list[0][1])}`
+    : '—';
+
+  // La naturaleza sale de NATURES, que ya esta en memoria: no hace falta pedir
+  // nada para traducirla. No lleva enlace porque no tiene pagina propia, solo
+  // la tabla de las 25.
+  const nature = NATURES.find(n => n.name === spread.n);
+  const natureText = nature ? natureName(nature) : spread.n;
 
   // `nothing` es no teracristalizar, y es lo mas jugado en 192 de las 369
   // entradas: una linea de Tera que dice "nada" no informa de nada. Y `stellar`
@@ -264,13 +281,13 @@ function metaSetHTML(found, owner) {
 
   return `
     <div class="meta-line"><span class="egg-key">${t('meta.usage')}</span> ${pct(set.u)} ${t('meta.in')} ${t(`meta.format.${format}`)}</div>
-    <div class="meta-line"><span class="egg-key">${t('meta.ability')}</span> ${top(set.a)}</div>
-    <div class="meta-line"><span class="egg-key">${t('meta.item')}</span> ${top(set.i)}</div>
-    <div class="meta-line"><span class="egg-key">${t('meta.spread')}</span> ${spread.n} · ${evs.map(([k, v]) => `${v} ${statName(k)}`).join(' / ')}</div>
+    <div class="meta-line"><span class="egg-key">${t('meta.ability')}</span> ${top('abilities', set.a)}</div>
+    <div class="meta-line"><span class="egg-key">${t('meta.item')}</span> ${top('items', set.i)}</div>
+    <div class="meta-line"><span class="egg-key">${t('meta.spread')}</span> ${natureText} · ${evs.map(([k, v]) => `${v} ${statName(k)}`).join(' / ')}</div>
     ${teraHTML ? `<div class="meta-line"><span class="egg-key">${t('meta.tera')}</span> ${teraHTML}</div>` : ''}
     <div class="meta-line meta-moves-head"><span class="egg-key">${t('meta.moves')}</span></div>
     <ul class="meta-moveset">
-      ${set.m.slice(0, 4).map(([slug, p]) => `<li>${prettySlug(slug)} ${pct(p)}</li>`).join('')}
+      ${set.m.slice(0, 4).map(([slug, p]) => `<li>${nombre('moves', slug)} ${pct(p)}</li>`).join('')}
     </ul>
     <p class="meta-foot"><a href="#/meta?f=${format}&id=${found.ownerId}">${t('meta.more')}</a> · ${t('meta.from', { month: MONTH })}</p>
   `;
@@ -284,11 +301,15 @@ async function renderMetaSection(host, dexId, format, meta, allPokemon) {
     const found = await findMetaSet(dexId, format, meta, evolutions);
     if (!found) return;
 
+    // Falla suave por su cuenta: sin los nombres la seccion se pinta igual, con
+    // los slugs formateados y sin enlaces, que es como estaba antes.
+    const names = await fetchMetaNames().catch(() => null);
+
     const owner = allPokemon.find(p => p.id === found.ownerId);
     host.innerHTML = `
       <h3 class="section-title">${t('meta.section')}</h3>
       ${found.own ? '' : `<p class="meta-family">${t('meta.family', { name: `<a href="#/pokedex/${found.ownerId}">${owner ? pokeName(owner) : '#' + found.ownerId}</a>` })}</p>`}
-      ${metaSetHTML(found, owner)}
+      ${metaSetHTML(found, owner, names)}
     `;
   } catch {
     // sin seccion

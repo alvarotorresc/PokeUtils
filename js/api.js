@@ -68,14 +68,16 @@ export const fetchPokemonList = () => loadDataset('pokemon');
 export const fetchMoves = () => loadDataset('moves');
 export const fetchAbilities = () => loadDataset('abilities');
 export const fetchItems = () => loadDataset('items');
-// Que movimiento ensena cada MT: 51 KB aparte de los 619 de items, porque solo
-// hace falta al buscar.
 export const fetchBerries = () => loadDataset('berries');
 export const fetchEvolutions = () => loadDataset('evolutions');
 export const fetchLearnsets = () => loadDataset('learnsets');
 // Un fichero por formato, y solo se descarga el que se esta mirando: son 72 y
 // 64 KB y casi nadie mira los dos en la misma visita.
 export const fetchMeta = format => loadDataset(`meta-${format}`);
+// Como se llaman en cada idioma los 721 movimientos, objetos y habilidades que
+// salen en los sets. 39 KB, contra los 706 de bajarse items.json y
+// abilities.json solo para leer seis nombres.
+export const fetchMetaNames = () => loadDataset('meta-names');
 
 // ===== POKEMON DETAIL =====
 const idFromUrl = url => Number(url.replace(/\/$/, '').split('/').pop());

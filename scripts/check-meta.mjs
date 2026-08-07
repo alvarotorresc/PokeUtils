@@ -6,7 +6,7 @@
 // crudo y nada mas fallaria.
 // Run with: node scripts/check-meta.mjs
 import { readFile } from 'node:fs/promises';
-import { metaSetOf, hasMeta, checksOf, usageRanking } from '../js/meta.js';
+import { metaSetOf, hasMeta, checksOf, usageRanking, metaName, metaLink } from '../js/meta.js';
 
 const read = async name =>
   JSON.parse(await readFile(new URL(`../data/${name}.json`, import.meta.url), 'utf8'));
@@ -16,6 +16,7 @@ const vgc = await read('meta-vgc');
 const pokemon = await read('pokemon');
 const moves = await read('moves');
 const abilities = await read('abilities');
+const names = await read('meta-names');
 
 let failed = 0;
 function check(label, actual, expected) {
@@ -86,6 +87,49 @@ check('la hembra es una forma, no la especie', [macho.id, hembra.id], [902, 1024
 check('la hembra juega en VGC', hasMeta(hembra.id, 'vgc', vgc), true);
 check('y no en OU', hasMeta(hembra.id, 'ou', ou), false);
 check('el macho si esta en OU', hasMeta(macho.id, 'ou', ou), true);
+
+console.log('\nmeta-names.json cubre todo lo que los sets nombran\n');
+
+// Un slug sin entrada aqui sale en ingles en produccion y no falla nada: es la
+// forma de romperse que este repositorio se ha comido ya varias veces.
+const usados = { moves: new Set(), items: new Set(), abilities: new Set() };
+for (const fichero of [ou, vgc]) {
+  for (const set of Object.values(fichero)) {
+    (set.m || []).forEach(([s]) => usados.moves.add(s));
+    (set.i || []).forEach(([s]) => usados.items.add(s));
+    (set.a || []).forEach(([s]) => usados.abilities.add(s));
+  }
+}
+
+// `nothing` es el hueco de objeto, no un objeto: la ficha ya lo trata aparte.
+const sinNombre = kind => [...usados[kind]]
+  .filter(s => s !== 'nothing' && !names[kind]?.[s]);
+
+check('movimientos sin nombre', sinNombre('moves'), []);
+check('objetos sin nombre', sinNombre('items'), []);
+check('habilidades sin nombre', sinNombre('abilities'), []);
+
+check('cuantos nombra en total', Object.keys(names.moves).length + Object.keys(names.items).length + Object.keys(names.abilities).length, 721);
+check('todo movimiento trae id para su enlace',
+  Object.values(names.moves).filter(m => !m.id).length, 0);
+
+console.log('\nY se leen en los dos idiomas\n');
+
+check('una habilidad en espanol', metaName('abilities', 'chlorophyll', names, 'es'), 'Clorofila');
+check('y en ingles', metaName('abilities', 'chlorophyll', names, 'en'), 'Chlorophyll');
+check('un objeto en espanol', metaName('items', 'life-orb', names, 'es'), 'Vidasfera');
+check('un movimiento en espanol', metaName('moves', 'sludge-bomb', names, 'es'), 'Bomba Lodo');
+// 39 de los 155 objetos no tienen nombre espanol en PokeAPI: cae al ingles
+// antes que a maquillar el slug.
+check('sin espanol cae al ingles', metaName('items', 'booster-energy', names, 'es'), 'Booster Energy');
+check('un slug que no esta se formatea', metaName('items', 'no-existe', names, 'es'), 'No Existe');
+
+console.log('\nLos enlaces apuntan a donde toca\n');
+
+check('el movimiento a su ficha', metaLink('moves', 'sludge-bomb', names), '#/moves/188');
+check('la habilidad a la suya', metaLink('abilities', 'chlorophyll', names), '#/abilities/Chlorophyll');
+check('el objeto a su lista filtrada', metaLink('items', 'life-orb', names), '#/items?q=Vidasfera');
+check('y lo que no esta no lleva enlace', metaLink('items', 'no-existe', names), null);
 
 console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);

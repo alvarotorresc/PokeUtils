@@ -3,13 +3,13 @@
 // El ranking de uso de un formato y, al elegir uno, el set que mas se juega.
 // Los porcentajes son lo importante: un movimiento al 92% es obligatorio y uno
 // al 14% es una opcion, y sin el numero no se distinguen.
-import { fetchMeta, fetchPokemonList } from './api.js';
-import { FORMATS, MONTH, defaultFormat, metaSetOf, prettySlug, usageRanking } from './meta.js';
-import { spriteUrl, STAT_KEYS } from './data.js';
+import { fetchMeta, fetchPokemonList, fetchMetaNames } from './api.js';
+import { FORMATS, MONTH, defaultFormat, metaSetOf, metaName, metaLink, usageRanking } from './meta.js';
+import { spriteUrl, STAT_KEYS, NATURES } from './data.js';
 import { spriteIdFor } from './forms.js';
 import { loadingHTML, replaceQuery } from './app.js';
 import { getLevel } from './level.js';
-import { t, pokeName, typeName, statName, getLang } from './i18n.js';
+import { t, pokeName, typeName, statName, getLang, natureName } from './i18n.js';
 
 // Competitivo es un hub con tarjetas, no una tira de pestanas, asi que esta
 // pagina no lleva toolTabsHTML -- igual que las otras cuatro de su categoria.
@@ -32,14 +32,31 @@ export async function renderMeta(container, query = new URLSearchParams()) {
     id: parseInt(query.get('id'), 10) || null,
   };
 
-  const [all, meta] = await Promise.all([fetchPokemonList(), fetchMeta(state.format)]);
+  // Los nombres fallan suave: sin ellos la pagina se pinta con los slugs
+  // formateados y sin enlaces, que es como estaba antes.
+  const [all, meta, names] = await Promise.all([
+    fetchPokemonList(), fetchMeta(state.format), fetchMetaNames().catch(() => null),
+  ]);
   const byId = new Map(all.map(p => [p.id, p]));
   let data = meta;
 
+  // Un nombre del set, en el idioma activo y enlazado a su pagina cuando la
+  // tiene. Mismo criterio que en la ficha.
+  const nombre = (kind, slug) => {
+    const texto = metaName(kind, slug, names, getLang());
+    const href = metaLink(kind, slug, names);
+    return href ? `<a class="meta-name-link" href="${href}">${texto}</a>` : texto;
+  };
+
+  // "nothing" es no teracristalizar, no un tipo: pasado por typeName salia como
+  // "type.nothing", la clave sin traducir. La ficha ya lo trataba aparte y esta
+  // pagina no.
   function setHTML(set, mon) {
     const pct = n => `<span class="meta-pct">${n}%</span>`;
     const spread = set.s[0];
     const evs = STAT_KEYS.map((k, i) => [k, spread.e[i]]).filter(([, v]) => v > 0);
+    const nature = NATURES.find(n => n.name === spread.n);
+    const natureText = nature ? natureName(nature) : spread.n;
 
     return `
       <div class="card meta-set">
@@ -53,24 +70,26 @@ export async function renderMeta(container, query = new URLSearchParams()) {
         <div class="meta-grid">
           <div>
             <span class="egg-key">${t('meta.spread')}</span>
-            <div class="meta-line">${spread.n} · ${evs.map(([k, v]) => `${v} ${statName(k)}`).join(' / ')} ${pct(spread.p)}</div>
+            <div class="meta-line">${natureText} · ${evs.map(([k, v]) => `${v} ${statName(k)}`).join(' / ')} ${pct(spread.p)}</div>
           </div>
           <div>
             <span class="egg-key">${t('meta.item')}</span>
-            ${set.i.map(([slug, p]) => `<div class="meta-line">${prettySlug(slug)} ${pct(p)}</div>`).join('')}
+            ${set.i.map(([slug, p]) => `<div class="meta-line">${nombre('items', slug)} ${pct(p)}</div>`).join('')}
           </div>
           <div>
             <span class="egg-key">${t('meta.ability')}</span>
-            ${set.a.map(([slug, p]) => `<div class="meta-line">${prettySlug(slug)} ${pct(p)}</div>`).join('')}
+            ${set.a.map(([slug, p]) => `<div class="meta-line">${nombre('abilities', slug)} ${pct(p)}</div>`).join('')}
           </div>
           <div>
             <span class="egg-key">${t('meta.tera')}</span>
-            <div class="meta-line">${set.t.map(([type, p]) => `<span class="type-badge sm" data-type="${type}">${typeName(type)}</span> ${pct(p)}`).join(' ')}</div>
+            <div class="meta-line">${set.t.map(([type, p]) => (type === 'nothing'
+              ? `${t('meta.tera.none')} ${pct(p)}`
+              : `<span class="type-badge sm" data-type="${type}">${typeName(type)}</span> ${pct(p)}`)).join(' ')}</div>
           </div>
         </div>
         <span class="egg-key">${t('meta.moves')}</span>
         <div class="meta-moves">
-          ${set.m.map(([slug, p]) => `<div class="meta-line">${prettySlug(slug)} ${pct(p)}</div>`).join('')}
+          ${set.m.map(([slug, p]) => `<div class="meta-line">${nombre('moves', slug)} ${pct(p)}</div>`).join('')}
         </div>
       </div>
     `;
