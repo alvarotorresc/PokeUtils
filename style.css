@@ -1147,10 +1147,15 @@ a:hover {
   font-size: 1.8rem;
 }
 
+/* El nombre de la herramienta es el titulo de la tarjeta, no una etiqueta: iba
+   en la tinta mas apagada y a 0.45rem, con la descripcion debajo en una tinta
+   mas fuerte y a 0.44. O sea la descripcion pesaba mas que el titulo y median
+   casi lo mismo. Mismo reparto que .mw, que ya lo tenia bien: el titulo manda
+   por tinta y por tamano, la descripcion acompana. */
 .home-card .label {
-  font-size: 0.45rem;
+  font-size: 0.55rem;
   letter-spacing: 0.5px;
-  color: var(--ink-3);
+  color: var(--ink-1);
 }
 
 .home-card .desc {
