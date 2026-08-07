@@ -1,3 +1,35 @@
+/* ===== FUENTES =====
+   Venian de Google Fonts, y eso eran tres saltos antes de tener una letra:
+   el HTML pedia el CSS a fonts.googleapis.com, ese CSS pedia los woff2 a
+   fonts.gstatic.com, y hasta entonces no se podia pintar. Dos conexiones a
+   dos origenes ajenos, 1340 ms de bloqueo en movil.
+   Aqui van los dos subsets latin (U+0000-00FF, que ya trae la e con acento y
+   la enye), servidos desde el mismo origen: 12,5 KB y 17,5 KB.
+   font-display: swap se queda como estaba. Medido: el alto del footer no se
+   mueve al llegar la fuente (180px antes y despues), asi que el intercambio
+   no cuesta CLS, y optional se arriesgaria a no pintarlas nunca. */
+@font-face {
+  font-family: 'Press Start 2P';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/press-start-2p-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'VT323';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/vt323-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /* ===== RESET & BASE ===== */
 *, *::before, *::after {
   margin: 0;
