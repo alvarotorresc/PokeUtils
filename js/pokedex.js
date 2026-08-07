@@ -56,6 +56,7 @@ export function renderPokedex(container, query = new URLSearchParams()) {
           <span class="search-icon">🔍</span>
           <input type="text" class="search-input" id="pdxSearch" placeholder="${t('pokedex.search')}" value="${state.q.replace(/"/g, '&quot;')}">
         </div>
+        <div class="pdx-count" id="pdxCount"></div>
         <h4 class="dex-side-title">${t('pokedex.type')}</h4>
         <div class="filter-row" id="pdxFilters">
           <button class="filter-btn${state.type === '' ? ' active' : ''}" data-type="">${t('common.all')}</button>
@@ -84,7 +85,6 @@ export function renderPokedex(container, query = new URLSearchParams()) {
         <button class="filter-btn pdx-clear" id="pdxClear" hidden>${t('pokedex.clear')}</button>
       </aside>
       <div class="dex-main">
-        <div class="dex-topbar"><span class="pdx-count" id="pdxCount"></span></div>
         <div id="pdxContent"></div>
       </div>
     </div>
