@@ -131,7 +131,11 @@ async function route() {
   const token = ++navegacion;
   const { path, parts, query } = parseHash();
   updateActiveNav(path);
-  app.innerHTML = '';
+  // La portada de la home ya viene pintada en el HTML. Si la primera ruta es la
+  // home, se queda donde esta: vaciarla aqui devolveria el salto que vino a
+  // quitar. Cualquier otra ruta la borra como siempre.
+  const conservarShell = app.querySelector('[data-shell]') && (path === '/' || path === '/home');
+  if (!conservarShell) app.innerHTML = '';
   app.className = 'main fade-in';
   window.scrollTo(0, 0);
 

@@ -416,6 +416,12 @@ a:hover {
   width: 100%;
   padding: 24px var(--gutter) 40px;
   flex: 1;
+  /* El footer tiene que nacer bajo el pliegue. Sin esto, #app arrancaba con la
+     altura de lo que hubiera dentro (nada, o solo la portada de 414px), asi que
+     el footer entraba en pantalla y salia de golpe en cuanto el JS colgaba el
+     resto: 0,208 de CLS, el 97% del total, y sin una sola imagen implicada.
+     No hace falta reservar los 3003px que faltaban, solo los que se ven. */
+  min-height: 100vh;
 }
 
 /* ===== FOOTER ===== */

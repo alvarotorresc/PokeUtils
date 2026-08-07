@@ -10,6 +10,15 @@
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
   <script defer src="https://analytics.alvarotc.com/script.js" data-website-id="55e0f212-eb38-4998-882b-cf73e5bb906c"></script>
+  <!-- El tema, antes de pintar. Lo ponia app.js, que es un modulo diferido: con
+       la portada ya en el HTML, quien tenga el tema claro veria el fondo oscuro
+       hasta que bajara el JS. Sincrono y en el head, no hay parpadeo. -->
+  <script>
+    try {
+      if (localStorage.getItem('pkutils_theme') === 'light')
+        document.documentElement.classList.add('light');
+    } catch (e) {}
+  </script>
 </head>
 <body>
   <div class="scanlines"></div>
@@ -38,7 +47,26 @@
     </div>
   </nav>
 
-  <main class="main" id="app"></main>
+  <!-- La portada de la home viene pintada del servidor. #app estaba vacio, asi
+       que el <h1> (el LCP) no existia hasta que bajaba el JS: 1884 ms, y al
+       inyectarlo el footer ya pintado saltaba hacia abajo, 0,208 de CLS.
+       Los textos van en espanol, que es el idioma por defecto; si hay otro
+       guardado, renderHome los cambia sin mover el alto. -->
+  <main class="main fade-in" id="app">
+    <div class="swarm-wrap" data-shell>
+      <div class="swarm" aria-hidden="true"></div>
+      <div class="swarm-fg">
+        <h1>1351 Pok&eacute;mon.<br><span class="hl">16 herramientas.</span></h1>
+        <div class="swarm-search">
+          <span class="search-icon" aria-hidden="true">🔍</span>
+          <input type="search" id="globalSearch" autocomplete="off"
+                 placeholder="Busca un Pok&eacute;mon, un movimiento, un objeto..."
+                 aria-label="Busca un Pok&eacute;mon, un movimiento, un objeto...">
+        </div>
+        <div class="swarm-chips" id="swarmChips"></div>
+      </div>
+    </div>
+  </main>
 
   <footer class="footer">
     <p>Datos de <a href="https://pokeapi.co" target="_blank" rel="noopener">PokeAPI</a></p>

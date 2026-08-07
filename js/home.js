@@ -5,7 +5,7 @@
 // tools.js: this file decides how they look, not which ones there are.
 import { spriteUrl } from './data.js';
 import { CATEGORIES, TOOLS, toolsIn } from './tools.js';
-import { t } from './i18n.js';
+import { t, getLang } from './i18n.js';
 import { attachGlobalSearch, leerHistorial } from './global-search.js';
 
 // The background is made of real sprites from the app, not an illustration: 100
@@ -100,25 +100,48 @@ export function renderHome(container) {
 
   // No giant POKEUTILS in the middle any more: the same name sits in the nav bar
   // 40px away, and it was spending 190px of the first screen repeating it.
-  container.innerHTML = `
-    <div class="swarm-wrap">
-      <div class="swarm" aria-hidden="true"></div>
-      <div class="swarm-fg">
-        <h1>${t('home.claim.a')}<br><span class="hl">${t('home.claim.b')}</span></h1>
-        <div class="swarm-search">
-          <span class="search-icon" aria-hidden="true">🔍</span>
-          <input type="search" id="globalSearch" autocomplete="off"
-                 placeholder="${t('home.search')}" aria-label="${t('home.search')}">
-        </div>
-        <div class="swarm-chips" id="swarmChips">${chipsHTML()}</div>
-      </div>
-    </div>
+  const abajo = `
     <section class="mostwanted">
       <h2 class="home-group">${t('home.mostwanted')}</h2>
       <div class="mw-grid stagger">${wantedHTML()}</div>
     </section>
     ${groups}
   `;
+
+  // En la primera carga la portada ya viene en el HTML: se adopta en vez de
+  // repintarla, que es lo que provocaba el salto. En las siguientes visitas a la
+  // home (volver atras, cambiar de idioma) ya no esta, y se pinta entera.
+  const shell = container.querySelector('[data-shell]');
+  if (shell) {
+    shell.removeAttribute('data-shell');
+    // El HTML esta en espanol. Con otro idioma guardado hay que traducirlo, y
+    // ambos claims ocupan dos lineas, asi que el alto no se mueve.
+    if (getLang() !== 'es') {
+      shell.querySelector('h1').innerHTML =
+        `${t('home.claim.a')}<br><span class="hl">${t('home.claim.b')}</span>`;
+      const input = shell.querySelector('#globalSearch');
+      input.placeholder = t('home.search');
+      input.setAttribute('aria-label', t('home.search'));
+    }
+    shell.querySelector('#swarmChips').innerHTML = chipsHTML();
+    container.insertAdjacentHTML('beforeend', abajo);
+  } else {
+    container.innerHTML = `
+      <div class="swarm-wrap">
+        <div class="swarm" aria-hidden="true"></div>
+        <div class="swarm-fg">
+          <h1>${t('home.claim.a')}<br><span class="hl">${t('home.claim.b')}</span></h1>
+          <div class="swarm-search">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input type="search" id="globalSearch" autocomplete="off"
+                   placeholder="${t('home.search')}" aria-label="${t('home.search')}">
+          </div>
+          <div class="swarm-chips" id="swarmChips">${chipsHTML()}</div>
+        </div>
+      </div>
+      ${abajo}
+    `;
+  }
 
   // Despues del innerHTML: fillSwarm necesita el alto ya calculado del bloque.
   const swarm = container.querySelector('.swarm');
