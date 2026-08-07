@@ -620,10 +620,14 @@ export function renderDamage(container, query) {
 
     // Fixed damage: no rolls, no STAB, no type multiplier.
     const share = Math.min((damage / hp) * 100, 100);
+    // Dos variables y no una: el mismo amarillo que rellena la barra medía
+    // 3.20:1 como cifra sobre la tarjeta clara. Es el reparto que --accent-text
+    // ya tiene hecho, solo que aqui el color se elegia a mano.
     const colour = share >= 100 ? 'var(--stat-down)' : share >= 50 ? 'var(--accent)' : 'var(--stat-up)';
+    const ink = share >= 100 ? 'var(--stat-down)' : share >= 50 ? 'var(--accent-text)' : 'var(--stat-up)';
     resultEl.innerHTML = `
       <div class="card dmg-result">
-        <div class="dmg-headline" style="color:${colour}">${damage}</div>
+        <div class="dmg-headline" style="color:${ink}">${damage}</div>
         <div class="dmg-sub">${pctOf(damage)}% ${t('dmg.ofhp')}</div>
         <div class="dmg-bar"><div class="dmg-bar-min" style="width:${share}%;background:${colour}"></div></div>
         <div class="dmg-ko">${damage >= hp ? t('dmg.ko.guaranteed').replace('{n}', 1) : t('vp.fixed')}</div>
@@ -654,10 +658,11 @@ export function renderDamage(container, query) {
     // The colour tracks how much of the bar the hit takes, not the raw number.
     const share = Math.min(r.pctMax, 100);
     const colour = share >= 100 ? 'var(--stat-down)' : share >= 50 ? 'var(--accent)' : 'var(--stat-up)';
+    const ink = share >= 100 ? 'var(--stat-down)' : share >= 50 ? 'var(--accent-text)' : 'var(--stat-up)';
 
     resultEl.innerHTML = `
       <div class="card dmg-result">
-        <div class="dmg-headline" style="color:${colour}">${r.min} - ${r.max}</div>
+        <div class="dmg-headline" style="color:${ink}">${r.min} - ${r.max}</div>
         <div class="dmg-sub">${pct} ${t('dmg.ofhp')}</div>
 
         <div class="dmg-bar">

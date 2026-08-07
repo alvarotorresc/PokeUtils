@@ -51,6 +51,7 @@
   --success-text: #34D399;
   --info-text: #60A5FA;
   --special-text: #A78BFA;
+  --warning-text: #F59E0B;
   --border: rgba(255, 255, 255, 0.08);
   --border-accent: rgba(255, 204, 0, 0.3);
   --danger: #FB7185;
@@ -119,6 +120,7 @@
   --success-text: #0B6B4A;
   --info-text: #1D4ED8;
   --special-text: #6D28D9;
+  --warning-text: #8A5200;
   --border: rgba(0, 0, 0, 0.1);
   --border-accent: rgba(184, 136, 0, 0.3);
   --stat-up: #0B6B4A;   /* 5.27:1 on #e6e6f0 */
@@ -890,11 +892,16 @@ a:hover {
 @media (min-width: 640px) { .sv-pickers { grid-template-columns: repeat(3, 1fr); } }
 .sv-picker { display: flex; flex-direction: column; gap: 6px; }
 .sv-result { border: 2px solid var(--border); border-radius: 10px; padding: 16px; text-align: center; margin-bottom: 24px; }
-.sv-result.ok { border-color: #4ade80; }
-.sv-result.ko { border-color: #f87171; }
+/* Estos cuatro se quedaron con el color a pelo mientras sus vecinos ya usaban
+   los tokens, y eran de los tunados para el fondo oscuro: en tema claro el
+   veredicto medía 1.41:1 en verde y 2.23:1 en rojo. Solo se ven despues de
+   elegir atacante, movimiento y defensor, que es por lo que no salian en un
+   barrido de las paginas recien cargadas. */
+.sv-result.ok { border-color: var(--success-text); }
+.sv-result.ko { border-color: var(--danger-text); }
 .sv-verdict { font-family: var(--font-retro); font-size: 0.7rem; margin-bottom: 10px; }
-.sv-result.ok .sv-verdict { color: #4ade80; }
-.sv-result.ko .sv-verdict { color: #f87171; }
+.sv-result.ok .sv-verdict { color: var(--success-text); }
+.sv-result.ko .sv-verdict { color: var(--danger-text); }
 .sv-line { font-size: 0.8rem; color: var(--ink-2); line-height: 1.8; }
 .sv-dim { color: var(--ink-3); font-size: 0.72rem; }
 .sv-spread { background: var(--bg-surface); border: 2px solid var(--border); border-radius: 10px; padding: 14px; font-size: 0.85rem; line-height: 1.7; }
@@ -3209,9 +3216,9 @@ a.evo-node:hover img {
 .result-section.immunity { border-color: rgba(167, 139, 250, 0.15); }
 .result-section.super-effective h3 { color: var(--success-text); }
 .result-section.super-effective { border-color: rgba(52, 211, 153, 0.15); }
-.result-section.not-effective h3 { color: #F59E0B; }
+.result-section.not-effective h3 { color: var(--warning-text); }
 .result-section.not-effective { border-color: rgba(245, 158, 11, 0.15); }
-.result-section.no-effect h3 { color: #94A3B8; }
+.result-section.no-effect h3 { color: var(--ink-2); }
 .result-section.no-effect { border-color: rgba(148, 163, 184, 0.15); }
 
 .result-badges {

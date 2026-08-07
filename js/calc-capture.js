@@ -213,7 +213,11 @@ export function renderCapture(container) {
     // --stat-up/--stat-down rather than --success/--danger: those two are tuned
     // for the dark card only and the red measured 2.69:1 in light mode, on the
     // biggest number of the page.
-    const colour = pct >= 50 ? 'var(--stat-up)' : pct >= 15 ? 'var(--accent)' : 'var(--stat-down)';
+    //
+    // Y --accent-text, no --accent, por lo mismo un escalon mas alla: el de en
+    // medio se quedo con el amarillo de relleno y medía 3.20:1 en claro. Aqui
+    // solo es texto, no rellena nada.
+    const colour = pct >= 50 ? 'var(--stat-up)' : pct >= 15 ? 'var(--accent-text)' : 'var(--stat-down)';
 
     resultEl.innerHTML = `
       <div class="card">
