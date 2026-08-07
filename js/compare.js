@@ -74,14 +74,17 @@ export async function renderCompare(container, query = new URLSearchParams()) {
       .filter(row => row.multipliers[i] === exact)
       .map(row => `<span class="type-badge sm" data-type="${row.type}">${typeName(row.type)}</span>`)
       .join(' ') || '—';
+    // El div es obligatorio: .cmp-types es display:flex, y un <td> en flex deja
+    // de ser table-cell. Las tres celdas caian apiladas dentro de la primera
+    // columna y las debilidades del segundo Pokemon en adelante no aparecian.
     return `
       <tr>
         <th>${t('compare.weak4')}</th>
-        ${picks.map((_, i) => `<td class="cmp-types">${cell(i, 4)}</td>`).join('')}
+        ${picks.map((_, i) => `<td><div class="cmp-types">${cell(i, 4)}</div></td>`).join('')}
       </tr>
       <tr>
         <th>${t('compare.weak2')}</th>
-        ${picks.map((_, i) => `<td class="cmp-types">${cell(i, 2)}</td>`).join('')}
+        ${picks.map((_, i) => `<td><div class="cmp-types">${cell(i, 2)}</div></td>`).join('')}
       </tr>
     `;
   }
