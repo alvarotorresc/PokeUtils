@@ -70,7 +70,6 @@ export const fetchAbilities = () => loadDataset('abilities');
 export const fetchItems = () => loadDataset('items');
 // Que movimiento ensena cada MT: 51 KB aparte de los 619 de items, porque solo
 // hace falta al buscar.
-export const fetchMachines = () => loadDataset('machines');
 export const fetchBerries = () => loadDataset('berries');
 export const fetchEvolutions = () => loadDataset('evolutions');
 export const fetchLearnsets = () => loadDataset('learnsets');

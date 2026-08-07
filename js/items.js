@@ -119,7 +119,15 @@ export function renderItems(container, query = new URLSearchParams()) {
   async function loadAll() {
     if (allItems) return;
     content.innerHTML = loadingHTML(t('items.loading'));
-    allItems = await fetchItems();
+    // Fuera las 338 MT. Aqui una se llama "MT01" y debajo lleva la descripcion
+    // del movimiento que ensena, sin decir cual es: una lista de numeros con
+    // texto suelto. Lo que se querria saber de ellas -- que ensena cada una --
+    // ya esta en Movimientos, y con nombre.
+    //
+    // Se filtra al leer y no en el builder: items.json se sirve cacheado una
+    // hora con stale-while-revalidate de una semana, asi que regenerarlo
+    // dejaria una ventana en la que las MT seguirian saliendo.
+    allItems = (await fetchItems()).filter(i => i.category !== 'machines');
 
     // Extract unique categories preserving order
     const seen = new Set();

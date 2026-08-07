@@ -37,17 +37,18 @@ const SURFACES = ['--bg', '--bg-surface', '--bg-card'];
 
 // Tokens que no son texto aunque aparezcan en una declaracion color:, y por que.
 const NOT_TEXT = new Set([
-  '--on-accent',   // tinta sobre un relleno --accent, que mide 12,48:1
-  '--bg',          // texto del color del fondo: iconos y trucos de recorte
+  '--on-accent',      // tinta sobre un relleno --accent, que mide 12,48:1
+  // Tinta sobre los trece rellenos de tipo claros, donde mide entre 5,42
+  // (Psiquico) y 11,38 (Electrico). Nunca cae sobre una superficie del tema.
+  '--on-type-light',
+  '--bg',             // texto del color del fondo: iconos y trucos de recorte
   '--bg-surface',
   '--bg-card',
 ]);
 
 // Excepciones medidas y aceptadas. Cada una lleva su motivo: sin motivo, no
 // entra. Se imprimen como "nota", no como ok.
-const ALLOW = {
-  '--text-muted@dark@--bg-card': 'Mide 4,41 (a 0,09 del minimo). Subirlo cambia el tono de todas las descripciones de la app para ganar una centesima. 2026-08-06.',
-};
+const ALLOW = {};
 
 function parseBlock(selector) {
   const at = css.indexOf(selector);

@@ -8,7 +8,7 @@
 // other three on the first character typed. loadDataset already memoises, so
 // asking twice costs nothing.
 import { searchAll } from './search-index.js';
-import { fetchPokemonList, fetchMoves, fetchAbilities, fetchItems, fetchMachines } from './api.js';
+import { fetchPokemonList, fetchMoves, fetchAbilities, fetchItems } from './api.js';
 import { getLang, t } from './i18n.js';
 
 const KIND_KEY = {
@@ -73,10 +73,12 @@ export function attachGlobalSearch(input, alGuardar) {
 
   async function loadRest() {
     if (datasets.moves) return;
-    const [moves, abilities, items, machines] = await Promise.all([
-      fetchMoves(), fetchAbilities(), fetchItems(), fetchMachines(),
+    // machines.json ya no se pide: era solo para cruzar cada MT con el
+    // movimiento que ensena, y las MT han salido del indice.
+    const [moves, abilities, items] = await Promise.all([
+      fetchMoves(), fetchAbilities(), fetchItems(),
     ]);
-    Object.assign(datasets, { moves, abilities, items, machines });
+    Object.assign(datasets, { moves, abilities, items });
   }
 
   function draw(results) {

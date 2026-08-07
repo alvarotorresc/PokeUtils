@@ -56,27 +56,14 @@ const SOURCES = [
   {
     // Items have no page of their own: the list opens filtered by the name.
     key: 'items', kind: 'item',
-    // Una MT se busca tambien por el movimiento que ensena: "MT01" no le dice
-    // nada a nadie, "Derribo" si.
-    names: (i, ctx) => {
-      const maquina = ctx.maquinas?.get(i.name);
-      return maquina
-        ? [i.nameEs, i.nameEn, i.name, maquina.nameEs, maquina.nameEn]
-        : [i.nameEs, i.nameEn, i.name];
-    },
+    // Las 338 MT quedan fuera. Se buscaban tambien por el movimiento que
+    // ensenan y salian como "MT01 · Derribo", asi que no estaban desnudas, pero
+    // duplicaban cada ataque: buscar "Derribo" devolvia el movimiento y su
+    // maquina, y de ocho resultados eso son dos gastados en lo mismo.
+    skip: i => i.category === 'machines',
+    names: i => [i.nameEs, i.nameEn, i.name],
     route: i => `#/items?q=${encodeURIComponent(i.nameEs || i.name)}`,
-    // El sprite de una MT se llama por tipo (tm-water) y no por numero, asi que
-    // "tm01.png" no existe y salia el hueco vacio. Con el movimiento sabido, es
-    // el de su tipo; sin el, el generico.
-    sprite: (i, ctx) => {
-      if (i.category !== 'machines') return itemSpriteUrl(i.name);
-      const maquina = ctx.maquinas?.get(i.name);
-      return itemSpriteUrl(`tm-${maquina?.type || 'normal'}`);
-    },
-    label: (i, ctx, base) => {
-      const maquina = ctx.maquinas?.get(i.name);
-      return maquina ? `${base} · ${maquina.nameEs}` : base;
-    },
+    sprite: i => itemSpriteUrl(i.name),
   },
 ];
 
@@ -99,19 +86,6 @@ const desdeTecnico = name => {
   return n.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
 };
 
-// Las maquinas se indexan por el nombre tecnico del objeto (tm01), que es lo
-// que las une con data/machines.json. El indice se guarda por referencia del
-// array: se construye una vez por dataset cargado, no en cada pulsacion.
-const indiceMaquinas = new WeakMap();
-
-function maquinasPorItem(machines) {
-  if (!Array.isArray(machines)) return null;
-  if (!indiceMaquinas.has(machines)) {
-    indiceMaquinas.set(machines, new Map(machines.map(m => [m.item, m])));
-  }
-  return indiceMaquinas.get(machines);
-}
-
 function labelOf(row, lang) {
   const propio = lang === 'es' ? row.nameEs : row.nameEn;
   const otro = lang === 'es' ? row.nameEn : row.nameEs;
@@ -125,25 +99,24 @@ export function searchAll(datasets, term, limit = 8, lang = 'es') {
   // One letter matches a third of the dataset and answers nothing.
   if (q.length < 2) return [];
 
-  const ctx = { maquinas: maquinasPorItem(datasets.machines) };
   const hits = [];
   for (const source of SOURCES) {
     const rows = datasets[source.key];
     if (!Array.isArray(rows)) continue; // dataset not loaded yet
     for (const row of rows) {
+      if (source.skip?.(row)) continue;
       // Se busca en todos los nombres para que "surf" encuentre a Surfista y
       // "levitacion" a Levitate, pero se ensena uno solo.
       let best = 0;
-      for (const name of source.names(row, ctx)) {
+      for (const name of source.names(row)) {
         const s = score(name, q);
         if (s > best) best = s;
       }
       if (best > 0) {
-        const base = labelOf(row, lang);
         hits.push({
           kind: source.kind, id: row.id,
-          name: source.label ? source.label(row, ctx, base) : base,
-          route: source.route(row), sprite: source.sprite(row, ctx), score: best,
+          name: labelOf(row, lang),
+          route: source.route(row), sprite: source.sprite(row), score: best,
         });
       }
     }
