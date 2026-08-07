@@ -1988,14 +1988,33 @@ a:hover {
   color: var(--ink-3);
   margin-bottom: 10px;
   line-height: 1.8;
+  /* Dos lineas reservadas. A 360 esta linea cabe entera cuando dice "2
+     movimientos" y envuelve cuando dice "20", y esos 13px de diferencia eran
+     lo unico que movia el alto de la tarjeta al cambiar de pestana: 601 en
+     Nivel y MT contra 592 en Tutor. */
+  min-height: 25px;
 }
 
-/* Desktop caps the height so a 229-move TM list does not make the page
-   unusable. Mobile keeps natural flow: a scroll box inside a scrolling page is
-   miserable on touch, and opening this tab is already a deliberate choice. */
+/* Alto fijo, no maximo: con max-height la tarjeta encogia en las pestanas
+   cortas -- de Pikachu, Tutor trae 2 movimientos y MT 34 -- y saltaba cada vez
+   que se cambiaba de una a otra. A 1920 la fila mide 41.7px, asi que 420
+   ensenan diez.
+
+   Antes movil se soltaba entero, con el argumento de que una caja con scroll
+   dentro de una pagina que ya scrollea es incomoda al tacto. Sigue siendo
+   verdad, pero ahora la seccion viene desplegada y sin tope son 930px de
+   tarjeta para un Bulbasaur y mas para un Pikachu. */
 .mv-list {
-  max-height: 420px;
+  height: 420px;
   overflow-y: auto;
+}
+
+/* La seccion se rellena despues de que la ficha ya este pintada, y el bento es
+   column-count: si creciera al llegar los datos recolocaria todas las tarjetas
+   de su columna. Reserva desde el primer pintado lo que va a ocupar: 42 de
+   pestanas, 14 de la linea del juego, sus margenes y los 420 de la lista. */
+.mv-section {
+  min-height: 502px;
 }
 
 .mv-row {
@@ -2049,10 +2068,10 @@ a:hover {
 }
 
 @media (max-width: 767px) {
-  .mv-list {
-    max-height: none;
-    overflow-y: visible;
-  }
+  /* Aqui la lista se soltaba entera, y con la seccion ya desplegada eso son
+     930px de tarjeta para un Bulbasaur y mucho mas para un Pikachu. Mantiene
+     el alto de escritorio: la fila mide 62.1px a 360, asi que se ven casi
+     siete en vez de diez, pero la tarjeta ocupa lo mismo en los dos sitios. */
   /* Two rows: name on top, then the five metadata cells below it. Six columns
      so power, accuracy and PP all fit on that second line instead of the PP
      dropping to a third row on its own. */

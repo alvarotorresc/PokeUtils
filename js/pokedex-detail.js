@@ -88,12 +88,15 @@ async function renderEvolutionSection(host, currentId) {
 
 // ===== LEARNED MOVES =====
 //
-// The section starts collapsed: opening it pulls learnsets.json (366 KB) and
-// moves.json (343 KB), and a page consulted for its stats should not pay that.
-// Once opened it stays open for the rest of the session, since the datasets are
-// then cached and reopening costs nothing.
-let movesSectionOpen = false;
-
+// La seccion se carga sola. Antes empezaba plegada detras de un boton porque
+// abrirla pide learnsets.json y moves.json -- 746 KB en crudo, 155 KB
+// comprimidos, que es lo que viaja de verdad. Se acepta el coste: las dos
+// peticiones salen despues de pintar la ficha, asi que no la bloquean, y
+// netlify.toml cachea /data/*.json una hora con stale-while-revalidate de una
+// semana, con lo que es un coste de primera visita.
+//
+// La lista tiene alto fijo y scroll propio, asi que la tarjeta ocupa lo mismo
+// con 15 movimientos que con 150, y no salta al cambiar de pestana.
 const METHOD_ORDER = ['level', 'machine', 'egg', 'tutor'];
 
 function moveRowHTML(move, level) {
@@ -156,24 +159,10 @@ async function loadMovesSection(host, currentId) {
       host.innerHTML = `<p class="evo-none">${t('learn.none')}</p>`;
       return;
     }
-    renderMovesSectionOpen(host, entry, new Map(moves.map(m => [m.id, m])), learnsets.versionGroups);
+    renderMovesPanel(host, entry, new Map(moves.map(m => [m.id, m])), learnsets.versionGroups);
   } catch (err) {
     renderError(host, err, () => loadMovesSection(host, currentId));
   }
-}
-
-function renderMovesSectionOpen(host, entry, byId, versionGroups) {
-  movesSectionOpen = true;
-  renderMovesPanel(host, entry, byId, versionGroups);
-}
-
-function renderMovesSection(host, currentId) {
-  if (movesSectionOpen) {
-    loadMovesSection(host, currentId);
-    return;
-  }
-  host.innerHTML = `<button class="page-btn mv-open">${t('learn.show')}</button>`;
-  host.querySelector('.mv-open').addEventListener('click', () => loadMovesSection(host, currentId));
 }
 
 // The capture rate runs 0 (Chansey and friends) to 255 (Caterpie and friends).
@@ -530,7 +519,7 @@ export async function renderPokedexDetail(container, id) {
 
       <section class="b">
       <h3 class="section-title">${t('learn.title')}</h3>
-      <div id="mvSection"></div>
+      <div class="mv-section" id="mvSection"></div>
       </section>
 
       <section class="b">
@@ -591,7 +580,7 @@ export async function renderPokedexDetail(container, id) {
   // The species owns both: Mega Charizard X evolves and learns exactly as
   // Charizard does, and the learnsets were built for the 1025 species only.
   renderEvolutionSection(container.querySelector('#evoSection'), dexId);
-  renderMovesSection(container.querySelector('#mvSection'), dexId);
+  loadMovesSection(container.querySelector('#mvSection'), dexId);
   renderMetaSection(container.querySelector('#metaSection'), dexId, format, meta, allPokemon);
 
   // Pikachu carries 17 forms and the strip only shows five of them at a time.

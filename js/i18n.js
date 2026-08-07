@@ -406,7 +406,6 @@ const translations = {
 
     // Movimientos aprendidos
     'learn.title': 'MOVIMIENTOS',
-    'learn.show': 'VER MOVIMIENTOS',
     'learn.tab.level': 'Nivel',
     'learn.tab.machine': 'MT',
     'learn.tab.egg': 'Huevo',
@@ -978,7 +977,6 @@ const translations = {
 
     // Learned moves
     'learn.title': 'MOVES',
-    'learn.show': 'SHOW MOVES',
     'learn.tab.level': 'Level',
     'learn.tab.machine': 'TM',
     'learn.tab.egg': 'Egg',
