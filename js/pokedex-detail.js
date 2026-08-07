@@ -5,7 +5,6 @@ import { loadingHTML, renderError } from './app.js';
 import { evolutionText } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
 import { rangeAt100 } from './stats.js';
-import { attachTooltip } from './tooltip.js';
 import { partnersOf, hasEggData } from './egg-groups.js';
 import { formsOf, spriteIdFor } from './forms.js';
 import { fetchMeta } from './api.js';
@@ -429,13 +428,25 @@ export async function renderPokedexDetail(container, id) {
 
       <section class="b">
       <h3 class="section-title">${t('pokedex.abilities')}</h3>
-      <div>
-        ${pokemon.abilities.map(a => `
-          <div style="margin-bottom:8px">
-            <a class="ability-link" href="#/abilities/${encodeURIComponent(a.nameEn)}" data-ability="${a.nameEn}">${getLang() === 'es' ? a.nameEs : a.displayEn}</a>
-            ${a.isHidden ? `<span style="font-size:0.42rem;color:var(--text-data);margin-left:8px">${t('pokedex.hidden')}</span>` : ''}
-          </div>
-        `).join('')}
+      <!-- La descripcion va escrita, no en una burbuja: dos nombres sueltos
+           dejaban 168px de caja practicamente vacia, y lo que se quiere saber
+           de una habilidad es justo lo que hace. El enlace a su pagina sigue
+           donde estaba. -->
+      <div class="ability-list">
+        ${pokemon.abilities.map(a => {
+          const desc = getLang() === 'es'
+            ? (a.descriptionEs || a.effect)
+            : (a.descriptionEn || a.effect);
+          return `
+            <div class="ability-item">
+              <div class="ability-head">
+                <a class="ability-link" href="#/abilities/${encodeURIComponent(a.nameEn)}">${getLang() === 'es' ? a.nameEs : a.displayEn}</a>
+                ${a.isHidden ? `<span class="ability-tag">${t('pokedex.hidden')}</span>` : ''}
+              </div>
+              ${desc ? `<p class="ability-desc">${desc}</p>` : ''}
+            </div>
+          `;
+        }).join('')}
       </div>
 
       </section>
@@ -542,15 +553,4 @@ export async function renderPokedexDetail(container, id) {
     renderPokedexDetail(container, next);
   });
 
-  // Bubbles are attached after the markup lands. attachTooltip is a no-op when
-  // the ability has no description, so it stays a plain link.
-  const lang = getLang();
-  container.querySelectorAll('[data-ability]').forEach((el) => {
-    const ability = pokemon.abilities.find(a => a.nameEn === el.dataset.ability);
-    if (!ability) return;
-    const text = lang === 'es'
-      ? (ability.descriptionEs || ability.effect)
-      : (ability.descriptionEn || ability.effect);
-    attachTooltip(el, text);
-  });
 }

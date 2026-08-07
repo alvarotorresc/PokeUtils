@@ -2047,6 +2047,37 @@ a.evo-node:hover img {
 }
 
 /* ===== ABILITY LINK + TOOLTIP ===== */
+/* ===== ABILITIES ON THE DETAIL PAGE ===== */
+.ability-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ability-item {
+  border-left: 2px solid var(--border-accent);
+  padding-left: 12px;
+}
+
+.ability-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ability-tag {
+  font-size: 0.42rem;
+  color: var(--text-data);
+}
+
+.ability-desc {
+  margin: 8px 0 0;
+  font-size: 0.44rem;
+  line-height: 1.9;
+  color: var(--text-data);
+}
+
 .ability-link {
   position: relative;
   display: inline-block;
