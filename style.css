@@ -2111,7 +2111,13 @@ a:hover {
   gap: 8px;
 }
 
+/* El ancho sale del sprite y no de un numero suelto. Estaban puestos en dos
+   sitios: el nodo fijo en 92px y el sprite subido a 140 solo en escritorio, asi
+   que el marco amarillo del Pokemon actual se quedaba 48px mas estrecho que el
+   dibujo y el sprite se salia 24 por cada lado. Atados por la variable no
+   pueden volver a separarse. */
 .evo-node {
+  --evo-sprite: 96px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2121,7 +2127,8 @@ a:hover {
   border-radius: 8px;
   text-decoration: none;
   flex-shrink: 0;
-  width: 92px;
+  /* el sprite, sus 8px de padding a cada lado y los 2 del borde */
+  width: calc(var(--evo-sprite) + 20px);
   transition: all 0.15s;
 }
 
@@ -2136,8 +2143,8 @@ a.evo-node:hover {
 }
 
 .evo-node img {
-  width: 96px;
-  height: 96px;
+  width: var(--evo-sprite);
+  height: var(--evo-sprite);
   image-rendering: pixelated;
   transition: transform 0.2s;
 }
@@ -2147,9 +2154,8 @@ a.evo-node:hover img {
 }
 
 @media (min-width: 1000px) {
-  .evo-node img {
-    width: 140px;
-    height: 140px;
+  .evo-node {
+    --evo-sprite: 140px;
   }
 }
 
