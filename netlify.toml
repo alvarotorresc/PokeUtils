@@ -1,5 +1,5 @@
-# Only headers here on purpose: the build and publish settings stay in the
-# Netlify UI, and this file must not override them.
+# Cabeceras y el proxy de sprites. La configuracion de build y publish sigue en
+# la interfaz de Netlify, y este fichero no debe pisarla.
 
 # Generated datasets change once per Pokemon generation. Serve them stale
 # while revalidating so navigation stays instant after the first visit.
@@ -7,3 +7,25 @@
   for = "/data/*.json"
   [headers.values]
     Cache-Control = "public, max-age=3600, stale-while-revalidate=604800"
+
+# Los woff2 llevan el subset en el nombre y no cambian nunca: si algun dia hay
+# otra version, sera otro fichero.
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Los sprites venian de raw.githubusercontent.com con max-age=300, o sea cinco
+# minutos: cada visita volvia a bajarse los treinta y dos de la portada desde un
+# tercer origen. Pasan por aqui para poder cachearlos como lo que son, imagenes
+# que no cambian: el sprite del numero 25 lleva siendo el mismo desde 1996.
+[[redirects]]
+  from = "/sprites/*"
+  to = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/:splat"
+  status = 200
+  force = true
+
+[[headers]]
+  for = "/sprites/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800, stale-while-revalidate=2592000"

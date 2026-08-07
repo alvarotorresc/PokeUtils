@@ -90,12 +90,17 @@ export const STAT_COLORS = {
 };
 
 // Sprite URL helpers
+//
+// Los sprites salian directos de raw.githubusercontent.com, que los sirve con
+// cache-control: max-age=300. Cinco minutos: cualquier visita posterior volvia
+// a bajarse los treinta y dos de la portada, ademas de abrir conexion a un
+// tercer origen. Pasan por /sprites, que netlify.toml cachea un ano.
 export function spriteUrl(id) {
-  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+  return `/sprites/pokemon/${id}.png`;
 }
 
 export function itemSpriteUrl(name) {
-  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${name}.png`;
+  return `/sprites/items/${name}.png`;
 }
 
 // Category translations
