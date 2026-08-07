@@ -96,7 +96,7 @@ const translations = {
     'egg.title': 'Grupos huevo',
     'egg.subtitle': 'Los 15 grupos de cría y cuántos Pokémon hay en cada uno',
     'egg.back': '◀ Todos los grupos',
-    'egg.rules': 'Compartir grupo no basta: los sin genero solo crian con Ditto, Ditto cría con todos menos con los del grupo Desconocido, y dos de un mismo único genero no crian entre si.',
+    'egg.rules': 'Compartir grupo no basta: los sin género solo crían con Ditto, Ditto cría con todos menos con los del grupo Desconocido, y dos de un mismo único género no crían entre sí.',
     'egg.stale': 'Los datos de cría todavia no han llegado a este navegador. Recarga la pagina.',
     'egg.section': 'Cría',
     'form.base': 'Normal',

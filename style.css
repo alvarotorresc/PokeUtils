@@ -1039,10 +1039,11 @@ a:hover {
   color: var(--text-data);
 }
 
-/* The breeding rules close the group index and belong to the whole grid, not
-   to its left edge. Centred, and capped: measured at 1366 the sentence ran the
-   full 1278px of the page, and it only gets wider from there. */
-.egg-rules {
+/* Una nota que cierra la pagina habla de todo lo que hay encima, no de su borde
+   izquierdo. Centrada y capada: medido a 1366 la frase corria los 1278px de la
+   pagina, y de ahi para arriba solo se ensancha. La usan las reglas de cria del
+   indice de grupos huevo y el aviso del comparador. */
+.note-center {
   text-align: center;
   max-width: 760px;
   margin-left: auto;
@@ -2282,6 +2283,41 @@ a.evo-node:hover img {
   vertical-align: middle;
 }
 
+/* El alineado de una columna se declara una vez y lo heredan su cabecera y sus
+   celdas. Estaba puesto en dos sitios -- `text-align:left` en el `th` de aqui y
+   `text-align:center` en linea en cada `td` -- y por eso POTENCIA quedaba 45px
+   a la izquierda de sus numeros. */
+.data-table th.col-c,
+.data-table td.col-c {
+  text-align: center;
+}
+
+/* La columna del nombre se queda con todo el ancho sobrante y las de datos se
+   cinen a su contenido. Sin esto la tabla repartia a partes iguales y TIPO
+   ocupaba 292px para un badge de 60. */
+.data-table th.col-grow,
+.data-table td.col-grow {
+  width: 100%;
+}
+
+/* Ceñidas al contenido quedan pegadas unas a otras, asi que el aire que antes
+   venia del reparto a partes iguales lo pone ahora el padding. */
+.data-table th.col-c,
+.data-table td.col-c {
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+.data-table td.col-c {
+  white-space: nowrap;
+}
+
+/* El hueco de un dato que el movimiento no tiene. Estaba en --text-dim, que el
+   propio fichero reserva para separadores porque mide 2.12:1, y era texto. */
+.data-table td.col-empty {
+  color: var(--text-muted);
+}
+
 .data-table tr {
   background: var(--bg-surface);
   transition: background 0.15s;
@@ -2319,7 +2355,10 @@ a.evo-node:hover img {
   padding-left: 8px;
   border-left: 2px solid var(--border);
   line-height: 1.8;
-  max-width: 320px;
+  /* La columna del nombre se queda con el ancho sobrante, asi que a 1920 son
+     1210px con la descripcion cortada a 320: cinco lineas y un hueco de 890.
+     Con 560 la misma frase cae en dos. */
+  max-width: 560px;
 }
 
 /* ===== MOVE ROW ===== */

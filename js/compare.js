@@ -124,7 +124,7 @@ export async function renderCompare(container, query = new URLSearchParams()) {
           </span>
         `).join('')}
       </div>
-      ${picks.length < 2 ? `<p class="egg-note">${t('compare.need2')}</p>` : `
+      ${picks.length < 2 ? `<p class="egg-note note-center">${t('compare.need2')}</p>` : `
         <div class="data-table-wrap">
           <table class="data-table cmp-table">
             <thead>
