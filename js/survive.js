@@ -5,7 +5,7 @@
 import { survives, minimumSpread, defenseKeyFor } from './survival.js';
 import { fetchPokemonList, fetchMoves } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { loadingHTML, replaceQuery } from './app.js';
+import { loadingHTML, replaceQuery } from './ui.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
 import { WEATHER, TERRAIN, SCREENS } from './battle-data.js';

@@ -6,7 +6,7 @@
 import { TYPES, spriteUrl } from './data.js';
 import { fetchPokemonList } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { loadingHTML, renderError, replaceQuery } from './app.js';
+import { loadingHTML, renderError, replaceQuery } from './ui.js';
 import { t, typeName, pokeName } from './i18n.js';
 import { defensiveMatrix, threats, unresisted, stabTypes, offensiveCoverage } from './team-analysis.js';
 

@@ -2,7 +2,7 @@
 import { TYPES, spriteUrl, STAT_KEYS, GENERATIONS, SORT_KEYS } from './data.js';
 import { fetchPokemonList } from './api.js';
 import { isForm, spriteIdFor } from './forms.js';
-import { loadingHTML, renderPagination, replaceQuery } from './app.js';
+import { loadingHTML, renderPagination, replaceQuery } from './ui.js';
 import { t, typeName, statName, pokeName } from './i18n.js';
 import { toolTabsHTML } from './hub.js';
 

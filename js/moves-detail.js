@@ -6,7 +6,7 @@
 
 import { spriteUrl } from './data.js';
 import { fetchMoves, fetchLearnsets, fetchPokemonList } from './api.js';
-import { loadingHTML, renderError } from './app.js';
+import { loadingHTML, renderError } from './ui.js';
 import { t, typeName, categoryName, pokeName, getLang } from './i18n.js';
 import { priorityLabel, priorityHint, statChangeLabel } from './move-effects.js';
 import { learnersOf } from './learnset-index.js';

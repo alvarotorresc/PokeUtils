@@ -11,7 +11,7 @@ import {
   WEATHER, TERRAIN, SCREENS, DAMAGE_ITEMS, DAMAGE_ABILITIES,
 } from './battle-data.js';
 import { FIELDS, VP_FIELDS, encodeDamageState, decodeDamageState } from './damage-url.js';
-import { replaceQuery } from './app.js';
+import { replaceQuery } from './ui.js';
 import { t, getLang, pokeName, categoryName, typeName } from './i18n.js';
 
 // A neutral, average-ish pair so the panel shows a real number before the user

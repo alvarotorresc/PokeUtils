@@ -7,7 +7,7 @@ import { counters } from './threats.js';
 import { fetchPokemonList, fetchMeta } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
 import { defaultFormat } from './meta.js';
-import { loadingHTML, replaceQuery } from './app.js';
+import { loadingHTML, replaceQuery } from './ui.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
 import { t, pokeName } from './i18n.js';

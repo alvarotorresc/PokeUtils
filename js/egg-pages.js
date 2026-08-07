@@ -6,7 +6,7 @@
 import { EGG_GROUPS, membersOf, groupCounts, hasEggData } from './egg-groups.js';
 import { fetchPokemonList } from './api.js';
 import { pokemonCardHTML } from './pokedex.js';
-import { loadingHTML, renderPagination, replaceQuery } from './app.js';
+import { loadingHTML, renderPagination, replaceQuery } from './ui.js';
 import { t } from './i18n.js';
 import { toolTabsHTML } from './hub.js';
 

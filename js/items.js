@@ -1,7 +1,7 @@
 // ===== ITEMS PAGE =====
 import { itemSpriteUrl } from './data.js';
 import { fetchItems } from './api.js';
-import { loadingHTML, renderPagination } from './app.js';
+import { loadingHTML, renderPagination } from './ui.js';
 import { t, pokeName, getLang } from './i18n.js';
 
 const PAGE_SIZE = 48;

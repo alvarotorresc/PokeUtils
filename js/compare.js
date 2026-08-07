@@ -7,7 +7,7 @@ import { STAT_KEYS, spriteUrl } from './data.js';
 import { fetchPokemonList, fetchAbilities } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
 import { defensiveMatrix } from './team-analysis.js';
-import { loadingHTML, replaceQuery } from './app.js';
+import { loadingHTML, replaceQuery } from './ui.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
 import { toolTabsHTML } from './hub.js';
 import { attachTooltip } from './tooltip.js';
