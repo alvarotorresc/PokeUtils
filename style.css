@@ -1201,15 +1201,33 @@ a:hover {
   display: none;
 }
 
+/* A grid item is min-width:auto by default, so a `1fr` column never shrinks
+   below the widest option of the select inside it: measured at 360px, the two
+   columns came out 185px each inside a 320px row and pushed the sort select and
+   the direction button 59px off the screen. minmax(0, 1fr) lets the column
+   shrink and the select follow it. */
 @media (max-width: 767px) {
   .pdx-controls {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pdx-controls > .pdx-select,
+  .pdx-controls > .pdx-dir,
+  .pdx-controls > .pdx-clear {
+    min-width: 0;
+    width: 100%;
   }
   .pdx-count {
     grid-column: 1 / -1;
     margin-left: 0;
   }
+}
+
+/* Same reason on the tablet strip, where the controls are a wrapping flex row:
+   a select wider than the row does not wrap, it overflows. */
+.pdx-select,
+.pdx-dir {
+  max-width: 100%;
 }
 
 /* ===== POKEDEX: THE SIDEBAR ===== */
