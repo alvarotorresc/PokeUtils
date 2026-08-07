@@ -567,22 +567,22 @@ export async function renderPokedexDetail(container, id) {
       </section>
       </div>
 
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;gap:12px">
-        ${dexId > 1 ? `<a href="#/pokedex/${dexId - 1}" class="page-btn" style="display:flex;align-items:center;gap:8px;text-decoration:none">
-          <span>◀</span>
-          <img src="${spriteUrl(dexId - 1)}" style="width:32px;height:32px;image-rendering:pixelated" onerror="this.style.display='none'">
-          <span style="display:flex;flex-direction:column;gap:2px;text-align:left">
-            <span style="font-size:0.42rem;color:var(--ink-3)">#${String(dexId - 1).padStart(4, '0')}</span>
-            <span style="font-size:0.46rem">${pokemon.prevName || ''}</span>
+      <div class="poke-nav">
+        ${dexId > 1 ? `<a href="#/pokedex/${dexId - 1}" class="page-btn poke-nav-btn">
+          <span class="poke-nav-arrow">◀</span>
+          <img src="${spriteUrl(dexId - 1)}" onerror="this.style.display='none'">
+          <span class="poke-nav-label">
+            <span class="poke-nav-dex">#${String(dexId - 1).padStart(4, '0')}</span>
+            <span class="poke-nav-name">${pokemon.prevName || ''}</span>
           </span>
         </a>` : '<div></div>'}
-        ${dexId < 1025 ? `<a href="#/pokedex/${dexId + 1}" class="page-btn" style="display:flex;align-items:center;gap:8px;text-decoration:none">
-          <span style="display:flex;flex-direction:column;gap:2px;text-align:right">
-            <span style="font-size:0.42rem;color:var(--ink-3)">#${String(dexId + 1).padStart(4, '0')}</span>
-            <span style="font-size:0.46rem">${pokemon.nextName || ''}</span>
+        ${dexId < 1025 ? `<a href="#/pokedex/${dexId + 1}" class="page-btn poke-nav-btn next">
+          <span class="poke-nav-label">
+            <span class="poke-nav-dex">#${String(dexId + 1).padStart(4, '0')}</span>
+            <span class="poke-nav-name">${pokemon.nextName || ''}</span>
           </span>
-          <img src="${spriteUrl(dexId + 1)}" style="width:32px;height:32px;image-rendering:pixelated" onerror="this.style.display='none'">
-          <span>▶</span>
+          <img src="${spriteUrl(dexId + 1)}" onerror="this.style.display='none'">
+          <span class="poke-nav-arrow">▶</span>
         </a>` : '<div></div>'}
       </div>
     </div>

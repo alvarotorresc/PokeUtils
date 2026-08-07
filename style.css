@@ -1860,7 +1860,66 @@ a:hover {
   justify-content: center;
 }
 
+/* Sin nowrap a proposito. Con el contenedor ya en wrap, los dos datos cortos
+   caben juntos (70 + 16 + 79 de los 213 que hay) y la frase de captura salta a
+   la linea siguiente. Ponerle nowrap a ella la sacaba 15px fuera de la tarjeta:
+   mide 252 y la columna da 213. */
 .poke-detail-info .meta > span {
+  min-width: 0;
+}
+
+/* ===== ANTERIOR / SIGUIENTE DE LA FICHA =====
+   Los dos botones llevaban su layout en atributos style y, con el nombre sin
+   limite, a 360px el de la derecha se salia 22px de la pagina. El nombre es lo
+   unico que puede encoger, asi que es lo unico que se corta. */
+.poke-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  gap: 12px;
+}
+
+.poke-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  min-width: 0;
+}
+
+.poke-nav-btn img {
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+}
+
+.poke-nav-arrow {
+  flex-shrink: 0;
+}
+
+.poke-nav-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  min-width: 0;
+}
+
+.poke-nav-btn.next .poke-nav-label {
+  text-align: right;
+}
+
+.poke-nav-dex {
+  font-size: 0.42rem;
+  color: var(--ink-3);
+}
+
+.poke-nav-name {
+  font-size: 0.46rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
