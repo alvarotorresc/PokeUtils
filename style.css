@@ -958,6 +958,26 @@ a:hover {
 .cmp-name { display: block; text-align: center; margin-top: 6px; font-size: 0.55rem; }
 .cmp-table th a:hover .cmp-name { color: var(--accent-text); }
 .cmp-table td { text-align: center; }
+
+/* Un enlace por linea y centrado. En bloque, no en flex: .cmp-abilities es la
+   propia celda, y un <td> en flex deja de ser table-cell. */
+.cmp-abilities .ability-link {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin: 0 auto 8px;
+}
+
+.cmp-abilities .ability-link:last-child { margin-bottom: 0; }
+
+/* La burbuja cuelga del enlace, y el envoltorio de la tabla recorta lo que se
+   salga por los lados. Centrada bajo su ancla cabe dentro de la columna. */
+.cmp-abilities .tooltip-bubble {
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(240px, calc(100vw - 32px));
+}
+
 .cmp-best { color: var(--accent-text); font-weight: bold; }
 .cmp-types { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
 .cmp-table thead .cmp-types { margin-top: 8px; }

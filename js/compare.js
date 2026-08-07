@@ -10,6 +10,7 @@ import { defensiveMatrix } from './team-analysis.js';
 import { loadingHTML, replaceQuery } from './app.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
 import { toolTabsHTML } from './hub.js';
+import { attachTooltip } from './tooltip.js';
 
 const MAX = 4;
 
@@ -32,6 +33,19 @@ export async function renderCompare(container, query = new URLSearchParams()) {
     const info = abilityByName.get(slug);
     return (getLang() === 'es' ? info?.nameEs : info?.nameEn) || slug;
   };
+
+  // Igual que en la ficha: enlace a la pagina de la habilidad y burbuja con lo
+  // que hace al pasar por encima. Aqui la descripcion sale de abilities.json,
+  // que la pagina ya carga para traducir los nombres.
+  const abilityText = slug => {
+    const info = abilityByName.get(slug);
+    if (!info) return '';
+    return (getLang() === 'es' ? info.descriptionEs : info.descriptionEn) || info.effect || '';
+  };
+
+  const abilityLinkHTML = slug => `
+    <a class="ability-link" href="#/abilities/${encodeURIComponent(slug)}" data-ability="${slug}">${abilityLabel(slug)}</a>
+  `;
 
   // A typo in a shared link must not blank the page: unknown ids drop out and
   // the rest still compare.
@@ -131,13 +145,19 @@ export async function renderCompare(container, query = new URLSearchParams()) {
               ${statRowsHTML(picks)}
               <tr><th>${t('compare.height')}</th>${picks.map(p => `<td>${p.height} m</td>`).join('')}</tr>
               <tr><th>${t('compare.weight')}</th>${picks.map(p => `<td>${p.weight} kg</td>`).join('')}</tr>
-              <tr><th>${t('pokedex.abilities')}</th>${picks.map(p => `<td>${p.abilities.map(a => abilityLabel(a.nameEn)).join('<br>')}</td>`).join('')}</tr>
+              <tr><th>${t('pokedex.abilities')}</th>${picks.map(p => `<td class="cmp-abilities">${p.abilities.map(a => abilityLinkHTML(a.nameEn)).join('')}</td>`).join('')}</tr>
               ${weaknessRowsHTML(picks)}
             </tbody>
           </table>
         </div>
       `}
     `;
+
+    // Las burbujas se enganchan despues de pintar. attachTooltip no hace nada
+    // si la habilidad no trae texto, y entonces se queda como enlace a secas.
+    body.querySelectorAll('[data-ability]').forEach(el => {
+      attachTooltip(el, abilityText(el.dataset.ability));
+    });
 
     const search = body.querySelector('#cmpSearch');
     const results = body.querySelector('#cmpResults');
