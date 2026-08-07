@@ -1292,15 +1292,49 @@ a:hover {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 6px;
+    margin-bottom: 0;
   }
 
+  /* The type buttons wrap a badge that already carries its own padding, so the
+     button's own 6px on top of it was padding inside padding: 34px of row for
+     19px of badge. Measured at 1366x768 the sidebar needed 700px of a 661px
+     box and grew its own scrollbar; trimming the doubled padding and the
+     margins between sections brings it to 598 and the bar disappears. */
+  .dex-side .filter-row .filter-btn {
+    padding: 3px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dex-side .filter-row .filter-btn .type-badge {
+    width: 100%;
+  }
+
+  /* One select per row, except the sort key, which shares its row with the
+     direction button it belongs to: they are one control split in two, and
+     stacking them cost a row the sidebar did not have. */
   .dex-side .pdx-controls {
     display: grid;
+    grid-template-columns: 1fr auto;
     gap: 8px;
+    margin-bottom: 0;
+  }
+
+  .dex-side .pdx-controls .pdx-select {
+    grid-column: 1 / -1;
+  }
+
+  .dex-side .pdx-controls .pdx-select:last-of-type {
+    grid-column: 1;
   }
 
   .dex-side .search-bar {
     margin-bottom: 0;
+  }
+
+  .dex-side .dex-side-title {
+    margin: 14px 0 8px;
   }
 
   .dex-side .pdx-clear {
