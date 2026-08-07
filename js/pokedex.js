@@ -36,12 +36,20 @@ function animarAlto(grid, altoPrevio) {
 
   grid.style.height = `${altoPrevio}px`;
   grid.style.overflow = 'hidden';
-  const soltar = () => {
+  const soltar = (e) => {
+    // transitionend burbujea, y la tarjeta tiene `transition: all 0.2s`: pasar
+    // el raton por encima mientras la rejilla se encoge lanzaria el evento de
+    // la tarjeta, y con el listener puesto a once se comeria el bueno y el alto
+    // pegaria el salto que esto viene a evitar. Y pasar el raton por encima es
+    // justo lo que ocurre: al cambiar de pagina las tarjetas se mueven bajo un
+    // cursor quieto.
+    if (e && e.target !== grid) return;
+    grid.removeEventListener('transitionend', soltar);
     grid.style.height = '';
     grid.style.overflow = '';
     grid.style.transition = '';
   };
-  grid.addEventListener('transitionend', soltar, { once: true });
+  grid.addEventListener('transitionend', soltar);
   // Red de seguridad: si la transicion no llega a dispararse, el alto fijo se
   // quedaria puesto para siempre.
   setTimeout(soltar, 600);
