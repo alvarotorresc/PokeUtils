@@ -48,13 +48,18 @@ export function renderMoves(container, query = new URLSearchParams()) {
       <button class="filter-btn${state.cat === 'status' ? ' active' : ''}" data-cat="status"><span class="move-category status">${t('cat.status')}</span></button>
     </div>
     <div class="pdx-controls" id="mvControls" hidden>
+      <!-- Mismo criterio que los filtros de la Pokedex: el nombre del filtro
+           va una vez, en la opcion vacia y en el <optgroup>, no delante de
+           cada valor. -->
       <select class="pdx-select" id="mvPrio" aria-label="${t('moves.filter.prio')}">
-        <option value="">${t('moves.filter.prio')}: ${t('moves.filter.prio.all')}</option>
-        <option value="up">${t('moves.filter.prio')}: ${t('moves.filter.prio.up')}</option>
-        <option value="down">${t('moves.filter.prio')}: ${t('moves.filter.prio.down')}</option>
+        <option value="">${t('moves.filter.prio.allopt')}</option>
+        <optgroup label="${t('moves.filter.prio')}">
+          <option value="up">${t('moves.filter.prio.up')}</option>
+          <option value="down">${t('moves.filter.prio.down')}</option>
+        </optgroup>
       </select>
       <select class="pdx-select" id="mvStat" aria-label="${t('moves.filter.stat')}">
-        <option value="">${t('moves.filter.stat')}: ${t('moves.filter.stat.all')}</option>
+        <option value="">${t('moves.filter.stat.allopt')}</option>
         <optgroup label="${t('moves.filter.stat.up')}">
           ${STAT_FILTER_KEYS.map(k => `<option value="${k}:up">${statName(k)}</option>`).join('')}
         </optgroup>
