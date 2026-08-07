@@ -335,8 +335,12 @@ const translations = {
     'pokedex.notfound': 'Pokémon no encontrado',
     'pokedex.gen': 'GEN',
     'pokedex.gen.all': 'Todas',
+    // La opcion vacia carga el nombre del filtro para que el desplegable
+    // cerrado siga diciendo de que va, sin repetirlo en cada opcion.
+    'pokedex.gen.allopt': 'Todas las generaciones',
     'pokedex.rarity': 'RAREZA',
     'pokedex.rarity.all': 'Todos',
+    'pokedex.rarity.allopt': 'Todas las rarezas',
     'pokedex.rarity.normal': 'Normales',
     'pokedex.rarity.legendary': 'Legendarios',
     'pokedex.rarity.mythical': 'Singulares',
@@ -900,8 +904,10 @@ const translations = {
     'pokedex.notfound': 'Pokemon not found',
     'pokedex.gen': 'GEN',
     'pokedex.gen.all': 'All',
+    'pokedex.gen.allopt': 'All generations',
     'pokedex.rarity': 'RARITY',
     'pokedex.rarity.all': 'All',
+    'pokedex.rarity.allopt': 'All rarities',
     'pokedex.rarity.normal': 'Regular',
     'pokedex.rarity.legendary': 'Legendary',
     'pokedex.rarity.mythical': 'Mythical',

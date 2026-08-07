@@ -64,21 +64,28 @@ export function renderPokedex(container, query = new URLSearchParams()) {
         </div>
         <h4 class="dex-side-title">${t('pokedex.sort')}</h4>
         <div class="pdx-controls">
+          <!-- Ninguna opcion repite el nombre de su filtro: leer
+               "Rareza: Normales, Rareza: Legendarios, Rareza: Singulares" es
+               leer tres veces la misma palabra. El nombre vive en la opcion
+               vacia, que es lo que se ve con el filtro sin usar, y en el
+               <optgroup> del orden, que no tiene opcion vacia donde ponerlo. -->
           <select class="pdx-select" id="pdxGen" aria-label="${t('pokedex.gen')}">
-            <option value="">${t('pokedex.gen')}: ${t('pokedex.gen.all')}</option>
-            ${GENERATIONS.map(g => `<option value="${g.id}">${t('pokedex.gen')}: ${g.name.replace('Gen ', '')}</option>`).join('')}
+            <option value="">${t('pokedex.gen.allopt')}</option>
+            ${GENERATIONS.map(g => `<option value="${g.id}">${g.name}</option>`).join('')}
           </select>
           <select class="pdx-select" id="pdxRare" aria-label="${t('pokedex.rarity')}">
-            <option value="">${t('pokedex.rarity')}: ${t('pokedex.rarity.all')}</option>
-            <option value="normal">${t('pokedex.rarity')}: ${t('pokedex.rarity.normal')}</option>
-            <option value="legendary">${t('pokedex.rarity')}: ${t('pokedex.rarity.legendary')}</option>
-            <option value="mythical">${t('pokedex.rarity')}: ${t('pokedex.rarity.mythical')}</option>
+            <option value="">${t('pokedex.rarity.allopt')}</option>
+            <option value="normal">${t('pokedex.rarity.normal')}</option>
+            <option value="legendary">${t('pokedex.rarity.legendary')}</option>
+            <option value="mythical">${t('pokedex.rarity.mythical')}</option>
           </select>
           <select class="pdx-select" id="pdxSort" aria-label="${t('pokedex.sort')}">
-            ${SORT_KEYS.map(k => {
-              const label = (k === 'id' || k === 'total') ? t('pokedex.sort.' + k) : statName(k);
-              return `<option value="${k}">${t('pokedex.sort')}: ${label}</option>`;
-            }).join('')}
+            <optgroup label="${t('pokedex.sort')}">
+              ${SORT_KEYS.map(k => {
+                const label = (k === 'id' || k === 'total') ? t('pokedex.sort.' + k) : statName(k);
+                return `<option value="${k}">${label}</option>`;
+              }).join('')}
+            </optgroup>
           </select>
           <button class="pdx-dir" id="pdxDir"></button>
         </div>
