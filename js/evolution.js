@@ -91,12 +91,51 @@ function conditionTexts(d, lang, lookups) {
   return out;
 }
 
+// Las claves se ordenan porque lo que se compara es el contenido, no como
+// PokeAPI lo escribio. A mano y no con el segundo argumento de JSON.stringify:
+// ese es una lista de claves permitidas y se aplica tambien dentro de los
+// objetos anidados, asi que { item: { name, es, en } } salia como { item: {} } y
+// las dos piedras de Vulpix se contaban como la misma.
+function huella(v) {
+  if (v === null || typeof v !== 'object') return JSON.stringify(v);
+  if (Array.isArray(v)) return `[${v.map(huella).join(',')}]`;
+  return `{${Object.keys(v).sort().map(k => `${JSON.stringify(k)}:${huella(v[k])}`).join(',')}}`;
+}
+
+// `extra` dice lo mismo que `base` y ademas algo mas.
+function anade(extra, base) {
+  const claves = Object.keys(base);
+  if (Object.keys(extra).length <= claves.length) return false;
+  return claves.every(k => huella({ v: base[k] }) === huella({ v: extra[k] }));
+}
+
+// Una forma regional entra por el mismo hueco que la normal, y PokeAPI devuelve
+// las dos condiciones sin nada que las distinga. De las 33 transiciones con mas
+// de una alternativa, 9 son el mismo objeto repetido -- Diglett trae "Nv. 26"
+// dos veces -- y en 12 una es la otra con una condicion de mas: Pikachu da
+// "Piedra Trueno" y "Piedra Trueno en Alola", que es la misma piedra.
+//
+// Se queda la mas general, que ya cubre a la otra. Las 12 restantes son
+// alternativas de verdad (Sandshrew evoluciona a nivel 22 o con Piedra Hielo) y
+// no las toca nadie.
+function alternativasUtiles(details) {
+  const unicas = [];
+  const vistas = new Set();
+  for (const d of details) {
+    const k = huella(d);
+    if (vistas.has(k)) continue;
+    vistas.add(k);
+    unicas.push(d);
+  }
+  return unicas.filter(d => !unicas.some(otra => otra !== d && anade(d, otra)));
+}
+
 // details: array of alternative conditions. Returns '' when empty, which in
 // the whole dataset happens only for Manaphy.
 export function evolutionText(details, lang, lookups) {
   if (!details || details.length === 0) return '';
   const separator = lang === 'es' ? ' o ' : ' or ';
-  return details
+  return alternativasUtiles(details)
     .map(d => [triggerText(d, lang, lookups), ...conditionTexts(d, lang, lookups)].filter(Boolean).join(' '))
     .filter(Boolean)
     .join(separator);
