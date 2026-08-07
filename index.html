@@ -18,6 +18,14 @@
     try {
       if (localStorage.getItem('pkutils_theme') === 'light')
         document.documentElement.classList.add('light');
+      // Y el diccionario del idioma guardado, que i18n.js espera con un await de
+      // primer nivel: sin esto bajaria por detras de app.js en vez de a la vez, y
+      // el corte de i18n en dos habria costado mas de lo que ahorra. Se pide aqui
+      // y no con un <link> fijo para no traerse ademas el idioma que no se usa.
+      var l = document.createElement('link');
+      l.rel = 'modulepreload';
+      l.href = 'js/i18n-' + (localStorage.getItem('pkutils_lang') || 'es') + '.js';
+      document.head.appendChild(l);
     } catch (e) {}
   </script>
 </head>
