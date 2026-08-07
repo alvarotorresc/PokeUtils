@@ -572,13 +572,13 @@ export async function renderPokedexDetail(container, id) {
           <span>◀</span>
           <img src="${spriteUrl(dexId - 1)}" style="width:32px;height:32px;image-rendering:pixelated" onerror="this.style.display='none'">
           <span style="display:flex;flex-direction:column;gap:2px;text-align:left">
-            <span style="font-size:0.42rem;color:var(--text-data)">#${String(dexId - 1).padStart(4, '0')}</span>
+            <span style="font-size:0.42rem;color:var(--ink-3)">#${String(dexId - 1).padStart(4, '0')}</span>
             <span style="font-size:0.46rem">${pokemon.prevName || ''}</span>
           </span>
         </a>` : '<div></div>'}
         ${dexId < 1025 ? `<a href="#/pokedex/${dexId + 1}" class="page-btn" style="display:flex;align-items:center;gap:8px;text-decoration:none">
           <span style="display:flex;flex-direction:column;gap:2px;text-align:right">
-            <span style="font-size:0.42rem;color:var(--text-data)">#${String(dexId + 1).padStart(4, '0')}</span>
+            <span style="font-size:0.42rem;color:var(--ink-3)">#${String(dexId + 1).padStart(4, '0')}</span>
             <span style="font-size:0.46rem">${pokemon.nextName || ''}</span>
           </span>
           <img src="${spriteUrl(dexId + 1)}" style="width:32px;height:32px;image-rendering:pixelated" onerror="this.style.display='none'">

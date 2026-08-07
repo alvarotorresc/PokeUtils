@@ -15,16 +15,33 @@
   /* Ink for text sitting on an --accent fill. Stays dark in both themes on
      purpose: following --bg would put near-white on gold at 2.77:1. */
   --on-accent: #0f0f23;
-  --text: #e8e8f0;
-  --text-muted: #8888aa;
-  --text-dim: #555577;
-  /* An accent has two jobs and one value cannot do both: as a fill with dark ink
-     on top it measures 12.48:1 and works, but as text on the light card it fell
-     to 2.58:1. Same split as --stat-up / --stat-down, already made for this. */
+  /* ===== TRES TINTAS =====
+     Habia cuatro grises y se leian como uno solo: sobre --bg-card median 12.35,
+     9.95, 6.38 y 4.41, o sea saltos de 1.24, 1.56 y 1.45 entre vecinos. Y el
+     ultimo ni siquiera llegaba a AA.
+
+     Con color no se puede hacer mucho mejor: entre el suelo de AA (4.5) y el
+     blanco puro (15.05) sobre --bg-card cabe un factor 3.3, que repartido en
+     dos saltos da 1.83 como maximo teorico. Asi que el nivel de un texto se
+     senala en tres canales a la vez, y los otros dos ya estaban aqui: la
+     division Press Start 2P / VT323 y el escalon de tamano.
+
+     Medidos contra --bg / --bg-surface / --bg-card. Saltos de 1.77 y 1.77. */
+  --ink-1: #fcfcff;   /* 18.43 / 16.26 / 14.69 - el dato que responde */
+  --ink-2: #bebedc;   /* 10.41 /  9.19 /  8.30 - lo que se lee de corrido */
+  --ink-3: #8c8cb8;   /*  5.89 /  5.20 /  4.70 - lo que nombra a un dato */
+  /* Un control apagado no es contenido. Compartia gris con las etiquetas, y por
+     eso subir el de una etiqueta subia tambien el de un boton. */
+  --ink-ui: #9a9ac2;  /*  6.99 /  6.16 /  5.57 */
+
+  /* El amarillo no es un cuarto gris: destaca por ser de otro color, no por ser
+     mas claro (9.95 cae entre --ink-1 y --ink-2). Marca una cosa y solo una:
+     esto es lo que has venido a mirar, o esto se puede pulsar. Pierde el sentido
+     si aparece dos veces en el mismo bloque.
+     Dos valores porque uno no puede hacer los dos trabajos: como relleno con
+     tinta oscura encima mide 12.48, pero como texto sobre la tarjeta clara caia
+     a 2.58. Mismo reparto que --stat-up / --stat-down. */
   --accent-text: #ffcc00;
-  /* The data font needs a grey that reads: --text-dim measured 2.12:1 on the
-     card, so it stays for separators and watermarks and leaves text alone. */
-  --text-data: #a6a6c8;
   /* Error and success as text. --danger and --success are tuned for fills and
      for the dark surface: on the light card they measure 2.17 and 1.55. */
   --danger-text: #FB7185;
@@ -82,11 +99,19 @@
   --bg-card-hover: #dddde8;
   --accent: #b88800;
   --accent-dim: #7a5a00;
-  --text: #1a1a3e;
-  --text-muted: #555577;
-  --text-dim: #8888aa;
-  --accent-text: #845f00;
-  --text-data: #5f5f7d;
+  /* En claro no habia jerarquia apretada: habia jerarquia al reves. --text-muted
+     media 5.74 sobre la tarjeta y --text-data 4.95, o sea que la etiqueta pesaba
+     mas que el texto, con saltos de 1.06 y 1.16 entre vecinos. Tres tonos que a
+     ojo eran uno. Medidos contra --bg / --bg-surface / --bg-card, saltos de
+     1.78 y 1.72. */
+  --ink-1: #181822;   /* 15.25 / 17.61 / 14.21 */
+  --ink-2: #3e3e6e;   /*  8.58 /  9.91 /  7.99 */
+  --ink-3: #62628c;   /*  4.99 /  5.76 /  4.65 */
+  --ink-ui: #565676;  /*  6.08 /  7.03 /  5.67 */
+  /* Sube desde #845f00, que medido sobre la tarjeta clara daba 4.68 y pasaba AA
+     por cuatro centesimas. Si el amarillo va a marcar mas cosas, no puede ser el
+     texto mas justo de la pagina. */
+  --accent-text: #6f4f00;  /* 6.51 / 7.52 / 6.06 */
   --danger-text: #B3123C;
   --success-text: #0B6B4A;
   --info-text: #1D4ED8;
@@ -129,7 +154,7 @@ html {
 body {
   font-family: var(--font-retro);
   background: var(--bg);
-  color: var(--text);
+  color: var(--ink-1);
   min-height: 100%;
   overflow-x: hidden;
   line-height: 1.6;
@@ -247,7 +272,7 @@ a:hover {
   border-radius: 5px;
   border: 2px solid var(--border);
   background: var(--bg-card);
-  color: var(--text-muted);
+  color: var(--ink-ui);
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
@@ -277,7 +302,7 @@ a:hover {
   display: block;
   width: 20px;
   height: 2px;
-  background: var(--text-muted);
+  background: var(--ink-ui);
   transition: all 0.2s;
 }
 
@@ -313,7 +338,7 @@ a:hover {
 .nav-link {
   font-family: var(--font-retro);
   font-size: 0.5rem;
-  color: var(--text-muted);
+  color: var(--ink-ui);
   text-decoration: none;
   padding: 10px 12px;
   border-radius: 6px;
@@ -323,7 +348,7 @@ a:hover {
 }
 
 .nav-link:hover {
-  color: var(--text);
+  color: var(--ink-1);
   background: rgba(255, 255, 255, 0.04);
   text-decoration: none;
 }
@@ -399,7 +424,7 @@ a:hover {
 
 .footer p {
   font-size: 0.46rem;
-  color: var(--text-data);
+  color: var(--ink-2);
   letter-spacing: 0.5px;
   line-height: 1.6;
 }
@@ -415,7 +440,7 @@ a:hover {
 }
 
 .footer-hint {
-  color: var(--text-data) !important;
+  color: var(--ink-2) !important;
   font-size: 0.44rem !important;
 }
 
@@ -487,7 +512,7 @@ a:hover {
 
 .page-header p {
   font-size: 0.45rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
   letter-spacing: 0.5px;
 }
 
@@ -591,13 +616,13 @@ a:hover {
   background: none;
   border: none;
   outline: none;
-  color: var(--text);
+  color: var(--ink-1);
   font-family: var(--font-data);
   font-size: 27px;
 }
 
 .swarm-search input::placeholder {
-  color: var(--text-data);
+  color: var(--ink-ui);
 }
 
 .swarm-chips {
@@ -617,7 +642,7 @@ a:hover {
   border-radius: 20px;
   background: var(--bg-card);
   border: 2px solid var(--border);
-  color: var(--text);
+  color: var(--ink-1);
   text-decoration: none;
   transition: border-color 0.16s, transform 0.16s;
 }
@@ -655,7 +680,7 @@ a:hover {
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  color: var(--text);
+  color: var(--ink-1);
   text-decoration: none;
   border-bottom: 1px solid var(--border);
 }
@@ -757,7 +782,7 @@ a:hover {
 .mw .d {
   font-family: var(--font-data);
   font-size: 18px;
-  color: var(--text-data);
+  color: var(--ink-3);
   line-height: 1.3;
 }
 
@@ -767,7 +792,7 @@ a:hover {
   right: 12px;
   font-family: var(--font-data);
   font-size: 18px;
-  color: var(--text-data);
+  color: var(--ink-3);
 }
 
 /* Staggered entrance: 55ms per card, which over five cards is 220ms between the
@@ -835,7 +860,7 @@ a:hover {
 .egg-card .label {
   font-family: var(--font-retro);
   font-size: 0.44rem;
-  color: var(--text);
+  color: var(--ink-1);
   line-height: 1.6;
 }
 
@@ -855,7 +880,7 @@ a:hover {
    344 px for 320 available. */
 .ct-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ct-fast { font-size: 0.9rem; flex: none; }
-.ct-hits { font-family: var(--font-retro); font-size: 0.4rem; color: var(--text-data); flex: none; white-space: nowrap; }
+.ct-hits { font-family: var(--font-retro); font-size: 0.4rem; color: var(--ink-3); flex: none; white-space: nowrap; }
 .ct-power { font-family: var(--font-retro); font-size: 0.5rem; color: var(--accent-text); min-width: 40px; text-align: right; flex: none; }
 
 .sv-pickers { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 24px; }
@@ -867,8 +892,8 @@ a:hover {
 .sv-verdict { font-family: var(--font-retro); font-size: 0.7rem; margin-bottom: 10px; }
 .sv-result.ok .sv-verdict { color: #4ade80; }
 .sv-result.ko .sv-verdict { color: #f87171; }
-.sv-line { font-size: 0.8rem; color: var(--text-muted); line-height: 1.8; }
-.sv-dim { color: var(--text-data); font-size: 0.72rem; }
+.sv-line { font-size: 0.8rem; color: var(--ink-2); line-height: 1.8; }
+.sv-dim { color: var(--ink-3); font-size: 0.72rem; }
 .sv-spread { background: var(--bg-surface); border: 2px solid var(--border); border-radius: 10px; padding: 14px; font-size: 0.85rem; line-height: 1.7; }
 
 .spd-head { display: flex; align-items: center; gap: 16px; margin: 16px 0; }
@@ -877,7 +902,7 @@ a:hover {
 @media (min-width: 640px) { .spd-spreads { grid-template-columns: repeat(4, 1fr); } }
 .spd-spread { background: var(--bg-surface); border: 2px solid var(--border); border-radius: 10px; padding: 12px 8px; text-align: center; }
 .spd-spread.best { border-color: var(--accent); }
-.spd-spread .label { font-family: var(--font-retro); font-size: 0.4rem; color: var(--text-data); line-height: 1.6; }
+.spd-spread .label { font-family: var(--font-retro); font-size: 0.4rem; color: var(--ink-3); line-height: 1.6; }
 .spd-spread .value { font-family: var(--font-retro); font-size: 0.8rem; color: var(--accent-text); margin-top: 8px; }
 .spd-tiers { display: grid; grid-template-columns: 1fr; gap: 20px; }
 @media (min-width: 640px) { .spd-tiers { grid-template-columns: repeat(2, 1fr); } }
@@ -910,7 +935,7 @@ a:hover {
 .cmp-remove {
   border: none;
   background: transparent;
-  color: var(--text-data);
+  color: var(--ink-ui);
   cursor: pointer;
   font-size: 1rem;
   line-height: 1;
@@ -935,7 +960,7 @@ a:hover {
   border-radius: 8px;
   padding: 6px;
   cursor: pointer;
-  color: var(--text);
+  color: var(--ink-1);
   font-size: 0.8rem;
   text-align: left;
 }
@@ -960,7 +985,7 @@ a:hover {
    line. The <a> was inline, so the name fell back to the cell's left edge
    while the sprite sat centred by its own auto margins. */
 .cmp-table thead th { text-align: center; vertical-align: bottom; }
-.cmp-table th a { text-decoration: none; color: var(--text); display: block; }
+.cmp-table th a { text-decoration: none; color: var(--ink-1); display: block; }
 .cmp-sprite { width: 128px; height: 128px; image-rendering: pixelated; display: block; margin: 0 auto; }
 .cmp-name { display: block; text-align: center; margin-top: 6px; font-size: 0.55rem; }
 .cmp-table th a:hover .cmp-name { color: var(--accent-text); }
@@ -1012,7 +1037,7 @@ a:hover {
 .egg-key {
   font-family: var(--font-retro);
   font-size: 0.44rem;
-  color: var(--text-data);
+  color: var(--ink-3);
   min-width: 90px;
 }
 
@@ -1036,7 +1061,7 @@ a:hover {
   margin-top: 20px;
   font-size: 0.75rem;
   line-height: 1.8;
-  color: var(--text-data);
+  color: var(--ink-2);
 }
 
 /* Una nota que cierra la pagina habla de todo lo que hay encima, no de su borde
@@ -1054,7 +1079,7 @@ a:hover {
   text-align: center;
   margin: 28px 0 0;
   font-size: 0.6rem;
-  color: var(--text-data);
+  color: var(--ink-3);
   letter-spacing: 1px;
   text-transform: uppercase;
 }
@@ -1094,7 +1119,7 @@ a:hover {
   cursor: pointer;
   transition: all 0.2s;
   text-decoration: none;
-  color: var(--text);
+  color: var(--ink-1);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1115,12 +1140,12 @@ a:hover {
 .home-card .label {
   font-size: 0.45rem;
   letter-spacing: 0.5px;
-  color: var(--text-muted);
+  color: var(--ink-3);
 }
 
 .home-card .desc {
   font-size: 0.44rem;
-  color: var(--text-data);
+  color: var(--ink-2);
   line-height: 1.8;
 }
 
@@ -1138,13 +1163,13 @@ a:hover {
   background: var(--bg-surface);
   border: 2px solid var(--border);
   border-radius: 8px;
-  color: var(--text);
+  color: var(--ink-1);
   outline: none;
   transition: border-color 0.2s;
 }
 
 .search-input::placeholder {
-  color: var(--text-data);
+  color: var(--ink-ui);
 }
 
 .search-input:focus {
@@ -1157,7 +1182,7 @@ a:hover {
   top: 50%;
   transform: translateY(-50%);
   font-size: 0.7rem;
-  color: var(--text-data);
+  color: var(--ink-ui);
   pointer-events: none;
 }
 
@@ -1176,7 +1201,7 @@ a:hover {
   border-radius: 5px;
   border: 2px solid var(--border);
   background: var(--bg-card);
-  color: var(--text-muted);
+  color: var(--ink-ui);
   cursor: pointer;
   transition: all 0.15s;
   text-transform: uppercase;
@@ -1184,7 +1209,7 @@ a:hover {
 
 .filter-btn:hover {
   border-color: rgba(255, 255, 255, 0.15);
-  color: var(--text);
+  color: var(--ink-1);
 }
 
 /* Solid fill rather than accent-coloured text: on the light theme the old
@@ -1215,14 +1240,14 @@ a:hover {
   border-radius: 5px;
   border: 2px solid var(--border);
   background: var(--bg-card);
-  color: var(--text-muted);
+  color: var(--ink-ui);
   cursor: pointer;
   transition: all 0.15s;
   text-transform: uppercase;
 }
 
 .pdx-select:hover {
-  color: var(--text);
+  color: var(--ink-1);
 }
 
 .pdx-select:focus-visible {
@@ -1243,13 +1268,13 @@ a:hover {
   border-radius: 5px;
   border: 2px solid var(--border);
   background: var(--bg-card);
-  color: var(--text-muted);
+  color: var(--ink-ui);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .pdx-dir:hover {
-  color: var(--text);
+  color: var(--ink-1);
   border-color: rgba(255, 255, 255, 0.15);
 }
 
@@ -1261,7 +1286,7 @@ a:hover {
 .pdx-count {
   font-family: var(--font-data);
   font-size: 22px;
-  color: var(--text-muted);
+  color: var(--ink-3);
   margin-left: auto;
 }
 
@@ -1308,7 +1333,7 @@ a:hover {
 
 .dex-side-title {
   font-size: 0.44rem;
-  color: var(--text-data);
+  color: var(--ink-3);
   letter-spacing: 1.5px;
   margin: 18px 0 10px;
 }
@@ -1581,7 +1606,7 @@ a:hover {
   cursor: pointer;
   transition: all 0.2s;
   text-decoration: none;
-  color: var(--text);
+  color: var(--ink-1);
 }
 
 .pokemon-card:hover {
@@ -1608,7 +1633,7 @@ a:hover {
 .pokemon-card .dex-number {
   font-family: var(--font-data);
   font-size: 19px;
-  color: var(--text-data);
+  color: var(--ink-3);
   margin-bottom: 4px;
 }
 
@@ -1706,7 +1731,7 @@ a:hover {
 
 .poke-flavour {
   font-size: 0.48rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
   line-height: 2;
   margin-top: 16px;
   text-align: left;
@@ -1760,7 +1785,7 @@ a:hover {
 .poke-detail-info .dex-number {
   font-family: var(--font-data);
   font-size: 24px;
-  color: var(--text-data);
+  color: var(--ink-3);
   margin-bottom: 6px;
 }
 
@@ -1772,7 +1797,7 @@ a:hover {
 
 .poke-detail-info .name-en {
   font-size: 0.48rem;
-  color: var(--text-data);
+  color: var(--ink-3);
   margin-bottom: 12px;
 }
 
@@ -1789,12 +1814,21 @@ a:hover {
   }
 }
 
+/* Con nowrap los tres datos no cabian en los 213px que la tarjeta le deja a la
+   columna del nombre, asi que en vez de saltar de linea entre ellos se
+   comprimian a 31, 36 y 114px y cada uno partia por dentro: "0.7 m" en tres
+   renglones de 46px de alto. El salto va entre datos, no dentro de uno. */
 .poke-detail-info .meta {
   font-size: 0.48rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 6px 16px;
   justify-content: center;
+}
+
+.poke-detail-info .meta > span {
+  white-space: nowrap;
 }
 
 @media (min-width: 640px) {
@@ -1806,7 +1840,7 @@ a:hover {
 .back-btn {
   font-family: var(--font-retro);
   font-size: 0.45rem;
-  color: var(--text-muted);
+  color: var(--ink-ui);
   background: none;
   border: none;
   cursor: pointer;
@@ -1847,7 +1881,7 @@ a:hover {
   justify-content: space-between;
   gap: 8px;
   font-size: 0.38rem;
-  color: var(--text-data);
+  color: var(--ink-3);
   margin-bottom: 10px;
   line-height: 1.8;
 }
@@ -1885,7 +1919,7 @@ a:hover {
    is what tells you it goes somewhere, same as .ability-link. */
 .mv-name {
   font-size: 0.42rem;
-  color: var(--text);
+  color: var(--ink-1);
   line-height: 1.7;
   text-decoration: none;
   transition: color 0.15s;
@@ -1899,7 +1933,7 @@ a:hover {
 
 .mv-num {
   font-size: 0.4rem;
-  color: var(--text-muted);
+  color: var(--ink-1);
   text-align: right;
 }
 
@@ -1993,12 +2027,12 @@ a.evo-node:hover img {
 .evo-dex {
   font-family: var(--font-data);
   font-size: 17px;
-  color: var(--text-data);
+  color: var(--ink-3);
 }
 
 .evo-name {
   font-size: 0.55rem;
-  color: var(--text);
+  color: var(--ink-1);
   text-align: center;
   line-height: 1.6;
 }
@@ -2031,7 +2065,7 @@ a.evo-node:hover img {
    usaba 700, asi que el sitio ya estaba. */
 .evo-cond {
   font-size: 0.5rem;
-  color: var(--text);
+  color: var(--ink-1);
   line-height: 1.8;
   max-width: 210px;
   text-align: center;
@@ -2052,7 +2086,7 @@ a.evo-node:hover img {
 
 .evo-none {
   font-size: 0.44rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
   text-align: center;
   line-height: 2;
 }
@@ -2097,14 +2131,14 @@ a.evo-node:hover img {
 
 .ability-tag {
   font-size: 0.42rem;
-  color: var(--text-data);
+  color: var(--ink-3);
 }
 
 .ability-desc {
   margin: 8px 0 0;
   font-size: 0.44rem;
   line-height: 1.9;
-  color: var(--text-data);
+  color: var(--ink-2);
 }
 
 .ability-link {
@@ -2134,7 +2168,7 @@ a.evo-node:hover img {
   padding: 8px 10px;
   font-size: 0.42rem;
   line-height: 1.9;
-  color: var(--text);
+  color: var(--ink-1);
   background: var(--bg-surface);
   border: 2px solid var(--border-accent);
   border-radius: 8px;
@@ -2148,13 +2182,13 @@ a.evo-node:hover img {
 .stat-range-head {
   font-family: var(--font-data);
   font-size: 18px;
-  color: var(--text-muted);
+  color: var(--ink-2);
   text-align: right;
   white-space: nowrap;
 }
 
 .stat-range-head {
-  color: var(--text-data);
+  color: var(--ink-3);
 }
 
 .stat-head {
@@ -2177,7 +2211,7 @@ a.evo-node:hover img {
    the card, under the 4.5 minimum. */
 .ev-yield-label {
   font-size: 0.4rem;
-  color: var(--text-muted);
+  color: var(--ink-3);
 }
 
 /* The stat colour rides in the dot, not in the text. As text it measured 1.92:1
@@ -2188,7 +2222,7 @@ a.evo-node:hover img {
   align-items: center;
   gap: 5px;
   font-size: 0.44rem;
-  color: var(--text);
+  color: var(--ink-1);
 }
 
 .ev-yield-dot {
@@ -2214,7 +2248,7 @@ a.evo-node:hover img {
 
 .stat-label {
   font-size: 0.48rem;
-  color: var(--text-muted);
+  color: var(--ink-3);
   text-align: right;
 }
 
@@ -2222,7 +2256,7 @@ a.evo-node:hover img {
   font-family: var(--font-data);
   font-size: 26px;
   line-height: 1;
-  color: var(--text);
+  color: var(--ink-1);
   text-align: right;
 }
 
@@ -2315,7 +2349,7 @@ a.evo-node:hover img {
 /* El hueco de un dato que el movimiento no tiene. Estaba en --text-dim, que el
    propio fichero reserva para separadores porque mide 2.12:1, y era texto. */
 .data-table td.col-empty {
-  color: var(--text-muted);
+  color: var(--ink-3);
 }
 
 .data-table tr {
@@ -2339,7 +2373,7 @@ a.evo-node:hover img {
    so the eye lands on the name first. */
 .mv-title {
   font-size: 0.58rem;
-  color: var(--text);
+  color: var(--ink-1);
   line-height: 1.5;
   letter-spacing: 0.5px;
 }
@@ -2350,7 +2384,7 @@ a.evo-node:hover img {
 
 .mv-desc {
   font-size: 0.4rem;
-  color: var(--text-data);
+  color: var(--ink-2);
   margin-top: 7px;
   padding-left: 8px;
   border-left: 2px solid var(--border);
@@ -2405,7 +2439,7 @@ a.evo-node:hover img {
 
 .team-slot.empty {
   border-style: dashed;
-  color: var(--text-data);
+  color: var(--ink-2);
   font-size: 0.8rem;
 }
 
@@ -2439,7 +2473,7 @@ a.evo-node:hover img {
   right: 4px;
   background: none;
   border: none;
-  color: var(--text-data);
+  color: var(--ink-ui);
   font-size: 0.7rem;
   cursor: pointer;
   line-height: 1;
@@ -2466,7 +2500,7 @@ a.evo-node:hover img {
   cursor: pointer;
   font-family: var(--font-retro);
   font-size: 0.44rem;
-  color: var(--text);
+  color: var(--ink-1);
   text-align: left;
 }
 
@@ -2487,7 +2521,7 @@ a.evo-node:hover img {
 .team-noresults,
 .team-none {
   font-size: 0.42rem;
-  color: var(--text-data);
+  color: var(--ink-2);
   line-height: 1.9;
   padding: 6px 0;
 }
@@ -2504,14 +2538,14 @@ a.evo-node:hover img {
 .team-summary-label {
   display: block;
   font-size: 0.4rem;
-  color: var(--text-muted);
+  color: var(--ink-3);
   line-height: 1.8;
   margin-bottom: 8px;
 }
 
 .team-hint {
   font-size: 0.4rem;
-  color: var(--text-data);
+  color: var(--ink-2);
   line-height: 1.9;
   margin-bottom: 12px;
 }
@@ -2562,7 +2596,7 @@ a.evo-node:hover img {
 
 .move-detail-header .name-en {
   font-size: 0.44rem;
-  color: var(--text-data);
+  color: var(--ink-3);
   margin: 6px 0 12px;
 }
 
@@ -2585,14 +2619,14 @@ a.evo-node:hover img {
 .move-stats span {
   display: block;
   font-size: 0.38rem;
-  color: var(--text-data);
+  color: var(--ink-3);
   margin-bottom: 6px;
 }
 
 .move-stats strong {
   display: block;
   font-size: 0.6rem;
-  color: var(--text);
+  color: var(--ink-1);
   font-weight: normal;
 }
 
@@ -2602,14 +2636,14 @@ a.evo-node:hover img {
 .move-stats em {
   display: block;
   font-size: 0.34rem;
-  color: var(--text-data);
+  color: var(--ink-2);
   font-style: normal;
   margin-top: 4px;
 }
 
 .move-desc {
   font-size: 0.48rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
   line-height: 2;
 }
 
@@ -2633,7 +2667,7 @@ a.evo-node:hover img {
   padding: 8px 4px;
   text-align: center;
   text-decoration: none;
-  color: var(--text);
+  color: var(--ink-1);
   transition: border-color 0.15s;
 }
 
@@ -2671,7 +2705,7 @@ a.evo-node:hover img {
 
 .mv-note {
   font-size: 0.34rem;
-  color: var(--text-data);
+  color: var(--ink-2);
   line-height: 1.9;
   margin-top: 14px;
   text-align: center;
@@ -2741,7 +2775,7 @@ a.evo-node:hover img {
 .item-card .item-name {
   font-size: 0.46rem;
   line-height: 1.6;
-  color: var(--text);
+  color: var(--ink-1);
 }
 
 /* ===== ITEM DETAIL MODAL ===== */
@@ -2775,7 +2809,7 @@ a.evo-node:hover img {
   right: 12px;
   background: rgba(255,255,255,0.06);
   border: 2px solid var(--border);
-  color: var(--text-muted);
+  color: var(--ink-ui);
   font-family: var(--font-retro);
   font-size: 0.6rem;
   padding: 4px 8px;
@@ -2799,7 +2833,7 @@ a.evo-node:hover img {
 }
 
 .nature-table .neutral {
-  color: var(--text-data);
+  color: var(--ink-2);
 }
 
 /* ===== CALCULATOR ===== */
@@ -2824,7 +2858,7 @@ a.evo-node:hover img {
 .calc-field label {
   display: block;
   font-size: 0.48rem;
-  color: var(--text-muted);
+  color: var(--ink-3);
   margin-bottom: 6px;
   letter-spacing: 0.5px;
 }
@@ -2838,7 +2872,7 @@ a.evo-node:hover img {
   background: var(--bg-card);
   border: 2px solid var(--border);
   border-radius: 6px;
-  color: var(--text);
+  color: var(--ink-1);
   outline: none;
   transition: border-color 0.2s;
 }
@@ -2850,7 +2884,7 @@ a.evo-node:hover img {
 
 .calc-field select option {
   background: var(--bg-card);
-  color: var(--text);
+  color: var(--ink-1);
 }
 
 /* ===== CAPTURE CALCULATOR ===== */
@@ -2869,7 +2903,7 @@ a.evo-node:hover img {
   gap: 8px;
   margin-top: 14px;
   font-size: 0.44rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
   cursor: pointer;
 }
 
@@ -2900,7 +2934,7 @@ a.evo-node:hover img {
 
 .capture-sub {
   font-size: 0.44rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
   margin-top: 4px;
 }
 
@@ -2926,13 +2960,13 @@ a.evo-node:hover img {
 
 .capture-throw-n {
   font-size: 0.4rem;
-  color: var(--text-muted);
+  color: var(--ink-1);
   margin-bottom: 6px;
 }
 
 .capture-throw-pct {
   font-size: 0.55rem;
-  color: var(--text);
+  color: var(--ink-1);
 }
 
 .calc-btn {
@@ -2996,7 +3030,7 @@ a.evo-node:hover img {
 
 .loading-text {
   font-size: 0.45rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
   letter-spacing: 0.5px;
 }
 
@@ -3017,7 +3051,7 @@ a.evo-node:hover img {
   border-radius: 6px;
   border: 2px solid var(--border);
   background: var(--bg-card);
-  color: var(--text-muted);
+  color: var(--ink-ui);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -3040,7 +3074,7 @@ a.evo-node:hover img {
 
 .page-info {
   font-size: 0.48rem;
-  color: var(--text-data);
+  color: var(--ink-3);
 }
 
 /* ===== RESULT SECTIONS (Type chart) ===== */
@@ -3068,7 +3102,7 @@ a.evo-node:hover img {
 
 .result-hint {
   font-size: 0.44rem;
-  color: var(--text-data);
+  color: var(--ink-3);
   font-weight: normal;
   letter-spacing: 0;
 }
@@ -3094,7 +3128,7 @@ a.evo-node:hover img {
 
 .empty-state {
   font-size: 0.5rem;
-  color: var(--text-data);
+  color: var(--ink-2);
   font-style: italic;
   letter-spacing: 0.5px;
   display: none;
@@ -3123,14 +3157,14 @@ a.evo-node:hover img {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--ink-ui);
   cursor: pointer;
   transition: all 0.15s;
   letter-spacing: 0.5px;
 }
 
 .tab:hover {
-  color: var(--text);
+  color: var(--ink-1);
   background: rgba(255, 255, 255, 0.04);
 }
 
@@ -3231,7 +3265,7 @@ a.evo-node:hover img {
 
 .selected-placeholder {
   font-size: 0.5rem;
-  color: var(--text-muted);
+  color: var(--ink-ui);
   letter-spacing: 0.5px;
 }
 
@@ -3253,7 +3287,7 @@ a.evo-node:hover img {
 
 .selected-label {
   font-size: 0.5rem;
-  color: var(--text-muted);
+  color: var(--ink-3);
   white-space: nowrap;
   letter-spacing: 0.5px;
 }
@@ -3267,7 +3301,7 @@ a.evo-node:hover img {
 .clear-btn {
   background: rgba(255, 255, 255, 0.06);
   border: 2px solid var(--border);
-  color: var(--text-muted);
+  color: var(--ink-ui);
   font-family: var(--font-retro);
   font-size: 0.6rem;
   padding: 6px 10px;
@@ -3283,12 +3317,17 @@ a.evo-node:hover img {
 }
 
 /* ===== SECTION TITLE ===== */
+/* El titulo de seccion es lo unico amarillo de su bloque. Estaba en la misma
+   tinta que los valores de dentro, asi que en la ficha -- que tiene ocho
+   secciones -- nada decia donde empezaba cada una. El amarillo no lo hace mas
+   brillante (9.95 cae por debajo de --ink-1) sino de otro color, que es la
+   unica senal que queda cuando la de luminancia esta agotada. */
 .section-title {
   font-size: 0.55rem;
-  color: var(--text);
+  color: var(--accent-text);
   margin-bottom: 16px;
   padding-bottom: 8px;
-  border-bottom: 2px solid var(--border);
+  border-bottom: 2px solid var(--border-accent);
   letter-spacing: 1px;
 }
 
@@ -3314,7 +3353,7 @@ a.evo-node:hover img {
 
 .ability-card .ability-desc {
   font-size: 0.46rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
   line-height: 2;
 }
 
@@ -3364,7 +3403,7 @@ a.evo-node:hover img {
 
 .no-results p {
   font-size: 0.45rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
 }
 
 /* ===== DAMAGE CALCULATOR ===== */
@@ -3417,7 +3456,7 @@ a.evo-node:hover img {
 
 .dmg-chosen-types {
   font-size: 0.42rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
   margin-top: 4px;
 }
 
@@ -3431,7 +3470,7 @@ a.evo-node:hover img {
 .dmg-field summary {
   padding: 14px 16px;
   font-size: 0.48rem;
-  color: var(--text-muted);
+  color: var(--ink-ui);
   cursor: pointer;
   list-style: none;
 }
@@ -3463,7 +3502,7 @@ a.evo-node:hover img {
   align-items: center;
   gap: 8px;
   font-size: 0.44rem;
-  color: var(--text-muted);
+  color: var(--ink-ui);
   cursor: pointer;
 }
 
@@ -3477,7 +3516,7 @@ a.evo-node:hover img {
 .dmg-empty {
   text-align: center;
   font-size: 0.46rem;
-  color: var(--text-data);
+  color: var(--ink-2);
 }
 
 .dmg-headline {
@@ -3486,13 +3525,13 @@ a.evo-node:hover img {
 }
 
 .dmg-immune {
-  color: var(--text-muted);
+  color: var(--ink-2);
   font-size: 0.7rem;
 }
 
 .dmg-sub {
   font-size: 0.5rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
   margin-top: 6px;
 }
 
@@ -3518,13 +3557,13 @@ a.evo-node:hover img {
 
 .dmg-ko {
   font-size: 0.5rem;
-  color: var(--text);
+  color: var(--ink-1);
 }
 
 .dmg-eff,
 .dmg-notes {
   font-size: 0.42rem;
-  color: var(--text-muted);
+  color: var(--ink-2);
   margin-top: 10px;
   line-height: 1.9;
 }
@@ -3538,7 +3577,7 @@ a.evo-node:hover img {
 
 .dmg-extras-title {
   font-size: 0.42rem;
-  color: var(--text-muted);
+  color: var(--ink-3);
   margin-bottom: 10px;
 }
 
@@ -3548,7 +3587,7 @@ a.evo-node:hover img {
   gap: 8px;
   margin-top: 14px;
   font-size: 0.44rem;
-  color: var(--text-muted);
+  color: var(--ink-3);
   cursor: pointer;
 }
 
@@ -3563,19 +3602,19 @@ a.evo-node:hover img {
 .meta-set-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
 .meta-set-head img { width: 72px; height: 72px; image-rendering: pixelated; }
 .meta-set-head h3 { font-size: 0.6rem; margin: 0 0 4px; }
-.meta-usage { font-size: 0.46rem; color: var(--text-muted); }
+.meta-usage { font-size: 0.46rem; color: var(--ink-2); }
 .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 16px; }
-.meta-line { font-size: 0.46rem; color: var(--text); line-height: 1.9; }
-.meta-pct { color: var(--text-data); font-family: var(--font-data); font-size: 21px; }
+.meta-line { font-size: 0.46rem; color: var(--ink-1); line-height: 1.9; }
+.meta-pct { color: var(--ink-1); font-family: var(--font-data); font-size: 21px; }
 .meta-moves { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 4px 14px; }
 .meta-rank { display: flex; flex-direction: column; gap: 4px; }
 .meta-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 10px; background: var(--bg-surface); border: 2px solid var(--border); border-radius: 8px; cursor: pointer; font-family: var(--font-retro); }
 .meta-row:hover, .meta-row.active { border-color: var(--accent); }
 .meta-row img { width: 32px; height: 32px; image-rendering: pixelated; }
-.meta-pos { font-size: 0.42rem; color: var(--text-data); min-width: 22px; text-align: right; }
+.meta-pos { font-size: 0.42rem; color: var(--ink-3); min-width: 22px; text-align: right; }
 /* El nombre se queda con el hueco que sobra y no empuja el porcentaje fuera de
    una pantalla de 360 px, que es lo que le paso a la fila de contrarrestar. */
-.meta-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font-size: 0.46rem; color: var(--text); }
+.meta-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font-size: 0.46rem; color: var(--ink-1); }
 .meta-credit { margin-top: 20px; font-size: 0.4rem; }
 .ct-meta { font-size: 0.5rem; opacity: 0.85; }
 
@@ -3584,7 +3623,7 @@ a.evo-node:hover img {
 .meta-family {
   font-size: 0.44rem;
   line-height: 1.9;
-  color: var(--text-data);
+  color: var(--ink-2);
   border-left: 2px solid var(--border-accent);
   padding-left: 12px;
   margin: 0 0 14px;
@@ -3601,7 +3640,7 @@ a.evo-node:hover img {
 
 .meta-moveset li {
   font-size: 0.46rem;
-  color: var(--text);
+  color: var(--ink-1);
   line-height: 1.9;
 }
 
@@ -3618,7 +3657,7 @@ a.evo-node:hover img {
   margin: 14px 0 0;
   font-size: 0.42rem;
   line-height: 1.9;
-  color: var(--text-data);
+  color: var(--ink-3);
 }
 
 /* ===== DESKTOP SCALE =====

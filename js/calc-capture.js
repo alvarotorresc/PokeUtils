@@ -114,7 +114,7 @@ export function renderCapture(container) {
   function renderSearchResults() {
     searchResultsEl.style.display = '';
     if (!searchResults.length) {
-      searchResultsEl.innerHTML = `<div style="font-size:0.46rem;color:var(--text-data);padding:8px">${t('calc.notfound')}</div>`;
+      searchResultsEl.innerHTML = `<div style="font-size:0.46rem;color:var(--ink-2);padding:8px">${t('calc.notfound')}</div>`;
       return;
     }
     searchResultsEl.innerHTML = searchResults.map(p => `
@@ -122,7 +122,7 @@ export function renderCapture(container) {
         <img src="${spriteUrl(p.id)}" style="width:40px;height:40px;image-rendering:pixelated" alt="${pokeName(p)}">
         <div>
           <div style="font-size:0.42rem">${pokeName(p)}</div>
-          <div style="font-size:0.42rem;color:var(--text-data)">${t('capture.rate')}: ${p.captureRate}</div>
+          <div style="font-size:0.42rem;color:var(--ink-3)">${t('capture.rate')}: ${p.captureRate}</div>
         </div>
       </div>
     `).join('');
@@ -143,7 +143,7 @@ export function renderCapture(container) {
         <img src="${spriteUrl(poke.id)}" style="width:56px;height:56px;image-rendering:pixelated" alt="${pokeName(poke)}">
         <div>
           <div style="font-size:0.5rem;color:var(--accent-text)">${pokeName(poke)}</div>
-          <div style="font-size:0.44rem;color:var(--text-data)">
+          <div style="font-size:0.44rem;color:var(--ink-3)">
             ${t('capture.rate')}: ${poke.captureRate} · ${poke.weight} kg
           </div>
         </div>

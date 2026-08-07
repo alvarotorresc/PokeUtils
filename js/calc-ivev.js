@@ -13,7 +13,7 @@ export function renderIvEv(container) {
 
   container.innerHTML = `
     <div class="card" style="margin-bottom:20px">
-      <div style="font-size:0.4rem;color:var(--text-muted);line-height:2;margin-bottom:12px">
+      <div style="font-size:0.4rem;color:var(--ink-2);line-height:2;margin-bottom:12px">
         ${t('calc.intro')}
       </div>
     </div>
@@ -53,7 +53,7 @@ export function renderIvEv(container) {
         </div>
 
         <div id="calcModeIvEvPanel">
-          <div style="font-size:0.44rem;color:var(--text-data);margin-bottom:12px">
+          <div style="font-size:0.44rem;color:var(--ink-2);margin-bottom:12px">
             ${t('calc.ivev.hint')}
           </div>
           <div class="data-table-wrap">
@@ -76,7 +76,7 @@ export function renderIvEv(container) {
         </div>
 
         <div id="calcModeStatPanel" style="display:none">
-          <div style="font-size:0.44rem;color:var(--text-data);margin-bottom:12px">
+          <div style="font-size:0.44rem;color:var(--ink-2);margin-bottom:12px">
             ${t('calc.stat.hint')}
           </div>
           <div class="data-table-wrap">
@@ -148,7 +148,7 @@ export function renderIvEv(container) {
 
   function renderSearchResults() {
     if (!searchResults.length) {
-      searchResultsEl.innerHTML = `<div style="font-size:0.46rem;color:var(--text-data);padding:8px">${t('calc.notfound')}</div>`;
+      searchResultsEl.innerHTML = `<div style="font-size:0.46rem;color:var(--ink-2);padding:8px">${t('calc.notfound')}</div>`;
       searchResultsEl.style.display = '';
       return;
     }
@@ -158,7 +158,7 @@ export function renderIvEv(container) {
         <img src="${spriteUrl(p.id)}" style="width:40px;height:40px;image-rendering:pixelated" alt="${pokeName(p)}">
         <div>
           <div style="font-size:0.42rem">${pokeName(p)}</div>
-          <div style="font-size:0.42rem;color:var(--text-data)">#${String(p.id).padStart(4, '0')} · ${p.name}</div>
+          <div style="font-size:0.42rem;color:var(--ink-3)">#${String(p.id).padStart(4, '0')} · ${p.name}</div>
         </div>
       </div>
     `).join('');
@@ -183,7 +183,7 @@ export function renderIvEv(container) {
         <img src="${spriteUrl(poke.id)}" style="width:56px;height:56px;image-rendering:pixelated" alt="${pokeName(poke)}">
         <div>
           <div style="font-size:0.5rem;color:var(--accent-text)">${pokeName(poke)}</div>
-          <div style="font-size:0.44rem;color:var(--text-data)">#${String(poke.id).padStart(4, '0')} · ${poke.name}</div>
+          <div style="font-size:0.44rem;color:var(--ink-3)">#${String(poke.id).padStart(4, '0')} · ${poke.name}</div>
         </div>
       </div>
     `;
@@ -202,8 +202,8 @@ export function renderIvEv(container) {
       <tr>
         <td style="color:${STAT_COLORS[k]}">${statName(k)}</td>
         <td style="text-align:center">${selectedPokemon.stats[k] || 0}</td>
-        <td><input type="number" class="calc-iv" data-stat="${k}" min="0" max="31" value="31" style="width:60px;font-family:var(--font-retro);font-size:0.4rem;padding:6px;background:var(--bg-card);border:2px solid var(--border);border-radius:4px;color:var(--text);text-align:center"></td>
-        <td><input type="number" class="calc-ev" data-stat="${k}" min="0" max="252" value="0" style="width:70px;font-family:var(--font-retro);font-size:0.4rem;padding:6px;background:var(--bg-card);border:2px solid var(--border);border-radius:4px;color:var(--text);text-align:center"></td>
+        <td><input type="number" class="calc-iv" data-stat="${k}" min="0" max="31" value="31" style="width:60px;font-family:var(--font-retro);font-size:0.4rem;padding:6px;background:var(--bg-card);border:2px solid var(--border);border-radius:4px;color:var(--ink-1);text-align:center"></td>
+        <td><input type="number" class="calc-ev" data-stat="${k}" min="0" max="252" value="0" style="width:70px;font-family:var(--font-retro);font-size:0.4rem;padding:6px;background:var(--bg-card);border:2px solid var(--border);border-radius:4px;color:var(--ink-1);text-align:center"></td>
         <td style="text-align:center;font-weight:bold" class="calc-result" data-stat="${k}">—</td>
       </tr>
     `).join('');
@@ -214,8 +214,8 @@ export function renderIvEv(container) {
       <tr>
         <td style="color:${STAT_COLORS[k]}">${statName(k)}</td>
         <td style="text-align:center">${selectedPokemon.stats[k] || 0}</td>
-        <td><input type="number" class="calc-stat-val" data-stat="${k}" min="1" max="999" value="" placeholder="..." style="width:70px;font-family:var(--font-retro);font-size:0.4rem;padding:6px;background:var(--bg-card);border:2px solid var(--border);border-radius:4px;color:var(--text);text-align:center"></td>
-        <td><input type="number" class="calc-stat-ev" data-stat="${k}" min="0" max="252" value="0" style="width:70px;font-family:var(--font-retro);font-size:0.4rem;padding:6px;background:var(--bg-card);border:2px solid var(--border);border-radius:4px;color:var(--text);text-align:center"></td>
+        <td><input type="number" class="calc-stat-val" data-stat="${k}" min="1" max="999" value="" placeholder="..." style="width:70px;font-family:var(--font-retro);font-size:0.4rem;padding:6px;background:var(--bg-card);border:2px solid var(--border);border-radius:4px;color:var(--ink-1);text-align:center"></td>
+        <td><input type="number" class="calc-stat-ev" data-stat="${k}" min="0" max="252" value="0" style="width:70px;font-family:var(--font-retro);font-size:0.4rem;padding:6px;background:var(--bg-card);border:2px solid var(--border);border-radius:4px;color:var(--ink-1);text-align:center"></td>
         <td style="text-align:center;font-weight:bold" class="calc-iv-result" data-stat="${k}">—</td>
       </tr>
     `).join('');
@@ -254,7 +254,7 @@ export function renderIvEv(container) {
     const overLimit = evTotal > 510;
     bar.innerHTML = `
       <div class="card" style="text-align:center">
-        <div style="font-size:0.42rem;color:${overLimit ? 'var(--danger)' : 'var(--text-muted)'}">
+        <div style="font-size:0.42rem;color:${overLimit ? 'var(--danger)' : 'var(--ink-2)'}">
           ${t('calc.evtotal')}: <span style="color:${overLimit ? 'var(--danger)' : 'var(--accent)'}">${evTotal}</span> / 510
           ${overLimit ? ` ⚠️ ${t('calc.evover')}` : ''}
         </div>

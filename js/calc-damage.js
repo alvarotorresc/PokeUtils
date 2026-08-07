@@ -201,7 +201,7 @@ export function renderDamage(container, query) {
               <img src="${spriteUrl(p.id)}" alt="${pokeName(p)}">
               <span>${pokeName(p)}</span>
             </div>
-          `).join('') : `<div style="font-size:0.46rem;color:var(--text-data);padding:8px">${t('calc.notfound')}</div>`;
+          `).join('') : `<div style="font-size:0.46rem;color:var(--ink-2);padding:8px">${t('calc.notfound')}</div>`;
 
           results.querySelectorAll('.dmg-hit').forEach(el => {
             el.onclick = () => {
@@ -271,9 +271,9 @@ export function renderDamage(container, query) {
         <div class="card card-clickable dmg-hit" data-id="${m.id}">
           <span class="type-badge sm" data-type="${m.type}">${typeName(m.type)}</span>
           <span>${getLang() === 'es' ? m.nameEs : m.nameEn}</span>
-          <span style="color:var(--text-data);margin-left:auto">${m.power ?? '?'}</span>
+          <span style="color:var(--ink-2);margin-left:auto">${m.power ?? '?'}</span>
         </div>
-      `).join('') : `<div style="font-size:0.46rem;color:var(--text-data);padding:8px">${t('moves.empty')}</div>`;
+      `).join('') : `<div style="font-size:0.46rem;color:var(--ink-2);padding:8px">${t('moves.empty')}</div>`;
 
       moveResults.querySelectorAll('.dmg-hit').forEach(el => {
         el.onclick = () => {

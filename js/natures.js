@@ -15,7 +15,7 @@ export function renderNatures(container) {
     </div>
 
     <div class="card" style="margin-bottom:24px">
-      <div style="font-size:0.4rem;color:var(--text-muted);line-height:2;margin-bottom:12px">
+      <div style="font-size:0.4rem;color:var(--ink-2);line-height:2;margin-bottom:12px">
         ${t('natures.explain')}
       </div>
     </div>
@@ -35,7 +35,7 @@ export function renderNatures(container) {
     </div>
 
     <h3 class="section-title" style="margin-top:30px">${t('natures.grid.title')}</h3>
-    <div style="font-size:0.44rem;color:var(--text-data);margin-bottom:12px">
+    <div style="font-size:0.44rem;color:var(--ink-2);margin-bottom:12px">
       ${t('natures.grid.hint')}
     </div>
     <div class="data-table-wrap nature-table">
@@ -57,8 +57,8 @@ export function renderNatures(container) {
     const tr = document.createElement('tr');
     const isNeutral = !n.increase;
     tr.innerHTML = `
-      <td style="font-size:0.42rem;${isNeutral ? 'color:var(--text-data)' : ''}">${natureName(n)}</td>
-      <td style="font-size:0.46rem;color:var(--text-data)">${natureNameAlt(n)}</td>
+      <td style="font-size:0.42rem;${isNeutral ? 'color:var(--ink-2)' : ''}">${natureName(n)}</td>
+      <td style="font-size:0.46rem;color:var(--ink-3)">${natureNameAlt(n)}</td>
       <td style="text-align:center" class="${isNeutral ? 'neutral' : 'increase'}">
         ${isNeutral ? '—' : statName(n.increase)}
       </td>
@@ -93,7 +93,7 @@ export function renderNatures(container) {
       } else {
         const nature = NATURES.find(n => n.increase === rowStat && n.decrease === colStat);
         if (nature) {
-          td.innerHTML = `<span style="color:var(--text)">${natureName(nature)}</span>`;
+          td.innerHTML = `<span style="color:var(--ink-1)">${natureName(nature)}</span>`;
         } else {
           td.className = 'neutral';
           td.textContent = '—';
