@@ -2008,17 +2008,30 @@ a.evo-node:hover img {
   flex-shrink: 0;
 }
 
+/* Como se evoluciona es la mitad de la respuesta, y estaba en 0.36rem gris
+   sobre gris: la letra mas pequena de toda la aplicacion para la unica frase
+   de la banda que hay que leer. Sube a 0.5rem con la tinta normal y va dentro
+   de su propia capsula, que la separa de los sprites. La banda ocupa 1230px y
+   usaba 700, asi que el sitio ya estaba. */
 .evo-cond {
-  font-size: 0.36rem;
-  color: var(--text-muted);
-  line-height: 1.7;
-  max-width: 160px;
+  font-size: 0.5rem;
+  color: var(--text);
+  line-height: 1.8;
+  max-width: 210px;
   text-align: center;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
 }
 
 .evo-tip {
-  font-size: 0.4rem;
+  font-size: 0.7rem;
   color: var(--accent-text);
+}
+
+.evo-arrow {
+  gap: 8px;
 }
 
 .evo-none {
