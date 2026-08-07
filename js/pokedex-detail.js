@@ -443,11 +443,6 @@ export async function renderPokedexDetail(container, id) {
       <section class="b">${metaSectionHTML(pokemon, meta, format)}</section>
 
       <section class="b">
-      <h3 class="section-title">${t('evo.title')}</h3>
-      <div id="evoSection"></div>
-      </section>
-
-      <section class="b">
       <h3 class="section-title">${t('learn.title')}</h3>
       <div id="mvSection"></div>
       </section>
@@ -475,6 +470,14 @@ export async function renderPokedexDetail(container, id) {
         ` : ''}
       </div>
 
+      </section>
+
+      <!-- The evolution line reads across, not down: in a masonry column it only
+           had 539px for the 674px Pikachu needs, and Raichu fell outside the
+           card. It closes the bento as a full-width band instead. -->
+      <section class="b b-wide">
+      <h3 class="section-title">${t('evo.title')}</h3>
+      <div id="evoSection"></div>
       </section>
       </div>
 

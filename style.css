@@ -1577,6 +1577,14 @@ a:hover {
   margin-bottom: 0;
 }
 
+/* column-span only works on a block in the column flow, so this one gives up the
+   inline-block the other cards need. Placed last, it closes the bento as a band
+   without splitting the columns above it. */
+.b-wide {
+  display: block;
+  column-span: all;
+}
+
 .b-id {
   text-align: center;
 }
