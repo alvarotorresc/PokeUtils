@@ -1040,8 +1040,8 @@ a:hover {
 }
 
 /* The breeding rules close the group index and belong to the whole grid, not
-   to its left edge. Centred, and capped: at 1920 the sentence ran the full
-   1840px and the eye lost the line on the way back. */
+   to its left edge. Centred, and capped: measured at 1366 the sentence ran the
+   full 1278px of the page, and it only gets wider from there. */
 .egg-rules {
   text-align: center;
   max-width: 760px;

@@ -4,7 +4,7 @@
 // Los porcentajes son lo importante: un movimiento al 92% es obligatorio y uno
 // al 14% es una opcion, y sin el numero no se distinguen.
 import { fetchMeta, fetchPokemonList } from './api.js';
-import { FORMATS, MONTH, defaultFormat, metaSetOf, usageRanking } from './meta.js';
+import { FORMATS, MONTH, defaultFormat, metaSetOf, prettySlug, usageRanking } from './meta.js';
 import { spriteUrl, STAT_KEYS } from './data.js';
 import { spriteIdFor } from './forms.js';
 import { loadingHTML, replaceQuery } from './app.js';
@@ -57,11 +57,11 @@ export async function renderMeta(container, query = new URLSearchParams()) {
           </div>
           <div>
             <span class="egg-key">${t('meta.item')}</span>
-            ${set.i.map(([slug, p]) => `<div class="meta-line">${slug} ${pct(p)}</div>`).join('')}
+            ${set.i.map(([slug, p]) => `<div class="meta-line">${prettySlug(slug)} ${pct(p)}</div>`).join('')}
           </div>
           <div>
             <span class="egg-key">${t('meta.ability')}</span>
-            ${set.a.map(([slug, p]) => `<div class="meta-line">${slug} ${pct(p)}</div>`).join('')}
+            ${set.a.map(([slug, p]) => `<div class="meta-line">${prettySlug(slug)} ${pct(p)}</div>`).join('')}
           </div>
           <div>
             <span class="egg-key">${t('meta.tera')}</span>
@@ -70,7 +70,7 @@ export async function renderMeta(container, query = new URLSearchParams()) {
         </div>
         <span class="egg-key">${t('meta.moves')}</span>
         <div class="meta-moves">
-          ${set.m.map(([slug, p]) => `<div class="meta-line">${slug} ${pct(p)}</div>`).join('')}
+          ${set.m.map(([slug, p]) => `<div class="meta-line">${prettySlug(slug)} ${pct(p)}</div>`).join('')}
         </div>
       </div>
     `;
