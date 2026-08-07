@@ -2186,6 +2186,33 @@ a.evo-node:hover img {
   border-bottom: none;
 }
 
+/* ===== MOVES TABLE: NAME AND DESCRIPTION ===== */
+/* Both used to be 0.42rem, and the description's grey is close enough to the
+   name's white that the two read as one paragraph: you could not tell where
+   the move was called. The name goes up to 0.58rem and keeps the brightest
+   ink; the description drops a step and gains the accent rule down its side,
+   so the eye lands on the name first. */
+.mv-title {
+  font-size: 0.58rem;
+  color: var(--text);
+  line-height: 1.5;
+  letter-spacing: 0.5px;
+}
+
+.data-table tr:hover .mv-title {
+  color: var(--accent-text);
+}
+
+.mv-desc {
+  font-size: 0.4rem;
+  color: var(--text-data);
+  margin-top: 7px;
+  padding-left: 8px;
+  border-left: 2px solid var(--border);
+  line-height: 1.8;
+  max-width: 320px;
+}
+
 /* ===== MOVE ROW ===== */
 .move-category {
   font-size: 0.44rem;
