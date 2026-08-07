@@ -936,11 +936,31 @@ a:hover {
 .cmp-hit:hover { border-color: var(--accent); }
 .cmp-hit img { width: 32px; height: 32px; image-rendering: pixelated; }
 
-.cmp-table th a { text-decoration: none; color: var(--text); }
-.cmp-sprite { width: 56px; height: 56px; image-rendering: pixelated; display: block; margin: 0 auto; }
+/* Fixed layout so the columns are the same width whatever is inside them:
+   with the automatic algorithm the first Pokemon took 504px and the third 271,
+   and nothing lined up down the table. 660px is the floor the 128px sprites
+   need at four across; below that the wrapper scrolls, as it already did. */
+.cmp-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 660px;
+}
+
+.cmp-table th:first-child { width: 130px; }
+.cmp-table tbody th { text-align: left; }
+
+/* The header is one stack: sprite, name, types, all on the column's centre
+   line. The <a> was inline, so the name fell back to the cell's left edge
+   while the sprite sat centred by its own auto margins. */
+.cmp-table thead th { text-align: center; vertical-align: bottom; }
+.cmp-table th a { text-decoration: none; color: var(--text); display: block; }
+.cmp-sprite { width: 128px; height: 128px; image-rendering: pixelated; display: block; margin: 0 auto; }
+.cmp-name { display: block; text-align: center; margin-top: 6px; font-size: 0.55rem; }
+.cmp-table th a:hover .cmp-name { color: var(--accent-text); }
 .cmp-table td { text-align: center; }
 .cmp-best { color: var(--accent-text); font-weight: bold; }
 .cmp-types { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; }
+.cmp-table thead .cmp-types { margin-top: 8px; }
 .cmp-total th, .cmp-total td { border-top: 2px solid var(--border); }
 
 .egg-section {
