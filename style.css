@@ -1394,13 +1394,21 @@ a:hover {
     margin-bottom: 0;
   }
 
+  /* Con el contador puesto y el boton de limpiar visible, que es la unica
+     combinacion en la que todo esta a la vez, la barra pedia 661px de los 676
+     que caben a 1366x768: 15px de holgura y vuelta a la barra de scroll a la
+     minima. Estos margenes dan 33. */
   .dex-side .dex-side-title {
-    margin: 14px 0 8px;
+    margin: 12px 0 6px;
+  }
+
+  .dex-side .pdx-count {
+    margin-top: 6px;
   }
 
   .dex-side .pdx-clear {
     width: 100%;
-    margin-top: 14px;
+    margin-top: 8px;
   }
 }
 
