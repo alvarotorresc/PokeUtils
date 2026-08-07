@@ -8,7 +8,7 @@ import { rangeAt100 } from './stats.js';
 import { partnersOf, hasEggData } from './egg-groups.js';
 import { formsOf, spriteIdFor } from './forms.js';
 import { fetchMeta } from './api.js';
-import { metaSetOf, defaultFormat, MONTH } from './meta.js';
+import { metaSetOf, defaultFormat, prettySlug, FORMATS, MONTH } from './meta.js';
 import { getLevel } from './level.js';
 
 // Spanish names are missing for 616 of the 2187 items, and the build falls back
@@ -214,23 +214,96 @@ function formLabels(variants, speciesSlug, lang) {
   });
 }
 
-// El set mas jugado, si este Pokemon esta en el formato. 1051 de las 1351
-// entradas no lo estan, asi que la seccion no aparece en vez de poner un cartel
-// de "sin datos" en tres cuartas partes de las fichas.
-function metaSectionHTML(pokemon, meta, format) {
-  const set = metaSetOf(pokemon.id, format, meta);
-  if (!set) return '';
+// El set mas jugado. Solo 201 de los 1025 estan en OU o en VGC, asi que la
+// seccion busca en dos sitios mas antes de rendirse: el otro formato, y la
+// linea evolutiva. Con eso pasa a responder en 402, y una ficha como la de
+// Bulbasaur -- que no se juega en ningun formato -- ya puede ensenar el
+// Venusaur que si se juega en vez de no ensenar nada.
+async function findMetaSet(dexId, format, meta, evolutions) {
+  const other = FORMATS.map(f => f.id).find(id => id !== format);
+  const dataByFormat = { [format]: meta };
+  const load = async id => {
+    if (!(id in dataByFormat)) dataByFormat[id] = await fetchMeta(id).catch(() => null);
+    return dataByFormat[id];
+  };
+
+  // El propio Pokemon manda sobre cualquier pariente, en el formato que sea.
+  for (const id of [format, other]) {
+    const set = metaSetOf(dexId, id, await load(id));
+    if (set) return { set, format: id, ownerId: dexId, own: true };
+  }
+
+  const chainId = evolutions?.bySpecies?.[dexId];
+  const root = chainId != null ? evolutions.chains[chainId] : null;
+  if (!root) return null;
+
+  const family = [];
+  (function walk(node) {
+    if (node.species !== dexId) family.push(node.species);
+    node.evolvesTo.forEach(walk);
+  })(root);
+
+  // El mas jugado de la familia, no el primero que aparezca: si Ivysaur y
+  // Venusaur estuvieran los dos, el que interesa es el que se ve en partida.
+  let best = null;
+  for (const id of [format, other]) {
+    const data = await load(id);
+    for (const species of family) {
+      const set = metaSetOf(species, id, data);
+      if (set && (!best || set.u > best.set.u)) best = { set, format: id, ownerId: species, own: false };
+    }
+    if (best) return best;
+  }
+  return null;
+}
+
+function metaSetHTML(found, owner) {
+  const { set, format } = found;
   const spread = set.s[0];
   const evs = STAT_KEYS.map((k, i) => [k, spread.e[i]]).filter(([, v]) => v > 0);
+  const pct = n => `<span class="meta-pct">${n}%</span>`;
+  const top = list => list?.[0] ? `${prettySlug(list[0][0])} ${pct(list[0][1])}` : '—';
+
+  // `nothing` es no teracristalizar, y es lo mas jugado en 192 de las 369
+  // entradas: una linea de Tera que dice "nada" no informa de nada. Y `stellar`
+  // no esta entre los 18 tipos, asi que va como texto en vez de como badge.
+  const tera = set.t?.[0]?.[0] === 'nothing' ? null : set.t?.[0];
+  const teraHTML = !tera ? ''
+    : TYPES.includes(tera[0])
+      ? `<span class="type-badge sm" data-type="${tera[0]}">${typeName(tera[0])}</span> ${pct(tera[1])}`
+      : `${prettySlug(tera[0])} ${pct(tera[1])}`;
+
   return `
-    <h3 class="section-title">${t('meta.section')}</h3>
-    <div class="card" style="margin-bottom:20px">
-      <div class="meta-line"><span class="egg-key">${t('meta.usage')}</span> ${set.u}% ${t('meta.in')} ${t(`meta.format.${format}`)}</div>
-      <div class="meta-line"><span class="egg-key">${t('meta.spread')}</span> ${spread.n} · ${evs.map(([k, v]) => `${v} ${statName(k)}`).join(' / ')}</div>
-      <div class="meta-line"><span class="egg-key">${t('meta.moves')}</span> ${set.m.slice(0, 4).map(([slug, p]) => `${slug} (${p}%)`).join(', ')}</div>
-      <p class="egg-note" style="margin-top:10px"><a href="#/meta?f=${format}&id=${pokemon.id}">${t('meta.more')}</a> · ${t('meta.from', { month: MONTH })}</p>
-    </div>
+    <div class="meta-line"><span class="egg-key">${t('meta.usage')}</span> ${pct(set.u)} ${t('meta.in')} ${t(`meta.format.${format}`)}</div>
+    <div class="meta-line"><span class="egg-key">${t('meta.ability')}</span> ${top(set.a)}</div>
+    <div class="meta-line"><span class="egg-key">${t('meta.item')}</span> ${top(set.i)}</div>
+    <div class="meta-line"><span class="egg-key">${t('meta.spread')}</span> ${spread.n} · ${evs.map(([k, v]) => `${v} ${statName(k)}`).join(' / ')}</div>
+    ${teraHTML ? `<div class="meta-line"><span class="egg-key">${t('meta.tera')}</span> ${teraHTML}</div>` : ''}
+    <div class="meta-line meta-moves-head"><span class="egg-key">${t('meta.moves')}</span></div>
+    <ul class="meta-moveset">
+      ${set.m.slice(0, 4).map(([slug, p]) => `<li>${prettySlug(slug)} ${pct(p)}</li>`).join('')}
+    </ul>
+    <p class="meta-foot"><a href="#/meta?f=${format}&id=${found.ownerId}">${t('meta.more')}</a> · ${t('meta.from', { month: MONTH })}</p>
   `;
+}
+
+// Se pinta aparte porque puede tener que pedir el otro formato. Falla suave: si
+// algo no carga, la ficha se queda sin esta seccion y con todo lo demas.
+async function renderMetaSection(host, dexId, format, meta, allPokemon) {
+  try {
+    const evolutions = await fetchEvolutions().catch(() => null);
+    const found = await findMetaSet(dexId, format, meta, evolutions);
+    if (!found) return;
+
+    const owner = allPokemon.find(p => p.id === found.ownerId);
+    host.innerHTML = `
+      <h3 class="section-title">${t('meta.section')}</h3>
+      ${found.own ? '' : `<p class="meta-family">${t('meta.family', { name: `<a href="#/pokedex/${found.ownerId}">${owner ? pokeName(owner) : '#' + found.ownerId}</a>` })}</p>`}
+      ${metaSetHTML(found, owner)}
+    `;
+  } catch {
+    // sin seccion
+  }
 }
 
 function eggSectionHTML(pokemon, all) {
@@ -453,7 +526,7 @@ export async function renderPokedexDetail(container, id) {
 
       <section class="b">${eggSectionHTML(pokemon, allPokemon)}</section>
 
-      <section class="b">${metaSectionHTML(pokemon, meta, format)}</section>
+      <section class="b" id="metaSection"></section>
 
       <section class="b">
       <h3 class="section-title">${t('learn.title')}</h3>
@@ -519,6 +592,7 @@ export async function renderPokedexDetail(container, id) {
   // Charizard does, and the learnsets were built for the 1025 species only.
   renderEvolutionSection(container.querySelector('#evoSection'), dexId);
   renderMovesSection(container.querySelector('#mvSection'), dexId);
+  renderMetaSection(container.querySelector('#metaSection'), dexId, format, meta, allPokemon);
 
   // Pikachu carries 17 forms and the strip only shows five of them at a time.
   // The scrollbar is hidden, so without this the last tab is simply cut in half

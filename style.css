@@ -3525,6 +3525,48 @@ a.evo-node:hover img {
 .meta-credit { margin-top: 20px; font-size: 0.4rem; }
 .ct-meta { font-size: 0.5rem; opacity: 0.85; }
 
+/* El set en la ficha. La nota sale solo cuando el set es de un pariente, y
+   tiene que leerse como una advertencia y no como parte del set. */
+.meta-family {
+  font-size: 0.44rem;
+  line-height: 1.9;
+  color: var(--text-data);
+  border-left: 2px solid var(--border-accent);
+  padding-left: 12px;
+  margin: 0 0 14px;
+}
+
+.meta-moveset {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0 0 0 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 2px 14px;
+}
+
+.meta-moveset li {
+  font-size: 0.46rem;
+  color: var(--text);
+  line-height: 1.9;
+}
+
+.meta-moveset li::before {
+  content: '▸ ';
+  color: var(--accent-text);
+}
+
+.meta-moves-head {
+  margin-top: 10px;
+}
+
+.meta-foot {
+  margin: 14px 0 0;
+  font-size: 0.42rem;
+  line-height: 1.9;
+  color: var(--text-data);
+}
+
 /* ===== DESKTOP SCALE =====
    In 2816 lines of CSS the highest breakpoint was 900px: above it there was not
    a single rule, and 1000 looked the same as 1920. */

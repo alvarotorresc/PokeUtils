@@ -23,6 +23,16 @@ export const defaultFormat = level => (level === 100 ? 'ou' : 'vgc');
 
 export const metaSetOf = (id, format, data) => data?.[id] || null;
 
+// Los sets guardan slugs de Showdown (`life-orb`, `weather-ball`) y pintarlos
+// crudos deja la seccion en jerga. Traducirlos de verdad costaria moves.json
+// (343 KB) e items.json (595 KB) en cada ficha, que es mas de lo que vale;
+// esto los deja al menos legibles, y en ingles, que es como se nombran en
+// Smogon de todas formas.
+export const prettySlug = slug => slug
+  .split('-')
+  .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+  .join(' ');
+
 export const hasMeta = (id, format, data) => Boolean(data?.[id]);
 
 // Quienes le ganan a este Pokemon, medido, no deducido del tipo. Solo OU los
