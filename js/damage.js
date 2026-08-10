@@ -155,7 +155,7 @@ function koChanceIn(rolls, hp, hits) {
  * Full result for one move against one target.
  * @returns {{rolls:number[], min:number, max:number, pctMin:number,
  *            pctMax:number, koIn:number|null, guaranteed:boolean,
- *            koChance:number, effectiveness:number}}
+ *            koChance:number|null, effectiveness:number}}
  */
 export function calcDamage(ctx) {
   const rolls = damageRolls(ctx);
@@ -173,8 +173,11 @@ export function calcDamage(ctx) {
   }
 
   const guaranteed = min > 0 && Math.ceil(hp / min) === koIn;
-  // Convolution cost grows fast, and past four hits the answer is "yes" anyway.
-  const koChance = koIn && koIn <= 4 ? koChanceIn(rolls, hp, koIn) : (koIn ? 1 : 0);
+  // Convolution cost grows fast, so a KO in five or more hits no se calcula. Y
+  // lo que no se ha calculado sale como null y no como 1: el 1 llegaba entero a
+  // la pagina, que lo pintaba como "KO en 5 el 100.0% de las veces" -- un
+  // porcentaje que nadie midio y que ademas es falso salvo que `guaranteed`.
+  const koChance = koIn === null ? 0 : (koIn <= 4 ? koChanceIn(rolls, hp, koIn) : null);
 
   return {
     rolls,

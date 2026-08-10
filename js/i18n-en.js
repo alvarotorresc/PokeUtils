@@ -234,6 +234,7 @@ export default {
     'dmg.noko': 'Never reaches a KO',
     'dmg.ko.guaranteed': 'Guaranteed KO in {n}',
     'dmg.ko.chance': 'KO in {n} {pct}% of the time',
+    'dmg.ko.best': 'KO in {n} at best',
     'weather.none': 'No weather',
     'weather.sun': 'Sun',
     'weather.rain': 'Rain',

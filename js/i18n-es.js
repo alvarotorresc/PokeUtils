@@ -239,6 +239,7 @@ export default {
     'dmg.noko': 'No llega al KO',
     'dmg.ko.guaranteed': 'KO seguro en {n}',
     'dmg.ko.chance': 'KO en {n} el {pct}% de las veces',
+    'dmg.ko.best': 'KO en {n} en el mejor de los casos',
     'weather.none': 'Sin clima',
     'weather.sun': 'Sol',
     'weather.rain': 'Lluvia',

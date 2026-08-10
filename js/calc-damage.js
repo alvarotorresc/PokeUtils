@@ -650,11 +650,16 @@ export function renderDamage(container, query) {
     }
 
     const pct = `${r.pctMin.toFixed(1)}% - ${r.pctMax.toFixed(1)}%`;
+    // Tres ramas y no dos: con cinco golpes o mas la probabilidad no se calcula
+    // (la convolucion cuesta), asi que se dice en cuantos golpes cae en el mejor
+    // de los casos y no se inventa un porcentaje.
     const koText = r.koIn === null
       ? t('dmg.noko')
       : r.guaranteed
         ? t('dmg.ko.guaranteed').replace('{n}', r.koIn)
-        : t('dmg.ko.chance').replace('{n}', r.koIn).replace('{pct}', (r.koChance * 100).toFixed(1));
+        : r.koChance === null
+          ? t('dmg.ko.best').replace('{n}', r.koIn)
+          : t('dmg.ko.chance').replace('{n}', r.koIn).replace('{pct}', (r.koChance * 100).toFixed(1));
 
     // The colour tracks how much of the bar the hit takes, not the raw number.
     const share = Math.min(r.pctMax, 100);
