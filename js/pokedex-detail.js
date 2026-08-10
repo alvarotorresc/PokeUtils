@@ -2,7 +2,7 @@
 import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, TYPE_NAMES_FULL, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, NATURES } from './data.js';
 import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchLearnsets, fetchMoves } from './api.js';
 import { loadingHTML, renderError } from './ui.js';
-import { evolutionText } from './evolution.js';
+import { evolutionText, ramasPorHora } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
 import { rangeAt100 } from './stats.js';
 import { partnersOf, hasEggData } from './egg-groups.js';
@@ -19,11 +19,15 @@ function displayName(entry) {
   return entry.nameEs !== entry.name ? entry.nameEs : (entry.nameEn || entry.name);
 }
 
-function evoNodeHTML(species, currentId, nameOf) {
+// `dex` va aparte porque una forma tiene id propio para el sprite y el enlace
+// (10126 es Lycanroc Nocturno) pero NO tiene numero de Pokedex: ese lo posee la
+// especie, igual que en la cabecera de la ficha. Sin esto salia "#10126", que
+// no es un numero que exista en ninguna Pokedex.
+function evoNodeHTML(species, currentId, nameOf, dex = species) {
   const isCurrent = species === currentId;
   const inner = `
     <img src="${spriteUrl(species)}" alt="${nameOf(species)}" loading="lazy">
-    <span class="evo-dex">#${String(species).padStart(4, '0')}</span>
+    <span class="evo-dex">#${String(dex).padStart(4, '0')}</span>
     <span class="evo-name">${nameOf(species)}</span>
   `;
   return isCurrent
@@ -31,22 +35,51 @@ function evoNodeHTML(species, currentId, nameOf) {
     : `<a class="evo-node" href="#/pokedex/${species}">${inner}</a>`;
 }
 
-function evoTreeHTML(node, currentId, nameOf, lang, lookups) {
+const evoBranchHTML = (condicion, destino) => `
+  <div class="evo-branch">
+    <span class="evo-arrow">
+      <span class="evo-cond">${condicion || '&nbsp;'}</span>
+      <span class="evo-tip">▶</span>
+    </span>
+    ${destino}
+  </div>
+`;
+
+// Rockruff evoluciona a una forma distinta de Lycanroc segun la hora, pero
+// PokeAPI mete las tres por el mismo hueco. `ramasPorHora` las separa y aqui se
+// resuelve cada una a su forma por el sufijo del slug; asi cada condicion
+// ensena su propio sprite y su propio nombre en vez de tres flechas al mismo.
+//
+// Se divide solo si se resuelven TODAS las formas y el destino no evoluciona
+// mas: media division o una rama que se coma un subarbol serian peores que
+// dejarlo como estaba.
+function evoBranchesHTML(child, currentId, nameOf, lang, lookups, formaDe) {
+  const porHora = child.evolvesTo.length === 0 ? ramasPorHora(child.details) : null;
+  const resueltas = porHora
+    ?.map(r => ({ ...r, id: formaDe(child.species, r.sufijo) }))
+    .filter(r => r.id);
+
+  if (!porHora || resueltas.length !== porHora.length) {
+    return evoBranchHTML(
+      evolutionText(child.details, lang, lookups),
+      evoTreeHTML(child, currentId, nameOf, lang, lookups, formaDe),
+    );
+  }
+  return resueltas.map(r => evoBranchHTML(
+    evolutionText(r.details, lang, lookups),
+    evoNodeHTML(r.id, currentId, nameOf, child.species),
+  )).join('');
+}
+
+function evoTreeHTML(node, currentId, nameOf, lang, lookups, formaDe) {
   const children = node.evolvesTo;
   if (children.length === 0) return evoNodeHTML(node.species, currentId, nameOf);
   return `
     <div class="evo-step">
       ${evoNodeHTML(node.species, currentId, nameOf)}
       <div class="evo-branches">
-        ${children.map(child => `
-          <div class="evo-branch">
-            <span class="evo-arrow">
-              <span class="evo-cond">${evolutionText(child.details, lang, lookups) || '&nbsp;'}</span>
-              <span class="evo-tip">▶</span>
-            </span>
-            ${evoTreeHTML(child, currentId, nameOf, lang, lookups)}
-          </div>
-        `).join('')}
+        ${children.map(child =>
+          evoBranchesHTML(child, currentId, nameOf, lang, lookups, formaDe)).join('')}
       </div>
     </div>
   `;
@@ -80,7 +113,17 @@ async function renderEvolutionSection(host, currentId) {
       type: slug => TYPE_NAMES_FULL[slug] || slug,
     };
 
-    host.innerHTML = `<div class="evo-line">${evoTreeHTML(root, currentId, nameOf, getLang(), lookups)}</div>`;
+    // Por el sufijo del slug y no por una tabla de ids: la especie 745 ya se
+    // llama `lycanroc-midday`, asi que la forma diurna se encuentra igual que
+    // las otras dos y no hay ningun numero que mantener a mano.
+    const formaDe = (species, sufijo) => {
+      const entrada = byId.get(species);
+      if (!entrada) return null;
+      const candidatos = [entrada, ...formsOf(species, allPokemon)];
+      return candidatos.find(p => p.name.endsWith(`-${sufijo}`))?.id || null;
+    };
+
+    host.innerHTML = `<div class="evo-line">${evoTreeHTML(root, currentId, nameOf, getLang(), lookups, formaDe)}</div>`;
   } catch (err) {
     renderError(host, err, () => renderEvolutionSection(host, currentId));
   }

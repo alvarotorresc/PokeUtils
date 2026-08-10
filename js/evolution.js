@@ -130,6 +130,36 @@ function alternativasUtiles(details) {
   return unicas.filter(d => !unicas.some(otra => otra !== d && anade(d, otra)));
 }
 
+// PokeAPI mete las tres formas de Lycanroc por el mismo hueco: las tres entran
+// como `species: 745` y solo se distinguen por `time_of_day`. Sin esto la ficha
+// pinta "Nv. 25 de dia o Nv. 25 de noche o Nv. 25 al anochecer" en una sola
+// rama, apuntando tres veces al mismo sprite y sin decir a que forma lleva cada
+// hora. Y el deduplicador de arriba no lo toca, con razon: las tres condiciones
+// son distintas y ninguna incluye a otra.
+//
+// Es el UNICO caso del dataset -- comprobado que ninguna otra transicion tiene
+// alternativas que difieran solo por la hora -- asi que esto no intenta ser un
+// mecanismo general. Las otras 21 transiciones con varias alternativas siguen
+// juntandose con " o ", que es lo correcto: Sandshrew evoluciona a nivel 22 o
+// con Piedra Hielo, y las dos llevan al mismo Sandslash.
+//
+// El destino se deduce del slug (day -> lycanroc-midday), asi que aqui solo
+// vive la correspondencia hora -> sufijo; quien llama resuelve el id, que es
+// quien tiene pokemon.json a mano.
+const FORMA_POR_HORA = { day: 'midday', night: 'midnight', dusk: 'dusk' };
+
+export function ramasPorHora(details) {
+  if (!details || details.length < 2) return null;
+  const utiles = alternativasUtiles(details);
+  if (utiles.length < 2) return null;
+  if (!utiles.every(d => FORMA_POR_HORA[d.time_of_day])) return null;
+  // La hora tiene que ser la unica diferencia. Si no, esto no es una eleccion
+  // entre formas y se pinta como siempre.
+  const sinHora = new Set(utiles.map(({ time_of_day, ...resto }) => huella(resto)));
+  if (sinHora.size !== 1) return null;
+  return utiles.map(d => ({ sufijo: FORMA_POR_HORA[d.time_of_day], details: [d] }));
+}
+
 // details: array of alternative conditions. Returns '' when empty, which in
 // the whole dataset happens only for Manaphy.
 export function evolutionText(details, lang, lookups) {

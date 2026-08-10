@@ -112,6 +112,29 @@ check('Diglett', await texto(50, 51, 'en'), 'Lv. 26');
 check('Pikachu', await texto(25, 26, 'en'), 'Thunder Stone');
 check('Sandshrew mantiene las dos', (await texto(27, 28, 'en')).includes(' or '), true);
 
+console.log('\nRockruff: cada hora lleva a su forma, no las tres a la misma\n');
+
+const { ramasPorHora } = await import('../js/evolution.js');
+const rockruff = transiciones.find(x => x.de === 744 && x.a === 745);
+
+const ramas = ramasPorHora(rockruff.details);
+check('las tres condiciones se separan', ramas?.length, 3);
+check('cada una apunta a una forma distinta',
+  ramas?.map(r => r.sufijo), ['midday', 'midnight', 'dusk']);
+check('y cada rama conserva su hora',
+  ramas?.map(r => evolutionText(r.details, 'es', lookups)),
+  ['Nv. 25 de día', 'Nv. 25 de noche', 'Nv. 25 al anochecer']);
+// Los sufijos tienen que existir como slug real, o la ficha no puede resolver
+// el id y se queda con el texto pegado de antes.
+const slugs = pokemon.filter(p => p.id === 745 || p.speciesId === 745).map(p => p.name);
+check('los tres slugs existen en pokemon.json',
+  ramas?.every(r => slugs.some(s => s.endsWith(`-${r.sufijo}`))), true);
+
+// El arreglo es para Rockruff y solo para Rockruff: las demas alternativas
+// llevan al mismo Pokemon y se siguen juntando con " o ".
+const conRamas = transiciones.filter(tr => ramasPorHora(tr.details));
+check('ninguna otra transicion se parte', conRamas.map(tr => `${tr.de}->${tr.a}`), ['744->745']);
+
 console.log('\nNinguna transicion se queda sin texto por el filtro\n');
 
 const conDetallesYSinTexto = transiciones

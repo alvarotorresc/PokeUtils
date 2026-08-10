@@ -386,7 +386,7 @@ export default {
     'evo.happiness': 'con amistad alta',
     'evo.affection': 'con {n} de afecto',
     'evo.beauty': 'con {n} de belleza',
-    'evo.day': 'de dia',
+    'evo.day': 'de día',
     'evo.night': 'de noche',
     'evo.dusk': 'al anochecer',
     'evo.at': 'en {place}',
