@@ -55,11 +55,14 @@ function check(label, actual, expected) {
   console.log(`${ok ? '  ok  ' : '  FAIL'} ${label}: ${JSON.stringify(actual)}${ok ? '' : ` (expected ${JSON.stringify(expected)})`}`);
 }
 
-const texto = (de, a, lang = 'es') => {
-  setLang(lang);
+// setLang es asincrona desde perf(i18n): baja el diccionario del idioma antes de
+// cambiarlo. Sin el await, t() seguia respondiendo en espanol y "Lv. 26" salia
+// como "Nv. 26" -- un fallo del check, no de la app.
+const texto = async (de, a, lang = 'es') => {
+  await setLang(lang);
   const t = transiciones.find(x => x.de === de && x.a === a);
   const out = t ? evolutionText(t.details, lang, lookups) : '(no existe)';
-  setLang('es');
+  await setLang('es');
   return out;
 };
 
@@ -88,26 +91,26 @@ check('frases con una alternativa repetida', [...new Set(repetidas)], []);
 
 console.log('\nLos casos que lo destaparon\n');
 
-check('Diglett a Dugtrio', texto(50, 51), 'Nv. 26');
-check('Pikachu a Raichu', texto(25, 26), 'Piedra Trueno');
-check('Pichu a Pikachu no lleva condicion rara', texto(172, 25).includes(' o '), false);
-check('Growlithe a Arcanine', texto(58, 59), 'Piedra Fuego');
-check('Graveler a Golem', texto(75, 76), 'Intercambio');
-check('Rattata a Raticate', texto(19, 20), 'Nv. 20');
-check('Koffing a Weezing', texto(109, 110), 'Nv. 35');
+check('Diglett a Dugtrio', await texto(50, 51), 'Nv. 26');
+check('Pikachu a Raichu', await texto(25, 26), 'Piedra Trueno');
+check('Pichu a Pikachu no lleva condicion rara', (await texto(172, 25)).includes(' o '), false);
+check('Growlithe a Arcanine', await texto(58, 59), 'Piedra Fuego');
+check('Graveler a Golem', await texto(75, 76), 'Intercambio');
+check('Rattata a Raticate', await texto(19, 20), 'Nv. 20');
+check('Koffing a Weezing', await texto(109, 110), 'Nv. 35');
 
 console.log('\nLas alternativas de verdad se quedan las dos\n');
 
-check('Sandshrew: nivel o piedra', texto(27, 28), 'Nv. 22 o Piedra Hielo');
-check('Vulpix: dos piedras distintas', texto(37, 38), 'Piedra Fuego o Piedra Hielo');
-check('Slowpoke: nivel u objeto', texto(79, 80), 'Nv. 37 o Brazal Galanuez');
-check('Golbat: felicidad', texto(42, 169), 'Subir de nivel con amistad alta');
+check('Sandshrew: nivel o piedra', await texto(27, 28), 'Nv. 22 o Piedra Hielo');
+check('Vulpix: dos piedras distintas', await texto(37, 38), 'Piedra Fuego o Piedra Hielo');
+check('Slowpoke: nivel u objeto', await texto(79, 80), 'Nv. 37 o Brazal Galanuez');
+check('Golbat: felicidad', await texto(42, 169), 'Subir de nivel con amistad alta');
 
 console.log('\nY en ingles igual\n');
 
-check('Diglett', texto(50, 51, 'en'), 'Lv. 26');
-check('Pikachu', texto(25, 26, 'en'), 'Thunder Stone');
-check('Sandshrew mantiene las dos', texto(27, 28, 'en').includes(' or '), true);
+check('Diglett', await texto(50, 51, 'en'), 'Lv. 26');
+check('Pikachu', await texto(25, 26, 'en'), 'Thunder Stone');
+check('Sandshrew mantiene las dos', (await texto(27, 28, 'en')).includes(' or '), true);
 
 console.log('\nNinguna transicion se queda sin texto por el filtro\n');
 
