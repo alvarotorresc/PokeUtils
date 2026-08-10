@@ -78,6 +78,10 @@ export const fetchMeta = format => loadDataset(`meta-${format}`);
 // salen en los sets. 39 KB, contra los 706 de bajarse items.json y
 // abilities.json solo para leer seis nombres.
 export const fetchMetaNames = () => loadDataset('meta-names');
+// El indice del buscador global: los cuatro dominios con los cuatro campos por
+// los que se busca, y nada mas. 80,5 KB gz contra los 267,9 de bajarse los
+// cuatro datasets enteros, que es lo que costaba escribir dos letras.
+export const fetchSearchIndex = () => loadDataset('search');
 
 // ===== POKEMON DETAIL =====
 

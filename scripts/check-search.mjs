@@ -1,7 +1,10 @@
-// Comprueba el buscador global contra los cuatro datasets reales: que encuentre
-// en los cuatro dominios, que lo exacto gane a lo que solo empieza igual, y que
-// funcione con datasets a medias, que es como le llegan a la home: primero solo
-// pokemon.json y los otros tres al escribir.
+// Comprueba el buscador global contra data/search.json, que es lo que baja la
+// pagina: que encuentre en los cuatro dominios, que lo exacto gane a lo que solo
+// empieza igual, y que funcione con el indice a medias.
+//
+// Y sobre todo, que el indice destilado conteste EXACTAMENTE lo mismo que los
+// cuatro datasets enteros. Ese es el riesgo de destilarlo: un campo que se queda
+// fuera no rompe nada, solo deja de encontrar cosas.
 // Run with: node scripts/check-search.mjs
 import { readFile } from 'node:fs/promises';
 import { searchAll } from '../js/search-index.js';
@@ -9,7 +12,8 @@ import { searchAll } from '../js/search-index.js';
 const read = async name =>
   JSON.parse(await readFile(new URL(`../data/${name}.json`, import.meta.url), 'utf8'));
 
-const datasets = {
+const datasets = await read('search');
+const completos = {
   pokemon: await read('pokemon'),
   moves: await read('moves'),
   abilities: await read('abilities'),
@@ -55,8 +59,11 @@ check('ni por su nombre ingles', buscar('tm01').length, 0);
 check('lanzallamas devuelve el movimiento, no su MT',
   buscar('lanzallamas', 20).filter(r => r.kind === 'item').length, 0);
 check('y el movimiento sigue estando', first('lanzallamas').kind, 'move');
+// Se filtran en build: en el indice no estan, asi que ademas de no salir en los
+// resultados tampoco viajan por la red.
 check('las 338 maquinas quedan fuera del dominio de objetos',
-  datasets.items.filter(i => i.category === 'machines').length, 338);
+  completos.items.filter(i => i.category === 'machines').length, 338);
+check('y del indice, que ni las lleva', datasets.items.some(i => i.category === 'machines'), false);
 
 console.log('\nLo exacto gana a lo que solo empieza igual\n');
 
@@ -68,7 +75,18 @@ check('y no hay nada llamado exactamente fire', first('fire').score < 100, true)
 check('gengar es Gengar', first('gengar').id, 94);
 check('surf es Surf y no Surfista', first('surf').name.toLowerCase(), 'surf');
 
-console.log('\nCon datasets a medias no revienta\n');
+console.log('\nEl indice contesta lo mismo que los cuatro datasets enteros\n');
+
+// 25 terminos que barren los cuatro dominios, los dos idiomas y las formas.
+const TERMINOS = ['pika', 'char', 'surf', 'levit', 'ball', 'restos', 'lanzallamas', 'growl',
+  'mega', 'alola', 'galar', 'hisui', 'paldea', 'agua', 'fuego', 'rayo', 'thunder', 'baya',
+  'berry', 'poke', 'zygarde', 'koraidon', 'wooper', 'mime', 'sliggoo'];
+const mismos = TERMINOS.filter(t =>
+  JSON.stringify(searchAll(datasets, t, 8).map(r => [r.kind, r.id, r.route, r.sprite]))
+  !== JSON.stringify(searchAll(completos, t, 8).map(r => [r.kind, r.id, r.route, r.sprite])));
+check('los 25 terminos devuelven lo mismo', mismos, []);
+
+console.log('\nCon el indice a medias no revienta\n');
 
 check('solo pokemon: surf no aparece', searchAll({ pokemon: datasets.pokemon }, 'surf', 8).length, 0);
 check('solo pokemon: pikachu si', searchAll({ pokemon: datasets.pokemon }, 'pikachu', 8)[0].kind, 'pokemon');
