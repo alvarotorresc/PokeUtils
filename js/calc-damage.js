@@ -571,7 +571,11 @@ export function renderDamage(container, query) {
         hp: defenderHPMax,
       },
       move: {
-        type: resolved.overrideType || (zForm ? move.type : move.type),
+        // Sin rama para el movimiento Z: `toZMove` solo sube la potencia, y el
+        // Z conserva el tipo del movimiento del que sale -- Z_MOVES se indexa
+        // justo por ese tipo. Antes esto era un ternario con las dos ramas
+        // identicas, que se leia como si faltara algo.
+        type: resolved.overrideType || move.type,
         category: move.category,
         power: resolved.power,
       },

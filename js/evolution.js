@@ -122,14 +122,7 @@ function anade(extra, base) {
 // alternativas de verdad (Sandshrew evoluciona a nivel 22 o con Piedra Hielo) y
 // no las toca nadie.
 function alternativasUtiles(details) {
-  const unicas = [];
-  const vistas = new Set();
-  for (const d of details) {
-    const k = huella(d);
-    if (vistas.has(k)) continue;
-    vistas.add(k);
-    unicas.push(d);
-  }
+  const unicas = sinRepetidos(details);
   return unicas.filter(d => !unicas.some(otra => otra !== d && anade(d, otra)));
 }
 
@@ -187,7 +180,9 @@ function casaCondicion(regla, d) {
 }
 
 // Quita solo los duplicados exactos (Diglett trae "Nv. 26" dos veces), sin el
-// filtro de `anade`: aqui el detalle "de mas" es justo el que dice la forma.
+// filtro de `anade`: al partir por formas el detalle "de mas" es justo el que
+// dice la forma. Es tambien el primer paso de `alternativasUtiles`, que antes
+// llevaba este mismo bucle copiado dentro.
 function sinRepetidos(details) {
   const vistas = new Set();
   return details.filter(d => {
