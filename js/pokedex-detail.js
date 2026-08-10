@@ -2,7 +2,7 @@
 import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, TYPE_NAMES_FULL, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, NATURES } from './data.js';
 import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchLearnsets, fetchMoves } from './api.js';
 import { loadingHTML, renderError } from './ui.js';
-import { evolutionText, ramasPorHora } from './evolution.js';
+import { evolutionText, ramasDeEvolucion } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
 import { rangeAt100 } from './stats.js';
 import { partnersOf, hasEggData } from './egg-groups.js';
@@ -45,21 +45,24 @@ const evoBranchHTML = (condicion, destino) => `
   </div>
 `;
 
-// Rockruff evoluciona a una forma distinta de Lycanroc segun la hora, pero
-// PokeAPI mete las tres por el mismo hueco. `ramasPorHora` las separa y aqui se
-// resuelve cada una a su forma por el sufijo del slug; asi cada condicion
-// ensena su propio sprite y su propio nombre en vez de tres flechas al mismo.
+// Una rama por forma cuando las alternativas llevan a formas distintas de la
+// misma especie: Sandshrew sube de nivel al Sandslash de Kanto y con Piedra
+// Hielo al de Alola, pero PokeAPI mete los dos por el mismo hueco. Sin esto la
+// ficha dice que hay dos maneras de evolucionar y apunta las dos al mismo
+// sprite.
 //
 // Se divide solo si se resuelven TODAS las formas y el destino no evoluciona
-// mas: media division o una rama que se coma un subarbol serian peores que
+// mas: media division, o una rama que se coma un subarbol, serian peores que
 // dejarlo como estaba.
-function evoBranchesHTML(child, currentId, nameOf, lang, lookups, formaDe) {
-  const porHora = child.evolvesTo.length === 0 ? ramasPorHora(child.details) : null;
-  const resueltas = porHora
-    ?.map(r => ({ ...r, id: formaDe(child.species, r.sufijo) }))
+function evoBranchesHTML(node, child, currentId, nameOf, lang, lookups, formaDe) {
+  const ramas = child.evolvesTo.length === 0
+    ? ramasDeEvolucion(node.species, child.species, child.details)
+    : null;
+  const resueltas = ramas
+    ?.map(r => ({ ...r, id: r.id ?? formaDe(child.species, r.sufijo) }))
     .filter(r => r.id);
 
-  if (!porHora || resueltas.length !== porHora.length) {
+  if (!ramas || resueltas.length !== ramas.length) {
     return evoBranchHTML(
       evolutionText(child.details, lang, lookups),
       evoTreeHTML(child, currentId, nameOf, lang, lookups, formaDe),
@@ -79,7 +82,7 @@ function evoTreeHTML(node, currentId, nameOf, lang, lookups, formaDe) {
       ${evoNodeHTML(node.species, currentId, nameOf)}
       <div class="evo-branches">
         ${children.map(child =>
-          evoBranchesHTML(child, currentId, nameOf, lang, lookups, formaDe)).join('')}
+          evoBranchesHTML(node, child, currentId, nameOf, lang, lookups, formaDe)).join('')}
       </div>
     </div>
   `;

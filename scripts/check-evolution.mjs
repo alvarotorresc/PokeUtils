@@ -112,35 +112,83 @@ check('Diglett', await texto(50, 51, 'en'), 'Lv. 26');
 check('Pikachu', await texto(25, 26, 'en'), 'Thunder Stone');
 check('Sandshrew mantiene las dos', (await texto(27, 28, 'en')).includes(' or '), true);
 
-console.log('\nRockruff: cada hora lleva a su forma, no las tres a la misma\n');
+console.log('\nCada alternativa lleva a su forma, no todas a la misma\n');
 
-const { ramasPorHora } = await import('../js/evolution.js');
-const rockruff = transiciones.find(x => x.de === 744 && x.a === 745);
+const { ramasDeEvolucion } = await import('../js/evolution.js');
+const byId = new Map(pokemon.map(p => [p.id, p]));
 
-const ramas = ramasPorHora(rockruff.details);
-check('las tres condiciones se separan', ramas?.length, 3);
-check('cada una apunta a una forma distinta',
-  ramas?.map(r => r.sufijo), ['midday', 'midnight', 'dusk']);
-check('y cada rama conserva su hora',
-  ramas?.map(r => evolutionText(r.details, 'es', lookups)),
-  ['Nv. 25 de día', 'Nv. 25 de noche', 'Nv. 25 al anochecer']);
+// Resuelve una rama igual que la ficha: id exacto de la tabla, o el sufijo
+// buscado entre las formas de la especie.
+const idDe = (especie, r) => r.id
+  ?? pokemon.filter(p => p.id === especie || p.speciesId === especie)
+       .find(p => p.name.endsWith(`-${r.sufijo}`))?.id
+  ?? null;
+
+const ramasDe = (de, a) => {
+  const tr = transiciones.find(x => x.de === de && x.a === a);
+  return tr ? ramasDeEvolucion(de, a, tr.details) : null;
+};
+
+// Grupo 2, el de la tabla escrita a mano: Sandshrew es el caso que lo pidio.
+const sandshrew = ramasDe(27, 28);
+check('Sandshrew se parte en dos', sandshrew?.length, 2);
+check('nivel al de Kanto, piedra al de Alola',
+  sandshrew?.map(r => idDe(28, r)), [28, 10102]);
+check('y cada rama dice su condicion',
+  sandshrew?.map(r => evolutionText(r.details, 'es', lookups)),
+  ['Nv. 22', 'Piedra Hielo']);
+
+// Grupo 1, el que ya estaba en los datos: la region la tiraba `anade`.
+const pikachu = ramasDe(25, 26);
+check('Pikachu se parte por region', pikachu?.map(r => idDe(26, r)), [26, 10100]);
+check('y la rama de Alola lo dice',
+  pikachu?.map(r => evolutionText(r.details, 'es', lookups)),
+  ['Piedra Trueno', 'Piedra Trueno en Alola']);
+
+// Lycanroc, que fue el que destapo todo esto.
+const rockruff = ramasDe(744, 745);
+check('las tres formas de Lycanroc', rockruff?.map(r => idDe(745, r)), [745, 10126, 10152]);
+check('cada hora con su texto',
+  rockruff?.map(r => evolutionText(r.details, 'es', lookups)),
+  ['Nv. 25 de dia'.replace('dia', 'día'), 'Nv. 25 de noche', 'Nv. 25 al anochecer']);
+
 // Con setLang y no solo con el argumento: t() lee el idioma global, que es la
 // misma trampa que documenta `texto()` mas arriba.
 await setLang('en');
 check('y en ingles igual',
-  ramas?.map(r => evolutionText(r.details, 'en', lookups)),
+  rockruff?.map(r => evolutionText(r.details, 'en', lookups)),
   ['Lv. 25 during the day', 'Lv. 25 at night', 'Lv. 25 at dusk']);
 await setLang('es');
-// Los sufijos tienen que existir como slug real, o la ficha no puede resolver
-// el id y se queda con el texto pegado de antes.
-const slugs = pokemon.filter(p => p.id === 745 || p.speciesId === 745).map(p => p.name);
-check('los tres slugs existen en pokemon.json',
-  ramas?.every(r => slugs.some(s => s.endsWith(`-${r.sufijo}`))), true);
 
-// El arreglo es para Rockruff y solo para Rockruff: las demas alternativas
-// llevan al mismo Pokemon y se siguen juntando con " o ".
-const conRamas = transiciones.filter(tr => ramasPorHora(tr.details));
-check('ninguna otra transicion se parte', conRamas.map(tr => `${tr.de}->${tr.a}`), ['744->745']);
+console.log('\nLa tabla escrita a mano no se pudre en silencio\n');
+
+// Cada id de la tabla tiene que existir, ser forma de esa especie y no ser
+// cosmetica. Si un refresco de datos mueve un id, esto lo dice; sin esto, la
+// ficha ensenaria una forma equivocada sin que fallara nada.
+const todasLasRamas = transiciones
+  .map(tr => [tr, ramasDeEvolucion(tr.de, tr.a, tr.details)])
+  .filter(([, r]) => r);
+
+const malos = [];
+for (const [tr, ramas] of todasLasRamas) {
+  for (const r of ramas) {
+    const id = idDe(tr.a, r);
+    if (id == null) { malos.push(`${tr.de}->${tr.a}: sin resolver`); continue; }
+    const p = byId.get(id);
+    if (!p) { malos.push(`${tr.de}->${tr.a}: id ${id} no existe`); continue; }
+    if (id !== tr.a && p.speciesId !== tr.a) malos.push(`${tr.de}->${tr.a}: ${id} no es forma de ${tr.a}`);
+  }
+}
+check('todo destino existe y es forma de su especie', malos, []);
+
+// Los destinos de una transicion tienen que ser distintos entre si: dos ramas
+// al mismo Pokemon es exactamente el fallo que esto venia a arreglar.
+const repetidos = todasLasRamas
+  .filter(([tr, ramas]) => new Set(ramas.map(r => idDe(tr.a, r))).size !== ramas.length)
+  .map(([tr]) => `${tr.de}->${tr.a}`);
+check('ninguna transicion apunta dos veces al mismo', repetidos, []);
+
+check('se parten 22 transiciones', todasLasRamas.length, 22);
 
 console.log('\nNinguna transicion se queda sin texto por el filtro\n');
 

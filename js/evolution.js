@@ -70,8 +70,11 @@ function conditionTexts(d, lang, lookups) {
   if (d.min_affection) out.push(t('evo.affection', { n: d.min_affection }));
   if (d.min_beauty) out.push(t('evo.beauty', { n: d.min_beauty }));
   if (d.time_of_day && TIME_KEYS[d.time_of_day]) out.push(t(TIME_KEYS[d.time_of_day]));
-  if (d.location) out.push(t('evo.at', { place: d.location[lang] || d.location.name }));
-  else if (d.region) out.push(t('evo.at', { place: d.region[lang] || d.region.name }));
+  // Por `named` y no por `d.region[lang]`: PokeAPI no traduce los nombres de
+  // region y devuelve `es: "alola"` en minuscula, asi que salia "en alola".
+  // `named` ya sabe caer al ingles cuando el español es el slug crudo.
+  if (d.location) out.push(t('evo.at', { place: named(d.location, lang) }));
+  else if (d.region) out.push(t('evo.at', { place: named(d.region, lang) }));
   if (d.known_move) out.push(t('evo.knowing', { move: named(d.known_move, lang) }));
   if (d.known_move_type) out.push(t('evo.knowingtype', { type: TYPE_NAMES_FULL[d.known_move_type] || d.known_move_type }));
   if (d.gender === 1) out.push(t('evo.female'));
@@ -130,34 +133,93 @@ function alternativasUtiles(details) {
   return unicas.filter(d => !unicas.some(otra => otra !== d && anade(d, otra)));
 }
 
-// PokeAPI mete las tres formas de Lycanroc por el mismo hueco: las tres entran
-// como `species: 745` y solo se distinguen por `time_of_day`. Sin esto la ficha
-// pinta "Nv. 25 de dia o Nv. 25 de noche o Nv. 25 al anochecer" en una sola
-// rama, apuntando tres veces al mismo sprite y sin decir a que forma lleva cada
-// hora. Y el deduplicador de arriba no lo toca, con razon: las tres condiciones
-// son distintas y ninguna incluye a otra.
+// ===== A QUE FORMA LLEVA CADA ALTERNATIVA =====
 //
-// Es el UNICO caso del dataset -- comprobado que ninguna otra transicion tiene
-// alternativas que difieran solo por la hora -- asi que esto no intenta ser un
-// mecanismo general. Las otras 21 transiciones con varias alternativas siguen
-// juntandose con " o ", que es lo correcto: Sandshrew evoluciona a nivel 22 o
-// con Piedra Hielo, y las dos llevan al mismo Sandslash.
+// PokeAPI mete todas las formas de una especie por el mismo hueco: Sandshrew
+// trae "Nv. 22" y "Piedra Hielo" como `species: 28` las dos, aunque la piedra
+// lleve al Sandslash de Alola. Sin separarlas la ficha dice que hay dos maneras
+// de evolucionar pero no a que lleva cada una.
 //
-// El destino se deduce del slug (day -> lycanroc-midday), asi que aqui solo
-// vive la correspondencia hora -> sufijo; quien llama resuelve el id, que es
-// quien tiene pokemon.json a mano.
-const FORMA_POR_HORA = { day: 'midday', night: 'midnight', dusk: 'dusk' };
+// Hay dos grupos, y solo uno se deduce:
+//
+// 1. En 12 transiciones el dato ESTA: el detalle trae `region` ("Piedra Trueno"
+//    contra "Piedra Trueno en Alola"). Se resuelve solo, buscando la forma cuyo
+//    slug acaba en `-alola`. Ojo: `anade()` borraba justo ese detalle por decir
+//    lo mismo "y algo mas", asi que la region se tiraba antes de poder usarla.
+//    Por eso partir se intenta ANTES de ese filtro.
+//
+// 2. En 9 no esta en ningun campo, y PokeAPI tampoco lo publica en otro sitio:
+//    hay que escribirlo. Es la tabla de abajo.
+//
+// La tabla es explicita id -> id a proposito. Una regla del tipo "la forma que
+// no es la base" se equivocaria en cuatro de las nueve, porque esas especies
+// tienen formas que NO son destinos de evolucion: Mega-Slowbro, los Gigamax de
+// Urshifu, el Modo Daruma de Darmanitan y el Raticate Dominante. `check-evolution`
+// comprueba que cada id existe, es forma de esa especie y no es cosmetica.
+const FORMA_POR_CONDICION = {
+  // Rattata de Alola evoluciona de noche. 10093 es el Dominante, que no es
+  // destino de evolucion sino un encuentro concreto.
+  '19->20': [{ hora: 'night', forma: 10092 }],
+  '27->28': [{ item: 'ice-stone', forma: 10102 }],
+  '37->38': [{ item: 'ice-stone', forma: 10104 }],
+  // Meowth de Alola evoluciona por amistad; el de Kanto, por nivel.
+  '52->53': [{ felicidad: true, forma: 10108 }],
+  // El Brazal lleva al Slowbro de Galar, no a la Mega (10071).
+  '79->80': [{ item: 'galarica-cuff', forma: 10165 }],
+  '79->199': [{ item: 'galarica-wreath', forma: 10172 }],
+  '100->101': [{ item: 'leaf-stone', forma: 10232 }],
+  // La Piedra Hielo lleva al Darmanitan de Galar, no al Modo Daruma (10017).
+  '554->555': [{ item: 'ice-stone', forma: 10177 }],
+  // Lycanroc: la hora decide. La diurna es la propia especie base, asi que solo
+  // hacen falta las otras dos.
+  '744->745': [{ hora: 'night', forma: 10126 }, { hora: 'dusk', forma: 10152 }],
+  // El Pergamino de Aguas da el Estilo Fluido, no su Gigamax (10227).
+  '891->892': [{ item: 'scroll-of-waters', forma: 10191 }],
+};
 
-export function ramasPorHora(details) {
+function casaCondicion(regla, d) {
+  if (regla.hora) return d.time_of_day === regla.hora;
+  if (regla.item) return d.item?.name === regla.item;
+  if (regla.felicidad) return Boolean(d.min_happiness);
+  return false;
+}
+
+// Quita solo los duplicados exactos (Diglett trae "Nv. 26" dos veces), sin el
+// filtro de `anade`: aqui el detalle "de mas" es justo el que dice la forma.
+function sinRepetidos(details) {
+  const vistas = new Set();
+  return details.filter(d => {
+    const k = huella(d);
+    if (vistas.has(k)) return false;
+    vistas.add(k);
+    return true;
+  });
+}
+
+// Devuelve una rama por forma, o null si esta transicion no elige entre formas
+// y hay que pintarla como siempre, con las alternativas juntas por " o ".
+//
+// Cada rama trae `id` (id exacto, de la tabla o la especie base) o `sufijo` (el
+// slug a buscar, para el grupo de la region). Quien llama resuelve el sufijo,
+// que es quien tiene pokemon.json a mano.
+export function ramasDeEvolucion(deSpecies, aSpecies, details) {
   if (!details || details.length < 2) return null;
-  const utiles = alternativasUtiles(details);
+  const utiles = sinRepetidos(details);
   if (utiles.length < 2) return null;
-  if (!utiles.every(d => FORMA_POR_HORA[d.time_of_day])) return null;
-  // La hora tiene que ser la unica diferencia. Si no, esto no es una eleccion
-  // entre formas y se pinta como siempre.
-  const sinHora = new Set(utiles.map(({ time_of_day, ...resto }) => huella(resto)));
-  if (sinHora.size !== 1) return null;
-  return utiles.map(d => ({ sufijo: FORMA_POR_HORA[d.time_of_day], details: [d] }));
+
+  const reglas = FORMA_POR_CONDICION[`${deSpecies}->${aSpecies}`] || [];
+  const ramas = utiles.map(d => {
+    const regla = reglas.find(r => casaCondicion(r, d));
+    if (regla) return { details: [d], id: regla.forma };
+    if (d.region) return { details: [d], sufijo: d.region.name };
+    return { details: [d], id: aSpecies };
+  });
+
+  // Si todas acaban en el mismo sitio no es una eleccion de forma: son
+  // alternativas de verdad al mismo Pokemon (Vulpix con Piedra Fuego o Piedra
+  // Hielo llegaria aqui si no estuviera en la tabla) y se juntan con " o ".
+  const destinos = new Set(ramas.map(r => (r.id != null ? `id:${r.id}` : `s:${r.sufijo}`)));
+  return destinos.size > 1 ? ramas : null;
 }
 
 // details: array of alternative conditions. Returns '' when empty, which in
