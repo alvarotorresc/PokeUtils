@@ -4,15 +4,21 @@
 // browser applies heuristic caching to the ES modules and keeps executing the
 // previous code after an edit, with no error to show for it.
 //
-//   node scripts/serve.mjs [port]
+//   node scripts/serve.mjs [port] [raiz]
+//
+// La raiz por defecto es el repo, o sea el fuente sin minificar, que es lo que
+// se quiere mientras se programa. Pasando `dist` se sirve lo que va a producir
+// el build, que es la unica forma de comprobar en el navegador que el hash y el
+// modulepreload reescrito apuntan a donde deben.
 
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { dirname, extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const REPO = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = Number(process.argv[2]) || 8090;
+const ROOT = process.argv[3] ? join(REPO, process.argv[3]) : REPO;
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -52,4 +58,4 @@ createServer(async (req, res) => {
     // Decode errors (e.g., malformed percent-encoding) or other sync errors.
     res.writeHead(400).end('Bad request');
   }
-}).listen(PORT, () => console.log(`http://localhost:${PORT}`));
+}).listen(PORT, () => console.log(`http://localhost:${PORT}  (sirviendo ${ROOT === REPO ? "el fuente" : ROOT.split("/").pop()})`));

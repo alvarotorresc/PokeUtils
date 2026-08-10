@@ -1,5 +1,16 @@
-# Cabeceras y el proxy de sprites. La configuracion de build y publish sigue en
-# la interfaz de Netlify, y este fichero no debe pisarla.
+# Build y cabeceras.
+#
+# Aqui ponia que la configuracion de build y publish vivia en la interfaz de
+# Netlify y que este fichero no debia pisarla. Era cierto mientras no habia
+# build: el sitio se servia desde la raiz del repo. Desde que esbuild minifica y
+# pone hash en los nombres hay que publicar `dist/`, y este fichero manda sobre
+# la interfaz, asi que la configuracion vive aqui y no en dos sitios.
+#
+# Si el build falla, Netlify aborta el deploy y deja el anterior sirviendo: el
+# modo de fallo es "el sitio no se actualiza", no "el sitio se rompe".
+[build]
+  command = "npm run build"
+  publish = "dist"
 
 # Generated datasets change once per Pokemon generation. Serve them stale
 # while revalidating so navigation stays instant after the first visit.
@@ -34,3 +45,30 @@
   for = "/sprites/*"
   [headers.values]
     Cache-Control = "public, max-age=2592000, stale-while-revalidate=31536000"
+
+# El JS y el CSS llevan el hash del contenido en el nombre desde que hay build,
+# asi que cada version es OTRO fichero y no hay nada que revalidar: un ano y
+# `immutable`. Sin hash esto habria sido peligroso -- un deploy podia dejar a un
+# navegador con `app.js` viejo y `pokedex.js` nuevo, una app rota que ningun
+# check ve -- y por eso el hash iba primero y la cabecera despues.
+#
+# Antes salian con el `max-age=0, must-revalidate` que Netlify pone por defecto:
+# el CSS y los trece ficheros de JS revalidaban en cada visita.
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# El CSS hasheado queda en la raiz (`/style-1ec69220.css`), que no lo cubre
+# ningun patron de carpeta.
+[[headers]]
+  for = "/style-*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# El HTML es el unico que no puede cachearse: es quien dice cuales son los
+# nombres hasheados de esta version.
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

@@ -8,9 +8,18 @@ let currentLang = localStorage.getItem('pkutils_lang') || 'es';
 let onChangeCallbacks = [];
 const diccionarios = {};
 
+// Dos ramas explicitas y no un `import()` con plantilla: esbuild no puede
+// resolver una plantilla estaticamente, asi que con el build no sabria que hay
+// dos diccionarios y los dejaria fuera del reparto en trozos. Escrito asi, cada
+// uno es su propio trozo con su hash y se sigue bajando solo el que se usa.
+const CARGADORES = {
+  es: () => import('./i18n-es.js'),
+  en: () => import('./i18n-en.js'),
+};
+
 async function cargar(lang) {
   if (!diccionarios[lang]) {
-    diccionarios[lang] = (await import(`./i18n-${lang}.js`)).default;
+    diccionarios[lang] = (await (CARGADORES[lang] || CARGADORES.es)()).default;
   }
   return diccionarios[lang];
 }
