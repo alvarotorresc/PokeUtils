@@ -351,9 +351,14 @@ indexen — que es una razón de producto, no de rendimiento.
 diccionarios ya no viven ahí; el tercero llama a `setLang` sin `await` y esa
 función pasó a ser asíncrona.
 
-Comprobado que la app está bien: **533 claves en `i18n-es.js`, 533 en
+Comprobado que la app está bien: **550 claves en `i18n-es.js`, 550 en
 `i18n-en.js`, ninguna suelta**, y `app.js:65` no necesita `await` porque
 re-renderiza desde el callback de `onLangChange`.
+
+> Corregido el 2026-08-10: aquí decía 533, que es lo que cuenta un `grep` de
+> líneas con clave. Importando los dos módulos y contando `Object.keys` salen
+> 550 — hay claves que comparten línea. Son 552 desde `fix(calculadora)` y
+> `fix(pokedex)` de esa misma tarde.
 
 Arreglo de tres líneas, y conviene hacerlo antes de tocar nada más: un check en
 rojo que se da por normal deja de avisar de los de verdad.

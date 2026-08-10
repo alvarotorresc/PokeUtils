@@ -148,14 +148,16 @@ function alternativasUtiles(details) {
 //    lo mismo "y algo mas", asi que la region se tiraba antes de poder usarla.
 //    Por eso partir se intenta ANTES de ese filtro.
 //
-// 2. En 9 no esta en ningun campo, y PokeAPI tampoco lo publica en otro sitio:
-//    hay que escribirlo. Es la tabla de abajo.
+// 2. En 10 no esta en ningun campo, y PokeAPI tampoco lo publica en otro sitio:
+//    hay que escribirlo. Es la tabla de abajo. 10 + 12 son las 22 transiciones
+//    que se parten, que es lo que cuenta check-evolution.
 //
 // La tabla es explicita id -> id a proposito. Una regla del tipo "la forma que
-// no es la base" se equivocaria en cuatro de las nueve, porque esas especies
-// tienen formas que NO son destinos de evolucion: Mega-Slowbro, los Gigamax de
-// Urshifu, el Modo Daruma de Darmanitan y el Raticate Dominante. `check-evolution`
-// comprueba que cada id existe, es forma de esa especie y no es cosmetica.
+// no es la base" se equivocaria en cuatro de las diez (medido), porque esas
+// especies tienen formas que NO son destinos de evolucion: Mega-Slowbro, los
+// Gigamax de Urshifu, el Modo Daruma de Darmanitan y el Raticate Dominante.
+// `check-evolution` comprueba que cada id existe, es forma de esa especie y no
+// es cosmetica.
 const FORMA_POR_CONDICION = {
   // Rattata de Alola evoluciona de noche. 10093 es el Dominante, que no es
   // destino de evolucion sino un encuentro concreto.

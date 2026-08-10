@@ -1,4 +1,4 @@
-// Las 550 claves en ingles. Vivian junto a las del otro idioma dentro de
+// Las 552 claves en ingles. Vivian junto a las del otro idioma dentro de
 // i18n.js, y eso eran 14,1 KB gzip que el arranque bajaba siempre: la mitad
 // para un idioma que esa visita no iba a ver.
 export default {

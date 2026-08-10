@@ -1,4 +1,4 @@
-// Las 550 claves en espanol. Vivian junto a las del otro idioma dentro de
+// Las 552 claves en espanol. Vivian junto a las del otro idioma dentro de
 // i18n.js, y eso eran 14,1 KB gzip que el arranque bajaba siempre: la mitad
 // para un idioma que esa visita no iba a ver.
 export default {
@@ -24,7 +24,7 @@ export default {
     'speed.subtitle': 'Quién llega antes que un Pokémon elegido',
     'speed.search': 'Elige un Pokémon...',
     'speed.pick': 'Elige un Pokémon para ver quién le gana en velocidad.',
-    'speed.atlevel': 'A nivel {level}, comparando a máxima inversion en los dos lados',
+    'speed.atlevel': 'A nivel {level}, comparando a máxima inversión en los dos lados',
     'speed.spread.min': 'Sin invertir',
     'speed.spread.neutral': '31 IV, 0 EV',
     'speed.spread.invested': '252 EV neutro',
@@ -47,7 +47,7 @@ export default {
     'survive.no': 'No sobrevive',
     'survive.of': 'de',
     'survive.effectiveness': 'Efectividad',
-    'survive.assumption': 'Nivel {level}, atacante a máxima inversion, defensor sin invertir',
+    'survive.assumption': 'Nivel {level}, atacante a máxima inversión, defensor sin invertir',
     'survive.spread': 'EVs minimos para aguantarlo',
     'survive.needs': '{hp} EVs de PS y {def} de {stat} ({total} en total)',
     'survive.nothingneeded': 'Ninguno: ya lo aguanta sin invertir nada.',
@@ -90,7 +90,7 @@ export default {
     'egg.group.humanshape': 'Humanoide',
     'egg.group.mineral': 'Mineral',
     'egg.group.indeterminate': 'Amorfo',
-    'egg.group.dragon': 'Dragon',
+    'egg.group.dragon': 'Dragón',
     'egg.group.ditto': 'Ditto',
     'egg.group.no-eggs': 'Desconocido',
     'egg.title': 'Grupos huevo',
@@ -575,7 +575,7 @@ export default {
     'type.electric': 'Electr.', 'type.grass': 'Planta', 'type.ice': 'Hielo',
     'type.fighting': 'Lucha', 'type.poison': 'Veneno', 'type.ground': 'Tierra',
     'type.flying': 'Volador', 'type.psychic': 'Psíquic.', 'type.bug': 'Bicho',
-    'type.rock': 'Roca', 'type.ghost': 'Fantas.', 'type.dragon': 'Dragon',
+    'type.rock': 'Roca', 'type.ghost': 'Fantas.', 'type.dragon': 'Dragón',
     'type.dark': 'Siniestro', 'type.steel': 'Acero', 'type.fairy': 'Hada',
 
     // Stats

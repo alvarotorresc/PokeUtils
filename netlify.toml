@@ -17,8 +17,9 @@
 
 # Los sprites venian de raw.githubusercontent.com con max-age=300, o sea cinco
 # minutos: cada visita volvia a bajarse los treinta y dos de la portada desde un
-# tercer origen. Pasan por aqui para poder cachearlos como lo que son, imagenes
-# que no cambian: el sprite del numero 25 lleva siendo el mismo desde 1996.
+# tercer origen. Pasan por aqui para que la pagina hable con un solo origen: el
+# sprite del numero 25 lleva siendo el mismo desde 1996 y deberia cachearse como
+# lo que es.
 [[redirects]]
   from = "/sprites/*"
   to = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/:splat"
@@ -28,8 +29,12 @@
 [[headers]]
   for = "/sprites/*"
   [headers.values]
-    # Netlify no cachea de oficio lo que sale de un proxy, y sin esta linea cada
-    # visita cruzaria hasta GitHub otra vez. La de abajo es para el navegador; la
-    # de arriba, solo para el borde, que es quien tenia que dejar de viajar.
+    # OJO: este bloque hoy no hace nada, y el comentario que habia decia lo
+    # contrario. Netlify no aplica las cabeceras de este fichero a lo que sale de
+    # un redirect 200 hacia un origen externo -- medido en produccion: /sprites/*
+    # llega con las cabeceras de raw.githubusercontent.com, o sea con su
+    # max-age=300, no con estas. Se queda escrito porque es exactamente lo que
+    # haria falta el dia que los sprites se sirvan desde el propio sitio, que es
+    # la decision pendiente; mientras tanto, cada visita sigue cruzando a GitHub.
     Netlify-CDN-Cache-Control = "public, max-age=2592000, stale-while-revalidate=31536000"
     Cache-Control = "public, max-age=604800, stale-while-revalidate=2592000"
