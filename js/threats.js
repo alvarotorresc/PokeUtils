@@ -67,8 +67,15 @@ export function counters(team, list, level, meta = null) {
     const speed = topSpeed(attacker, level);
     rows.push({
       id: attacker.id,
-      name: attacker.nameEs,
+      // Los dos nombres y los dos campos de forma, no un nombre ya elegido: la
+      // fila la pinta counter.js, que es quien sabe en que idioma esta la app y
+      // el unico sitio donde spriteIdFor puede hacer su trabajo. Recortarlos
+      // aqui dejaba la lista en espanol con la app en ingles y pedia el sprite
+      // de las formas que no tienen uno.
+      nameEs: attacker.nameEs,
       nameEn: attacker.nameEn,
+      speciesId: attacker.speciesId,
+      noSprite: attacker.noSprite,
       hits,
       faster: memberSpeeds.filter(s => speed > s).length,
       power: offensivePower(attacker),

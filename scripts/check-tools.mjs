@@ -2,8 +2,9 @@
 // cada categoria tenga destino, y que ninguna etiqueta se quede sin traducir en
 // alguno de los dos idiomas.
 // Run with: node scripts/check-tools.mjs
-import { readFile } from 'node:fs/promises';
 import { CATEGORIES, TOOLS, toolsIn, categoryOf, targetOf } from '../js/tools.js';
+import es from '../js/i18n-es.js';
+import en from '../js/i18n-en.js';
 
 let failed = 0;
 
@@ -68,11 +69,13 @@ check('Calculadora abre su pagina de pestanas', targetOf('calculator'), '#/calcu
 
 console.log('\nTraducciones\n');
 
-const i18n = await readFile(new URL('../js/i18n.js', import.meta.url), 'utf8');
-
-// Cada clave tiene que aparecer dos veces: una por idioma. El home y los hubs
-// usan hub.<categoria>.title y .subtitle para LAS CUATRO categorias, calculadora
-// incluida, asi que entran todas en la cuenta.
+// Antes esto leia js/i18n.js en crudo y contaba cada clave dos veces, una por
+// idioma. Desde perf(i18n) los diccionarios son dos modulos aparte, asi que se
+// importan y se pregunta por la clave: mas directo y ya no se puede colar una
+// clave escrita dos veces en el mismo idioma.
+//
+// El home y los hubs usan hub.<categoria>.title y .subtitle para LAS CUATRO
+// categorias, calculadora incluida, asi que entran todas en la cuenta.
 const claves = [...new Set([
   // `tab` entra en la cuenta: es una etiqueta visible mas, y la regla es que
   // toda etiqueta nueva exista en los dos idiomas.
@@ -80,9 +83,12 @@ const claves = [...new Set([
   ...CATEGORIES.map(c => c.label),
   ...CATEGORIES.flatMap(c => [`hub.${c.id}.title`, `hub.${c.id}.subtitle`]),
 ])];
-const sinTraducir = claves.filter(k =>
-  (i18n.match(new RegExp(`'${k.replace(/\./g, '\\.')}'\\s*:`, 'g')) || []).length < 2);
+const sinTraducir = claves.filter(k => !(k in es) || !(k in en));
 check('toda clave existe en los dos idiomas', sinTraducir, []);
+// Los dos diccionarios se editan a mano y por separado: si uno gana una clave y
+// el otro no, t() devuelve la clave cruda en pantalla y no lo ve nadie.
+check('los dos diccionarios tienen las mismas claves',
+  [...Object.keys(es).filter(k => !(k in en)), ...Object.keys(en).filter(k => !(k in es))], []);
 
 console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);

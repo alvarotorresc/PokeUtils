@@ -4,12 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PokeUtils</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <!-- Las fuentes se descubrian dentro de style.css, o sea un salto despues.
+       Precargarlas aqui las pone a bajar en paralelo con la hoja de estilos. -->
+  <link rel="preload" href="fonts/press-start-2p-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/vt323-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
   <script defer src="https://analytics.alvarotc.com/script.js" data-website-id="55e0f212-eb38-4998-882b-cf73e5bb906c"></script>
+  <!-- El tema, antes de pintar. Lo ponia app.js, que es un modulo diferido: con
+       la portada ya en el HTML, quien tenga el tema claro veria el fondo oscuro
+       hasta que bajara el JS. Sincrono y en el head, no hay parpadeo. -->
+  <script>
+    try {
+      if (localStorage.getItem('pkutils_theme') === 'light')
+        document.documentElement.classList.add('light');
+      // Y el diccionario del idioma guardado, que i18n.js espera con un await de
+      // primer nivel: sin esto bajaria por detras de app.js en vez de a la vez, y
+      // el corte de i18n en dos habria costado mas de lo que ahorra. Se pide aqui
+      // y no con un <link> fijo para no traerse ademas el idioma que no se usa.
+      var l = document.createElement('link');
+      l.rel = 'modulepreload';
+      l.href = 'js/i18n-' + (localStorage.getItem('pkutils_lang') || 'es') + '.js';
+      document.head.appendChild(l);
+    } catch (e) {}
+  </script>
 </head>
 <body>
   <div class="scanlines"></div>
@@ -38,7 +56,26 @@
     </div>
   </nav>
 
-  <main class="main" id="app"></main>
+  <!-- La portada de la home viene pintada del servidor. #app estaba vacio, asi
+       que el <h1> (el LCP) no existia hasta que bajaba el JS: 1884 ms, y al
+       inyectarlo el footer ya pintado saltaba hacia abajo, 0,208 de CLS.
+       Los textos van en espanol, que es el idioma por defecto; si hay otro
+       guardado, renderHome los cambia sin mover el alto. -->
+  <main class="main fade-in" id="app" data-reservando>
+    <div class="swarm-wrap" data-shell>
+      <div class="swarm" aria-hidden="true"></div>
+      <div class="swarm-fg">
+        <h1>1351 Pok&eacute;mon.<br><span class="hl">16 herramientas.</span></h1>
+        <div class="swarm-search">
+          <span class="search-icon" aria-hidden="true">🔍</span>
+          <input type="search" id="globalSearch" autocomplete="off"
+                 placeholder="Busca un Pok&eacute;mon, un movimiento, un objeto..."
+                 aria-label="Busca un Pok&eacute;mon, un movimiento, un objeto...">
+        </div>
+        <div class="swarm-chips" id="swarmChips"></div>
+      </div>
+    </div>
+  </main>
 
   <footer class="footer">
     <p>Datos de <a href="https://pokeapi.co" target="_blank" rel="noopener">PokeAPI</a></p>

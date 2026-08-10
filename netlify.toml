@@ -1,9 +1,36 @@
-# Only headers here on purpose: the build and publish settings stay in the
-# Netlify UI, and this file must not override them.
+# Cabeceras y el proxy de sprites. La configuracion de build y publish sigue en
+# la interfaz de Netlify, y este fichero no debe pisarla.
 
 # Generated datasets change once per Pokemon generation. Serve them stale
 # while revalidating so navigation stays instant after the first visit.
+#
+# `/data/*` y no `/data/*.json`: desde build-dex.mjs hay 1025 ficheros en
+# data/dex/, y un splat de Netlify que no acaba en `*` no cruza directorios con
+# garantias. Todo lo que hay en data/ es JSON generado, asi que el patron ancho
+# cubre lo mismo y ademas lo nuevo.
 [[headers]]
-  for = "/data/*.json"
+  for = "/data/*"
   [headers.values]
     Cache-Control = "public, max-age=3600, stale-while-revalidate=604800"
+
+# Los woff2 llevan el subset en el nombre y no cambian nunca: si algun dia hay
+# otra version, sera otro fichero.
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Los sprites estan en el repo desde fetch-sprites.mjs. Antes salian de un
+# [[redirects]] 200 hacia raw.githubusercontent.com, y esta medido que Netlify NO
+# aplica las cabeceras de este fichero a lo que sale de un redirect externo:
+# llegaban con el max-age=300 de GitHub -- cinco minutos -- asi que cada visita
+# volvia a cruzar a por los 51 de la portada, y ademas a un tercer origen.
+#
+# Servidos desde el propio sitio, estas cabeceras si mandan. Un mes en el
+# navegador y un ano de stale-while-revalidate: el sprite del numero 25 lleva
+# siendo el mismo desde 1996, pero `immutable` dejaria a quien ya lo tenga sin
+# ver nunca una correccion, y esto la reparte en cuanto pase un mes.
+[[headers]]
+  for = "/sprites/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000, stale-while-revalidate=31536000"

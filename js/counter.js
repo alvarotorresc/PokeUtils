@@ -7,7 +7,7 @@ import { counters } from './threats.js';
 import { fetchPokemonList, fetchMeta } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
 import { defaultFormat } from './meta.js';
-import { loadingHTML, replaceQuery } from './app.js';
+import { loadingHTML, replaceQuery } from './ui.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
 import { t, pokeName } from './i18n.js';
@@ -65,7 +65,7 @@ export async function renderCounter(container, query = new URLSearchParams()) {
           ${result.rows.map(r => `
             <a class="ct-row" href="#/pokedex/${r.id}">
               <img src="${spriteUrl(spriteIdFor(r))}" alt="" loading="lazy">
-              <span class="ct-name">${r.name}</span>
+              <span class="ct-name">${pokeName(r)}</span>
               ${r.faster >= result.half ? `<span class="ct-fast" title="${t('counter.faster')}">⚡</span>` : ''}
               ${r.fromMeta ? `<span class="ct-meta" title="${t('meta.measured')}">📊</span>` : ''}
               <span class="ct-hits">${t('counter.hits', { n: r.hits })}</span>

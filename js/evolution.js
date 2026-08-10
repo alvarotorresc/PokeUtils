@@ -70,8 +70,11 @@ function conditionTexts(d, lang, lookups) {
   if (d.min_affection) out.push(t('evo.affection', { n: d.min_affection }));
   if (d.min_beauty) out.push(t('evo.beauty', { n: d.min_beauty }));
   if (d.time_of_day && TIME_KEYS[d.time_of_day]) out.push(t(TIME_KEYS[d.time_of_day]));
-  if (d.location) out.push(t('evo.at', { place: d.location[lang] || d.location.name }));
-  else if (d.region) out.push(t('evo.at', { place: d.region[lang] || d.region.name }));
+  // Por `named` y no por `d.region[lang]`: PokeAPI no traduce los nombres de
+  // region y devuelve `es: "alola"` en minuscula, asi que salia "en alola".
+  // `named` ya sabe caer al ingles cuando el español es el slug crudo.
+  if (d.location) out.push(t('evo.at', { place: named(d.location, lang) }));
+  else if (d.region) out.push(t('evo.at', { place: named(d.region, lang) }));
   if (d.known_move) out.push(t('evo.knowing', { move: named(d.known_move, lang) }));
   if (d.known_move_type) out.push(t('evo.knowingtype', { type: TYPE_NAMES_FULL[d.known_move_type] || d.known_move_type }));
   if (d.gender === 1) out.push(t('evo.female'));
@@ -119,15 +122,153 @@ function anade(extra, base) {
 // alternativas de verdad (Sandshrew evoluciona a nivel 22 o con Piedra Hielo) y
 // no las toca nadie.
 function alternativasUtiles(details) {
-  const unicas = [];
-  const vistas = new Set();
-  for (const d of details) {
-    const k = huella(d);
-    if (vistas.has(k)) continue;
-    vistas.add(k);
-    unicas.push(d);
-  }
+  const unicas = sinRepetidos(details);
   return unicas.filter(d => !unicas.some(otra => otra !== d && anade(d, otra)));
+}
+
+// ===== A QUE FORMA LLEVA CADA ALTERNATIVA =====
+//
+// PokeAPI mete todas las formas de una especie por el mismo hueco: Sandshrew
+// trae "Nv. 22" y "Piedra Hielo" como `species: 28` las dos, aunque la piedra
+// lleve al Sandslash de Alola. Sin separarlas la ficha dice que hay dos maneras
+// de evolucionar pero no a que lleva cada una.
+//
+// Hay dos grupos, y solo uno se deduce:
+//
+// 1. En 12 transiciones el dato ESTA: el detalle trae `region` ("Piedra Trueno"
+//    contra "Piedra Trueno en Alola"). Se resuelve solo, buscando la forma cuyo
+//    slug acaba en `-alola`. Ojo: `anade()` borraba justo ese detalle por decir
+//    lo mismo "y algo mas", asi que la region se tiraba antes de poder usarla.
+//    Por eso partir se intenta ANTES de ese filtro.
+//
+// 2. En 10 no esta en ningun campo, y PokeAPI tampoco lo publica en otro sitio:
+//    hay que escribirlo. Es la tabla de abajo. 10 + 12 son las 22 transiciones
+//    que se parten, que es lo que cuenta check-evolution.
+//
+// La tabla es explicita id -> id a proposito. Una regla del tipo "la forma que
+// no es la base" se equivocaria en cuatro de las diez (medido), porque esas
+// especies tienen formas que NO son destinos de evolucion: Mega-Slowbro, los
+// Gigamax de Urshifu, el Modo Daruma de Darmanitan y el Raticate Dominante.
+// `check-evolution` comprueba que cada id existe, es forma de esa especie y no
+// es cosmetica.
+const FORMA_POR_CONDICION = {
+  // Rattata de Alola evoluciona de noche. 10093 es el Dominante, que no es
+  // destino de evolucion sino un encuentro concreto.
+  '19->20': [{ hora: 'night', forma: 10092 }],
+  '27->28': [{ item: 'ice-stone', forma: 10102 }],
+  '37->38': [{ item: 'ice-stone', forma: 10104 }],
+  // Meowth de Alola evoluciona por amistad; el de Kanto, por nivel.
+  '52->53': [{ felicidad: true, forma: 10108 }],
+  // El Brazal lleva al Slowbro de Galar, no a la Mega (10071).
+  '79->80': [{ item: 'galarica-cuff', forma: 10165 }],
+  '79->199': [{ item: 'galarica-wreath', forma: 10172 }],
+  '100->101': [{ item: 'leaf-stone', forma: 10232 }],
+  // La Piedra Hielo lleva al Darmanitan de Galar, no al Modo Daruma (10017).
+  '554->555': [{ item: 'ice-stone', forma: 10177 }],
+  // Lycanroc: la hora decide. La diurna es la propia especie base, asi que solo
+  // hacen falta las otras dos.
+  '744->745': [{ hora: 'night', forma: 10126 }, { hora: 'dusk', forma: 10152 }],
+  // El Pergamino de Aguas da el Estilo Fluido, no su Gigamax (10227).
+  '891->892': [{ item: 'scroll-of-waters', forma: 10191 }],
+};
+
+function casaCondicion(regla, d) {
+  if (regla.hora) return d.time_of_day === regla.hora;
+  if (regla.item) return d.item?.name === regla.item;
+  if (regla.felicidad) return Boolean(d.min_happiness);
+  return false;
+}
+
+// Quita solo los duplicados exactos (Diglett trae "Nv. 26" dos veces), sin el
+// filtro de `anade`: al partir por formas el detalle "de mas" es justo el que
+// dice la forma. Es tambien el primer paso de `alternativasUtiles`, que antes
+// llevaba este mismo bucle copiado dentro.
+function sinRepetidos(details) {
+  const vistas = new Set();
+  return details.filter(d => {
+    const k = huella(d);
+    if (vistas.has(k)) return false;
+    vistas.add(k);
+    return true;
+  });
+}
+
+// Devuelve una rama por forma, o null si esta transicion no elige entre formas
+// y hay que pintarla como siempre, con las alternativas juntas por " o ".
+//
+// Cada rama trae `id` (id exacto, de la tabla o la especie base) o `sufijo` (el
+// slug a buscar, para el grupo de la region). Quien llama resuelve el sufijo,
+// que es quien tiene pokemon.json a mano.
+export function ramasDeEvolucion(deSpecies, aSpecies, details) {
+  if (!details || details.length < 2) return null;
+  const utiles = sinRepetidos(details);
+  if (utiles.length < 2) return null;
+
+  const reglas = FORMA_POR_CONDICION[`${deSpecies}->${aSpecies}`] || [];
+  const ramas = utiles.map(d => {
+    const regla = reglas.find(r => casaCondicion(r, d));
+    if (regla) return { details: [d], id: regla.forma };
+    if (d.region) return { details: [d], sufijo: d.region.name };
+    return { details: [d], id: aSpecies };
+  });
+
+  // Si todas acaban en el mismo sitio no es una eleccion de forma: son
+  // alternativas de verdad al mismo Pokemon (Vulpix con Piedra Fuego o Piedra
+  // Hielo llegaria aqui si no estuviera en la tabla) y se juntan con " o ".
+  const destinos = new Set(ramas.map(r => (r.id != null ? `id:${r.id}` : `s:${r.sufijo}`)));
+  return destinos.size > 1 ? ramas : null;
+}
+
+// ===== LO QUE LA FICHA LEE DEL ARBOL =====
+//
+// Aqui y no en pokedex-detail.js porque no hay DOM en ninguna de las tres, y
+// asi check-evolution puede importarlas: son justo las decisiones que se leen
+// mal en pantalla y bien en el codigo. `formaDe` y `nameOf` llegan como
+// parametros, que es el mismo reparto que ya usa `ramasDeEvolucion`: quien
+// llama tiene pokemon.json a mano.
+
+// Las ramas de una transicion ya resueltas a ids, o null si no elige entre
+// formas o alguna se queda sin resolver -- media division seria peor que dejarlo
+// como estaba.
+export function ramasResueltas(node, child, formaDe) {
+  const ramas = ramasDeEvolucion(node.species, child.species, child.details);
+  if (!ramas) return null;
+  const resueltas = ramas
+    .map(r => ({ ...r, id: r.id ?? formaDe(child.species, r.sufijo) }))
+    .filter(r => r.id);
+  return resueltas.length === ramas.length ? resueltas : null;
+}
+
+// El texto de una rama que no se parte. Cuando las alternativas SI llevan a
+// formas distintas pero el destino sigue evolucionando, `evolutionText` se
+// quedaba con la mas general y tiraba la region: Goomy salia con un "Nv. 40" a
+// secas y la ficha no daba ninguna pista de que en Hisui eso lleva a otra forma.
+// Son 2 de las 22 transiciones que eligen forma -- la otra es Mime Jr.
+export function textoDeRama(child, resueltas, nameOf, lang, lookups) {
+  if (!resueltas) return evolutionText(child.details, lang, lookups);
+  const separador = lang === 'es' ? ' o ' : ' or ';
+  return resueltas.map(r => {
+    const texto = evolutionText(r.details, lang, lookups);
+    // La rama que lleva a la especie base ya se explica sola: nombrarla seria
+    // repetir el nodo al que la propia rama esta apuntando.
+    return r.id === child.species ? texto : `${texto} ${t('evo.toform', { form: nameOf(r.id) })}`;
+  }).join(separador);
+}
+
+// Que nodo lleva el marco de "estas aqui". La pestana abierta puede ser una
+// forma, y la ficha pasaba siempre la especie: mirando a Lycanroc Nocturno el
+// marco se lo quedaba la rama diurna, que es otra pestana.
+//
+// Manda la forma cuando el arbol la pinta como nodo propio; cuando no la pinta
+// -- Mega-Charizard X no sale en la linea de Charmander -- se marca la especie,
+// que es el nodo donde esa forma vive.
+export function nodoActual(root, dexId, formId, formaDe) {
+  if (formId === dexId) return dexId;
+  const enElArbol = (node) => node.evolvesTo.some(child =>
+    (child.evolvesTo.length === 0
+      && ramasResueltas(node, child, formaDe)?.some(r => r.id === formId))
+    || enElArbol(child));
+  return enElArbol(root) ? formId : dexId;
 }
 
 // details: array of alternative conditions. Returns '' when empty, which in

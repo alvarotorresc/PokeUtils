@@ -11,8 +11,9 @@ import {
   WEATHER, TERRAIN, SCREENS, DAMAGE_ITEMS, DAMAGE_ABILITIES,
 } from './battle-data.js';
 import { FIELDS, VP_FIELDS, encodeDamageState, decodeDamageState } from './damage-url.js';
-import { replaceQuery } from './app.js';
+import { replaceQuery } from './ui.js';
 import { t, getLang, pokeName, categoryName, typeName } from './i18n.js';
+import { spriteIdFor } from './forms.js';
 
 // A neutral, average-ish pair so the panel shows a real number before the user
 // touches anything.
@@ -171,7 +172,7 @@ export function renderDamage(container, query) {
     selected.style.display = '';
     selected.innerHTML = `
       <div class="dmg-chosen">
-        <img src="${spriteUrl(poke.id)}" alt="${pokeName(poke)}">
+        <img src="${spriteUrl(spriteIdFor(poke))}" alt="${pokeName(poke)}">
         <div>
           <div class="dmg-chosen-name">${pokeName(poke)}</div>
           <div class="dmg-chosen-types">${poke.types.map(ty => TYPE_NAMES_FULL[ty]).join(' / ')}</div>
@@ -198,7 +199,7 @@ export function renderDamage(container, query) {
           results.style.display = '';
           results.innerHTML = found.length ? found.map(p => `
             <div class="card card-clickable dmg-hit" data-id="${p.id}">
-              <img src="${spriteUrl(p.id)}" alt="${pokeName(p)}">
+              <img src="${spriteUrl(spriteIdFor(p))}" alt="${pokeName(p)}">
               <span>${pokeName(p)}</span>
             </div>
           `).join('') : `<div style="font-size:0.46rem;color:var(--ink-2);padding:8px">${t('calc.notfound')}</div>`;
@@ -570,7 +571,11 @@ export function renderDamage(container, query) {
         hp: defenderHPMax,
       },
       move: {
-        type: resolved.overrideType || (zForm ? move.type : move.type),
+        // Sin rama para el movimiento Z: `toZMove` solo sube la potencia, y el
+        // Z conserva el tipo del movimiento del que sale -- Z_MOVES se indexa
+        // justo por ese tipo. Antes esto era un ternario con las dos ramas
+        // identicas, que se leia como si faltara algo.
+        type: resolved.overrideType || move.type,
         category: move.category,
         power: resolved.power,
       },
@@ -649,11 +654,16 @@ export function renderDamage(container, query) {
     }
 
     const pct = `${r.pctMin.toFixed(1)}% - ${r.pctMax.toFixed(1)}%`;
+    // Tres ramas y no dos: con cinco golpes o mas la probabilidad no se calcula
+    // (la convolucion cuesta), asi que se dice en cuantos golpes cae en el mejor
+    // de los casos y no se inventa un porcentaje.
     const koText = r.koIn === null
       ? t('dmg.noko')
       : r.guaranteed
         ? t('dmg.ko.guaranteed').replace('{n}', r.koIn)
-        : t('dmg.ko.chance').replace('{n}', r.koIn).replace('{pct}', (r.koChance * 100).toFixed(1));
+        : r.koChance === null
+          ? t('dmg.ko.best').replace('{n}', r.koIn)
+          : t('dmg.ko.chance').replace('{n}', r.koIn).replace('{pct}', (r.koChance * 100).toFixed(1));
 
     // The colour tracks how much of the bar the hit takes, not the raw number.
     const share = Math.min(r.pctMax, 100);

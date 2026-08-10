@@ -15,10 +15,10 @@ export const TYPE_NAMES = {
 };
 
 export const TYPE_NAMES_FULL = {
-  normal: 'Normal', fire: 'Fuego', water: 'Agua', electric: 'Electrico',
+  normal: 'Normal', fire: 'Fuego', water: 'Agua', electric: 'Eléctrico',
   grass: 'Planta', ice: 'Hielo', fighting: 'Lucha', poison: 'Veneno',
-  ground: 'Tierra', flying: 'Volador', psychic: 'Psiquico', bug: 'Bicho',
-  rock: 'Roca', ghost: 'Fantasma', dragon: 'Dragon', dark: 'Siniestro',
+  ground: 'Tierra', flying: 'Volador', psychic: 'Psíquico', bug: 'Bicho',
+  rock: 'Roca', ghost: 'Fantasma', dragon: 'Dragón', dark: 'Siniestro',
   steel: 'Acero', fairy: 'Hada'
 };
 
@@ -90,12 +90,17 @@ export const STAT_COLORS = {
 };
 
 // Sprite URL helpers
+//
+// Los sprites salian directos de raw.githubusercontent.com, que los sirve con
+// cache-control: max-age=300. Cinco minutos: cualquier visita posterior volvia
+// a bajarse los treinta y dos de la portada, ademas de abrir conexion a un
+// tercer origen. Pasan por /sprites, que netlify.toml cachea un ano.
 export function spriteUrl(id) {
-  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+  return `/sprites/pokemon/${id}.png`;
 }
 
 export function itemSpriteUrl(name) {
-  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${name}.png`;
+  return `/sprites/items/${name}.png`;
 }
 
 // Category translations
@@ -108,13 +113,13 @@ export const CATEGORY_NAMES = {
 // PokeAPI exposes no localized names at the version group level, so they live
 // here. Only the ones the learnset builder can pick are listed.
 export const VERSION_GROUP_NAMES = {
-  'scarlet-violet': 'Escarlata/Purpura',
+  'scarlet-violet': 'Escarlata/Púrpura',
   'brilliant-diamond-shining-pearl': 'Diamante Brillante/Perla Reluciente',
   'legends-arceus': 'Leyendas: Arceus',
   'sword-shield': 'Espada/Escudo',
   'ultra-sun-ultra-moon': 'Ultrasol/Ultraluna',
   'sun-moon': 'Sol/Luna',
-  'omega-ruby-alpha-sapphire': 'Rubi Omega/Zafiro Alfa',
+  'omega-ruby-alpha-sapphire': 'Rubí Omega/Zafiro Alfa',
   'x-y': 'X/Y',
   'black-2-white-2': 'Negro 2/Blanco 2',
   'black-white': 'Negro/Blanco',
@@ -123,7 +128,7 @@ export const VERSION_GROUP_NAMES = {
   'diamond-pearl': 'Diamante/Perla',
   'emerald': 'Esmeralda',
   'firered-leafgreen': 'Rojo Fuego/Verde Hoja',
-  'ruby-sapphire': 'Rubi/Zafiro',
+  'ruby-sapphire': 'Rubí/Zafiro',
   'crystal': 'Cristal',
   'gold-silver': 'Oro/Plata',
   'yellow': 'Amarillo',

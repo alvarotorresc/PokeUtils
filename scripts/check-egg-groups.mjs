@@ -7,6 +7,8 @@
 // Run with: node scripts/check-egg-groups.mjs
 import { readFile } from 'node:fs/promises';
 import { EGG_GROUPS, canBreed, membersOf, groupCounts, hasEggData, partnersOf } from '../js/egg-groups.js';
+import es from '../js/i18n-es.js';
+import en from '../js/i18n-en.js';
 
 const pokemon = JSON.parse(await readFile(new URL('../data/pokemon.json', import.meta.url), 'utf8'));
 const byId = id => pokemon.find(p => p.id === id);
@@ -101,9 +103,11 @@ check('Mewtwo con nadie', partnersOf(mewtwo, pokemon).length, 0);
 
 console.log('\nTraducciones\n');
 
-const i18n = await readFile(new URL('../js/i18n.js', import.meta.url), 'utf8');
+// Antes leia js/i18n.js en crudo contando cada clave dos veces, una por idioma.
+// Desde perf(i18n) cada diccionario es su propio modulo: se importan y se
+// pregunta por la clave.
 const sinTraducir = EGG_GROUPS.filter(g =>
-  (i18n.match(new RegExp(`'egg\\.group\\.${g.replace(/-/g, '\\-')}'\\s*:`, 'g')) || []).length < 2);
+  !(`egg.group.${g}` in es) || !(`egg.group.${g}` in en));
 check('los 15 grupos existen en los dos idiomas', sinTraducir, []);
 
 console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');

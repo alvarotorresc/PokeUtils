@@ -135,6 +135,14 @@ checkTrue('odds strictly between 0 and 1', coinFlip.koChance > 0 && coinFlip.koC
 // The odds must be a multiple of 1/16 for a single hit.
 checkTrue('single-hit odds are n/16', Math.abs(coinFlip.koChance * 16 - Math.round(coinFlip.koChance * 16)) < 1e-9);
 
+// Pasados los cuatro golpes la convolucion no se paga y la probabilidad no se
+// calcula: sale como null, que es lo que la pagina necesita para no imprimir un
+// porcentaje. Devolver 1 se pintaba como "KO en 5 el 100.0% de las veces".
+const cinco = calcDamage({ ...base, defenderHP: plain.max * 4 + 1 });
+check('KO en cinco golpes con los mejores rolls', cinco.koIn, 5);
+check('y sin probabilidad, porque no se ha calculado', cinco.koChance, null);
+checkTrue('con cuatro si se calcula', calcDamage({ ...base, defenderHP: plain.max * 4 }).koChance > 0);
+
 console.log('\nModifier tables\n');
 
 const fight = (over = {}) => resolveDamage({

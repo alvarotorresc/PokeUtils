@@ -13,7 +13,7 @@ import { renderIvEv } from './calc-ivev.js';
 import { renderCapture } from './calc-capture.js';
 import { renderDamage } from './calc-damage.js';
 import { t } from './i18n.js';
-import { replaceQuery } from './app.js';
+import { replaceQuery } from './ui.js';
 
 const TABS = [
   { id: 'ivev', label: 'calc.tab.ivev', title: 'calc.title', subtitle: 'calc.subtitle', render: renderIvEv },

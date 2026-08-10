@@ -1,7 +1,7 @@
 // ===== ITEMS PAGE =====
 import { itemSpriteUrl } from './data.js';
-import { fetchItems } from './api.js';
-import { loadingHTML, renderPagination } from './app.js';
+import { fetchItems, fetchItemDescriptions } from './api.js';
+import { loadingHTML, renderPagination } from './ui.js';
 import { t, pokeName, getLang } from './i18n.js';
 
 const PAGE_SIZE = 48;
@@ -18,6 +18,16 @@ const CATEGORY_MAP = {
   'key': 'cat.items-key',
 };
 
+// Un solo listener para toda la sesion, y cada render dice a quien cerrar.
+// Registrado dentro de renderItems y sin quitarlo nunca, cada visita a #/items
+// dejaba uno mas, y el closure de cada uno retenia entero el DOM de su visita:
+// no cambiaba el comportamiento -- los viejos veian su modal cerrado -- pero no
+// se liberaba nada. tooltip.js ya resuelve lo mismo asi.
+let cerrarModalAbierto = null;
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') cerrarModalAbierto?.();
+});
+
 export function renderItems(container, query = new URLSearchParams()) {
   let currentPage = 1;
   // An item has no page of its own, so the global search opens this list already
@@ -26,7 +36,8 @@ export function renderItems(container, query = new URLSearchParams()) {
   let catFilter = '';
   let allItems = null;
   let categories = [];
-  let modalOpen = false;
+  // Se baja al abrir el primer objeto y se queda para el resto de la visita.
+  let descripciones = null;
 
   container.innerHTML = `
     <div class="page-header">
@@ -83,7 +94,7 @@ export function renderItems(container, query = new URLSearchParams()) {
   }
 
   function showModal(item) {
-    modalOpen = true;
+    cerrarModalAbierto = closeModal;
     const catLabel = CATEGORY_MAP[item.category] ? t(CATEGORY_MAP[item.category]) : item.category;
     modal.innerHTML = `
       <div class="modal-overlay" id="itModalOverlay">
@@ -97,7 +108,7 @@ export function renderItems(container, query = new URLSearchParams()) {
           <h3 style="font-size:0.55rem;color:var(--accent-text);text-align:center;margin-bottom:4px">${pokeName(item)}</h3>
           <div style="font-size:0.44rem;color:var(--ink-3);text-align:center;margin-bottom:16px">${item.name}</div>
           ${catLabel ? `<div style="font-size:0.44rem;color:var(--ink-3);text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">${catLabel}</div>` : ''}
-          <div style="font-size:0.48rem;color:var(--ink-2);line-height:2;text-align:center">${(getLang() === 'es' ? item.descriptionEs : item.descriptionEn) || t('items.nodesc')}</div>
+          <div id="itModalDesc" style="font-size:0.48rem;color:var(--ink-2);line-height:2;text-align:center">${descripcionDe(item)}</div>
         </div>
       </div>
     `;
@@ -105,16 +116,37 @@ export function renderItems(container, query = new URLSearchParams()) {
     modal.querySelector('#itModalOverlay').onclick = (e) => {
       if (e.target === e.currentTarget) closeModal();
     };
+    pintarDescripcion(item);
+  }
+
+  // El texto ya no viaja en items.json: son 57,2 KB gz que solo hacen falta al
+  // abrir un objeto, y la lista ensena una descripcion a la vez.
+  function descripcionDe(item) {
+    const par = descripciones?.[item.id];
+    // El item lleva su texto dentro si el navegador tiene un items.json de antes
+    // del cambio -- netlify.toml lo deja cachear una hora con una semana de
+    // stale-while-revalidate -- asi que se mira antes de rendirse.
+    const propio = getLang() === 'es' ? item.descriptionEs : item.descriptionEn;
+    const bajado = par && (getLang() === 'es' ? par[0] : par[1]);
+    return bajado || propio || t('items.nodesc');
+  }
+
+  async function pintarDescripcion(item) {
+    if (descripciones) return;
+    try {
+      descripciones = await fetchItemDescriptions();
+    } catch {
+      return; // se queda el "sin descripcion": el modal no se cae por esto
+    }
+    // Puede haberse cerrado, o haberse abierto otro, mientras bajaba.
+    const hueco = modal.querySelector('#itModalDesc');
+    if (hueco && cerrarModalAbierto) hueco.textContent = descripcionDe(item);
   }
 
   function closeModal() {
-    modalOpen = false;
+    cerrarModalAbierto = null;
     modal.innerHTML = '';
   }
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modalOpen) closeModal();
-  });
 
   async function loadAll() {
     if (allItems) return;

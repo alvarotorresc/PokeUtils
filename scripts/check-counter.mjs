@@ -4,7 +4,7 @@
 // Run with: node scripts/check-counter.mjs
 import { readFile } from 'node:fs/promises';
 import { threatensMember, counters } from '../js/threats.js';
-import { competitiveList, isCosmetic } from '../js/forms.js';
+import { competitiveList, isCosmetic, spriteIdFor } from '../js/forms.js';
 import { checksOf } from '../js/meta.js';
 
 // Filtrado igual que la pagina: las especies mas las formas que cambian algo.
@@ -43,8 +43,19 @@ check('amenazan a la mitad o mas', r2.total, 274);
 // Zekrom pasa a segundo sin perder nada: Mega-Ampharos amenaza a los mismos 5
 // miembros y desempata por poder, 165 de ataque especial contra sus 150. Es la
 // razon de meter las formas aqui -- la amenaza real estaba fuera de la lista.
-check('el primero es el de mas amenazas y mas poder', r2.rows[0].name, 'Mega-Ampharos');
-check('y Zekrom sigue justo detras', r2.rows[1].name, 'Zekrom');
+check('el primero es el de mas amenazas y mas poder', r2.rows[0].nameEs, 'Mega-Ampharos');
+check('y Zekrom sigue justo detras', r2.rows[1].nameEs, 'Zekrom');
+// Los dos idiomas viajan en la fila porque la lista salia en espanol con la app
+// en ingles: la proyeccion elegia el nombre, que es cosa del render.
+check('la fila lleva tambien el nombre en ingles', r2.rows[0].nameEn, 'Mega Ampharos');
+// Y con ellos los dos campos que resuelven el sprite, con un caso que los usa:
+// contra Charmander solo, la lista trae a Zygarde Mega, una de las tres formas
+// sin sprite propio que llegan hasta aqui. Sin speciesId ni noSprite en la fila,
+// spriteIdFor devolvia 10301 y la pagina pedia un fichero que no existe.
+const soloCharmander = counters([byId(4)], pokemon, 50);
+const zygardeMega = soloCharmander.rows.find(r => r.id === 10301);
+check('Zygarde Mega amenaza a Charmander', Boolean(zygardeMega), true);
+check('y pide prestado el sprite de Zygarde', spriteIdFor(zygardeMega), 718);
 check('ninguna cosmetica en la lista',
   pokemon.filter(p => p.speciesId && isCosmetic(p, pokemon.find(s => s.id === p.speciesId))).length, 0);
 check('ordenado por amenazas y luego por poder',

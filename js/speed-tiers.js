@@ -31,7 +31,17 @@ export function speedTiers(p, list, level) {
   const mine = maxSpeed(p, level);
   const others = list
     .filter(other => other.id !== p.id)
-    .map(other => ({ id: other.id, name: other.nameEs, nameEn: other.nameEn, speed: maxSpeed(other, level) }));
+    // Los dos nombres y los dos campos de forma viajan enteros: speed.js elige
+    // el idioma con pokeName y resuelve el sprite con spriteIdFor, y ninguna de
+    // las dos cosas puede hacerse con un nombre ya elegido aqui.
+    .map(other => ({
+      id: other.id,
+      nameEs: other.nameEs,
+      nameEn: other.nameEn,
+      speciesId: other.speciesId,
+      noSprite: other.noSprite,
+      speed: maxSpeed(other, level),
+    }));
 
   const faster = others.filter(o => o.speed > mine).sort((a, b) => a.speed - b.speed);
   // Ties are their own thing and are counted apart: at equal speed the turn is

@@ -7,7 +7,7 @@ import { fetchMeta, fetchPokemonList, fetchMetaNames } from './api.js';
 import { FORMATS, MONTH, defaultFormat, metaSetOf, metaName, metaLink, usageRanking } from './meta.js';
 import { spriteUrl, STAT_KEYS, NATURES } from './data.js';
 import { spriteIdFor } from './forms.js';
-import { loadingHTML, replaceQuery } from './app.js';
+import { loadingHTML, replaceQuery } from './ui.js';
 import { getLevel } from './level.js';
 import { t, pokeName, typeName, statName, getLang, natureName } from './i18n.js';
 

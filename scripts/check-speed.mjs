@@ -2,7 +2,7 @@
 // Run with: node scripts/check-speed.mjs
 import { readFile } from 'node:fs/promises';
 import { speedSpread, speedTiers } from '../js/speed-tiers.js';
-import { competitiveList, isCosmetic } from '../js/forms.js';
+import { competitiveList, isCosmetic, spriteIdFor } from '../js/forms.js';
 
 // Filtrado igual que la pagina: las 1025 especies mas las 234 formas que
 // cambian algo, sin las 92 cosmeticas. Charizard Gigamax corre exactamente como
@@ -50,6 +50,21 @@ check('los empatados encabezan la lista de abajo',
   tiers.below[0].speed, tiers.mine);
 check('el propio Pokemon no se lista',
   [...tiers.above, ...tiers.below].some(o => o.id === charizard.id), false);
+// La fila no elige el nombre ni resuelve el sprite: los dos idiomas y los dos
+// campos de forma viajan enteros hasta speed.js. Recortarlos dejaba la lista en
+// espanol con la app en ingles y a spriteIdFor sin nada que mirar.
+check('las filas llevan los dos nombres',
+  [...tiers.above, ...tiers.below].every(o => o.nameEs && o.nameEn), true);
+// Con un caso que lo usa: entre los vecinos de Dugtrio esta el Pikachu de Let's
+// Go, una de las once formas sin sprite propio. Sin speciesId ni noSprite en la
+// fila, spriteIdFor devolvia 10158 y la pagina pedia un fichero que no existe.
+const vecinosDugtrio = (() => {
+  const t = speedTiers(byId(51), pokemon, 50);
+  return [...t.above, ...t.below];
+})();
+const pikachuLetsGo = vecinosDugtrio.find(o => o.id === 10158);
+check('el Pikachu de Let\'s Go corre cerca de Dugtrio', Boolean(pikachuLetsGo), true);
+check('y pide prestado el sprite de Pikachu', spriteIdFor(pikachuLetsGo), 25);
 
 console.log('\nEl mas rapido del juego\n');
 

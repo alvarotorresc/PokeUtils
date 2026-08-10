@@ -3,12 +3,12 @@
 // Until now every page had its own search box and none of them crossed domains.
 // This one searches Pokemon, moves, abilities and items at once.
 //
-// Loading is lazy because of weight: the four datasets are ~1.5MB and the home
-// page cannot pay for them just in case. pokemon.json arrives on focus and the
-// other three on the first character typed. loadDataset already memoises, so
-// asking twice costs nothing.
+// Se carga al enfocar y no al arrancar: la portada no puede pagar el indice por
+// si acaso. Antes eran los cuatro datasets enteros (267,9 KB gz) en dos tandas,
+// para leer cuatro campos de cada registro; desde build-search.mjs es un solo
+// fichero de 80,5 KB gz, asi que ya no hace falta pintar a medias y repintar.
 import { searchAll } from './search-index.js';
-import { fetchPokemonList, fetchMoves, fetchAbilities, fetchItems } from './api.js';
+import { fetchSearchIndex } from './api.js';
 import { getLang, t } from './i18n.js';
 
 const KIND_KEY = {
@@ -67,18 +67,8 @@ export function attachGlobalSearch(input, alGuardar) {
     if (fila) recordar(+fila.dataset.i);
   });
 
-  async function loadPokemon() {
-    if (!datasets.pokemon) datasets.pokemon = await fetchPokemonList();
-  }
-
-  async function loadRest() {
-    if (datasets.moves) return;
-    // machines.json ya no se pide: era solo para cruzar cada MT con el
-    // movimiento que ensena, y las MT han salido del indice.
-    const [moves, abilities, items] = await Promise.all([
-      fetchMoves(), fetchAbilities(), fetchItems(),
-    ]);
-    Object.assign(datasets, { moves, abilities, items });
+  async function loadIndex() {
+    if (!datasets.pokemon) Object.assign(datasets, await fetchSearchIndex());
   }
 
   function draw(results) {
@@ -100,17 +90,15 @@ export function attachGlobalSearch(input, alGuardar) {
       draw([]);
       return;
     }
-    // Draw with whatever is here and draw again when the rest lands: at 1.5MB,
-    // waiting for all four leaves the panel blank for a few hundred
-    // milliseconds on an ordinary connection.
-    await loadPokemon();
+    // De una sola vez: con los cuatro datasets habia que pintar con Pokemon y
+    // repintar al llegar el resto, porque esperar a 1,5 MB dejaba el panel en
+    // blanco unos cientos de milisegundos. Un fichero de 80,5 KB gz no.
+    await loadIndex();
     if (input.value.trim() !== term) return;
     draw(searchAll(datasets, term, 8, getLang()));
-    await loadRest();
-    if (input.value.trim() === term) draw(searchAll(datasets, term, 8, getLang()));
   }
 
-  input.addEventListener('focus', loadPokemon, { once: true });
+  input.addEventListener('focus', loadIndex, { once: true });
 
   input.addEventListener('input', () => {
     clearTimeout(timer);

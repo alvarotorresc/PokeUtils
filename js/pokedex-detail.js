@@ -1,8 +1,8 @@
 // ===== POKEMON DETAIL =====
 import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, TYPE_NAMES_FULL, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, NATURES } from './data.js';
-import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchLearnsets, fetchMoves } from './api.js';
-import { loadingHTML, renderError } from './app.js';
-import { evolutionText } from './evolution.js';
+import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchDex } from './api.js';
+import { loadingHTML, renderError, hostDeRuta } from './ui.js';
+import { evolutionText, ramasResueltas, textoDeRama, nodoActual } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
 import { rangeAt100 } from './stats.js';
 import { partnersOf, hasEggData } from './egg-groups.js';
@@ -19,11 +19,15 @@ function displayName(entry) {
   return entry.nameEs !== entry.name ? entry.nameEs : (entry.nameEn || entry.name);
 }
 
-function evoNodeHTML(species, currentId, nameOf) {
+// `dex` va aparte porque una forma tiene id propio para el sprite y el enlace
+// (10126 es Lycanroc Nocturno) pero NO tiene numero de Pokedex: ese lo posee la
+// especie, igual que en la cabecera de la ficha. Sin esto salia "#10126", que
+// no es un numero que exista en ninguna Pokedex.
+function evoNodeHTML(species, currentId, nameOf, dex = species) {
   const isCurrent = species === currentId;
   const inner = `
     <img src="${spriteUrl(species)}" alt="${nameOf(species)}" loading="lazy">
-    <span class="evo-dex">#${String(species).padStart(4, '0')}</span>
+    <span class="evo-dex">#${String(dex).padStart(4, '0')}</span>
     <span class="evo-name">${nameOf(species)}</span>
   `;
   return isCurrent
@@ -31,22 +35,49 @@ function evoNodeHTML(species, currentId, nameOf) {
     : `<a class="evo-node" href="#/pokedex/${species}">${inner}</a>`;
 }
 
-function evoTreeHTML(node, currentId, nameOf, lang, lookups) {
+const evoBranchHTML = (condicion, destino) => `
+  <div class="evo-branch">
+    <span class="evo-arrow">
+      <span class="evo-cond">${condicion || '&nbsp;'}</span>
+      <span class="evo-tip">▶</span>
+    </span>
+    ${destino}
+  </div>
+`;
+
+// Una rama por forma cuando las alternativas llevan a formas distintas de la
+// misma especie: Sandshrew sube de nivel al Sandslash de Kanto y con Piedra
+// Hielo al de Alola, pero PokeAPI mete los dos por el mismo hueco. Sin esto la
+// ficha dice que hay dos maneras de evolucionar y apunta las dos al mismo
+// sprite.
+//
+// Se divide solo si el destino no evoluciona mas: una rama que se coma un
+// subarbol seria peor que dejarlo como estaba. Lo que se sabe de las formas no
+// se tira por eso -- si no se parte, va al texto de la rama unica.
+function evoBranchesHTML(node, child, currentId, nameOf, lang, lookups, formaDe) {
+  const resueltas = ramasResueltas(node, child, formaDe);
+
+  if (!resueltas || child.evolvesTo.length > 0) {
+    return evoBranchHTML(
+      textoDeRama(child, resueltas, nameOf, lang, lookups),
+      evoTreeHTML(child, currentId, nameOf, lang, lookups, formaDe),
+    );
+  }
+  return resueltas.map(r => evoBranchHTML(
+    evolutionText(r.details, lang, lookups),
+    evoNodeHTML(r.id, currentId, nameOf, child.species),
+  )).join('');
+}
+
+function evoTreeHTML(node, currentId, nameOf, lang, lookups, formaDe) {
   const children = node.evolvesTo;
   if (children.length === 0) return evoNodeHTML(node.species, currentId, nameOf);
   return `
     <div class="evo-step">
       ${evoNodeHTML(node.species, currentId, nameOf)}
       <div class="evo-branches">
-        ${children.map(child => `
-          <div class="evo-branch">
-            <span class="evo-arrow">
-              <span class="evo-cond">${evolutionText(child.details, lang, lookups) || '&nbsp;'}</span>
-              <span class="evo-tip">▶</span>
-            </span>
-            ${evoTreeHTML(child, currentId, nameOf, lang, lookups)}
-          </div>
-        `).join('')}
+        ${children.map(child =>
+          evoBranchesHTML(node, child, currentId, nameOf, lang, lookups, formaDe)).join('')}
       </div>
     </div>
   `;
@@ -54,7 +85,7 @@ function evoTreeHTML(node, currentId, nameOf, lang, lookups) {
 
 // A failure loading evolutions must not take down the whole detail page: this
 // section shows its own error with a retry and the rest stays up.
-async function renderEvolutionSection(host, currentId) {
+async function renderEvolutionSection(host, dexId, formId = dexId) {
   host.innerHTML = loadingHTML();
   try {
     // Only two datasets: item and move names are already resolved inside
@@ -64,7 +95,8 @@ async function renderEvolutionSection(host, currentId) {
       fetchEvolutions(), fetchPokemonList(),
     ]);
 
-    const chainId = evolutions.bySpecies[currentId];
+    // La cadena es la de la especie: una forma no tiene linea evolutiva propia.
+    const chainId = evolutions.bySpecies[dexId];
     const root = chainId != null ? evolutions.chains[chainId] : null;
     if (!root || root.evolvesTo.length === 0) {
       host.innerHTML = `<p class="evo-none">${t('evo.none')}</p>`;
@@ -80,20 +112,30 @@ async function renderEvolutionSection(host, currentId) {
       type: slug => TYPE_NAMES_FULL[slug] || slug,
     };
 
-    host.innerHTML = `<div class="evo-line">${evoTreeHTML(root, currentId, nameOf, getLang(), lookups)}</div>`;
+    // Por el sufijo del slug y no por una tabla de ids: la especie 745 ya se
+    // llama `lycanroc-midday`, asi que la forma diurna se encuentra igual que
+    // las otras dos y no hay ningun numero que mantener a mano.
+    const formaDe = (species, sufijo) => {
+      const entrada = byId.get(species);
+      if (!entrada) return null;
+      const candidatos = [entrada, ...formsOf(species, allPokemon)];
+      return candidatos.find(p => p.name.endsWith(`-${sufijo}`))?.id || null;
+    };
+
+    const currentId = nodoActual(root, dexId, formId, formaDe);
+    host.innerHTML = `<div class="evo-line">${evoTreeHTML(root, currentId, nameOf, getLang(), lookups, formaDe)}</div>`;
   } catch (err) {
-    renderError(host, err, () => renderEvolutionSection(host, currentId));
+    renderError(host, err, () => renderEvolutionSection(host, dexId, formId));
   }
 }
 
 // ===== LEARNED MOVES =====
 //
 // La seccion se carga sola. Antes empezaba plegada detras de un boton porque
-// abrirla pide learnsets.json y moves.json -- 746 KB en crudo, 155 KB
-// comprimidos, que es lo que viaja de verdad. Se acepta el coste: las dos
-// peticiones salen despues de pintar la ficha, asi que no la bloquean, y
-// netlify.toml cachea /data/*.json una hora con stale-while-revalidate de una
-// semana, con lo que es un coste de primera visita.
+// abrirla pedia learnsets.json y moves.json enteros -- 746 KB en crudo, 155,6 KB
+// gzip -- para leer el learnset de UN Pokemon. Desde build-dex.mjs sale del
+// mismo data/dex/{id}.json que la cabecera ya ha pedido para la descripcion:
+// mediana 1,7 KB gz y cero peticiones nuevas.
 //
 // La lista tiene alto fijo y scroll propio, asi que la tarjeta ocupa lo mismo
 // con 15 movimientos que con 150, y no salta al cambiar de pestana.
@@ -153,13 +195,18 @@ function renderMovesPanel(host, entry, byId, versionGroups) {
 async function loadMovesSection(host, currentId) {
   host.innerHTML = loadingHTML();
   try {
-    const [learnsets, moves] = await Promise.all([fetchLearnsets(), fetchMoves()]);
-    const entry = learnsets.pokemon[currentId];
+    // Un solo fichero con el learnset de esta especie y los movimientos que
+    // aparecen en el, ya con nombre y numeros. Antes eran learnsets.json y
+    // moves.json enteros -- 155,6 KB gz por abrir una ficha para leer los ~100
+    // movimientos de uno. Y ya esta pedido: la cabecera saco de aqui la
+    // descripcion, asi que esto no cuesta ni una peticion mas.
+    const ficha = await fetchDex(currentId);
+    const entry = ficha.learnset;
     if (!entry || Object.keys(entry).length === 0) {
       host.innerHTML = `<p class="evo-none">${t('learn.none')}</p>`;
       return;
     }
-    renderMovesPanel(host, entry, new Map(moves.map(m => [m.id, m])), learnsets.versionGroups);
+    renderMovesPanel(host, entry, new Map(ficha.moves.map(m => [m.id, m])), ficha.versionGroups);
   } catch (err) {
     renderError(host, err, () => loadMovesSection(host, currentId));
   }
@@ -359,7 +406,14 @@ function catchRateLabel(rate) {
 }
 
 export async function renderPokedexDetail(container, id) {
-  container.innerHTML = loadingHTML();
+  // hostDeRuta y no `container` a secas: la ficha espera a la descripcion de
+  // pokeapi.co, que es red real a un tercero, asi que abrirla y volver atras
+  // antes de que conteste dejaba la ficha entera encima de la lista con la URL
+  // diciendo #/pokedex. Ahora ese render tardio escribe en un nodo que el router
+  // ya ha desconectado. Cubre tambien el cambio de pestana de forma, que
+  // repinta sin pasar por el router.
+  const host = hostDeRuta(container);
+  host.innerHTML = loadingHTML();
 
   // In parallel: fetchPokemonList is already memoised by api.js, so the full
   // list the breeding section needs costs no extra request.
@@ -372,7 +426,7 @@ export async function renderPokedexDetail(container, id) {
     fetchMeta(format).catch(() => null),
   ]);
   if (!pokemon) {
-    container.innerHTML = `
+    host.innerHTML = `
       <div class="no-results">
         <div class="icon">❓</div>
         <p>${t('pokedex.notfound')}</p>
@@ -424,8 +478,17 @@ export async function renderPokedexDetail(container, id) {
 
   const displayName = pokeName(pokemon);
   const altName = getLang() === 'es' ? (pokemon.nameEn || pokemon.name) : pokemon.nameEs;
+  // La descripcion viaja en los dos idiomas desde que se hornea en build: antes
+  // se pedia a pokeapi solo en espanol y la ficha en ingles la ensenaba asi.
+  //
+  // Y con el otro idioma como red: PokeAPI no tiene texto en espanol para las
+  // 127 especies de la 899 a la 1025 -- Hisui y Paldea enteras -- que hasta
+  // ahora salian sin ninguna descripcion. El ingles se entiende; el hueco no.
+  const flavour = getLang() === 'es'
+    ? (pokemon.descriptionEs || pokemon.descriptionEn)
+    : (pokemon.descriptionEn || pokemon.descriptionEs);
 
-  container.innerHTML = `
+  host.innerHTML = `
     <div class="poke-detail fade-in">
       <button class="back-btn" onclick="history.back()">◀ ${t('pokedex.back')}</button>
 
@@ -461,7 +524,7 @@ export async function renderPokedexDetail(container, id) {
         </div>
       ` : ''}
 
-      ${pokemon.description ? `<p class="poke-flavour">${pokemon.description}</p>` : ''}
+      ${flavour ? `<p class="poke-flavour">${flavour}</p>` : ''}
       </section>
 
       <section class="b">
@@ -599,16 +662,18 @@ export async function renderPokedexDetail(container, id) {
   `;
 
   // The species owns both: Mega Charizard X evolves and learns exactly as
-  // Charizard does, and the learnsets were built for the 1025 species only.
-  renderEvolutionSection(container.querySelector('#evoSection'), dexId);
-  loadMovesSection(container.querySelector('#mvSection'), dexId);
-  renderMetaSection(container.querySelector('#metaSection'), dexId, format, meta, allPokemon);
+  // Charizard does, and the learnsets were built for the 1025 species only. La
+  // evolucion recibe ademas la forma abierta, que es la unica que sabe cual de
+  // las tres ramas de Lycanroc es la pestana que se esta mirando.
+  renderEvolutionSection(host.querySelector('#evoSection'), dexId, pokemon.id);
+  loadMovesSection(host.querySelector('#mvSection'), dexId);
+  renderMetaSection(host.querySelector('#metaSection'), dexId, format, meta, allPokemon);
 
   // Pikachu carries 17 forms and the strip only shows five of them at a time.
   // The scrollbar is hidden, so without this the last tab is simply cut in half
   // and reads as a bug: these classes light a fade on whichever side has more.
-  const tabsWrap = container.querySelector('#formTabsWrap');
-  const tabsStrip = container.querySelector('#formTabs');
+  const tabsWrap = host.querySelector('#formTabsWrap');
+  const tabsStrip = host.querySelector('#formTabs');
   if (tabsWrap && tabsStrip) {
     const markScroll = () => {
       // 8px, not 1: landing on the last form leaves 4px of slack and a fade
@@ -627,7 +692,7 @@ export async function renderPokedexDetail(container, id) {
     tabsStrip.querySelector('.tab.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
 
-  container.querySelector('#formTabs')?.addEventListener('click', (e) => {
+  host.querySelector('#formTabs')?.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-form]');
     if (!btn) return;
     const next = Number(btn.dataset.form);

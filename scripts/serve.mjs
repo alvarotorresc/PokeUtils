@@ -24,6 +24,11 @@ const TYPES = {
   '.ico': 'image/x-icon',
 };
 
+// Los sprites ya son ficheros del repo (scripts/fetch-sprites.mjs), asi que
+// salen por el mismo camino que todo lo demas. Aqui hubo un proxy a
+// raw.githubusercontent.com con cache en memoria mientras no estaban: sin el, en
+// local no se veia ni un sprite y no habia forma de verificar en el navegador
+// nada que llevara imagenes.
 createServer(async (req, res) => {
   try {
     const path = decodeURIComponent(req.url.split('?')[0]);

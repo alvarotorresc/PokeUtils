@@ -6,7 +6,7 @@
 import { TYPES, spriteUrl } from './data.js';
 import { fetchPokemonList } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { loadingHTML, renderError, replaceQuery } from './app.js';
+import { loadingHTML, renderError, replaceQuery, hostDeRuta } from './ui.js';
 import { t, typeName, pokeName } from './i18n.js';
 import { defensiveMatrix, threats, unresisted, stabTypes, offensiveCoverage } from './team-analysis.js';
 
@@ -29,7 +29,11 @@ function multClass(m) {
 }
 
 export async function renderTeam(container, query = new URLSearchParams()) {
-  container.innerHTML = loadingHTML();
+  // hostDeRuta y no `container` a secas: lo que se pinte despues del await cae
+  // en un nodo que el router ya ha desconectado si el usuario navego mientras
+  // bajaba pokemon.json, en vez de aparecer encima de la ruta nueva.
+  const host = hostDeRuta(container);
+  host.innerHTML = loadingHTML();
 
   let pokemon;
   try {
@@ -37,7 +41,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
     // which would offer the same Pokemon under a second name.
     pokemon = competitiveList(await fetchPokemonList());
   } catch (err) {
-    renderError(container, err, () => renderTeam(container, query));
+    renderError(host, err, () => renderTeam(container, query));
     return;
   }
 
@@ -56,7 +60,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
       .filter(type => TYPES.includes(type)),
   };
 
-  container.innerHTML = `
+  host.innerHTML = `
     <div class="page-header">
       <h1>${t('team.title')}</h1>
       <p>${t('team.subtitle')}</p>
@@ -71,12 +75,12 @@ export async function renderTeam(container, query = new URLSearchParams()) {
     <div id="teamAnalysis"></div>
   `;
 
-  const slotsEl = container.querySelector('#teamSlots');
-  const searchBar = container.querySelector('#teamSearchBar');
-  const searchInput = container.querySelector('#teamSearch');
-  const resultsEl = container.querySelector('#teamResults');
-  const analysisEl = container.querySelector('#teamAnalysis');
-  const counterLink = container.querySelector('#teamCounterLink');
+  const slotsEl = host.querySelector('#teamSlots');
+  const searchBar = host.querySelector('#teamSearchBar');
+  const searchInput = host.querySelector('#teamSearch');
+  const resultsEl = host.querySelector('#teamResults');
+  const analysisEl = host.querySelector('#teamAnalysis');
+  const counterLink = host.querySelector('#teamCounterLink');
 
   const members = () => state.ids.map(id => byId.get(id));
 
