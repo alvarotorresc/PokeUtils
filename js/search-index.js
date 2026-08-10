@@ -13,6 +13,7 @@
 // El sprite viene de aqui y no del componente porque cada dominio lo saca de un
 // sitio distinto, y es la fuente la que sabe de donde.
 import { spriteUrl, itemSpriteUrl } from './data.js';
+import { spriteIdFor } from './forms.js';
 
 const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
 
@@ -34,7 +35,11 @@ const SOURCES = [
     key: 'pokemon', kind: 'pokemon',
     names: p => [p.nameEs, p.nameEn, p.name],
     route: p => `#/pokedex/${p.id}`,
-    sprite: p => spriteUrl(p.id),
+    // Por spriteIdFor y no por el id: las 11 formas sin sprite propio (los dos
+    // iniciales de Let's Go, los ocho modos de Koraidon y Miraidon y la Mega de
+    // Zygarde) pedian un fichero que no existe y salian con el hueco en blanco
+    // que deja el onerror.
+    sprite: p => spriteUrl(spriteIdFor(p)),
   },
   {
     key: 'moves', kind: 'move',

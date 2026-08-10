@@ -13,6 +13,7 @@ import {
 import { FIELDS, VP_FIELDS, encodeDamageState, decodeDamageState } from './damage-url.js';
 import { replaceQuery } from './ui.js';
 import { t, getLang, pokeName, categoryName, typeName } from './i18n.js';
+import { spriteIdFor } from './forms.js';
 
 // A neutral, average-ish pair so the panel shows a real number before the user
 // touches anything.
@@ -171,7 +172,7 @@ export function renderDamage(container, query) {
     selected.style.display = '';
     selected.innerHTML = `
       <div class="dmg-chosen">
-        <img src="${spriteUrl(poke.id)}" alt="${pokeName(poke)}">
+        <img src="${spriteUrl(spriteIdFor(poke))}" alt="${pokeName(poke)}">
         <div>
           <div class="dmg-chosen-name">${pokeName(poke)}</div>
           <div class="dmg-chosen-types">${poke.types.map(ty => TYPE_NAMES_FULL[ty]).join(' / ')}</div>
@@ -198,7 +199,7 @@ export function renderDamage(container, query) {
           results.style.display = '';
           results.innerHTML = found.length ? found.map(p => `
             <div class="card card-clickable dmg-hit" data-id="${p.id}">
-              <img src="${spriteUrl(p.id)}" alt="${pokeName(p)}">
+              <img src="${spriteUrl(spriteIdFor(p))}" alt="${pokeName(p)}">
               <span>${pokeName(p)}</span>
             </div>
           `).join('') : `<div style="font-size:0.46rem;color:var(--ink-2);padding:8px">${t('calc.notfound')}</div>`;
