@@ -178,6 +178,12 @@ export async function searchPokemon(term, { speciesOnly = false } = {}) {
       nameEs: p.nameEs,
       nameEn: p.nameEn,
       stats: p.stats,
+      // Sin estos dos, quien pinte un resultado no puede distinguir una forma:
+      // ensena el id interno como si fuera numero de Pokedex ("#10126" no
+      // existe en ninguna) y pide el sprite de las once formas que no tienen
+      // uno propio, que sale roto. Los dos se resuelven con speciesId.
+      speciesId: p.speciesId,
+      noSprite: p.noSprite,
       // The capture tab needs both: the rate to run the formula, and the weight
       // because the Heavy Ball bonus is a function of it. The damage tab needs
       // the types, for STAB and for the type chart.
