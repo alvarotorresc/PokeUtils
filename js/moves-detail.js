@@ -6,7 +6,7 @@
 
 import { spriteUrl } from './data.js';
 import { fetchMoves, fetchLearnsets, fetchPokemonList } from './api.js';
-import { loadingHTML, renderError } from './ui.js';
+import { loadingHTML, renderError, hostDeRuta } from './ui.js';
 import { t, typeName, categoryName, pokeName, getLang } from './i18n.js';
 import { priorityLabel, priorityHint, statChangeLabel } from './move-effects.js';
 import { learnersOf } from './learnset-index.js';
@@ -94,19 +94,23 @@ async function loadLearners(host, moveId) {
 }
 
 export async function renderMoveDetail(container, id) {
-  container.innerHTML = loadingHTML();
+  // hostDeRuta y no `container` a secas: moves.json son 353 KB y en la primera
+  // visita se espera de verdad, asi que un render que llegue tarde escribe en un
+  // nodo que el router ya ha desconectado en vez de pisar la ruta nueva.
+  const host = hostDeRuta(container);
+  host.innerHTML = loadingHTML();
 
   let moves;
   try {
     moves = await fetchMoves();
   } catch (err) {
-    renderError(container, err, () => renderMoveDetail(container, id));
+    renderError(host, err, () => renderMoveDetail(container, id));
     return;
   }
 
   const move = moves.find(m => m.id === id);
   if (!move) {
-    container.innerHTML = `
+    host.innerHTML = `
       <div class="no-results">
         <div class="icon">❓</div>
         <p>${t('moves.notfound')}</p>
@@ -122,7 +126,7 @@ export async function renderMoveDetail(container, id) {
   const altName = getLang() === 'es' ? (move.nameEn || move.name) : move.nameEs;
   const changes = move.statChanges || [];
 
-  container.innerHTML = `
+  host.innerHTML = `
     <div class="poke-detail fade-in">
       <button class="back-btn" onclick="history.back()">◀ ${t('moves.back')}</button>
 
@@ -162,5 +166,5 @@ export async function renderMoveDetail(container, id) {
     </div>
   `;
 
-  loadLearners(container.querySelector('#mdLearners'), id);
+  loadLearners(host.querySelector('#mdLearners'), id);
 }

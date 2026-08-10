@@ -7,6 +7,27 @@
 import { t } from './i18n.js';
 import { ErrorKind } from './api.js';
 
+// ===== HELPER: un nodo propio para lo que pinta la ruta =====
+//
+// El token de app.js cancela la navegacion si tarda el import, pero no si tarda
+// el render: una vez llamado pintar(), nada comprueba nada despues de cada
+// await. La ficha de un Pokemon espera a la descripcion de pokeapi.co, que es
+// red real a un tercero, asi que abrirla y volver atras antes de que conteste
+// dejaba la ficha entera encima de la lista, con la URL diciendo #/pokedex.
+//
+// Con esto lo que se pinta cuelga de un nodo propio: al navegar, el router vacia
+// el contenedor y ese nodo queda desconectado, asi que el render que llega tarde
+// escribe en algo que ya no esta en la pagina. Es la misma inmunidad que ya
+// tienen de rebote las rutas que pintan su cascaron antes del primer await y
+// luego rellenan un hueco, y cubre ademas los repintados que no pasan por el
+// router, como el cambio de pestana de forma.
+export function hostDeRuta(container) {
+  container.innerHTML = '';
+  const host = document.createElement('div');
+  container.appendChild(host);
+  return host;
+}
+
 // ===== HELPER: error state with retry =====
 const ERROR_MESSAGES = {
   [ErrorKind.NETWORK]: 'common.error.network',

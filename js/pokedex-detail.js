@@ -1,7 +1,7 @@
 // ===== POKEMON DETAIL =====
 import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, TYPE_NAMES_FULL, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, NATURES } from './data.js';
 import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchLearnsets, fetchMoves } from './api.js';
-import { loadingHTML, renderError } from './ui.js';
+import { loadingHTML, renderError, hostDeRuta } from './ui.js';
 import { evolutionText, ramasResueltas, textoDeRama, nodoActual } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
 import { rangeAt100 } from './stats.js';
@@ -402,7 +402,14 @@ function catchRateLabel(rate) {
 }
 
 export async function renderPokedexDetail(container, id) {
-  container.innerHTML = loadingHTML();
+  // hostDeRuta y no `container` a secas: la ficha espera a la descripcion de
+  // pokeapi.co, que es red real a un tercero, asi que abrirla y volver atras
+  // antes de que conteste dejaba la ficha entera encima de la lista con la URL
+  // diciendo #/pokedex. Ahora ese render tardio escribe en un nodo que el router
+  // ya ha desconectado. Cubre tambien el cambio de pestana de forma, que
+  // repinta sin pasar por el router.
+  const host = hostDeRuta(container);
+  host.innerHTML = loadingHTML();
 
   // In parallel: fetchPokemonList is already memoised by api.js, so the full
   // list the breeding section needs costs no extra request.
@@ -415,7 +422,7 @@ export async function renderPokedexDetail(container, id) {
     fetchMeta(format).catch(() => null),
   ]);
   if (!pokemon) {
-    container.innerHTML = `
+    host.innerHTML = `
       <div class="no-results">
         <div class="icon">❓</div>
         <p>${t('pokedex.notfound')}</p>
@@ -468,7 +475,7 @@ export async function renderPokedexDetail(container, id) {
   const displayName = pokeName(pokemon);
   const altName = getLang() === 'es' ? (pokemon.nameEn || pokemon.name) : pokemon.nameEs;
 
-  container.innerHTML = `
+  host.innerHTML = `
     <div class="poke-detail fade-in">
       <button class="back-btn" onclick="history.back()">◀ ${t('pokedex.back')}</button>
 
@@ -645,15 +652,15 @@ export async function renderPokedexDetail(container, id) {
   // Charizard does, and the learnsets were built for the 1025 species only. La
   // evolucion recibe ademas la forma abierta, que es la unica que sabe cual de
   // las tres ramas de Lycanroc es la pestana que se esta mirando.
-  renderEvolutionSection(container.querySelector('#evoSection'), dexId, pokemon.id);
-  loadMovesSection(container.querySelector('#mvSection'), dexId);
-  renderMetaSection(container.querySelector('#metaSection'), dexId, format, meta, allPokemon);
+  renderEvolutionSection(host.querySelector('#evoSection'), dexId, pokemon.id);
+  loadMovesSection(host.querySelector('#mvSection'), dexId);
+  renderMetaSection(host.querySelector('#metaSection'), dexId, format, meta, allPokemon);
 
   // Pikachu carries 17 forms and the strip only shows five of them at a time.
   // The scrollbar is hidden, so without this the last tab is simply cut in half
   // and reads as a bug: these classes light a fade on whichever side has more.
-  const tabsWrap = container.querySelector('#formTabsWrap');
-  const tabsStrip = container.querySelector('#formTabs');
+  const tabsWrap = host.querySelector('#formTabsWrap');
+  const tabsStrip = host.querySelector('#formTabs');
   if (tabsWrap && tabsStrip) {
     const markScroll = () => {
       // 8px, not 1: landing on the last form leaves 4px of slack and a fade
@@ -672,7 +679,7 @@ export async function renderPokedexDetail(container, id) {
     tabsStrip.querySelector('.tab.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
 
-  container.querySelector('#formTabs')?.addEventListener('click', (e) => {
+  host.querySelector('#formTabs')?.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-form]');
     if (!btn) return;
     const next = Number(btn.dataset.form);
