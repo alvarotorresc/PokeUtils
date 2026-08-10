@@ -24,9 +24,44 @@ const TYPES = {
   '.ico': 'image/x-icon',
 };
 
+// Los sprites no estan en el repo: en produccion los sirve el [[redirects]] de
+// netlify.toml, que los trae de raw.githubusercontent.com. Desde perf(sprites)
+// las URLs son /sprites/... en vez de apuntar a GitHub, asi que sin esto en
+// local no se ve ni un sprite -- ni en la portada ni en las fichas -- y no hay
+// forma de verificar en el navegador nada que lleve imagenes.
+//
+// La cache es de la vida del proceso: son ~600 bytes cada uno, y evita volver a
+// pedirle a GitHub los mismos 51 de la portada en cada recarga.
+const SPRITES = 'https://raw.githubusercontent.com/PokeAPI/sprites/master';
+const cacheSprites = new Map();
+
+async function serveSprite(path, res) {
+  if (!cacheSprites.has(path)) {
+    try {
+      const upstream = await fetch(SPRITES + path);
+      cacheSprites.set(path, upstream.ok ? Buffer.from(await upstream.arrayBuffer()) : null);
+    } catch {
+      // Sin red: no se cachea el fallo, para que el siguiente intento reintente.
+      res.writeHead(504).end('Sprite upstream unreachable');
+      return;
+    }
+  }
+  const body = cacheSprites.get(path);
+  if (!body) {
+    res.writeHead(404).end('Not found');
+    return;
+  }
+  res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'no-store' });
+  res.end(body);
+}
+
 createServer(async (req, res) => {
   try {
     const path = decodeURIComponent(req.url.split('?')[0]);
+    if (path.startsWith('/sprites/')) {
+      await serveSprite(path, res);
+      return;
+    }
     // normalize() collapses "..", so a request cannot climb out of the repo.
     const file = join(ROOT, normalize(path === '/' ? '/index.html' : path));
     if (!file.startsWith(ROOT)) {
