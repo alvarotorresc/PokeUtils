@@ -129,11 +129,39 @@ notice, so the builder **fails loudly** rather than writing a half-empty file:
 it aborts if a format 404s, if the JSON has no `data` object, if a format yields
 fewer than 100 Pokemon, or if any name fails to map to our dex.
 
+### Derivados — regenerar despues de `build-data.mjs`
+
+Cinco scripts no bajan nada de la red: destilan lo que ya hay en `data/` para
+que cada pantalla pida solo lo suyo. Hay que correrlos **despues** de
+`build-data.mjs`, que reescribe los datasets con todo dentro.
+
+```bash
+node scripts/build-dex.mjs        # data/dex/{id}.json, uno por especie
+node scripts/build-search.mjs     # data/search.json, el indice del buscador
+node scripts/build-item-desc.mjs  # separa data/items-desc.json de items.json
+node scripts/fetch-sprites.mjs    # baja a sprites/ lo que la app referencia
+node scripts/build-swarm.mjs      # sprites/swarm.png, el atlas de la portada
+```
+
+Que resuelve cada uno, medido:
+
+| | antes | despues |
+|---|---|---|
+| Abrir una ficha | 153,7 KB gz (`learnsets` + `moves` enteros) | 1,9 KB gz de mediana |
+| Buscar por primera vez | 267,9 KB gz (los cuatro datasets) | 80,5 KB gz |
+| Entrar en `#/items` | 97,3 KB gz | 38,7 KB gz |
+| Sprites de la portada | hasta 115 peticiones, cruzando a GitHub | 21, del propio origen |
+
+`build-dex.mjs` es el unico que toca la red: pide la descripcion de cada especie
+a PokeAPI una vez y la hornea en el fichero, lo que quita la ultima llamada en
+runtime de la app. Se reanuda solo -- si el fichero ya la tiene, no la vuelve a
+pedir -- y `--force` la re-descarga.
+
 ### Verifying a rebuild
 
 Every dataset has a script that pins its measured numbers. Run them all after
 regenerating; they are the thing that catches a builder that "worked" but
-returned different data. Two of the thirteen check the interface instead of the
+returned different data. Two of the seventeen check the interface instead of the
 data: `check-contrast.mjs` sweeps every text colour against the three surfaces
 in both themes, and `check-search.mjs` pins the global search ranking.
 
@@ -174,10 +202,14 @@ running the previous code after an edit, with nothing in the console to say so.
 ```
 ├── index.html        # SPA shell
 ├── style.css         # All styles
-├── netlify.toml      # Cache headers for the generated data
+├── netlify.toml      # Cache headers for the generated data and the sprites
+├── sprites/          # 2177 PNG: los que la app referencia — 8.6 MB
 ├── data/             # Generated datasets (see "Updating the data") — 2.2 MB
 │   ├── pokemon.json     # 560K  Species and forms: stats, catch rate, egg groups
-│   ├── items.json       # 608K  Item catalog
+│   ├── items.json       # 220K  Item catalog (las descripciones, aparte)
+│   ├── items-desc.json  # 327K  Descripciones de objetos: solo al abrir uno
+│   ├── search.json      # 361K  Indice del buscador global
+│   ├── dex/{id}.json    # 7.4M  Learnset, movimientos y descripcion por especie
 │   ├── moves.json       # 380K  Move metadata, priority, stat changes, battle data
 │   ├── learnsets.json   # 368K  Moves each Pokemon learns, by method
 │   ├── abilities.json   # 104K  Ability descriptions
@@ -188,7 +220,12 @@ running the previous code after an edit, with nothing in the console to say so.
 ├── scripts/
 │   ├── build-data.mjs # Regenerates the game data from the REST API
 │   ├── build-meta.mjs # Regenerates the meta sets from Smogon's statistics
-│   ├── check-*.mjs    # 11 scripts pinning the measured numbers of each dataset
+│   ├── build-dex.mjs  # Un fichero por especie: learnset, movimientos, descripcion
+│   ├── build-search.mjs    # El indice del buscador global
+│   ├── build-item-desc.mjs # Saca las descripciones de items.json
+│   ├── fetch-sprites.mjs   # Baja a sprites/ lo que la app referencia
+│   ├── build-swarm.mjs     # El atlas del enjambre de la portada
+│   ├── check-*.mjs    # 17 scripts pinning the measured numbers of each dataset
 │   └── serve.mjs      # Dev server that disables caching
 └── js/
     ├── app.js            # Hash router + query state + pagination

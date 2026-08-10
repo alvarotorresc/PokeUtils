@@ -1,6 +1,6 @@
 // ===== ITEMS PAGE =====
 import { itemSpriteUrl } from './data.js';
-import { fetchItems } from './api.js';
+import { fetchItems, fetchItemDescriptions } from './api.js';
 import { loadingHTML, renderPagination } from './ui.js';
 import { t, pokeName, getLang } from './i18n.js';
 
@@ -36,6 +36,8 @@ export function renderItems(container, query = new URLSearchParams()) {
   let catFilter = '';
   let allItems = null;
   let categories = [];
+  // Se baja al abrir el primer objeto y se queda para el resto de la visita.
+  let descripciones = null;
 
   container.innerHTML = `
     <div class="page-header">
@@ -106,7 +108,7 @@ export function renderItems(container, query = new URLSearchParams()) {
           <h3 style="font-size:0.55rem;color:var(--accent-text);text-align:center;margin-bottom:4px">${pokeName(item)}</h3>
           <div style="font-size:0.44rem;color:var(--ink-3);text-align:center;margin-bottom:16px">${item.name}</div>
           ${catLabel ? `<div style="font-size:0.44rem;color:var(--ink-3);text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">${catLabel}</div>` : ''}
-          <div style="font-size:0.48rem;color:var(--ink-2);line-height:2;text-align:center">${(getLang() === 'es' ? item.descriptionEs : item.descriptionEn) || t('items.nodesc')}</div>
+          <div id="itModalDesc" style="font-size:0.48rem;color:var(--ink-2);line-height:2;text-align:center">${descripcionDe(item)}</div>
         </div>
       </div>
     `;
@@ -114,6 +116,31 @@ export function renderItems(container, query = new URLSearchParams()) {
     modal.querySelector('#itModalOverlay').onclick = (e) => {
       if (e.target === e.currentTarget) closeModal();
     };
+    pintarDescripcion(item);
+  }
+
+  // El texto ya no viaja en items.json: son 57,2 KB gz que solo hacen falta al
+  // abrir un objeto, y la lista ensena una descripcion a la vez.
+  function descripcionDe(item) {
+    const par = descripciones?.[item.id];
+    // El item lleva su texto dentro si el navegador tiene un items.json de antes
+    // del cambio -- netlify.toml lo deja cachear una hora con una semana de
+    // stale-while-revalidate -- asi que se mira antes de rendirse.
+    const propio = getLang() === 'es' ? item.descriptionEs : item.descriptionEn;
+    const bajado = par && (getLang() === 'es' ? par[0] : par[1]);
+    return bajado || propio || t('items.nodesc');
+  }
+
+  async function pintarDescripcion(item) {
+    if (descripciones) return;
+    try {
+      descripciones = await fetchItemDescriptions();
+    } catch {
+      return; // se queda el "sin descripcion": el modal no se cae por esto
+    }
+    // Puede haberse cerrado, o haberse abierto otro, mientras bajaba.
+    const hueco = modal.querySelector('#itModalDesc');
+    if (hueco && cerrarModalAbierto) hueco.textContent = descripcionDe(item);
   }
 
   function closeModal() {

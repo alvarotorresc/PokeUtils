@@ -82,6 +82,10 @@ export const fetchMetaNames = () => loadDataset('meta-names');
 // los que se busca, y nada mas. 80,5 KB gz contra los 267,9 de bajarse los
 // cuatro datasets enteros, que es lo que costaba escribir dos letras.
 export const fetchSearchIndex = () => loadDataset('search');
+// Las descripciones de los objetos viven aparte porque la lista ensena una a la
+// vez: 57,2 KB gz que solo paga quien abre el modal de un objeto, y que antes
+// viajaban dentro de items.json para todo el que entrara en la pagina.
+export const fetchItemDescriptions = () => loadDataset('items-desc');
 
 // ===== POKEMON DETAIL =====
 
