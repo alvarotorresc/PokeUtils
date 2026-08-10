@@ -271,7 +271,13 @@ export function renderPokedex(container, query = new URLSearchParams()) {
       const genDef = GENERATIONS.find(g => String(g.id) === state.gen);
       if (genDef) {
         const [from, to] = genDef.range;
-        filtered = filtered.filter(p => p.id >= from && p.id <= to);
+        // La generacion es la de la especie: toda forma lleva un id 10xxx, que
+        // cae fuera de cualquier rango, asi que buscar "raichu" con la Gen VII
+        // puesta escondia al Raichu de Alola (10100) -- y sin el filtro salia.
+        filtered = filtered.filter(p => {
+          const dex = p.speciesId || p.id;
+          return dex >= from && dex <= to;
+        });
       }
     }
     // Legendary and mythical are separate flags in PokeAPI: Mew is mythical,
