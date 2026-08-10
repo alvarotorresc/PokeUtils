@@ -1,0 +1,15 @@
+{
+  "name": "pokeutils",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pokedex y herramientas competitivas. El unico paso de build es esbuild: minifica y pone hash en los nombres. El codigo fuente se sigue escribiendo y sirviendo en local sin build.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "serve": "node scripts/serve.mjs",
+    "check": "for s in scripts/check-*.mjs; do node \"$s\" > /dev/null && echo \"$(basename $s) OK\" || echo \"$(basename $s) FAILED\"; done"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

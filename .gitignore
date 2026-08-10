@@ -1,3 +1,5 @@
 .playwright-mcp/
 node_modules/
 .DS_Store
+# La salida del build la genera Netlify en cada deploy: aqui solo el fuente.
+dist/
