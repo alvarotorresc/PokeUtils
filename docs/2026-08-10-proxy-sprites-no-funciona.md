@@ -28,13 +28,22 @@ cache-control: max-age=300
 `netlify.toml`, ni del `Netlify-CDN-Cache-Control` que `88a55e8` añadió
 precisamente para que el borde dejara de viajar.
 
-Y `age: 0` en tres peticiones seguidas al mismo sprite: **el borde no lo cachea
-tampoco**. Cada visita cruza hasta GitHub igual que antes.
-
 Que las reglas de `[[headers]]` funcionan en general está comprobado en el mismo
-preview: `/data/pokemon.json` llega con su `max-age=3600,
-stale-while-revalidate=604800`, y `/fonts` con su `immutable` de un año. Lo que
-no funciona es aplicarlas sobre una respuesta proxied.
+preview y sobre una respuesta 200 normal: `/data/pokemon.json` llega con su
+`max-age=3600, stale-while-revalidate=604800`. Lo que no funciona es aplicarlas
+sobre una respuesta proxied.
+
+**Lo que esta medición NO determina, y en una versión anterior de este documento
+afirmé de más:** si el borde de Netlify cachea el sprite. Lo di por descartado
+viendo `age: 0` en tres peticiones, pero es un confusor — sobre una muestra de
+ocho, tanto el sprite (`age` 1, 2, 1) como `/data/pokemon.json` (`age` 2, 38)
+alternan ceros y valores altos, porque cada petición puede caer en un nodo
+distinto del CDN. **El comportamiento del borde queda sin determinar.**
+
+Da igual para la conclusión, porque el daño está en la otra mitad: sea cual sea
+el caché del borde, **la cabecera que recibe el navegador es `max-age=300`**, así
+que cada visitante vuelve a pedir los 51 sprites de la portada cada cinco
+minutos. Que era exactamente el problema que el proxy venía a resolver.
 
 ## Qué significa para la primera ronda
 
@@ -45,14 +54,20 @@ a medias. El balance real de los dos, hoy:
 | | |
 |---|---|
 | Quitar el tercer origen del navegador (DNS + TLS a `raw.githubusercontent.com`) | ✅ sigue en pie |
-| Cachear los sprites más de 5 minutos | ❌ siguen con `max-age=300` |
-| Que el borde deje de viajar a GitHub | ❌ `age: 0` siempre |
+| Cachear los sprites en el navegador más de 5 minutos | ❌ siguen con `max-age=300` |
+| Que el borde deje de viajar a GitHub | ❓ sin determinar (ver arriba) |
 | Saltos por sprite | ⚠️ ahora navegador → Netlify → GitHub |
 
 O sea: de las dos razones por las que se hizo, se cumple una. **No es un
 retroceso** — el handshake con el tercer origen sí se ahorra, y son 51 imágenes
 en la portada — pero el problema que lo motivó (`max-age=300`, o sea volver a
 bajar los 51 sprites cada cinco minutos) sigue exactamente igual.
+
+Un apunte de paso que corrige el documento de la segunda ronda: allí se avisa de
+que Netlify devuelve `max-age=0, must-revalidate` también en los 404. En este
+preview no siempre: `/fonts` da 404 **con** el `immutable` de su regla. La
+advertencia sigue valiendo (mirar el código de estado, no solo la cabecera),
+pero por el motivo contrario al que decía.
 
 ## Las tres salidas, y cuál recomiendo
 
