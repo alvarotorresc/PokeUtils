@@ -124,6 +124,13 @@ check('cada una apunta a una forma distinta',
 check('y cada rama conserva su hora',
   ramas?.map(r => evolutionText(r.details, 'es', lookups)),
   ['Nv. 25 de día', 'Nv. 25 de noche', 'Nv. 25 al anochecer']);
+// Con setLang y no solo con el argumento: t() lee el idioma global, que es la
+// misma trampa que documenta `texto()` mas arriba.
+await setLang('en');
+check('y en ingles igual',
+  ramas?.map(r => evolutionText(r.details, 'en', lookups)),
+  ['Lv. 25 during the day', 'Lv. 25 at night', 'Lv. 25 at dusk']);
+await setLang('es');
 // Los sufijos tienen que existir como slug real, o la ficha no puede resolver
 // el id y se queda con el texto pegado de antes.
 const slugs = pokemon.filter(p => p.id === 745 || p.speciesId === 745).map(p => p.name);
