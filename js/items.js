@@ -18,6 +18,16 @@ const CATEGORY_MAP = {
   'key': 'cat.items-key',
 };
 
+// Un solo listener para toda la sesion, y cada render dice a quien cerrar.
+// Registrado dentro de renderItems y sin quitarlo nunca, cada visita a #/items
+// dejaba uno mas, y el closure de cada uno retenia entero el DOM de su visita:
+// no cambiaba el comportamiento -- los viejos veian su modal cerrado -- pero no
+// se liberaba nada. tooltip.js ya resuelve lo mismo asi.
+let cerrarModalAbierto = null;
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') cerrarModalAbierto?.();
+});
+
 export function renderItems(container, query = new URLSearchParams()) {
   let currentPage = 1;
   // An item has no page of its own, so the global search opens this list already
@@ -26,7 +36,6 @@ export function renderItems(container, query = new URLSearchParams()) {
   let catFilter = '';
   let allItems = null;
   let categories = [];
-  let modalOpen = false;
 
   container.innerHTML = `
     <div class="page-header">
@@ -83,7 +92,7 @@ export function renderItems(container, query = new URLSearchParams()) {
   }
 
   function showModal(item) {
-    modalOpen = true;
+    cerrarModalAbierto = closeModal;
     const catLabel = CATEGORY_MAP[item.category] ? t(CATEGORY_MAP[item.category]) : item.category;
     modal.innerHTML = `
       <div class="modal-overlay" id="itModalOverlay">
@@ -108,13 +117,9 @@ export function renderItems(container, query = new URLSearchParams()) {
   }
 
   function closeModal() {
-    modalOpen = false;
+    cerrarModalAbierto = null;
     modal.innerHTML = '';
   }
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modalOpen) closeModal();
-  });
 
   async function loadAll() {
     if (allItems) return;
