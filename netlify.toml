@@ -3,8 +3,13 @@
 
 # Generated datasets change once per Pokemon generation. Serve them stale
 # while revalidating so navigation stays instant after the first visit.
+#
+# `/data/*` y no `/data/*.json`: desde build-dex.mjs hay 1025 ficheros en
+# data/dex/, y un splat de Netlify que no acaba en `*` no cruza directorios con
+# garantias. Todo lo que hay en data/ es JSON generado, asi que el patron ancho
+# cubre lo mismo y ademas lo nuevo.
 [[headers]]
-  for = "/data/*.json"
+  for = "/data/*"
   [headers.values]
     Cache-Control = "public, max-age=3600, stale-while-revalidate=604800"
 

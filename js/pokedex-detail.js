@@ -1,6 +1,6 @@
 // ===== POKEMON DETAIL =====
 import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, TYPE_NAMES_FULL, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, NATURES } from './data.js';
-import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchLearnsets, fetchMoves } from './api.js';
+import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchDex } from './api.js';
 import { loadingHTML, renderError, hostDeRuta } from './ui.js';
 import { evolutionText, ramasResueltas, textoDeRama, nodoActual } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
@@ -132,11 +132,10 @@ async function renderEvolutionSection(host, dexId, formId = dexId) {
 // ===== LEARNED MOVES =====
 //
 // La seccion se carga sola. Antes empezaba plegada detras de un boton porque
-// abrirla pide learnsets.json y moves.json -- 746 KB en crudo, 155 KB
-// comprimidos, que es lo que viaja de verdad. Se acepta el coste: las dos
-// peticiones salen despues de pintar la ficha, asi que no la bloquean, y
-// netlify.toml cachea /data/*.json una hora con stale-while-revalidate de una
-// semana, con lo que es un coste de primera visita.
+// abrirla pedia learnsets.json y moves.json enteros -- 746 KB en crudo, 155,6 KB
+// gzip -- para leer el learnset de UN Pokemon. Desde build-dex.mjs sale del
+// mismo data/dex/{id}.json que la cabecera ya ha pedido para la descripcion:
+// mediana 1,7 KB gz y cero peticiones nuevas.
 //
 // La lista tiene alto fijo y scroll propio, asi que la tarjeta ocupa lo mismo
 // con 15 movimientos que con 150, y no salta al cambiar de pestana.
@@ -196,13 +195,18 @@ function renderMovesPanel(host, entry, byId, versionGroups) {
 async function loadMovesSection(host, currentId) {
   host.innerHTML = loadingHTML();
   try {
-    const [learnsets, moves] = await Promise.all([fetchLearnsets(), fetchMoves()]);
-    const entry = learnsets.pokemon[currentId];
+    // Un solo fichero con el learnset de esta especie y los movimientos que
+    // aparecen en el, ya con nombre y numeros. Antes eran learnsets.json y
+    // moves.json enteros -- 155,6 KB gz por abrir una ficha para leer los ~100
+    // movimientos de uno. Y ya esta pedido: la cabecera saco de aqui la
+    // descripcion, asi que esto no cuesta ni una peticion mas.
+    const ficha = await fetchDex(currentId);
+    const entry = ficha.learnset;
     if (!entry || Object.keys(entry).length === 0) {
       host.innerHTML = `<p class="evo-none">${t('learn.none')}</p>`;
       return;
     }
-    renderMovesPanel(host, entry, new Map(moves.map(m => [m.id, m])), learnsets.versionGroups);
+    renderMovesPanel(host, entry, new Map(ficha.moves.map(m => [m.id, m])), ficha.versionGroups);
   } catch (err) {
     renderError(host, err, () => loadMovesSection(host, currentId));
   }
@@ -474,6 +478,15 @@ export async function renderPokedexDetail(container, id) {
 
   const displayName = pokeName(pokemon);
   const altName = getLang() === 'es' ? (pokemon.nameEn || pokemon.name) : pokemon.nameEs;
+  // La descripcion viaja en los dos idiomas desde que se hornea en build: antes
+  // se pedia a pokeapi solo en espanol y la ficha en ingles la ensenaba asi.
+  //
+  // Y con el otro idioma como red: PokeAPI no tiene texto en espanol para las
+  // 127 especies de la 899 a la 1025 -- Hisui y Paldea enteras -- que hasta
+  // ahora salian sin ninguna descripcion. El ingles se entiende; el hueco no.
+  const flavour = getLang() === 'es'
+    ? (pokemon.descriptionEs || pokemon.descriptionEn)
+    : (pokemon.descriptionEn || pokemon.descriptionEs);
 
   host.innerHTML = `
     <div class="poke-detail fade-in">
@@ -511,7 +524,7 @@ export async function renderPokedexDetail(container, id) {
         </div>
       ` : ''}
 
-      ${pokemon.description ? `<p class="poke-flavour">${pokemon.description}</p>` : ''}
+      ${flavour ? `<p class="poke-flavour">${flavour}</p>` : ''}
       </section>
 
       <section class="b">
