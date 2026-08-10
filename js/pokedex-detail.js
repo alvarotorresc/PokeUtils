@@ -2,7 +2,7 @@
 import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, TYPE_NAMES_FULL, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, NATURES } from './data.js';
 import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchLearnsets, fetchMoves } from './api.js';
 import { loadingHTML, renderError } from './ui.js';
-import { evolutionText, ramasDeEvolucion } from './evolution.js';
+import { evolutionText, ramasResueltas, textoDeRama, nodoActual } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
 import { rangeAt100 } from './stats.js';
 import { partnersOf, hasEggData } from './egg-groups.js';
@@ -51,20 +51,15 @@ const evoBranchHTML = (condicion, destino) => `
 // ficha dice que hay dos maneras de evolucionar y apunta las dos al mismo
 // sprite.
 //
-// Se divide solo si se resuelven TODAS las formas y el destino no evoluciona
-// mas: media division, o una rama que se coma un subarbol, serian peores que
-// dejarlo como estaba.
+// Se divide solo si el destino no evoluciona mas: una rama que se coma un
+// subarbol seria peor que dejarlo como estaba. Lo que se sabe de las formas no
+// se tira por eso -- si no se parte, va al texto de la rama unica.
 function evoBranchesHTML(node, child, currentId, nameOf, lang, lookups, formaDe) {
-  const ramas = child.evolvesTo.length === 0
-    ? ramasDeEvolucion(node.species, child.species, child.details)
-    : null;
-  const resueltas = ramas
-    ?.map(r => ({ ...r, id: r.id ?? formaDe(child.species, r.sufijo) }))
-    .filter(r => r.id);
+  const resueltas = ramasResueltas(node, child, formaDe);
 
-  if (!ramas || resueltas.length !== ramas.length) {
+  if (!resueltas || child.evolvesTo.length > 0) {
     return evoBranchHTML(
-      evolutionText(child.details, lang, lookups),
+      textoDeRama(child, resueltas, nameOf, lang, lookups),
       evoTreeHTML(child, currentId, nameOf, lang, lookups, formaDe),
     );
   }
@@ -90,7 +85,7 @@ function evoTreeHTML(node, currentId, nameOf, lang, lookups, formaDe) {
 
 // A failure loading evolutions must not take down the whole detail page: this
 // section shows its own error with a retry and the rest stays up.
-async function renderEvolutionSection(host, currentId) {
+async function renderEvolutionSection(host, dexId, formId = dexId) {
   host.innerHTML = loadingHTML();
   try {
     // Only two datasets: item and move names are already resolved inside
@@ -100,7 +95,8 @@ async function renderEvolutionSection(host, currentId) {
       fetchEvolutions(), fetchPokemonList(),
     ]);
 
-    const chainId = evolutions.bySpecies[currentId];
+    // La cadena es la de la especie: una forma no tiene linea evolutiva propia.
+    const chainId = evolutions.bySpecies[dexId];
     const root = chainId != null ? evolutions.chains[chainId] : null;
     if (!root || root.evolvesTo.length === 0) {
       host.innerHTML = `<p class="evo-none">${t('evo.none')}</p>`;
@@ -126,9 +122,10 @@ async function renderEvolutionSection(host, currentId) {
       return candidatos.find(p => p.name.endsWith(`-${sufijo}`))?.id || null;
     };
 
+    const currentId = nodoActual(root, dexId, formId, formaDe);
     host.innerHTML = `<div class="evo-line">${evoTreeHTML(root, currentId, nameOf, getLang(), lookups, formaDe)}</div>`;
   } catch (err) {
-    renderError(host, err, () => renderEvolutionSection(host, currentId));
+    renderError(host, err, () => renderEvolutionSection(host, dexId, formId));
   }
 }
 
@@ -645,8 +642,10 @@ export async function renderPokedexDetail(container, id) {
   `;
 
   // The species owns both: Mega Charizard X evolves and learns exactly as
-  // Charizard does, and the learnsets were built for the 1025 species only.
-  renderEvolutionSection(container.querySelector('#evoSection'), dexId);
+  // Charizard does, and the learnsets were built for the 1025 species only. La
+  // evolucion recibe ademas la forma abierta, que es la unica que sabe cual de
+  // las tres ramas de Lycanroc es la pestana que se esta mirando.
+  renderEvolutionSection(container.querySelector('#evoSection'), dexId, pokemon.id);
   loadMovesSection(container.querySelector('#mvSection'), dexId);
   renderMetaSection(container.querySelector('#metaSection'), dexId, format, meta, allPokemon);
 

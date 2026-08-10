@@ -382,6 +382,7 @@ export default {
     'evo.night': 'at night',
     'evo.dusk': 'at dusk',
     'evo.at': 'at {place}',
+    'evo.toform': '(to {form})',
     'evo.knowing': 'knowing {move}',
     'evo.knowingtype': 'knowing a {type}-type move',
     'evo.female': 'when female',

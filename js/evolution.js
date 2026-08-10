@@ -222,6 +222,58 @@ export function ramasDeEvolucion(deSpecies, aSpecies, details) {
   return destinos.size > 1 ? ramas : null;
 }
 
+// ===== LO QUE LA FICHA LEE DEL ARBOL =====
+//
+// Aqui y no en pokedex-detail.js porque no hay DOM en ninguna de las tres, y
+// asi check-evolution puede importarlas: son justo las decisiones que se leen
+// mal en pantalla y bien en el codigo. `formaDe` y `nameOf` llegan como
+// parametros, que es el mismo reparto que ya usa `ramasDeEvolucion`: quien
+// llama tiene pokemon.json a mano.
+
+// Las ramas de una transicion ya resueltas a ids, o null si no elige entre
+// formas o alguna se queda sin resolver -- media division seria peor que dejarlo
+// como estaba.
+export function ramasResueltas(node, child, formaDe) {
+  const ramas = ramasDeEvolucion(node.species, child.species, child.details);
+  if (!ramas) return null;
+  const resueltas = ramas
+    .map(r => ({ ...r, id: r.id ?? formaDe(child.species, r.sufijo) }))
+    .filter(r => r.id);
+  return resueltas.length === ramas.length ? resueltas : null;
+}
+
+// El texto de una rama que no se parte. Cuando las alternativas SI llevan a
+// formas distintas pero el destino sigue evolucionando, `evolutionText` se
+// quedaba con la mas general y tiraba la region: Goomy salia con un "Nv. 40" a
+// secas y la ficha no daba ninguna pista de que en Hisui eso lleva a otra forma.
+// Son 2 de las 22 transiciones que eligen forma -- la otra es Mime Jr.
+export function textoDeRama(child, resueltas, nameOf, lang, lookups) {
+  if (!resueltas) return evolutionText(child.details, lang, lookups);
+  const separador = lang === 'es' ? ' o ' : ' or ';
+  return resueltas.map(r => {
+    const texto = evolutionText(r.details, lang, lookups);
+    // La rama que lleva a la especie base ya se explica sola: nombrarla seria
+    // repetir el nodo al que la propia rama esta apuntando.
+    return r.id === child.species ? texto : `${texto} ${t('evo.toform', { form: nameOf(r.id) })}`;
+  }).join(separador);
+}
+
+// Que nodo lleva el marco de "estas aqui". La pestana abierta puede ser una
+// forma, y la ficha pasaba siempre la especie: mirando a Lycanroc Nocturno el
+// marco se lo quedaba la rama diurna, que es otra pestana.
+//
+// Manda la forma cuando el arbol la pinta como nodo propio; cuando no la pinta
+// -- Mega-Charizard X no sale en la linea de Charmander -- se marca la especie,
+// que es el nodo donde esa forma vive.
+export function nodoActual(root, dexId, formId, formaDe) {
+  if (formId === dexId) return dexId;
+  const enElArbol = (node) => node.evolvesTo.some(child =>
+    (child.evolvesTo.length === 0
+      && ramasResueltas(node, child, formaDe)?.some(r => r.id === formId))
+    || enElArbol(child));
+  return enElArbol(root) ? formId : dexId;
+}
+
 // details: array of alternative conditions. Returns '' when empty, which in
 // the whole dataset happens only for Manaphy.
 export function evolutionText(details, lang, lookups) {

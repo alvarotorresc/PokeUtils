@@ -391,6 +391,7 @@ export default {
     'evo.night': 'de noche',
     'evo.dusk': 'al anochecer',
     'evo.at': 'en {place}',
+    'evo.toform': '(a {form})',
     'evo.knowing': 'sabiendo {move}',
     'evo.knowingtype': 'sabiendo un movimiento de tipo {type}',
     'evo.female': 'siendo hembra',

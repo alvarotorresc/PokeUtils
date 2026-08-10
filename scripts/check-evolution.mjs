@@ -201,5 +201,56 @@ check('transiciones con condiciones que no dicen nada', conDetallesYSinTexto, []
 const sinDetalles = transiciones.filter(t => t.details.length === 0).length;
 check('transiciones sin condiciones (solo Manaphy)', sinDetalles, 1);
 
+console.log('\nEl marco de "estas aqui" y las dos ramas que no se parten\n');
+
+const { nodoActual, textoDeRama, ramasResueltas } = await import('../js/evolution.js');
+
+// La ficha resuelve una forma por el sufijo del slug; aqui igual.
+const formaDe = (especie, sufijo) => pokemon
+  .filter(p => p.id === especie || p.speciesId === especie)
+  .find(p => p.name.endsWith(`-${sufijo}`))?.id ?? null;
+const nameOf = id => nombreDe.get(id) || `#${id}`;
+const cadenaDe = especie => evolutions.chains[evolutions.bySpecies[especie]];
+const hijoDe = (raiz, de, a) => {
+  let out = null;
+  (function walk(n) {
+    for (const c of n.evolvesTo) {
+      if (n.species === de && c.species === a) out = [n, c];
+      walk(c);
+    }
+  })(raiz);
+  return out;
+};
+
+// Lycanroc: las tres ramas son tres pestanas distintas y cada una tiene que
+// llevarse su marco. Antes se pasaba siempre la especie (745), asi que mirando
+// al Nocturno el marco se lo quedaba el diurno.
+const rockruffRoot = cadenaDe(744);
+check('la pestana del Nocturno marca al Nocturno', nodoActual(rockruffRoot, 745, 10126, formaDe), 10126);
+check('la del Crepuscular marca al Crepuscular', nodoActual(rockruffRoot, 745, 10152, formaDe), 10152);
+check('y la diurna sigue marcando a la especie', nodoActual(rockruffRoot, 745, 745, formaDe), 745);
+// Una forma que el arbol no pinta se sigue marcando en su especie: Mega-Charizard
+// X (10034) no es un nodo de la linea de Charmander.
+check('una forma que no es nodo cae en su especie',
+  nodoActual(cadenaDe(6), 6, 10034, formaDe), 6);
+
+// Las 2 de las 22 que no se parten porque el destino sigue evolucionando: el
+// texto es lo unico que queda para decir que en Hisui o en Galar la evolucion es
+// otra forma, y `anade` lo borraba.
+const [goomy, sliggoo] = hijoDe(cadenaDe(704), 704, 705);
+check('Goomy dice a donde lleva la variante de Hisui',
+  textoDeRama(sliggoo, ramasResueltas(goomy, sliggoo, formaDe), nameOf, 'es', lookups),
+  'Nv. 40 o Nv. 40 en Hisui (a Sliggoo Forma de Hisui)');
+const [mimeJr, mrMime] = hijoDe(cadenaDe(439), 439, 122);
+check('y Mime Jr. la de Galar',
+  textoDeRama(mrMime, ramasResueltas(mimeJr, mrMime, formaDe), nameOf, 'es', lookups),
+  'Subir de nivel sabiendo Mimético o Subir de nivel en Galar sabiendo Mimético (a Mr. Mime Forma de Galar)');
+
+// Y lo que no elige forma se queda exactamente como estaba: el texto de siempre.
+const [charmeleon, charizard] = hijoDe(cadenaDe(4), 5, 6);
+check('una transicion normal no cambia de texto',
+  textoDeRama(charizard, ramasResueltas(charmeleon, charizard, formaDe), nameOf, 'es', lookups),
+  evolutionText(charizard.details, 'es', lookups));
+
 console.log(`\n${failed ? `${failed} fallos` : 'All checks passed'}\n`);
 process.exit(failed ? 1 : 0);
