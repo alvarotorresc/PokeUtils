@@ -20,26 +20,17 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
-# Los sprites venian de raw.githubusercontent.com con max-age=300, o sea cinco
-# minutos: cada visita volvia a bajarse los treinta y dos de la portada desde un
-# tercer origen. Pasan por aqui para que la pagina hable con un solo origen: el
-# sprite del numero 25 lleva siendo el mismo desde 1996 y deberia cachearse como
-# lo que es.
-[[redirects]]
-  from = "/sprites/*"
-  to = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/:splat"
-  status = 200
-  force = true
-
+# Los sprites estan en el repo desde fetch-sprites.mjs. Antes salian de un
+# [[redirects]] 200 hacia raw.githubusercontent.com, y esta medido que Netlify NO
+# aplica las cabeceras de este fichero a lo que sale de un redirect externo:
+# llegaban con el max-age=300 de GitHub -- cinco minutos -- asi que cada visita
+# volvia a cruzar a por los 51 de la portada, y ademas a un tercer origen.
+#
+# Servidos desde el propio sitio, estas cabeceras si mandan. Un mes en el
+# navegador y un ano de stale-while-revalidate: el sprite del numero 25 lleva
+# siendo el mismo desde 1996, pero `immutable` dejaria a quien ya lo tenga sin
+# ver nunca una correccion, y esto la reparte en cuanto pase un mes.
 [[headers]]
   for = "/sprites/*"
   [headers.values]
-    # OJO: este bloque hoy no hace nada, y el comentario que habia decia lo
-    # contrario. Netlify no aplica las cabeceras de este fichero a lo que sale de
-    # un redirect 200 hacia un origen externo -- medido en produccion: /sprites/*
-    # llega con las cabeceras de raw.githubusercontent.com, o sea con su
-    # max-age=300, no con estas. Se queda escrito porque es exactamente lo que
-    # haria falta el dia que los sprites se sirvan desde el propio sitio, que es
-    # la decision pendiente; mientras tanto, cada visita sigue cruzando a GitHub.
-    Netlify-CDN-Cache-Control = "public, max-age=2592000, stale-while-revalidate=31536000"
-    Cache-Control = "public, max-age=604800, stale-while-revalidate=2592000"
+    Cache-Control = "public, max-age=2592000, stale-while-revalidate=31536000"
