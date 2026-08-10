@@ -28,7 +28,7 @@ export async function renderSpeed(container, query = new URLSearchParams()) {
     return `
       <a class="spd-row" href="#/speed?id=${o.id}">
         <img src="${spriteUrl(spriteIdFor(o))}" alt="" loading="lazy">
-        <span class="spd-name">${o.name}</span>
+        <span class="spd-name">${pokeName(o)}</span>
         <span class="spd-value">${o.speed}</span>
       </a>
     `;
