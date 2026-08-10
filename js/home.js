@@ -33,6 +33,10 @@ const WANTED = ['pokedex', 'damage', 'meta', 'team', 'speed'];
 // calculan las celdas que caben y la lista se repite desplazada, para que la
 // segunda vuelta no caiga bajo la primera.
 const CELDA = 108; // 96 de sprite + 12 de hueco
+// Las columnas del atlas, que tienen que ser las mismas que monta
+// build-swarm.mjs: el CSS reparte el background-position en ATLAS_COLUMNAS - 1
+// pasos, asi que un desacuerdo aqui no rompe nada, solo pinta otros Pokemon.
+const ATLAS_COLUMNAS = 10;
 
 function fillSwarm(swarm) {
   const caja = swarm.getBoundingClientRect();
@@ -47,8 +51,13 @@ function fillSwarm(swarm) {
     // El desplazamiento por vuelta evita que el mismo sprite caiga en la misma
     // columna una fila mas abajo.
     const vuelta = Math.floor(i / SWARM.length);
-    const id = SWARM[(i + vuelta * 7) % SWARM.length];
-    html += `<img src="${spriteUrl(id)}" alt="" loading="lazy" style="animation-delay:${(i % 11) * 0.42}s">`;
+    const indice = (i + vuelta * 7) % SWARM.length;
+    // Un hueco del atlas y no un <img> por celda: los 100 sprites sueltos eran
+    // hasta 100 peticiones, todas dentro del viewport (el loading="lazy" no
+    // evitaba ninguna) para pintar un fondo decorativo. El indice en SWARM es
+    // la posicion en sprites/swarm.png, que build-swarm.mjs monta en ese orden.
+    html += `<i style="--c:${indice % ATLAS_COLUMNAS};--f:${Math.floor(indice / ATLAS_COLUMNAS)}`
+      + `;animation-delay:${(i % 11) * 0.42}s"></i>`;
   }
   swarm.innerHTML = html;
 }

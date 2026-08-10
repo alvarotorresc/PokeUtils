@@ -601,9 +601,15 @@ a:hover {
   mask-image: radial-gradient(ellipse 74% 78% at 50% 42%, transparent 24%, #000 76%);
 }
 
-.swarm img {
-  width: 100%;
-  height: auto;
+/* Cada celda es un hueco del atlas de 10x10 (sprites/swarm.png), no un <img>:
+   eran hasta 100 peticiones para un fondo decorativo. background-size del 1000%
+   escala el atlas con la celda, y los porcentajes de background-position se
+   reparten en 9 pasos, que son los saltos entre 10 columnas. */
+.swarm i {
+  aspect-ratio: 1;
+  background-image: url('/sprites/swarm.png');
+  background-size: 1000% 1000%;
+  background-position: calc(var(--c) * 100% / 9) calc(var(--f) * 100% / 9);
   image-rendering: pixelated;
   filter: grayscale(0.35);
   animation: bob 7s ease-in-out infinite;
@@ -863,7 +869,7 @@ a:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .swarm img { animation: none; }
+  .swarm i { animation: none; }
   .stagger > * { opacity: 1; animation: none; }
 }
 
