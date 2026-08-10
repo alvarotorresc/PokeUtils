@@ -246,6 +246,21 @@ check('y Mime Jr. la de Galar',
   textoDeRama(mrMime, ramasResueltas(mimeJr, mrMime, formaDe), nameOf, 'es', lookups),
   'Subir de nivel sabiendo Mimético o Subir de nivel en Galar sabiendo Mimético (a Mr. Mime Forma de Galar)');
 
+// Y en ingles igual, que es donde se cuela este fallo: `t()` lee el idioma
+// global y no el argumento `lang`, la misma trampa que documenta `texto()` mas
+// arriba. `nameOf` tambien tiene que elegir por idioma, como hace la ficha.
+const objetoPorSlug = new Map(pokemon.map(p => [p.name, p]));
+const nameOfEn = id => byId.get(id)?.nameEn || `#${id}`;
+const lookupsEn = { species: slug => objetoPorSlug.get(slug)?.nameEn || slug, type: slug => slug };
+await setLang('en');
+check('en ingles dice a donde lleva la de Hisui',
+  textoDeRama(sliggoo, ramasResueltas(goomy, sliggoo, formaDe), nameOfEn, 'en', lookupsEn),
+  'Lv. 40 or Lv. 40 at Hisui (to Sliggoo Hisuian Form)');
+check('y la de Galar',
+  textoDeRama(mrMime, ramasResueltas(mimeJr, mrMime, formaDe), nameOfEn, 'en', lookupsEn),
+  'Level up knowing Mimic or Level up at Galar knowing Mimic (to Mr. Mime Galarian Form)');
+await setLang('es');
+
 // Y lo que no elige forma se queda exactamente como estaba: el texto de siempre.
 const [charmeleon, charizard] = hijoDe(cadenaDe(4), 5, 6);
 check('una transicion normal no cambia de texto',
