@@ -1,303 +1,161 @@
 # PokeUtils
 
-Your retro Pokemon companion. A static web app with 16 tools: a Pokedex of 1025
-species and 326 alternate forms, the type chart, moves, abilities, items,
-natures, three calculators, and the competitive set — team analysis, speed tiers,
-survival checks, threat finding and the real metagame sets.
+**Tu guía Pokémon retro.** Si juegas competitivo, aquí sabes si tu equipo aguanta
+ese ataque y quién te lo puede reventar. Si crías, con quién cruza cada uno. Y si
+solo vienes a consultar la dex, está entera, en español, y no te pide una cuenta.
 
-**[Live Demo](https://pokeutils.alvarotc.com)**
+[![Abrir PokeUtils](https://img.shields.io/badge/Abrir%20PokeUtils-pokeutils.alvarotc.com-ffcc00?style=for-the-badge&labelColor=0f0f23)](https://pokeutils.alvarotc.com)
 
-![HTML](https://img.shields.io/badge/HTML-Static-orange)
-![CSS](https://img.shields.io/badge/CSS-Retro-blue)
-![JS](https://img.shields.io/badge/JS-ES%20Modules-yellow)
-![API](https://img.shields.io/badge/Data-PokeAPI-red)
-![Meta](https://img.shields.io/badge/Meta-Smogon-purple)
+![1025 Pokémon · 16 herramientas](https://img.shields.io/badge/1025%20Pok%C3%A9mon-16%20herramientas-ffcc00?style=flat-square&labelColor=0f0f23)
+![Español / English](https://img.shields.io/badge/Espa%C3%B1ol-English-3b5ba7?style=flat-square&labelColor=0f0f23)
+![Sin cuentas · Sin anuncios](https://img.shields.io/badge/Sin%20cuentas-Sin%20anuncios-3fa34d?style=flat-square&labelColor=0f0f23)
 
-No build step, no dependencies, no framework. Everything ships as static files
-and the lists come from generated JSON, so browsing costs zero API calls.
+![La portada de PokeUtils: el enjambre de sprites, el buscador y las herramientas más usadas](.github/readme/home.png)
 
-## Features
+## Qué puedes hacer
 
-The 16 tools live in four categories. The nav bar has one tab per category and
-each one opens a page listing its tools, so a new tool never has to fight for a
-slot in the bar.
+- **Preparar un equipo y saber por dónde te van a entrar.** Metes hasta seis,
+  y te dice qué tipos amenazan a media plantilla, cuáles no resiste nadie, qué
+  cobertura te falta y quién de toda la dex te contrarresta.
+- **Criar sin adivinar.** Los 15 grupos huevo, quién cruza con quién y cuántas
+  parejas tiene cada Pokémon, aplicando las cinco reglas de cría de verdad.
+- **Consultar la dex sin fricción.** 1025 especies y 326 formas con sus stats,
+  tipos, habilidades, evoluciones y todos los movimientos que aprenden. Gratis,
+  sin cuenta y sin anuncios.
 
-The list below also covers the detail pages a tool leads to — a Pokemon's page,
-a move's page — which are not tools of their own but are where most of the data
-actually shows up.
+En la portada hay un buscador que cruza los cuatro conjuntos a la vez —1351
+Pokémon, 937 movimientos, 313 habilidades y 1849 objetos— y te lleva directo a
+la página que tiene la respuesta.
 
-The home page carries a **global search** that is not a tool either: it crosses
-the four datasets at once — 1351 Pokemon, 937 moves, 313 abilities and 1849
-items — and goes straight to whichever page holds the answer. TMs are left out
-of both the search and the item list: a machine is called "MT01" and carries the
-description of a move it does not name, and searching "lanzallamas" used to
-return the move plus every machine that teaches it, spending results on the same
-answer twice. What each TM teaches lives in Moves. Only `pokemon.json` loads with
-the page; the rest are fetched on the first character typed.
+## Las 16 herramientas
 
-### Pokedex
+### Pokédex
 
-- **Pokedex** - All 1025 Pokemon (Gen I-IX) with sprites, stats, types, abilities and defensive matchups. Filter by generation and rarity, sort by any base stat, and share the view: every filter lives in the URL
-- **Pokemon detail** - Catch rate, the min/max each stat can reach at level 100, ability descriptions in a tooltip, the full evolution line with the exact condition for each step, and every move it learns by level, TM, breeding or tutor
-- **Alternate forms** - 326 of them: 97 megas, 34 Gigantamax, 60 regional and the rest. They show up as a tab strip on their species' page, and the URL never moves, so `#/pokedex/6` is still Charizard whichever form you are looking at. The dex opens with its 1025 species; forms answer a search
-- **Compare** - Up to four side by side on base stats, with the x4 and x2 weaknesses of each as separate rows
-- **Egg groups** - The 15 groups, who breeds with whom and how many partners a Pokemon has. It applies all five breeding rules, not just the shared group: `no-eggs` never breeds, Ditto breeds with everything except them, Ditto does not breed with Ditto, genderless breeds only with Ditto, and two Pokemon of the same single gender never breed
+- **[Pokédex](https://pokeutils.alvarotc.com/#/pokedex)** — Los 1025 Pokémon
+  (1.ª a 9.ª generación) con sprite, stats, tipos, habilidades y sus debilidades.
+  Filtra por generación y rareza, ordena por cualquier estadística base, y
+  comparte la vista: cada filtro va en la URL.
+  - **Ficha de un Pokémon** — Ratio de captura, el mínimo y el máximo que puede
+    alcanzar cada stat a nivel 100, la descripción de sus habilidades, la línea
+    evolutiva entera con la condición exacta de cada paso, y todos los
+    movimientos que aprende por nivel, MT, cría o tutor.
+  - **Formas alternativas** — 326: 97 megas, 34 Gigamax, 60 regionales y el
+    resto. Salen como pestañas dentro de la página de su especie, así que
+    `#/pokedex/6` sigue siendo Charizard mires la forma que mires.
+- **[Comparador](https://pokeutils.alvarotc.com/#/compare)** — Hasta cuatro lado
+  a lado por estadísticas base, con las debilidades x4 y x2 de cada uno en filas
+  aparte.
+- **[Grupos huevo](https://pokeutils.alvarotc.com/#/egg)** — Los 15 grupos, quién
+  cría con quién y cuántas parejas tiene cada Pokémon. Aplica las cinco reglas,
+  no solo la del grupo compartido: los del grupo Desconocido no crían nunca,
+  Ditto cría con todos menos con ellos, Ditto no cría con Ditto, los sin género
+  solo crían con Ditto, y dos del mismo género único tampoco crían entre sí.
 
-### Data
+### Datos
 
-- **Moves** - Complete move database with type, category, power, accuracy and description. Filter by priority or by the stat a move raises or lowers, and share the view: every filter lives in the URL
-- **Move detail** - Priority spelled out (moves first / moves last), stat changes as data instead of buried in the description, and **which Pokemon learn the move**, split by level, TM, breeding and tutor
-- **Abilities** - Full ability list with descriptions and search
-- **Items** - Item catalog with pixel sprites, category filters and detail modals
-- **Natures** - All 25 natures with stat modifiers and a visual 5x5 grid
-- **Type Chart** - Interactive type effectiveness calculator for 1 or 2 types (attack + defense)
+- **[Movimientos](https://pokeutils.alvarotc.com/#/moves)** — Los 937 con tipo,
+  categoría, potencia, precisión y descripción. Filtra por prioridad o por la
+  stat que sube o baja, y comparte la vista: cada filtro va en la URL.
+  - **Ficha de un movimiento** — La prioridad en palabras (ataca primero / ataca
+    último), los cambios de stats como dato y no enterrados en la descripción,
+    y **qué Pokémon lo aprenden**, separados por nivel, MT, cría y tutor. Ahí
+    está también lo que enseña cada MT.
+- **[Habilidades](https://pokeutils.alvarotc.com/#/abilities)** — Las 313 con su
+  descripción y buscador.
+- **[Objetos](https://pokeutils.alvarotc.com/#/items)** — 1849 objetos con su
+  sprite, filtros por categoría y ficha al abrirlos.
+- **[Naturalezas](https://pokeutils.alvarotc.com/#/natures)** — Las 25 con sus
+  modificadores y una rejilla 5x5 para verlas de un vistazo.
+- **[Tabla de tipos](https://pokeutils.alvarotc.com/#/types)** — Efectividad para
+  uno o dos tipos, al ataque y a la defensa.
 
-### Competitive
+### Competitivo
 
-Everything here follows a global format level: 50 for VGC doubles, 100 for
-Smogon singles.
+- **[Análisis de equipo](https://pokeutils.alvarotc.com/#/team)** — Hasta 6
+  Pokémon: qué tipos amenazan a la mitad del equipo, cuáles no resiste nadie y
+  la cobertura que te falta. El equipo va en la URL, así que un equipo es un
+  enlace.
+- **[Contrarrestar mi equipo](https://pokeutils.alvarotc.com/#/counter)** —
+  Recorre los 1259 candidatos —las especies y sus formas de combate— y te
+  devuelve quién amenaza a la mitad de tu equipo o más, ordenados por poder
+  ofensivo y marcando quién además llega antes. Las amenazas medidas en el meta
+  van señaladas aparte de las que solo se deducen del tipo.
+- **[Velocidad](https://pokeutils.alvarotc.com/#/speed)** — Relativa a un Pokémon
+  que eliges, no una tabla global: los 15 de arriba y los 15 de abajo, con los
+  empates señalados, porque empatar no es llegar antes.
+- **[¿Sobrevive esto?](https://pokeutils.alvarotc.com/#/survive)** — Atacante,
+  movimiento y defensor; el rango de daño, el veredicto, y **el reparto de EVs
+  más barato que aguanta el golpe**, encontrado a fuerza bruta sobre la fórmula
+  de daño real.
+- **[Sets del meta](https://pokeutils.alvarotc.com/#/meta)** — Lo que la gente
+  juega de verdad: naturaleza y EVs, objeto, habilidad, Teratipo y movimientos,
+  cada uno con su porcentaje de uso real. OU singles y VGC dobles.
 
-- **Team Analysis** - Up to 6 Pokemon: which types threaten half the team, which ones nobody resists, and the coverage your team is missing. The team lives in the URL, so a build is a link
-- **Counter my team** - Walks every Pokemon and returns who threatens half your team or more, ordered by offensive power, marking who also outspeeds it. Threats measured by Smogon are marked apart from the ones merely inferred from typing
-- **Speed** - Relative to one chosen Pokemon rather than a global table: the 15 above and the 15 below, with the ties called out, because tying is not outspeeding
-- **Does it survive?** - Attacker, move and defender in; the damage range, the verdict, and **the cheapest EV spread that survives it**, found by brute force over the real damage formula
-- **Meta sets** - What people actually play, distilled from Smogon's monthly usage statistics: nature and EVs, item, ability, Tera type and moves, each with its real usage percentage. OU singles and VGC doubles
+### Calculadoras
 
-### Calculators
+- **[IV/EV](https://pokeutils.alvarotc.com/#/calculator)** — Dos modos: sacar las
+  stats finales a partir de IVs y EVs, o deducir los IVs posibles a partir de una
+  stat que ya conoces.
+- **[Daño](https://pokeutils.alvarotc.com/#/calculator?tab=damage)** — La fórmula
+  de 5.ª generación en adelante, con clima, campo, pantallas, habilidades,
+  objetos y críticos. El panel entero va en la URL, así que un cálculo es un
+  enlace.
+- **[Captura](https://pokeutils.alvarotc.com/#/calculator?tab=catch)** — La
+  probabilidad por ball, estado y PS restantes, incluidas las balls cuyo
+  multiplicador depende de la situación.
 
-- **IV/EV Calculator** - Two modes: calculate final stats from IVs/EVs, or find possible IVs from a known stat
-- **Damage Calculator** - The Gen 5+ formula with weather, terrain, screens, abilities, items and critical hits. The whole panel lives in the URL, so a calculation is a link
-- **Capture Calculator** - Catch probability by ball, status and remaining HP, including the balls whose multiplier depends on the situation
+## Lo que comparten todas
 
-## Tech
+- **Todo es un enlace.** Los filtros de una lista, los seis miembros de un
+  equipo, el panel entero de un cálculo: el estado vive en la dirección, así que
+  compartirlo es copiar la barra del navegador.
+- **Español e inglés**, y no solo la interfaz: los nombres de Pokémon,
+  movimientos, habilidades y objetos también.
+- **Nivel 50 o 100, global.** Un interruptor arriba a la derecha: 50 para VGC
+  dobles, 100 para Smogon singles. Todo lo competitivo lo respeta.
+- **Dos temas, claro y oscuro**, y todo el texto se lee en los dos: cada color
+  pasa el contraste AA, comprobado uno a uno.
+- **En el móvil también**, con menú y rejillas que se adaptan.
+- **Sin cuentas, sin anuncios y gratis.**
 
-Zero dependencies. Zero build step. Pure HTML + CSS + JS (ES Modules).
+## Cómo se ve
 
-- Lists ship as static JSON in `data/`, served from the CDN — browsing costs zero API calls
-- Pokemon flavor text comes from the [PokeAPI REST API](https://pokeapi.co), which is CDN-cached and has no rate limit
-- Pixel sprites from the PokeAPI sprite repository
-- [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) for headings and UI, and [VT323](https://fonts.google.com/specimen/VT323) for data and numbers: same pixel family, but Press Start 2P stops being readable below 11px
-- Fluid width with no cap, and desktop breakpoints at 1000, 1280 and 1500
-- Every piece of text clears 4.5:1 contrast in both themes, checked by `scripts/check-contrast.mjs`
-- Fully responsive (mobile hamburger menu, adaptive grids)
-- All Pokemon names, moves, abilities and items in Spanish
+La Pokédex, con sus filtros y su orden:
 
-## Updating the data
+![La lista de la Pokédex con el panel de filtros por tipo, generación y rareza](.github/readme/pokedex.png)
 
-The files in `data/` are generated, not hand-edited. There are three builders,
-because there are sources with very different lifetimes.
+La ficha de un Pokémon: formas, set del meta y todo lo que aprende:
 
-### Game data — regenerate when a generation ships
+![La ficha de Charizard: pestañas de formas, set del meta con porcentajes y la lista de movimientos](.github/readme/ficha.png)
 
-```bash
-node scripts/build-data.mjs                       # all datasets
-node scripts/build-data.mjs evolutions learnsets  # or just some
-```
+El análisis de un equipo de seis, con su matriz defensiva:
 
-Targets: `pokemon`, `moves`, `abilities`, `items`, `berries`, `evolutions`,
-`learnsets`.
+![Análisis de un equipo de seis con las amenazas, los tipos sin respuesta y la matriz de efectividades](.github/readme/equipo.png)
 
-It reads the REST API (no rate limit) and takes a few minutes. Bump
-`MAX_POKEMON` in the script when the National Dex grows.
+Y las dos preguntas que más se hacen: cuánto daño hace y si lo aguanta.
 
-### TM moves — regenerate alongside `items`
+![La calculadora de daño con atacante, defensor, movimiento y el rango de daño resultante](.github/readme/dano.png)
 
-```bash
-node scripts/build-machines.mjs
-```
+![La herramienta Sobrevive esto: el veredicto y los EVs mínimos para aguantar el golpe](.github/readme/sobrevive.png)
 
-Writes `data/machines.json`: which move each of the 338 TMs, HMs and TRs
-teaches, with its type. Nothing in the app reads it since TMs left the search;
-it is kept because rebuilding it costs 338 PokeAPI calls. PokeAPI hands the
-relation out one machine at a time, so this is ~676 requests and takes a minute.
-It reads `items.json` and `moves.json` first, so run it **after**
-`build-data.mjs items moves`.
+## De dónde salen los datos
 
-### Meta sets — regenerate when you want a newer month
+- **[PokeAPI](https://pokeapi.co)** para todos los datos de juego: especies,
+  formas, movimientos, habilidades, objetos, evoluciones y aprendizajes.
+- **[Smogon](https://www.smogon.com/stats/)** para los sets del meta, sacados de
+  las estadísticas de uso mensuales publicadas en `stats/<mes>/chaos/`.
 
-```bash
-node scripts/build-meta.mjs
-```
+Sobre los datos de Smogon en concreto, porque redistribuir no es lo mismo que
+consultar y esto se sirve como ficheros estáticos en un dominio propio:
 
-This one is different: it is the only data that **ages**. Everything else is
-game data and does not change; this is a snapshot of one month of ladder play,
-and the app shows which month on screen. Set `MONTH` at the top of the script,
-check that the formats in `FORMATS` still exist for it, and run it.
-
-Smogon publishes no official API and can change the file structure without
-notice, so the builder **fails loudly** rather than writing a half-empty file:
-it aborts if a format 404s, if the JSON has no `data` object, if a format yields
-fewer than 100 Pokemon, or if any name fails to map to our dex.
-
-### Derivados — regenerar despues de `build-data.mjs`
-
-Cinco scripts no bajan nada de la red: destilan lo que ya hay en `data/` para
-que cada pantalla pida solo lo suyo. Hay que correrlos **despues** de
-`build-data.mjs`, que reescribe los datasets con todo dentro.
-
-```bash
-node scripts/build-dex.mjs        # data/dex/{id}.json, uno por especie
-node scripts/build-search.mjs     # data/search.json, el indice del buscador
-node scripts/build-item-desc.mjs  # separa data/items-desc.json de items.json
-node scripts/fetch-sprites.mjs    # baja a sprites/ lo que la app referencia
-node scripts/build-swarm.mjs      # sprites/swarm.png, el atlas de la portada
-```
-
-Que resuelve cada uno, medido:
-
-| | antes | despues |
-|---|---|---|
-| Abrir una ficha | 153,7 KB gz (`learnsets` + `moves` enteros) | 1,9 KB gz de mediana |
-| Buscar por primera vez | 267,9 KB gz (los cuatro datasets) | 80,5 KB gz |
-| Entrar en `#/items` | 97,3 KB gz | 38,7 KB gz |
-| Sprites de la portada | hasta 115 peticiones, cruzando a GitHub | 21, del propio origen |
-
-`build-dex.mjs` es el unico que toca la red: pide la descripcion de cada especie
-a PokeAPI una vez y la hornea en el fichero, lo que quita la ultima llamada en
-runtime de la app. Se reanuda solo -- si el fichero ya la tiene, no la vuelve a
-pedir -- y `--force` la re-descarga.
-
-### Verifying a rebuild
-
-Every dataset has a script that pins its measured numbers. Run them all after
-regenerating; they are the thing that catches a builder that "worked" but
-returned different data. Two of the seventeen check the interface instead of the
-data: `check-contrast.mjs` sweeps every text colour against the three surfaces
-in both themes, and `check-search.mjs` pins the global search ranking.
-
-```bash
-for s in scripts/check-*.mjs; do
-  node "$s" > /dev/null && echo "$(basename $s) OK" || echo "$(basename $s) FAILED"
-done
-```
-
-Both builders accept `POKEUTILS_OUT_DIR` to write somewhere else, which is how
-you diff a rebuild against the committed files before overwriting them.
-
-## Deploy
-
-Static files, no build needed. Just upload the folder.
-
-**Vercel:**
-```bash
-npx vercel --prod
-```
-
-**Netlify:**
-
-Drag and drop the folder, or connect the repo with publish directory `.`
-
-**Local:**
-```bash
-node scripts/serve.mjs        # port 8090, or pass your own
-```
-
-Use this one while developing, not `python3 -m http.server`: that server sends
-no `Cache-Control`, so the browser caches the ES modules heuristically and keeps
-running the previous code after an edit, with nothing in the console to say so.
-`scripts/serve.mjs` sends `no-store`.
-
-## Structure
-
-```
-├── index.html        # SPA shell
-├── style.css         # All styles
-├── netlify.toml      # Cache headers for the generated data and the sprites
-├── sprites/          # 2177 PNG: los que la app referencia — 8.6 MB
-├── data/             # Generated datasets (see "Updating the data") — 2.2 MB
-│   ├── pokemon.json     # 560K  Species and forms: stats, catch rate, egg groups
-│   ├── items.json       # 220K  Item catalog (las descripciones, aparte)
-│   ├── items-desc.json  # 327K  Descripciones de objetos: solo al abrir uno
-│   ├── search.json      # 361K  Indice del buscador global
-│   ├── dex/{id}.json    # 7.4M  Learnset, movimientos y descripcion por especie
-│   ├── moves.json       # 380K  Move metadata, priority, stat changes, battle data
-│   ├── learnsets.json   # 368K  Moves each Pokemon learns, by method
-│   ├── abilities.json   # 104K  Ability descriptions
-│   ├── evolutions.json  #  76K  Evolution chains and their conditions
-│   ├── meta-ou.json     #  72K  Smogon usage sets, OU singles
-│   ├── meta-vgc.json    #  64K  Smogon usage sets, VGC doubles
-│   └── berries.json     # 4.0K  Berry effects for the damage calculator
-├── scripts/
-│   ├── build-data.mjs # Regenerates the game data from the REST API
-│   ├── build-meta.mjs # Regenerates the meta sets from Smogon's statistics
-│   ├── build-dex.mjs  # Un fichero por especie: learnset, movimientos, descripcion
-│   ├── build-search.mjs    # El indice del buscador global
-│   ├── build-item-desc.mjs # Saca las descripciones de items.json
-│   ├── fetch-sprites.mjs   # Baja a sprites/ lo que la app referencia
-│   ├── build-swarm.mjs     # El atlas del enjambre de la portada
-│   ├── check-*.mjs    # 17 scripts pinning the measured numbers of each dataset
-│   └── serve.mjs      # Dev server that disables caching
-└── js/
-    ├── app.js            # Hash router + query state + pagination
-    ├── api.js            # Static data loader + REST fallback
-    ├── data.js           # Types, natures, generations, static tables
-    ├── i18n.js           # Every string in Spanish and English
-    ├── tools.js          # The tool table: feeds home cards, hubs and nav
-    ├── home.js           # Landing page: the sprite swarm, the search and every tool's card
-    ├── global-search.js  # The home search box: lazy loading and the results panel
-    ├── search-index.js   # Ranking across Pokemon, moves, abilities and items
-    ├── hub.js            # A category's page, listing its tools
-    ├── level.js          # The global 50/100 format level
-    ├── tooltip.js        # Reusable hover/touch bubble
-    │
-    ├── pokedex.js        # Pokedex list: search, filters, sorting
-    ├── pokedex-detail.js # A single Pokemon: stats, forms, evolutions, moves
-    ├── forms.js          # Alternate forms: which are cosmetic, which a species has
-    ├── compare.js        # Up to four Pokemon side by side
-    ├── egg-groups.js     # The five breeding rules, and nowhere else
-    ├── egg-pages.js      # Egg group index and one group's members
-    ├── evolution.js      # Evolution conditions to readable text
-    │
-    ├── moves.js          # Moves list: search, filters, priority, stat changes
-    ├── moves-detail.js   # A single move: data, effect and who learns it
-    ├── move-effects.js   # Priority and stat-change labels and filters
-    ├── learnset-index.js # Reverse index: move -> Pokemon that learn it
-    ├── abilities.js      # Abilities list
-    ├── items.js          # Items catalog
-    ├── natures.js        # Natures table
-    ├── type-chart.js     # Type effectiveness calculator
-    │
-    ├── team.js           # Team analysis page: slots, matrix, coverage
-    ├── team-analysis.js  # Team maths: defensive matrix, threats, coverage
-    ├── counter.js        # Counter-my-team page
-    ├── threats.js        # Who threatens a team, by typing and by measured data
-    ├── speed.js          # Speed tiers page
-    ├── speed-tiers.js    # Speed maths, no DOM
-    ├── survive.js        # Survival check page
-    ├── survival.js       # Survival maths and the minimum EV spread
-    ├── meta.js           # The meta questions: a set, its checks, the ranking
-    ├── meta-page.js      # Meta sets page
-    │
-    ├── calculator.js     # Shell for the three calculator tabs
-    ├── calc-ivev.js      # IV/EV panel
-    ├── calc-damage.js    # Damage panel
-    ├── calc-capture.js   # Capture panel
-    ├── damage.js         # Damage formula, no DOM
-    ├── damage-url.js     # The damage panel's whole state in the URL
-    ├── capture.js        # Capture formula, no DOM
-    ├── stats.js          # Stat formulas, shared everywhere
-    ├── battle-data.js    # Ball multipliers, status, weather, terrain, screens
-    └── variable-power.js # The 41 moves PokeAPI gives no power for
-```
-
-## Data sources
-
-- **[PokeAPI](https://pokeapi.co)** for all the game data: species, forms, moves,
-  abilities, items, evolutions and learnsets.
-- **[Smogon](https://www.smogon.com/stats/)** for the meta sets, taken from the
-  monthly usage statistics published under `stats/<month>/chaos/`.
-
-On the Smogon data specifically, because redistributing is not the same as
-consulting and this ships as static files on our own domain:
-
-- **Only the aggregated usage statistics are used**, which are public domain —
-  the percentages in `chaos/`. The sets shown here are derived from those
-  percentages.
-- **Smogon's written analyses and curated sets are copyrighted** by Smogon and
-  its contributors. **None of them are used.** No analysis, no prose, no
-  hand-written set is copied.
-- Attribution is shown in the app itself, next to the data, with the month it
-  comes from.
+- **Solo se usan las estadísticas de uso agregadas**, que son de dominio público
+  — los porcentajes de `chaos/`. Los sets que se muestran aquí están derivados de
+  esos porcentajes.
+- **Los análisis escritos y los sets curados de Smogon tienen copyright** de
+  Smogon y de quienes colaboran con ellos. **No se usa ninguno.** Ni un análisis,
+  ni un texto, ni un set escrito a mano.
+- La atribución se muestra en la propia aplicación, junto a los datos, con el mes
+  del que vienen.
 
 ## Legal
 
@@ -307,6 +165,21 @@ Pokemon and all respective names are trademarks of Nintendo. No copyright infrin
 
 Pokemon (c) 2002-2026 Pokemon. (c) 1995-2026 Nintendo/Creatures Inc./GAME FREAK inc.
 
-## Author
+## Autor
 
-Made with a Pokeball by [Alvaro Torres](https://github.com/alvarotorresc)
+Hecha con una Pokéball por [Alvaro Torres](https://github.com/alvarotorresc)
+
+## Desarrollo
+
+Sin dependencias, sin framework: son ficheros estáticos.
+
+```bash
+node scripts/serve.mjs        # puerto 8090, o el que le pases
+```
+
+Usa ese y no `python3 -m http.server`: ese último no manda `Cache-Control`, el
+navegador se guarda los módulos por su cuenta y sigues viendo el código anterior
+después de editar, sin que nada te avise. `scripts/serve.mjs` manda `no-store`.
+
+`data/` está generado, no se edita a mano: lo reconstruyen los scripts de
+`scripts/`, y los `check-*.mjs` verifican que lo reconstruido sigue cuadrando.
