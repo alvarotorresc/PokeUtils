@@ -3,3 +3,12 @@ node_modules/
 .DS_Store
 # La salida del build la genera Netlify en cada deploy: aqui solo el fuente.
 dist/
+
+# Material de trabajo (docs, planes, capturas, config de agentes): no se sube al repo.
+docs/
+screenshots/
+.agents/
+.claude/
+skills-lock.json
+/home-movil.png
+/pokedex-bugs
