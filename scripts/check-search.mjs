@@ -102,5 +102,47 @@ check('dos llamadas iguales dan lo mismo',
   searchAll(datasets, 'pika', 8).map(r => r.id),
   searchAll(datasets, 'pika', 8).map(r => r.id));
 
+console.log('\nEl quinto dominio: las 16 herramientas\n');
+
+// El caso que le da sentido a la tarea: escribir "velocidad" no encontraba
+// nunca la herramienta Velocidad.
+check('velocidad encuentra la herramienta, no un Pokemon o movimiento', first('velocidad').kind, 'tool');
+check('y navega a su ruta', first('velocidad').route, '#/speed');
+check('speed responde lo mismo en ingles', searchAll(datasets, 'speed', 8, 'en')[0]?.kind, 'tool');
+check('con el nombre en ingles', searchAll(datasets, 'speed', 8, 'en')[0]?.name, 'SPEED');
+check('dano encuentra la Calculadora de Dano', first('daño').kind, 'tool');
+check('y su pestana es damage, no capture', first('daño').route, '#/calculator?tab=damage');
+check('captura navega a catch, no a capture', first('captura').route, '#/calculator?tab=catch');
+// "velocidad" empareja por nameEs, pero con la app en ingles hay que ensenar
+// nameEn: el mismo bug que labelOf ya evita en los otros cuatro dominios.
+check('un termino en espanol con la app en ingles sale en ingles',
+  searchAll(datasets, 'velocidad', 8, 'en')[0]?.name, 'SPEED');
+
+console.log('\nNingun sinonimo se cuela por substring en un termino de control\n');
+
+// El riesgo real de escribir sinonimos a mano: "type chart" contenia "char" y
+// ponia la herramienta Tipos delante de Charizard; "aguanta el golpe" (la
+// frase textual de home.survive.desc) contenia "agua". Ninguno de los dos se
+// veia en ningun otro check hasta que se comparaba termino por termino contra
+// los ocho de la seccion de arriba. "ball" y "poke" quedan fuera a proposito:
+// esos SI encajan con una herramienta (Captura, Pokedex) y es lo esperado.
+const CONTROL = ['pikachu', 'surf', 'levitate', 'master ball', 'restos',
+  'growl', 'fire', 'gengar', 'char'];
+check('ningun termino de control despierta una herramienta',
+  CONTROL.filter(t => searchAll(datasets, t, 8).some(r => r.kind === 'tool')), []);
+
+console.log('\nLas herramientas van primero cuando encajan, sin desplazar a las que no\n');
+
+// "meta" encaja con la herramienta (contains en "Sets del meta") y con tres
+// Pokemon (Metang, Metapod, Metagross empiezan por "Meta"): la herramienta
+// sale primero aunque su score sea mas bajo que el de "empieza por".
+const metaHits = searchAll(datasets, 'meta', 8);
+check('la herramienta va primera', metaHits[0]?.kind, 'tool');
+check('los Pokemon siguen apareciendo detras', metaHits.slice(1).some(r => r.kind === 'pokemon'), true);
+
+console.log('\nUn termino sin herramienta se comporta como antes\n');
+
+check('bicicleta no encuentra nada, en ningun dominio', searchAll(datasets, 'bicicleta', 8).length, 0);
+
 console.log(`\n${failed ? `${failed} fallos` : 'All checks passed'}\n`);
 process.exit(failed ? 1 : 0);

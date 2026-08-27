@@ -75,13 +75,27 @@ export function attachGlobalSearch(input, alGuardar) {
     cursor = -1;
     panel.hidden = results.length === 0;
     ultimos = results;
-    panel.innerHTML = results.map((r, i) => `
+    // Las herramientas son siempre un prefijo contiguo de `results`
+    // (searchAll las antepone), asi que esta cabecera solo puede dispararse
+    // una vez, justo antes de la primera fila.
+    let toolsHeaderShown = false;
+    panel.innerHTML = results.map((r, i) => {
+      let header = '';
+      if (r.kind === 'tool' && !toolsHeaderShown) {
+        header = `<div class="gs-group">${t('search.group.tools')}</div>`;
+        toolsHeaderShown = true;
+      }
+      // Sin etiqueta de fila para herramientas: la cabecera del grupo ya dice
+      // "HERRAMIENTAS" y repetirla en cada fila era el mismo texto dos veces.
+      const kind = r.kind === 'tool' ? '' : t(KIND_KEY[r.kind]);
+      return `${header}
       <a class="gs-row" href="${r.route}" data-i="${i}">
         <img class="gs-sprite" src="${r.sprite}" alt="" loading="lazy"
              onerror="this.style.visibility='hidden'">
-        <span class="gs-kind">${t(KIND_KEY[r.kind])}</span>
+        <span class="gs-kind">${kind}</span>
         <span class="gs-name">${r.name}</span>
-      </a>`).join('');
+      </a>`;
+    }).join('');
   }
 
   async function run() {

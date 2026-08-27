@@ -67,7 +67,8 @@ const chipHTML = (href, name, sprite) =>
     ? `<img src="${sprite}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : ''}${name}</a>`;
 
 // Todos los dominios traen sprite: el suyo los Pokemon y los objetos, la MT de
-// su tipo los movimientos y la Capsula Habilidad las habilidades.
+// su tipo los movimientos, la Capsula Habilidad las habilidades y el icono de
+// la propia herramienta las herramientas.
 const chipsHTML = () => {
   const historial = leerHistorial();
   if (!historial.length) {

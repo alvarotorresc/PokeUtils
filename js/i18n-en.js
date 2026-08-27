@@ -152,6 +152,7 @@ export default {
     'search.kind.move': 'MOVE',
     'search.kind.ability': 'ABILITY',
     'search.kind.item': 'ITEM',
+    'search.group.tools': 'TOOLS',
     'pokedex.type': 'TYPE',
     'home.pokedex.desc': 'All 1025 Pokemon with stats, types and abilities',
     'home.types.desc': 'Interactive type chart with weaknesses and resistances',

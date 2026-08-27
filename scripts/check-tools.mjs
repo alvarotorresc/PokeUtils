@@ -3,6 +3,7 @@
 // alguno de los dos idiomas.
 // Run with: node scripts/check-tools.mjs
 import { CATEGORIES, TOOLS, toolsIn, categoryOf, targetOf } from '../js/tools.js';
+import { TOOL_NAMES } from '../js/search-index.js';
 import es from '../js/i18n-es.js';
 import en from '../js/i18n-en.js';
 
@@ -89,6 +90,19 @@ check('toda clave existe en los dos idiomas', sinTraducir, []);
 // el otro no, t() devuelve la clave cruda en pantalla y no lo ve nadie.
 check('los dos diccionarios tienen las mismas claves',
   [...Object.keys(es).filter(k => !(k in en)), ...Object.keys(en).filter(k => !(k in es))], []);
+
+console.log('\nEl indice del buscador no se desincroniza de las etiquetas\n');
+
+// search-index.js no importa los diccionarios (harian bajar los dos idiomas en
+// la home, ver el comentario en TOOL_NAMES), asi que guarda ahi los nombres
+// como texto suelto. Esto es lo que evita que un rename en i18n se quede sin
+// avisar: cada herramienta tiene que decir lo mismo aqui y en su clave real.
+check('las 16 herramientas tienen nombre en el indice del buscador',
+  TOOLS.map(t => t.id).filter(id => !TOOL_NAMES[id]), []);
+check('el nombre en espanol coincide con la clave real',
+  TOOLS.filter(t => TOOL_NAMES[t.id]?.es !== es[t.label]).map(t => t.id), []);
+check('el nombre en ingles coincide con la clave real',
+  TOOLS.filter(t => TOOL_NAMES[t.id]?.en !== en[t.label]).map(t => t.id), []);
 
 console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);

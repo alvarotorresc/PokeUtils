@@ -728,6 +728,18 @@ a:hover {
   text-align: left;
 }
 
+/* La cabecera del grupo de herramientas: mismo tono y trazo que .section-title
+   en el resto de la app, pero a la escala del desplegable. Solo aparece si
+   alguna herramienta encaja, y siempre antes que el resto. */
+.gs-group {
+  padding: 8px 16px;
+  font-size: 0.5rem;
+  color: var(--accent-text);
+  letter-spacing: 1px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-accent);
+}
+
 .gs-row {
   display: flex;
   align-items: center;

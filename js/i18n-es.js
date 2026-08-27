@@ -157,6 +157,7 @@ export default {
     'search.kind.move': 'MOVIMIENTO',
     'search.kind.ability': 'HABILIDAD',
     'search.kind.item': 'OBJETO',
+    'search.group.tools': 'HERRAMIENTAS',
     'pokedex.type': 'TIPO',
     'home.pokedex.desc': 'Los 1025 Pokémon con stats, tipos y habilidades',
     'home.types.desc': 'Tabla de tipos interactiva con debilidades y resistencias',
