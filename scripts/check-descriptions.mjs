@@ -69,6 +69,27 @@ console.log("\n'moves.nodesc' existe en los dos diccionarios (lo que pintan esos
 check("'moves.nodesc' en i18n-es.js", 'moves.nodesc' in es, true);
 check("'moves.nodesc' en i18n-en.js", 'moves.nodesc' in en, true);
 
+console.log('\nMovimientos: descripcion en español (Task 9a cerro 87 de los 88 "solo EN")\n');
+
+// La Task 2 dejaba 88 movimientos recientes (Leyendas Arceus/Escarlata-Purpura,
+// ids 827-919) sin descriptionEs -- PokeAPI nunca ha publicado flavor text ES
+// para ellos. La Task 9a los relleno desde pkproject.net (MOVE_DESC_ES_OVERRIDES
+// en build-data.mjs), menos uno: malignant-chain (919, el ultimo id de todo
+// PokeAPI) cayo en un bug de desplazamiento de una posicion en la base de datos
+// de esa fuente para el bloque 905-919 -- su texto real estaria en la pagina
+// del "siguiente id", que no existe. Sigue cayendo a `descriptionEn` en la
+// ficha (moves-detail.js:124), nunca a 'moves.nodesc' (tiene EN). Si esta
+// lista cambiara -- se encuentra la fuente para malignant-chain, o aparece
+// una regresion en alguno de los 87 -- es una señal real que hay que revisar.
+const MOVES_SIN_DESCRIPTION_ES_ACEPTADOS = [919];
+
+const movesSinDescripcionEs = moves
+  .filter(m => !exceptuados.has(m.id) && !m.descriptionEs && m.descriptionEn)
+  .map(m => m.id)
+  .sort((a, b) => a - b);
+check('exactamente los movimientos "solo EN" que quedan son los aceptados',
+  movesSinDescripcionEs, MOVES_SIN_DESCRIPTION_ES_ACEPTADOS);
+
 console.log('\nPokemon y movimientos: nameEs/nameEn nunca faltan (no solo "no son el slug")\n');
 
 // Comprobar solo `nameEs === name` deja pasar en silencio un `nameEs`
@@ -184,8 +205,11 @@ console.log('\nObjetos visibles: descripcion en al menos un idioma (items-desc.j
 // 5, berries 0. Casi todo contenido muy reciente (DLC de Escarlata/Purpura,
 // mas las 45 piedras Mega custom y hopo-berry, que tienen nombre desde la
 // Task 7 pero siguen sin flavor text) sin flavor text en PokeAPI en ningun
-// idioma -- traducirlo es contenido, no builder, y queda aceptado igual que
-// las 46 habilidades y los 88->0 movimientos de la Task 2.
+// idioma -- traducirlo es contenido, no builder, y queda aceptado por ahora
+// (el mismo trato que tenian los movimientos antes de la Task 9a, que ya
+// cerro el suyo -- ver el check de descriptionEs de movimientos de mas
+// arriba, que solo deja malignant-chain -- y que las 46 habilidades siguen
+// teniendo hoy).
 //
 // Dos checks, cada uno cazando una direccion de regresion que el otro no ve:
 // (1) NINGUN id nuevo, fuera del bloque de 480 aceptado, puede aparecer sin
