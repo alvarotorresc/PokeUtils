@@ -3414,6 +3414,21 @@ a.evo-node:hover img {
   text-align: center;
 }
 
+/* Four tools or more do not fit an equal-width row at 360px (five did not
+   either) -- CONTRARRESTAR and NATURALEZAS are long words. Below that, the
+   strip switches to the Pikachu form strip's own scroll: natural-width tabs
+   inside .form-tabs-wrap, whose fade already does nothing until JS finds an
+   overflow to report. Above it there is room, so the row stays the equal-fill
+   .tool-tabs Pokedex and Calculator already use. */
+@media (max-width: 639px) {
+  .tool-tabs-scroll {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tool-tabs-scroll::-webkit-scrollbar { display: none; }
+  .tool-tabs-scroll .tab { flex: 0 0 auto; white-space: nowrap; }
+}
+
 .tab-content {
   display: flex;
   flex-direction: column;

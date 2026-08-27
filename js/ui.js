@@ -81,6 +81,35 @@ export function loadingHTML(text) {
   `;
 }
 
+// ===== HELPER: edge fade on a horizontally-scrolling tab strip =====
+//
+// Lifted out of the Pikachu form strip, which wired this inline for itself
+// only. The tool tab strips need the identical measurement -- five tools do
+// not fit a row at 360px either -- so this is the one copy both call.
+//
+// The scrollbar is hidden on the strip, so past its edge a tab is simply cut
+// in half with nothing telling you more is there. These classes light a fade
+// on whichever side still has content, and go on the wrapper (not the
+// scroller) so the fade stays put at the edge instead of riding along with
+// the content underneath it.
+export function wireScrollFade(wrap, strip) {
+  if (!wrap || !strip) return;
+  const markScroll = () => {
+    // 8px, not 1: landing on the last tab leaves a few px of slack and a fade
+    // over nothing reads as a tab still hiding there.
+    const max = strip.scrollWidth - strip.clientWidth;
+    wrap.classList.toggle('more-right', strip.scrollLeft < max - 8);
+    wrap.classList.toggle('more-left', strip.scrollLeft > 8);
+  };
+  strip.addEventListener('scroll', markScroll, { passive: true });
+  // Measured after layout, and again whenever the strip changes width: the
+  // same markup lives in a masonry column on desktop and full-width on mobile.
+  new ResizeObserver(markScroll).observe(strip);
+  markScroll();
+  // The active tab is not always the first one.
+  strip.querySelector('.tab.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+
 // ===== HELPER: pagination =====
 export function renderPagination(container, currentPage, totalPages, onPageChange) {
   const div = document.createElement('div');
