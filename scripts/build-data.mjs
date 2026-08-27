@@ -505,7 +505,12 @@ const ITEM_NAME_OVERRIDES = {
 //   /265/signo-magma/) for the in-game text and place names, normalized out
 //   of that source's all-caps ROM-font styling to match this dataset's own
 //   register (see devon-parts, ss-ticket--letsgo above: sentence case, no
-//   shouting).
+//   shouting) -- but every PROPER NOUN that source names (Nao Abandonada,
+//   Deportivas, Ciudad Verde, Ciudad Celeste, Roca Ombligo...) is kept
+//   verbatim, only re-cased. A first pass swapped two of those for a
+//   plausible-sounding synonym instead ("Barco Abandonado" for the Nao,
+//   "Zapatillas para Correr" for las Deportivas) -- caught in review against
+//   this same source and fixed; this comment is the corrected claim.
 // - 6 Legends: Arceus balls (laheavy-ball..lajet-ball): official Spanish ball
 //   names (Peso Ball/Kilo Ball/(Quintal Ball upgrade)/Pluma Ball/Ala Ball/Aero
 //   Ball) confirmed against pokexperto.net's Legends Arceus capture-item dex
@@ -517,13 +522,13 @@ const ITEM_NAME_OVERRIDES = {
 //   translate in any language, so these are plain descriptions of what each
 //   pocket holds, per Bulbapedia's "List of items by pocket" for Let's Go.
 const ITEM_DESC_ES_OVERRIDES = {
-  bicycle: 'Bicicleta plegable con la que se va mucho más rápido que con un par de Zapatillas para Correr.',
+  bicycle: 'Bicicleta plegable con la que se va mucho más rápido que con las Deportivas.',
   'devon-goods': 'Paquete que contiene piezas mecánicas de algún tipo, fabricadas por Devon S. A.',
   'pokeblock-case': 'Tubo para guardar los Pokécubos hechos con una Licuabayas. Suelta un Pokécubo al agitarlo.',
-  'rm-1-key': 'Llave que abre la puerta de una de las cabinas del Barco Abandonado. Es vieja y parece que se rompe con facilidad.',
-  'rm-2-key': 'Llave que abre la puerta de una de las cabinas del Barco Abandonado. Es vieja y parece que se rompe con facilidad.',
-  'rm-4-key': 'Llave que abre la puerta de una de las cabinas del Barco Abandonado. Es vieja y parece que se rompe con facilidad.',
-  'rm-6-key': 'Llave que abre la puerta de una de las cabinas del Barco Abandonado. Es vieja y parece que se rompe con facilidad.',
+  'rm-1-key': 'Llave que abre la puerta de una de las cabinas de la Nao Abandonada. Es vieja y parece que se rompe con facilidad.',
+  'rm-2-key': 'Llave que abre la puerta de una de las cabinas de la Nao Abandonada. Es vieja y parece que se rompe con facilidad.',
+  'rm-4-key': 'Llave que abre la puerta de una de las cabinas de la Nao Abandonada. Es vieja y parece que se rompe con facilidad.',
+  'rm-6-key': 'Llave que abre la puerta de una de las cabinas de la Nao Abandonada. Es vieja y parece que se rompe con facilidad.',
   'oaks-parcel': 'Correo que hay que entregar al Profesor Oak. Te lo envían desde la Tienda Pokémon de Ciudad Verde.',
   'bike-voucher': 'Vale que se puede canjear por una bicicleta en la Tienda de Bicicletas de Ciudad Celeste.',
   'fame-checker': 'Dispositivo que permite recordar lo que has oído y visto sobre personajes famosos.',
