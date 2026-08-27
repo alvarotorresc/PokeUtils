@@ -122,7 +122,7 @@ console.log('\nHabilidades: la cadena de fallback de la descripcion nunca llega 
 check('ninguna habilidad se queda sin descriptionEn', abilities.filter(a => !a.descriptionEn).map(a => a.id), []);
 check('ninguna habilidad se queda sin effect', abilities.filter(a => !a.effect).map(a => a.id), []);
 
-console.log('\nObjetos visibles: mismo patron que habilidades, con las excepciones que de verdad no tienen nombre\n');
+console.log('\nObjetos visibles: mismo patron que habilidades, con la unica excepcion que de verdad no tiene nombre\n');
 
 // items.js:162 filtra la categoria "machines" (MT/MO) antes de pintar la
 // lista: la base real de la UI es esta, no las 2187 de items.json enteras.
@@ -136,66 +136,31 @@ check('base visible de items.js (items.json menos "machines")', visibles.length,
 // la pagina de Objetos, no solo un nombre feo.
 check('items.json (visibles): entradas sin nameEs o sin nameEn', visibles.filter(i => !i.nameEs || !i.nameEn).map(i => i.id), []);
 
-// 45 objetos (ids 2233-2277, bloque contiguo): piedras Mega inventadas por
-// esta app para sus megaevoluciones custom -- misma familia que
-// eelevate/fire-mane en habilidades. No es una suposicion por el patron del
-// nombre: verificado cruzando cada uno contra pokemon.json, que trae una
-// forma "<especie>-mega"/"-mega-x/y/z" a juego con cada item, ids ya fuera de
-// las megas oficiales (p.ej. "clefable-mega" para clefablite,
-// "eelektross-mega" para eelektrossite -- esta ultima ya confirmada como
-// custom por el informe de la Task 2).
-//
-// OJO, esto no es un callejon sin salida como suena "PokeAPI no los tiene":
-// PokeAPI no los tiene porque son contenido propio de esta app, no porque el
-// dato no exista en ningun sitio -- eelevate/fire-mane (las habilidades
-// gemelas de estas mismas megas) SI recibieron un nameEn escrito a mano
-// ("Eelevate", "Fire Mane"). A estos 45 objetos les falta la misma pasada de
-// naming manual, que queda pendiente y anotada aparte (no es tarea de este
-// check, que no toca data/). Mientras tanto nameEn === name tambien, y
-// pokeName() no tiene a donde caer.
-//
-// 2 objetos mas (2278 hopo-berry, 2279 roseli-berry) NO son contenido custom:
-// son un hueco de los propios datos de PokeAPI. hopo-berry no tiene ninguna
-// otra entrada con datos en items.json. roseli-berry es una fila duplicada y
-// vacia del objeto que SI esta completo en el id 723 ("Baya Hibis"/"Roseli
-// Berry") -- verificado filtrando items.json por name === 'roseli-berry':
-// dos entradas, una completa y una vacia. No es un fallo del builder pidiendo
-// mal el dato, es PokeAPI trayendo una fila repetida sin nombre; arreglarlo
-// tocaria data/ o el builder, fuera del territorio de este check. Se deja
-// documentado para que quien lo vea despues no lo confunda con una
-// regresion.
-const ITEMS_SIN_NOMBRE_NINGUN_IDIOMA = [
-  ...rango(2233, 2277),
-  2278, 2279,
-].sort((a, b) => a - b);
+// De los 47 objetos sin nombre en ningun idioma que este check destapo en la
+// Task 3, 46 ya tienen nameEn/nameEs escritos a mano en build-data.mjs (tabla
+// ITEM_NAME_OVERRIDES, misma idea que NAME_OVERRIDES_ES de mas arriba, asi
+// que el nombre sobrevive a una regeneracion): las 45 piedras Mega custom
+// (ids 2233-2277) y hopo-berry (2278). Queda solo roseli-berry (2279) --
+// diagnostico de si es basura de datos a quitar o si tambien le toca nombre,
+// en un commit aparte.
+const ITEMS_SIN_NOMBRE_NINGUN_IDIOMA = [2279];
 
 const itemsSinNombre = visibles
   .filter(i => i.nameEs === i.name)
   .filter(i => !i.nameEn || i.nameEn === i.name)
   .map(i => i.id)
   .sort((a, b) => a - b);
-check('exactamente los 47 objetos esperados se quedan sin nombre en ningun idioma',
+check('exactamente el objeto esperado se queda sin nombre en ningun idioma',
   itemsSinNombre, ITEMS_SIN_NOMBRE_NINGUN_IDIOMA);
 
-const itemsExceptuados = new Set(ITEMS_SIN_NOMBRE_NINGUN_IDIOMA);
-check('ningun objeto fuera de la excepcion se queda sin nombre en ningun idioma',
-  visibles.filter(i => !itemsExceptuados.has(i.id))
-    .filter(i => i.nameEs === i.name)
-    .filter(i => !i.nameEn || i.nameEn === i.name)
-    .map(i => i.id),
-  []);
-
-// El resto de objetos con nameEs === name (487 medidos por la auditoria,
-// menos estos 47) SI caen a un nameEn de verdad -- objetos de Gen 8/9 sin
-// nombre español en PokeAPI pero con nombre ingles bien formado. Ese hueco de
-// idioma es aceptado (mismo trato que las 46 habilidades de arriba) y el
-// check de arriba ya lo protege del todo -- no se fija aqui un numero exacto
-// porque, a diferencia del bloque de 47, esta poblacion SI se achica cuando
-// PokeAPI traduce mas objetos (la Task 2 ya vio pasar esto con los 10 objetos
-// de evolucion entre la auditoria y el fix): un numero exacto haria fallar el
-// check por una mejora legitima de los datos, no por una regresion.
+// Objetos que si tienen nameEs === name pero SI caen a un nameEn de verdad
+// (p.ej. "Origin Ball", "Black Augurite": recientes, sin nombre ES en
+// PokeAPI, pero con nombre EN bien formado). Hueco de idioma aceptado (mismo
+// trato que las 46 habilidades de arriba) y ya cubierto por el check de
+// arriba -- informativo, no gatea el build, porque esta poblacion se achica
+// cuando PokeAPI traduce mas objetos (la Task 2 ya vio pasar esto).
 console.log(`  --   objetos que caen a nameEn en vez de al slug (informativo): ${
-  visibles.filter(i => i.nameEs === i.name && !itemsExceptuados.has(i.id) && i.nameEn && i.nameEn !== i.name).length}`);
+  visibles.filter(i => i.nameEs === i.name && i.id !== 2279 && i.nameEn && i.nameEn !== i.name).length}`);
 
 console.log("\n'items.nodesc' existe en los dos diccionarios (lo que pintan los objetos sin descripcion en ningun idioma)\n");
 
@@ -214,10 +179,11 @@ console.log('\nObjetos visibles: descripcion en al menos un idioma (items-desc.j
 //
 // La auditoria midio 481 de los 1849 visibles asi, repartidos por categoria:
 // misc 448, key 19, medicine 8, pokeballs 5, berries 1. Casi todo contenido
-// muy reciente (DLC de Escarlata/Purpura, mas los 47 objetos sin nombre de
-// la seccion de arriba, que tampoco tienen descripcion) sin flavor text en
-// PokeAPI en ningun idioma -- traducirlo es contenido, no builder, y queda
-// aceptado igual que las 46 habilidades y los 88->0 movimientos de la Task 2.
+// muy reciente (DLC de Escarlata/Purpura, mas las 45 piedras Mega custom y
+// hopo-berry, que la Task 7 nombro pero sin tocar descripcion, y roseli-berry
+// 2279, todavia sin decision) sin flavor text en PokeAPI en ningun idioma --
+// traducirlo es contenido, no builder, y queda aceptado igual que las 46
+// habilidades y los 88->0 movimientos de la Task 2.
 //
 // Dos checks, cada uno cazando una direccion de regresion que el otro no ve:
 // (1) NINGUN id nuevo, fuera del bloque de 481 aceptado, puede aparecer sin

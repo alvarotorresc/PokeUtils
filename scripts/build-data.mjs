@@ -407,6 +407,81 @@ async function buildAbilities() {
   return abilities.filter(Boolean).sort((a, b) => a.id - b.id);
 }
 
+// 46 items PokeAPI serves as real rows (real id, real category, real
+// fling_power) but with an empty `names` array in every language -- so
+// localName() falls to the raw slug and items.js paints it verbatim
+// (`clefablite`, `hopo-berry`) as if it were the display name. Verified one by
+// one against the live endpoint (`/item/2233/` etc return `"names": []`),
+// same defect class as the region/evolution-item overrides above, so it gets
+// the same treatment: a manual table, not a refetch.
+//
+// 45 mega stones (ids 2233-2277): PokeAPI's own fan-content extension of the
+// mega-evolution mechanic (version group "champions") for species that never
+// got an official Mega in the games -- this app's custom megas ride on it
+// (pokemon.json's -mega/-mega-x/-mega-y/-mega-z forms of the same 45+
+// species, e.g. clefable-mega). The slug itself already spells out the
+// franchise's irregular stone name per Pokemon (lucarionite, not
+// "lucarioite"), the same way the official Venusaurite/Charizardite/Absolite
+// do -- so naming is mechanical from the slug PokeAPI already chose, not a
+// re-derivation from the species name: capitalize for English (the official
+// pattern, e.g. Absolite), swap the trailing "ite" for "ita" for Spanish (the
+// official pattern, e.g. Absolita). The five with a bare "-x"/"-y"/"-z" are
+// split off as their own word, mirroring the official "Charizardite X" /
+// "Charizardita X" -- "Z" is this app's own extension (Game Freak never
+// shipped a Mega Z), kept consistent with the X/Y ones already in the games.
+const ITEM_NAME_OVERRIDES = {
+  clefablite: { en: 'Clefablite', es: 'Clefablita' },
+  victreebelite: { en: 'Victreebelite', es: 'Victreebelita' },
+  starminite: { en: 'Starminite', es: 'Starminita' },
+  dragoninite: { en: 'Dragoninite', es: 'Dragoninita' },
+  meganiumite: { en: 'Meganiumite', es: 'Meganiumita' },
+  feraligite: { en: 'Feraligite', es: 'Feraligita' },
+  skarmorite: { en: 'Skarmorite', es: 'Skarmorita' },
+  froslassite: { en: 'Froslassite', es: 'Froslassita' },
+  heatranite: { en: 'Heatranite', es: 'Heatranita' },
+  darkranite: { en: 'Darkranite', es: 'Darkranita' },
+  emboarite: { en: 'Emboarite', es: 'Emboarita' },
+  excadrite: { en: 'Excadrite', es: 'Excadrita' },
+  scolipite: { en: 'Scolipite', es: 'Scolipita' },
+  scraftinite: { en: 'Scraftinite', es: 'Scraftinita' },
+  eelektrossite: { en: 'Eelektrossite', es: 'Eelektrossita' },
+  chandelurite: { en: 'Chandelurite', es: 'Chandelurita' },
+  chesnaughtite: { en: 'Chesnaughtite', es: 'Chesnaughtita' },
+  delphoxite: { en: 'Delphoxite', es: 'Delphoxita' },
+  greninjite: { en: 'Greninjite', es: 'Greninjita' },
+  pyroarite: { en: 'Pyroarite', es: 'Pyroarita' },
+  floettite: { en: 'Floettite', es: 'Floettita' },
+  malamarite: { en: 'Malamarite', es: 'Malamarita' },
+  barbaracite: { en: 'Barbaracite', es: 'Barbaracita' },
+  dragalgite: { en: 'Dragalgite', es: 'Dragalgita' },
+  hawluchanite: { en: 'Hawluchanite', es: 'Hawluchanita' },
+  zygardite: { en: 'Zygardite', es: 'Zygardita' },
+  drampanite: { en: 'Drampanite', es: 'Drampanita' },
+  zeraorite: { en: 'Zeraorite', es: 'Zeraorita' },
+  falinksite: { en: 'Falinksite', es: 'Falinksita' },
+  'raichunite-x': { en: 'Raichunite X', es: 'Raichunita X' },
+  'raichunite-y': { en: 'Raichunite Y', es: 'Raichunita Y' },
+  chimechite: { en: 'Chimechite', es: 'Chimechita' },
+  'absolite-z': { en: 'Absolite Z', es: 'Absolita Z' },
+  staraptite: { en: 'Staraptite', es: 'Staraptita' },
+  'garchompite-z': { en: 'Garchompite Z', es: 'Garchompita Z' },
+  'lucarionite-z': { en: 'Lucarionite Z', es: 'Lucarionita Z' },
+  golurkite: { en: 'Golurkite', es: 'Golurkita' },
+  meowsticite: { en: 'Meowsticite', es: 'Meowsticita' },
+  crabominite: { en: 'Crabominite', es: 'Crabominita' },
+  golisopite: { en: 'Golisopite', es: 'Golisopita' },
+  magearnite: { en: 'Magearnite', es: 'Magearnita' },
+  scovillainite: { en: 'Scovillainite', es: 'Scovillainita' },
+  baxcalibrite: { en: 'Baxcalibrite', es: 'Baxcalibrita' },
+  tatsugirinite: { en: 'Tatsugirinite', es: 'Tatsugirinita' },
+  glimmoranite: { en: 'Glimmoranite', es: 'Glimmoranita' },
+  // Real Legends: Arceus berry (restores 10 PP, raises friendship), not app
+  // content -- PokeAPI just never localized it. Verified against WikiDex,
+  // https://www.wikidex.net/wiki/Baya_Lupu: English name "Hopo Berry" on the
+  // same page that gives the Spanish one.
+  'hopo-berry': { en: 'Hopo Berry', es: 'Baya Lupu' },
+};
+
 async function buildItems() {
   // Resolve which categories belong to the pockets the app shows, so we only
   // fetch the items we actually need instead of all ~2200.
@@ -440,8 +515,8 @@ async function buildItems() {
     return {
       id: i.id,
       name: i.name,
-      nameEs: localName(i.names, 'es') || i.name,
-      nameEn: localName(i.names, 'en') || i.name,
+      nameEs: localName(i.names, 'es') || ITEM_NAME_OVERRIDES[i.name]?.es || i.name,
+      nameEn: localName(i.names, 'en') || ITEM_NAME_OVERRIDES[i.name]?.en || i.name,
       descriptionEs: latestFlavor(i.flavor_text_entries, 'es', 'text'),
       descriptionEn: latestFlavor(i.flavor_text_entries, 'en', 'text'),
       category: pocketByCategory.get(i.category.name) || '',
