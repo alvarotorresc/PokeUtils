@@ -496,6 +496,37 @@ const EVO_CONDITION_FIELDS = [
 // loads pokemon.json, and types come from a table in data.js.
 const NAMES_RESOLVED_AT_BUILD = ['location', 'region', 'item', 'held_item', 'known_move', 'used_move'];
 
+// PokeAPI no traduce nombres de region: nunca hay una entrada 'es' en su
+// `names`, asi que localizedName() cae al propio slug en minuscula ("alola").
+// evolution.js ya se defiende de esto en tiempo de ejecucion (named() cae al
+// ingles, que para un toponimo es la forma correcta en espanol tambien --
+// igual que Kanto o Johto no se traducen). Se fija aqui ademas para que
+// evolutions.json lleve el dato limpio y no dependa solo del fallback.
+//
+// Los 10 objetos son evolutivos de Gen 8/9 muy recientes (DLC Isla de la
+// Armadura, Escarlata/Purpura): a fecha de la auditoria PokeAPI no tenia
+// `es` para ninguno y named() caia al ingles (p.ej. "Scroll of Darkness" en
+// una frase en espanol). Nombres verificados contra PokeAPI (que ya los ha
+// ido publicando) y contra WikiDex, la enciclopedia Pokemon en espanol, uno
+// por uno. Se fijan aqui como tabla y no confiando en un refetch: la propia
+// evolution-chain de PokeAPI no es estable entre llamadas (medido: Pumpkaboo
+// -> Gourgeist paso de 1 a 4 detalles "trade" identicos entre dos builds
+// seguidos), asi que depender del refetch para el nombre arrastraria ruido
+// que no tiene nada que ver con la traduccion.
+const NAME_OVERRIDES_ES = {
+  alola: 'Alola', galar: 'Galar', hisui: 'Hisui',
+  'black-augurite': 'Mineral Negro',
+  'peat-block': 'Bloque de Turba',
+  'syrupy-apple': 'Manzana Melosa',
+  'metal-alloy': 'Metal Compuesto',
+  'scroll-of-darkness': 'Manuscrito Sombras',
+  'scroll-of-waters': 'Manuscrito Aguas',
+  'auspicious-armor': 'Armadura Auspiciosa',
+  'malicious-armor': 'Armadura Maldita',
+  'unremarkable-teacup': 'Cuenco Mediocre',
+  'masterpiece-teacup': 'Cuenco Exquisito',
+};
+
 const localizedNameCache = new Map();
 
 async function localizedName(url) {
@@ -524,6 +555,7 @@ async function cleanDetail(d) {
       out[field] = NAMES_RESOLVED_AT_BUILD.includes(field)
         ? { name: value.name, ...(await localizedName(value.url)) }
         : value.name;
+      if (NAME_OVERRIDES_ES[value.name]) out[field].es = NAME_OVERRIDES_ES[value.name];
     } else {
       out[field] = value;
     }
