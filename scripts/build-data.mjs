@@ -665,13 +665,29 @@ async function buildMoves() {
 // como el EN. Si Alvaro prefiere el registro generico, esta es la entrada a
 // reescribir a mano.
 //
-// 6 habilidades de las 46 originales NO estan aqui a proposito, sin fuente
-// posible: son las habilidades de las Megaevoluciones "champions" que
-// PokeAPI se inventa (Feraligatr/Eelektross/Pyroar/Meganium/Excadrill/
-// Scovillain Mega) -- ningun juego real las tiene, asi que ninguna fuente
-// puede tener su descripcion oficial porque no existe. Quedan enumeradas en
-// scripts/fetch-descriptions.mjs (ABILITIES_SIN_FUENTE_POSIBLE) y en las
-// EXCEPCIONES de scripts/check-descriptions.mjs.
+// 6 habilidades de las 46 originales NO estan aqui: son las habilidades de
+// las Megaevoluciones ids 308-313 (Excadrill/Feraligatr/Meganium/Scovillain
+// Mega, mas eelevate/fire-mane). Este comentario decia que PokeAPI se las
+// "inventaba" y que por tanto ninguna fuente podia tener su descripcion
+// oficial -- la Task 9c ya corrigio la mitad de esa afirmacion (son
+// contenido real de Pokemon Legends: Z-A / Pokemon Champions, no invencion
+// de PokeAPI), y la Task 10 termina de corregirla: Bulbapedia SI tiene pagina
+// propia para las 6 (`<Nombre>_(Ability)`), con el mismo descriptionEn que
+// ya trae PokeAPI en su infobox -- pero NINGUNA de las 6 tiene descripcion
+// en español en ninguna fuente (el infobox de Bulbapedia no trae fila ES, a
+// diferencia de items). Las 6 llevan traduccion propia del EN oficial en
+// ABILITY_DESC_ES_TRANSLATED, mas abajo de esta tabla -- nunca mezclada
+// aqui, porque esto SI es texto de fuente (pkproject.net), no una traduccion
+// nuestra.
+//
+// Hallazgo aparte para decision de Alvaro, no aplicado por esta tarea: la
+// tabla "In other languages" de Bulbapedia SI trae nombre oficial en español
+// para eelevate (313->312, "Impulso Anguila", LatAm y España iguales) y para
+// fire-mane (313, "Melena de Fuego" LatAm / "Crin de Fuego" España,
+// variantes DISTINTAS) -- hoy nameEs de ambas cae al slug en ingles porque
+// PokeAPI nunca trajo un nombre ES. No se toca nameEs en esta tarea (fuera
+// de alcance: Task 10 es solo descripciones, y los nombres ya estan
+// pusheados); ver el informe de Task 10 para el detalle y las URLs.
 const ABILITY_DESC_ES_OVERRIDES = {
   'lingering-aroma': 'Contagia la habilidad Olor Persistente al Pokémon que lo ataque con un movimiento de contacto.',
   'seed-sower': 'Crea un campo de hierba al recibir un ataque.',
@@ -715,6 +731,25 @@ const ABILITY_DESC_ES_OVERRIDES = {
   'poison-puppeteer': 'Los rivales que Pecharunt envenene con sus movimientos también sufrirán confusión.',
 };
 
+// Task 10's own translation of the 6 Megaevolution abilities' official EN
+// (verified live against https://bulbapedia.bulbagarden.net/wiki/<Nombre>_(Ability),
+// identical to the descriptionEn PokeAPI already provides) into Spanish --
+// no official Spanish source exists for these (see the comment above
+// ABILITY_DESC_ES_OVERRIDES). Terminology matched against this dataset's
+// own existing translations for the closest real mechanic: unseen-fist
+// (contact-through-Protect) for piercing-drill, aerilate/pixilate/
+// normalize (Normal-type conversion) for dragonize, levitate + moxie for
+// eelevate's two combined effects, steelworker/transistor/dragons-maw
+// (flat type-power boost) for fire-mane.
+const ABILITY_DESC_ES_TRANSLATED = {
+  'piercing-drill': 'Si usa un movimiento de contacto, puede alcanzar al objetivo aunque este se proteja, pero solo con una cuarta parte del daño que causaría normalmente. El resto de sus efectos se aplican igual, salvo la protección del objetivo.',
+  dragonize: 'Convierte los movimientos de tipo Normal en tipo Dragón y aumenta su potencia un 20%.',
+  'mega-sol': 'Aunque el tiempo no sea soleado, el Pokémon puede usar sus movimientos como si hiciera mucho sol.',
+  'spicy-spray': 'Si recibe daño de un movimiento, quema a quien se lo haya infligido.',
+  eelevate: 'El Pokémon flota sobre el suelo, por lo que es inmune a los movimientos de tipo Tierra, así como a Púas, Púas Tóxicas y Red Viscosa. Si derrota a un objetivo con un ataque, aumenta su característica más alta.',
+  'fire-mane': 'Potencia un 50% los movimientos de tipo Fuego.',
+};
+
 async function buildAbilities() {
   const index = await getJson(`${API}/ability?limit=2000`);
 
@@ -727,7 +762,8 @@ async function buildAbilities() {
       nameEs: localName(a.names, 'es') || a.name,
       nameEn: localName(a.names, 'en') || a.name,
       effect: a.effect_entries.find(e => e.language.name === 'en')?.short_effect || '',
-      descriptionEs: latestFlavor(a.flavor_text_entries, 'es', 'flavor_text') || ABILITY_DESC_ES_OVERRIDES[a.name] || '',
+      descriptionEs: latestFlavor(a.flavor_text_entries, 'es', 'flavor_text') || ABILITY_DESC_ES_OVERRIDES[a.name]
+        || ABILITY_DESC_ES_TRANSLATED[a.name] || '',
       descriptionEn: latestFlavor(a.flavor_text_entries, 'en', 'flavor_text'),
     };
   }, 'abilities');

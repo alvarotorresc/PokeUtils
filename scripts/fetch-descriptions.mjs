@@ -212,16 +212,26 @@ const UA = 'PokeUtils-DataAudit/1.0 (+contacto: alvarotorrescarrasco@gmail.com)'
 const THROTTLE_MS = 450;
 const FORCE = process.argv.includes('--force');
 
-// Habilidades de Megaevoluciones "champions" fabricadas por PokeAPI (ver el
-// comentario largo de ITEM_NAME_OVERRIDES en build-data.mjs): ningun juego
-// real las tiene, asi que no hay texto oficial que buscar.
+// Habilidades de las Megaevoluciones ids 308-313 (Excadrill/Feraligatr/
+// Meganium/Scovillain Mega, mas eelevate/fire-mane): este comentario decia
+// que PokeAPI se las "fabricaba" y que por tanto no habia texto oficial que
+// buscar en absoluto -- la Task 9c ya corrigio la mitad (son contenido real
+// de Pokemon Legends: Z-A / Pokemon Champions, con pagina propia en
+// Bulbapedia), y la Task 10 termina de corregirlo: SI hay texto oficial (el
+// mismo descriptionEn que ya trae PokeAPI, confirmado contra el infobox de
+// Bulbapedia), pero NINGUNA fuente tiene ese texto en español -- ni
+// Bulbapedia (su tabla "In other languages" solo trae nombres para
+// habilidades, no descripciones) ni WikiDex (no tienen pagina). Este mapa
+// sigue evitando que este fetcher malgaste peticiones contra pkproject.net
+// buscando algo que no existe alli; la traduccion propia del EN vive en
+// ABILITY_DESC_ES_TRANSLATED (build-data.mjs), no aqui.
 const ABILITIES_SIN_FUENTE_POSIBLE = new Map([
-  ['dragonize', 'habilidad de Feraligatr Mega, Megaevolucion "champions" fabricada por PokeAPI (ningun juego real)'],
-  ['eelevate', 'habilidad de Eelektross Mega, Megaevolucion "champions" fabricada por PokeAPI (ningun juego real)'],
-  ['fire-mane', 'habilidad de Pyroar Mega, Megaevolucion "champions" fabricada por PokeAPI (ningun juego real)'],
-  ['mega-sol', 'habilidad de Meganium Mega, Megaevolucion "champions" fabricada por PokeAPI (ningun juego real)'],
-  ['piercing-drill', 'habilidad de Excadrill Mega, Megaevolucion "champions" fabricada por PokeAPI (ningun juego real)'],
-  ['spicy-spray', 'habilidad de Scovillain Mega, Megaevolucion "champions" fabricada por PokeAPI (ningun juego real)'],
+  ['dragonize', 'habilidad de Feraligatr Mega (Pokemon Champions) -- sin fila de español en Bulbapedia; traducida a mano en ABILITY_DESC_ES_TRANSLATED'],
+  ['eelevate', 'habilidad de Eelektross Mega (Pokemon Champions) -- sin fila de español en Bulbapedia; traducida a mano en ABILITY_DESC_ES_TRANSLATED'],
+  ['fire-mane', 'habilidad de Pyroar Mega (Pokemon Champions) -- sin fila de español en Bulbapedia; traducida a mano en ABILITY_DESC_ES_TRANSLATED'],
+  ['mega-sol', 'habilidad de Meganium Mega (Pokemon Legends: Z-A) -- sin fila de español en Bulbapedia; traducida a mano en ABILITY_DESC_ES_TRANSLATED'],
+  ['piercing-drill', 'habilidad de Excadrill Mega (Pokemon Champions) -- sin fila de español en Bulbapedia; traducida a mano en ABILITY_DESC_ES_TRANSLATED'],
+  ['spicy-spray', 'habilidad de Scovillain Mega (Pokemon Legends: Z-A) -- sin fila de español en Bulbapedia; traducida a mano en ABILITY_DESC_ES_TRANSLATED'],
 ]);
 
 // pkproject.net tiene un bug de desplazamiento de UNA posicion en su base de

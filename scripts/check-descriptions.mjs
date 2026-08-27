@@ -122,35 +122,29 @@ check('eelevate y fire-mane siguen siendo las unicas con nameEs === name',
 console.log('\nHabilidades: la cadena de fallback de la descripcion nunca llega a abilities.nodesc\n');
 
 // abilities.js:114 pinta `descriptionEs || effect` en español y
-// `descriptionEn || effect` en ingles. Hoy descriptionEn y effect estan
-// siempre presentes (0 vacios cada uno) -- las 6 que siguen sin descriptionEs
-// tras la Task 9a (ver check de mas abajo) caen a `effect` en ingles, que es
-// un hueco de idioma aceptado (son las megas custom, contenido que no existe
-// en ningun juego real) pero nunca un hueco visible. Lo que este check fija
-// duro es que SIEMPRE quede algo a lo que caer.
+// `descriptionEn || effect` en ingles. descriptionEn y effect siguen sin
+// ningun vacio (0 cada uno); el fallback a `effect` en ingles ya no lo usa
+// ninguna habilidad hoy (ver el check de mas abajo, que ahora exige cero
+// habilidades sin descriptionEs), pero se deja fijo por si un rebuild futuro
+// reabriera un hueco.
 check('ninguna habilidad se queda sin descriptionEn', abilities.filter(a => !a.descriptionEn).map(a => a.id), []);
 check('ninguna habilidad se queda sin effect', abilities.filter(a => !a.effect).map(a => a.id), []);
 
-console.log('\nHabilidades: descripcion en español (Task 9a cerro 40 de las 46 sin descriptionEs)\n');
+console.log('\nHabilidades: descripcion en español (Task 9a cerro 40 de las 46, Task 10 cerro las 6 restantes)\n');
 
 // La Task 2 dejaba 46 habilidades de Gen 9 sin descriptionEs -- PokeAPI nunca
 // ha publicado flavor text ES para ellas. La Task 9a relleno 40 desde
 // pkproject.net (ABILITY_DESC_ES_OVERRIDES en build-data.mjs). Las 6 que
-// quedan son, a proposito, las unicas sin fuente POSIBLE: las habilidades de
-// las Megaevoluciones "champions" que PokeAPI fabrica (eelevate/fire-mane, ya
-// conocidas en el check de arriba, mas piercing-drill/dragonize/mega-sol/
-// spicy-spray) -- ningun juego real las tiene, asi que ninguna fuente puede
-// tener su descripcion oficial porque no existe. Si esta lista cambiara --
-// aparece una regresion en alguna de las 40, o una de estas 6 deja de ser
-// custom -- es una señal real que hay que revisar.
-const ABILITIES_SIN_DESCRIPTION_ES_ACEPTADAS = [308, 309, 310, 311, 312, 313];
-
-const abilitiesSinDescripcionEs = abilities
-  .filter(a => !a.descriptionEs && a.descriptionEn)
-  .map(a => a.id)
-  .sort((a, b) => a - b);
-check('exactamente las habilidades sin fuente posible se quedan sin descriptionEs',
-  abilitiesSinDescripcionEs, ABILITIES_SIN_DESCRIPTION_ES_ACEPTADAS);
+// quedaban (308-313, las Megaevoluciones ids 308-313) no son invencion de
+// PokeAPI sin fuente posible como decia este comentario -- son contenido
+// real de Pokemon Legends: Z-A / Pokemon Champions (Task 9c) con pagina
+// propia en Bulbapedia, pero sin fila de español en su tabla de idiomas
+// (a diferencia de items). Task 10 las cierra con traduccion propia del EN
+// oficial (ABILITY_DESC_ES_TRANSLATED en build-data.mjs, nunca mezclada con
+// las 40 de fuente real). El invariante pasa a ser CERO, sin lista de
+// perdon.
+check('ninguna habilidad se queda sin descriptionEs',
+  abilities.filter(a => !a.descriptionEs && a.descriptionEn).map(a => a.id), []);
 
 console.log('\nObjetos visibles: mismo patron que habilidades -- cero objetos sin nombre en ningun idioma\n');
 
