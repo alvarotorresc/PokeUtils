@@ -135,13 +135,34 @@ console.log('\nHabilidades: la cadena de fallback de la descripcion nunca llega 
 
 // abilities.js:114 pinta `descriptionEs || effect` en español y
 // `descriptionEn || effect` en ingles. Hoy descriptionEn y effect estan
-// siempre presentes (0 vacios cada uno) -- las 46 sin descriptionEs (Gen 9
-// reciente, PokeAPI sin flavor text ES) caen a `effect` en ingles, que es un
-// hueco de idioma aceptado (traducirlas es trabajo de contenido, no de
-// builder) pero nunca un hueco visible. Lo que este check fija duro es que
-// SIEMPRE quede algo a lo que caer.
+// siempre presentes (0 vacios cada uno) -- las 6 que siguen sin descriptionEs
+// tras la Task 9a (ver check de mas abajo) caen a `effect` en ingles, que es
+// un hueco de idioma aceptado (son las megas custom, contenido que no existe
+// en ningun juego real) pero nunca un hueco visible. Lo que este check fija
+// duro es que SIEMPRE quede algo a lo que caer.
 check('ninguna habilidad se queda sin descriptionEn', abilities.filter(a => !a.descriptionEn).map(a => a.id), []);
 check('ninguna habilidad se queda sin effect', abilities.filter(a => !a.effect).map(a => a.id), []);
+
+console.log('\nHabilidades: descripcion en español (Task 9a cerro 40 de las 46 sin descriptionEs)\n');
+
+// La Task 2 dejaba 46 habilidades de Gen 9 sin descriptionEs -- PokeAPI nunca
+// ha publicado flavor text ES para ellas. La Task 9a relleno 40 desde
+// pkproject.net (ABILITY_DESC_ES_OVERRIDES en build-data.mjs). Las 6 que
+// quedan son, a proposito, las unicas sin fuente POSIBLE: las habilidades de
+// las Megaevoluciones "champions" que PokeAPI fabrica (eelevate/fire-mane, ya
+// conocidas en el check de arriba, mas piercing-drill/dragonize/mega-sol/
+// spicy-spray) -- ningun juego real las tiene, asi que ninguna fuente puede
+// tener su descripcion oficial porque no existe. Si esta lista cambiara --
+// aparece una regresion en alguna de las 40, o una de estas 6 deja de ser
+// custom -- es una señal real que hay que revisar.
+const ABILITIES_SIN_DESCRIPTION_ES_ACEPTADAS = [308, 309, 310, 311, 312, 313];
+
+const abilitiesSinDescripcionEs = abilities
+  .filter(a => !a.descriptionEs && a.descriptionEn)
+  .map(a => a.id)
+  .sort((a, b) => a - b);
+check('exactamente las habilidades sin fuente posible se quedan sin descriptionEs',
+  abilitiesSinDescripcionEs, ABILITIES_SIN_DESCRIPTION_ES_ACEPTADAS);
 
 console.log('\nObjetos visibles: mismo patron que habilidades -- cero objetos sin nombre en ningun idioma\n');
 
@@ -206,10 +227,9 @@ console.log('\nObjetos visibles: descripcion en al menos un idioma (items-desc.j
 // mas las 45 piedras Mega custom y hopo-berry, que tienen nombre desde la
 // Task 7 pero siguen sin flavor text) sin flavor text en PokeAPI en ningun
 // idioma -- traducirlo es contenido, no builder, y queda aceptado por ahora
-// (el mismo trato que tenian los movimientos antes de la Task 9a, que ya
-// cerro el suyo -- ver el check de descriptionEs de movimientos de mas
-// arriba, que solo deja malignant-chain -- y que las 46 habilidades siguen
-// teniendo hoy).
+// (el mismo trato que tenian movimientos y habilidades antes de la Task 9a,
+// que ya cerro casi todo el suyo -- ver los dos checks de descriptionEs de
+// mas arriba, que solo dejan malignant-chain y las 6 megas custom).
 //
 // Dos checks, cada uno cazando una direccion de regresion que el otro no ve:
 // (1) NINGUN id nuevo, fuera del bloque de 480 aceptado, puede aparecer sin

@@ -511,6 +511,82 @@ async function buildMoves() {
   return moves.sort((a, b) => a.id - b.id);
 }
 
+// 40 habilidades de Gen 9 (ids listadas en docs/2026-08-27-inventario-vacios.md)
+// sin flavor text en español en PokeAPI. Misma fuente y mismo trato que
+// MOVE_DESC_ES_OVERRIDES arriba: pkproject.net, comprobado con la pagina en
+// ingles de Termoconversion (thermal-exchange) -- identica, caracter a
+// caracter, al descriptionEn que ya tenia este dataset via PokeAPI
+// ("Boosts the Attack stat when the Pokémon is hit by a Fire-type move. The
+// Pokémon also cannot be burned.").
+//
+// Las habilidades no tienen pagina propia en pkproject: aparecen en la tabla
+// "Habilidades" de la ficha de un Pokemon que las tenga. embody-aspect,
+// minds-eye, tera-shell y teraform-zero se leyeron en la pagina de la
+// ESPECIE BASE (Ogerpon, Ursaluna, Terapagos) porque pkproject mete todas
+// las formas de una especie en una sola pagina, no en pokemon.json
+// (embody-aspect) ni en la pagina de la forma (los otros tres).
+//
+// embody-aspect (Evocarrecuerdos) es un caso aparte dentro de ese grupo: la
+// pagina de Ogerpon tiene TRES tablas "Habilidades", una por mascara, cada
+// una con su propio texto (sube una caracteristica distinta segun la
+// mascara). Se cogio la de la mascara base (Turquesa/Velocidad) porque es la
+// unica accesible sin elegir una mascara -- pero es mas ESPECIFICA que el
+// descriptionEn que ya tenia PokeAPI, que es generico ("one of the Pokémon's
+// stats to be boosted", sin decir cual). El texto es oficial (viene del
+// juego, no inventado) pero describe solo la mascara base, no las 4 formas
+// como el EN. Si Alvaro prefiere el registro generico, esta es la entrada a
+// reescribir a mano.
+//
+// 6 habilidades de las 46 originales NO estan aqui a proposito, sin fuente
+// posible: son las habilidades de las Megaevoluciones "champions" que
+// PokeAPI se inventa (Feraligatr/Eelektross/Pyroar/Meganium/Excadrill/
+// Scovillain Mega) -- ningun juego real las tiene, asi que ninguna fuente
+// puede tener su descripcion oficial porque no existe. Quedan enumeradas en
+// scripts/fetch-descriptions.mjs (ABILITIES_SIN_FUENTE_POSIBLE) y en las
+// EXCEPCIONES de scripts/check-descriptions.mjs.
+const ABILITY_DESC_ES_OVERRIDES = {
+  'lingering-aroma': 'Contagia la habilidad Olor Persistente al Pokémon que lo ataque con un movimiento de contacto.',
+  'seed-sower': 'Crea un campo de hierba al recibir un ataque.',
+  'thermal-exchange': 'Evita las quemaduras y, si lo alcanza un movimiento de tipo Fuego, aumenta su Ataque.',
+  'anger-shell': 'Cuando un ataque reduce sus PS a la mitad, un arrebato de cólera reduce su Defensa y su Defensa Especial, pero aumenta su Ataque, su Ataque Especial y su Velocidad.',
+  'purifying-salt': 'Su sal pura lo protege de los problemas de estado y reduce a la mitad el daño que recibe de ataques de tipo Fantasma.',
+  'well-baked-body': 'Si lo alcanza un movimiento de tipo Fuego, aumenta mucho su Defensa en vez de sufrir daño.',
+  'wind-rider': 'Si sopla un Viento Afín o lo alcanza un movimiento que usa viento, aumenta su Ataque. Tampoco recibe daño de este último.',
+  'guard-dog': 'Aumenta su Ataque si sufre los efectos de Intimidación. También anula movimientos y objetos que fuercen el cambio de Pokémon.',
+  'rocky-payload': 'Potencia los movimientos de tipo Roca.',
+  'wind-power': 'Su cuerpo se carga de electricidad si lo alcanza un movimiento que usa viento, lo que potencia su siguiente movimiento de tipo Eléctrico.',
+  'zero-to-hero': 'Adopta la Forma Heroica cuando se retira del combate.',
+  commander: 'Si al entrar en combate coincide con un Dondozo aliado, se cuela en el interior de su boca para tomar el control.',
+  electromorphosis: 'Su cuerpo se carga de electricidad al recibir daño, lo que potencia su siguiente movimiento de tipo Eléctrico.',
+  protosynthesis: 'Si hace sol o lleva un tanque de Energía Potenciadora, aumenta su característica más alta.',
+  'quark-drive': 'Si hay un campo eléctrico en el terreno de combate o lleva un tanque de Energía Potenciadora, aumenta su característica más alta.',
+  'good-as-gold': 'Su robusto cuerpo de oro inoxidable lo hace inmune frente a movimientos de estado de otros Pokémon.',
+  'vessel-of-ruin': 'Reduce el Ataque Especial de todos los demás Pokémon con el poder de su caldero maldito.',
+  'sword-of-ruin': 'Reduce la Defensa de todos los demás Pokémon con el poder de su espada maldita.',
+  'tablets-of-ruin': 'Reduce el Ataque de todos los demás Pokémon con el poder de sus tablillas malditas.',
+  'beads-of-ruin': 'Reduce la Defensa Especial de todos los demás Pokémon con el poder de sus abalorios malditos.',
+  'orichalcum-pulse': 'El tiempo pasa a ser soleado cuando entra en combate. Si hace mucho sol, su Ataque aumenta gracias a su pulso primigenio.',
+  'hadron-engine': 'Crea un campo eléctrico al entrar en combate. Si hay un campo eléctrico, su Ataque Especial aumenta gracias a su motor futurista.',
+  opportunist: 'Copia las mejoras en las características del rival, aprovechándose de la situación.',
+  'cud-chew': 'Cuando ingiere una baya, la regurgita al final del siguiente turno y se la come por segunda vez.',
+  sharpness: 'Aumenta la potencia de los movimientos cortantes.',
+  'supreme-overlord': 'Al entrar en combate, su Ataque y su Ataque Especial aumentan un poco por cada miembro del equipo que haya sido derrotado hasta el momento.',
+  costar: 'Al entrar en combate, copia los cambios en las características de su aliado.',
+  'toxic-debris': 'Al recibir daño de un ataque físico, lanza una trampa de púas tóxicas a los pies del rival.',
+  'armor-tail': 'La extraña cola que le envuelve la cabeza impide al rival utilizar movimientos con prioridad.',
+  'earth-eater': 'Si lo alcanza un movimiento de tipo Tierra, recupera PS en vez de sufrir daño.',
+  'mycelium-might': 'El Pokémon siempre actúa con lentitud cuando usa movimientos de estado, pero estos no se ven afectados por la habilidad del objetivo.',
+  'minds-eye': 'Alcanza a Pokémon de tipo Fantasma con movimientos de tipo Normal o Lucha. Su Precisión no se puede reducir e ignora los cambios en la Evasión del objetivo.',
+  'supersweet-syrup': 'Al entrar en combate por primera vez, esparce un aroma dulzón a néctar que reduce la Evasión del rival.',
+  hospitality: 'Al entrar en combate, restaura algunos PS de su aliado como muestra de hospitalidad.',
+  'toxic-chain': 'Gracias al poder de su cadena impregnada de toxinas, puede envenenar gravemente al Pokémon al que ataque.',
+  'embody-aspect': 'Al evocar viejos recuerdos, el Pokémon hace brillar la Máscara Turquesa y aumenta su Velocidad.',
+  'tera-shift': 'Al entrar en combate, adopta la Forma Teracristal tras absorber la energía de su alrededor.',
+  'tera-shell': 'Su caparazón encierra energía de todos los tipos. Gracias a ello, si sus PS están al máximo, el movimiento que lo alcance no será muy eficaz.',
+  'teraform-zero': 'Cuando Terapagos adopta la Forma Astral, anula todos los efectos del tiempo atmosférico y de los campos que haya en el terreno gracias a su poder oculto.',
+  'poison-puppeteer': 'Los rivales que Pecharunt envenene con sus movimientos también sufrirán confusión.',
+};
+
 async function buildAbilities() {
   const index = await getJson(`${API}/ability?limit=2000`);
 
@@ -523,7 +599,7 @@ async function buildAbilities() {
       nameEs: localName(a.names, 'es') || a.name,
       nameEn: localName(a.names, 'en') || a.name,
       effect: a.effect_entries.find(e => e.language.name === 'en')?.short_effect || '',
-      descriptionEs: latestFlavor(a.flavor_text_entries, 'es', 'flavor_text'),
+      descriptionEs: latestFlavor(a.flavor_text_entries, 'es', 'flavor_text') || ABILITY_DESC_ES_OVERRIDES[a.name] || '',
       descriptionEn: latestFlavor(a.flavor_text_entries, 'en', 'flavor_text'),
     };
   }, 'abilities');
