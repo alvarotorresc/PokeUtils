@@ -482,6 +482,77 @@ const ITEM_NAME_OVERRIDES = {
   'hopo-berry': { en: 'Hopo Berry', es: 'Baya Lupu' },
 };
 
+// 34 items whose flavor text looked fixable from the live API ("item/bicycle
+// has an es entry") but is not: verified individually against all 34 REST
+// endpoints and every one either has NO `es` flavor_text entry, or has one
+// whose `text` field is the empty string (bicycle: version_group x-y, `es`
+// entry present, `text: ""`) -- upstream never wrote the Spanish string, in
+// every version group, for any of these 34. Not a builder bug (latestFlavor
+// correctly returns '' from an empty upstream field) and not stale data
+// (re-fetched live), so there is nothing to fetch -- this is hand-written
+// content, same treatment as ITEM_NAME_OVERRIDES above.
+//
+// Sourced two ways, never invented:
+// - 22 Gen 3 (Hoenn/Kanto remake) key items (bicycle..old-sea-map): PokeAPI
+//   carries a SECOND item id for the same real-world item from a later game
+//   that DOES have real Spanish flavor text -- devon-parts (770) for
+//   devon-goods, parcel--letsgo (1022) for oaks-parcel, key-to-room-1..6
+//   (773-776) for rm-1..6-key, ss-ticket--letsgo (1021) for mysticticket and
+//   auroraticket -- adapted to this item's own English wording (old-ROM caps
+//   like "PROF. OAK", per-room numbering) rather than copied verbatim. The
+//   rest (no sibling id) cross-checked against pkmnstats.com's Gen 3 item dex
+//   (https://www.pkmnstats.com/dex/tercera/objetos/, e.g. /263/rubi/,
+//   /265/signo-magma/) for the in-game text and place names, normalized out
+//   of that source's all-caps ROM-font styling to match this dataset's own
+//   register (see devon-parts, ss-ticket--letsgo above: sentence case, no
+//   shouting).
+// - 6 Legends: Arceus balls (laheavy-ball..lajet-ball): official Spanish ball
+//   names (Peso Ball/Kilo Ball/(Quintal Ball upgrade)/Pluma Ball/Ala Ball/Aero
+//   Ball) confirmed against pokexperto.net's Legends Arceus capture-item dex
+//   (https://www.pokexperto.net/index2.php?seccion=switch/leyendas_arceus/objetos_captura),
+//   translated to match this item's own English sentence.
+// - 6 Let's Go bag-pocket dividers (pokemon-box, medicine-pocket, candy-jar,
+//   power-up-pocket, catching-pocket, battle-pocket): PokeAPI's own English
+//   is the placeholder "- - -" for all six -- there is no flavor text to
+//   translate in any language, so these are plain descriptions of what each
+//   pocket holds, per Bulbapedia's "List of items by pocket" for Let's Go.
+const ITEM_DESC_ES_OVERRIDES = {
+  bicycle: 'Bicicleta plegable con la que se va mucho más rápido que con un par de Zapatillas para Correr.',
+  'devon-goods': 'Paquete que contiene piezas mecánicas de algún tipo, fabricadas por Devon S. A.',
+  'pokeblock-case': 'Tubo para guardar los Pokécubos hechos con una Licuabayas. Suelta un Pokécubo al agitarlo.',
+  'rm-1-key': 'Llave que abre la puerta de una de las cabinas del Barco Abandonado. Es vieja y parece que se rompe con facilidad.',
+  'rm-2-key': 'Llave que abre la puerta de una de las cabinas del Barco Abandonado. Es vieja y parece que se rompe con facilidad.',
+  'rm-4-key': 'Llave que abre la puerta de una de las cabinas del Barco Abandonado. Es vieja y parece que se rompe con facilidad.',
+  'rm-6-key': 'Llave que abre la puerta de una de las cabinas del Barco Abandonado. Es vieja y parece que se rompe con facilidad.',
+  'oaks-parcel': 'Correo que hay que entregar al Profesor Oak. Te lo envían desde la Tienda Pokémon de Ciudad Verde.',
+  'bike-voucher': 'Vale que se puede canjear por una bicicleta en la Tienda de Bicicletas de Ciudad Celeste.',
+  'fame-checker': 'Dispositivo que permite recordar lo que has oído y visto sobre personajes famosos.',
+  'tm-case': 'Estuche donde se guardan las MT y las MO.',
+  'berry-pouch': 'Bolsa para llevar Bayas. Va sujeta al compartimento de objetos importantes de la Mochila.',
+  'teachy-tv': 'Televisor sintonizado en un programa con consejos útiles para Entrenadores novatos.',
+  'tri-pass': 'Pase para los ferris entre Isla Prima, Isla Secunda e Isla Tera. Tiene dibujadas las tres islas.',
+  'rainbow-pass': 'Pase para los ferris entre Ciudad Carmín y las Islas Sevii. Tiene dibujado un arcoíris.',
+  mysticticket: 'Billete necesario para embarcar rumbo a Roca Ombligo. Brilla con una luz misteriosa.',
+  auroraticket: 'Billete necesario para embarcar rumbo a Isla Origen. Tiene un brillo precioso.',
+  'powder-jar': 'Tarro para guardar el Polvo de Baya obtenido con el Machacabayas.',
+  ruby: 'Gema de una belleza exquisita con un brillo rojizo. Simboliza la pasión.',
+  sapphire: 'Gema de una belleza exquisita con un brillo azulado. Simboliza la honestidad.',
+  'magma-emblem': 'Objeto con forma de medalla, igual que el emblema del Equipo Magma.',
+  'old-sea-map': 'Mapa marino descolorido que muestra el camino hasta cierta isla.',
+  'pokemon-box': 'Permite acceder a la Caja de Pokémon desde la Mochila para guardar o intercambiar Pokémon en cualquier momento.',
+  'medicine-pocket': 'Apartado de la Mochila donde se guardan las medicinas y demás objetos curativos.',
+  'candy-jar': 'Apartado de la Mochila donde se guardan los caramelos, incluidos los Caramelos Raros.',
+  'power-up-pocket': 'Apartado de la Mochila donde se guardan las piedras evolutivas y los objetos que aumentan los PP.',
+  'catching-pocket': 'Apartado de la Mochila donde se guardan las Poké Balls y las bayas.',
+  'battle-pocket': 'Apartado de la Mochila donde se guardan los objetos de combate y las Megapiedras.',
+  'laheavy-ball': 'No llega muy lejos al lanzarla, pero es mucho más eficaz si el Pokémon no se ha percatado de tu presencia.',
+  'laleaden-ball': 'Versión mejorada de la Peso Ball. No llega muy lejos al lanzarla, pero es mucho más eficaz si el Pokémon no se ha percatado de tu presencia.',
+  'lagigaton-ball': 'Versión mejorada de la Kilo Ball. No llega muy lejos al lanzarla, pero es mucho más eficaz si el Pokémon no se ha percatado de tu presencia.',
+  'lafeather-ball': 'Se puede lanzar más lejos que una Poké Ball normal. Es más eficaz para capturar Pokémon que vuelan a gran altura.',
+  'lawing-ball': 'Se puede lanzar más lejos que una Pluma Ball. Es más eficaz para capturar Pokémon que vuelan a gran altura.',
+  'lajet-ball': 'Se puede lanzar más lejos que una Ala Ball. Es más eficaz para capturar Pokémon que vuelan a gran altura.',
+};
+
 // PokeAPI's own item-category/7 (type-protection) lists "roseli-berry" TWICE:
 // id 723 (the real one, full names/effect/flavor text) and id 2279, a stub
 // with the same name but an empty names/effect/flavor_text_entries, verified
@@ -531,7 +602,7 @@ async function buildItems() {
       name: i.name,
       nameEs: localName(i.names, 'es') || ITEM_NAME_OVERRIDES[i.name]?.es || i.name,
       nameEn: localName(i.names, 'en') || ITEM_NAME_OVERRIDES[i.name]?.en || i.name,
-      descriptionEs: latestFlavor(i.flavor_text_entries, 'es', 'text'),
+      descriptionEs: latestFlavor(i.flavor_text_entries, 'es', 'text') || ITEM_DESC_ES_OVERRIDES[i.name] || '',
       descriptionEn: latestFlavor(i.flavor_text_entries, 'en', 'text'),
       category: pocketByCategory.get(i.category.name) || '',
       // Power of Fling when this item is held. Absent means the item cannot be
