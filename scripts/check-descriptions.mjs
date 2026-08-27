@@ -25,9 +25,15 @@ function check(label, actual, expected) {
   console.log(`${ok ? '  ok  ' : '  FAIL'} ${label}: ${JSON.stringify(actual)}${ok ? '' : ` (expected ${JSON.stringify(expected)})`}`);
 }
 
+// ids inclusive de a a b -- las listas de excepcion de mas abajo son casi
+// todas bloques contiguos, y esto se lee igual que "de la 899 en adelante"
+// en check-dex.mjs en vez de una lista plana de numeros sueltos.
+const rango = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+
 const moves = await read('moves');
 const abilities = await read('abilities');
 const items = await read('items');
+const itemsDesc = await read('items-desc');
 const pokemon = await read('pokemon');
 const evolutions = await read('evolutions');
 
@@ -63,6 +69,18 @@ console.log("\n'moves.nodesc' existe en los dos diccionarios (lo que pintan esos
 check("'moves.nodesc' en i18n-es.js", 'moves.nodesc' in es, true);
 check("'moves.nodesc' en i18n-en.js", 'moves.nodesc' in en, true);
 
+console.log('\nPokemon y movimientos: nameEs/nameEn nunca faltan (no solo "no son el slug")\n');
+
+// Comprobar solo `nameEs === name` deja pasar en silencio un `nameEs`
+// (o `nameEn`) que un rebuild dejara en `undefined`: `undefined === name` es
+// `false`, asi que esos registros NO entrarian en el check de "slug crudo" de
+// abajo aunque se hayan quedado sin nombre de verdad -- y varios sitios de la
+// UI hacen `.toLowerCase()` sobre `nameEs`/`nameEn` sin comprobar que exista
+// (items.js:181-182, el mismo patron en otros listados). Esto fija que el
+// campo este PRESENTE, con independencia de si vale lo mismo que el slug.
+check('pokemon.json: entradas sin nameEs o sin nameEn', pokemon.filter(p => !p.nameEs || !p.nameEn).map(p => p.id), []);
+check('moves.json: entradas sin nameEs o sin nameEn', moves.filter(m => !m.nameEs || !m.nameEn).map(m => m.id), []);
+
 console.log('\nNingun nombre de Pokemon o de movimiento es el slug crudo\n');
 
 // pokemon.json y moves.json llevan 0 hoy (medido, y confirmado por el
@@ -71,6 +89,13 @@ console.log('\nNingun nombre de Pokemon o de movimiento es el slug crudo\n');
 // que dependa del fallback de pokeName() a nameEn.
 check('pokemon.json: entradas con nameEs === name', pokemon.filter(p => p.nameEs === p.name).map(p => p.id), []);
 check('moves.json: entradas con nameEs === name', moves.filter(m => m.nameEs === m.name).map(m => m.id), []);
+
+console.log('\nHabilidades: nameEs/nameEn nunca faltan\n');
+
+// Mismo motivo que en pokemon/moves: `a.nameEs === a.name` no destapa un
+// `nameEs`/`nameEn` en `undefined` (undefined !== slug), y ese es justo el
+// valor que rompe pokeName() y cualquier `.toLowerCase()` aguas abajo.
+check('abilities.json: entradas sin nameEs o sin nameEn', abilities.filter(a => !a.nameEs || !a.nameEn).map(a => a.id), []);
 
 console.log('\nHabilidades: si nameEs es el slug, nameEn tiene que ser un nombre de verdad\n');
 
@@ -104,6 +129,13 @@ console.log('\nObjetos visibles: mismo patron que habilidades, con las excepcion
 const visibles = items.filter(i => i.category !== 'machines');
 check('base visible de items.js (items.json menos "machines")', visibles.length, 1849);
 
+// Mismo motivo que en pokemon/moves/abilities: `nameEs === name` no destapa
+// un `nameEs`/`nameEn` en `undefined`. items.js:181-182 hace
+// `i.nameEs.toLowerCase()`/`i.nameEn.toLowerCase()` sin comprobar que
+// existan -- con un `undefined` ahi, esto es un TypeError en el buscador de
+// la pagina de Objetos, no solo un nombre feo.
+check('items.json (visibles): entradas sin nameEs o sin nameEn', visibles.filter(i => !i.nameEs || !i.nameEn).map(i => i.id), []);
+
 // 45 objetos (ids 2233-2277, bloque contiguo): piedras Mega inventadas por
 // esta app para sus megaevoluciones custom -- misma familia que
 // eelevate/fire-mane en habilidades. No es una suposicion por el patron del
@@ -111,9 +143,16 @@ check('base visible de items.js (items.json menos "machines")', visibles.length,
 // forma "<especie>-mega"/"-mega-x/y/z" a juego con cada item, ids ya fuera de
 // las megas oficiales (p.ej. "clefable-mega" para clefablite,
 // "eelektross-mega" para eelektrossite -- esta ultima ya confirmada como
-// custom por el informe de la Task 2). No existen en PokeAPI, asi que no hay
-// nombre que pedir en ningun idioma: nameEn === name tambien, y pokeName() no
-// tiene a donde caer.
+// custom por el informe de la Task 2).
+//
+// OJO, esto no es un callejon sin salida como suena "PokeAPI no los tiene":
+// PokeAPI no los tiene porque son contenido propio de esta app, no porque el
+// dato no exista en ningun sitio -- eelevate/fire-mane (las habilidades
+// gemelas de estas mismas megas) SI recibieron un nameEn escrito a mano
+// ("Eelevate", "Fire Mane"). A estos 45 objetos les falta la misma pasada de
+// naming manual, que queda pendiente y anotada aparte (no es tarea de este
+// check, que no toca data/). Mientras tanto nameEn === name tambien, y
+// pokeName() no tiene a donde caer.
 //
 // 2 objetos mas (2278 hopo-berry, 2279 roseli-berry) NO son contenido custom:
 // son un hueco de los propios datos de PokeAPI. hopo-berry no tiene ninguna
@@ -126,7 +165,7 @@ check('base visible de items.js (items.json menos "machines")', visibles.length,
 // documentado para que quien lo vea despues no lo confunda con una
 // regresion.
 const ITEMS_SIN_NOMBRE_NINGUN_IDIOMA = [
-  ...Array.from({ length: 45 }, (_, i) => 2233 + i),
+  ...rango(2233, 2277),
   2278, 2279,
 ].sort((a, b) => a - b);
 
@@ -162,6 +201,58 @@ console.log("\n'items.nodesc' existe en los dos diccionarios (lo que pintan los 
 
 check("'items.nodesc' en i18n-es.js", 'items.nodesc' in es, true);
 check("'items.nodesc' en i18n-en.js", 'items.nodesc' in en, true);
+
+console.log('\nObjetos visibles: descripcion en al menos un idioma (items-desc.json)\n');
+
+// items.js:111 (descripcionDe) lee items-desc.json, no items.json directo --
+// build-item-desc.mjs (linea 24) separo las descripciones a su propio
+// fichero y solo escribe una entrada por id si `descriptionEs || descriptionEn`
+// es verdad. "Sin entrada en items-desc.json" == "sin descripcion en ningun
+// idioma" == la ficha cae a `items.nodesc`. Este check quedo sin fijar en la
+// Task 2 -- su propio informe lo deja explicito como excepcion pendiente para
+// esta tarea -- y hasta ahora ningun check leia items-desc.json en absoluto.
+//
+// La auditoria midio 481 de los 1849 visibles asi, repartidos por categoria:
+// misc 448, key 19, medicine 8, pokeballs 5, berries 1. Casi todo contenido
+// muy reciente (DLC de Escarlata/Purpura, mas los 47 objetos sin nombre de
+// la seccion de arriba, que tampoco tienen descripcion) sin flavor text en
+// PokeAPI en ningun idioma -- traducirlo es contenido, no builder, y queda
+// aceptado igual que las 46 habilidades y los 88->0 movimientos de la Task 2.
+//
+// Dos checks, cada uno cazando una direccion de regresion que el otro no ve:
+// (1) NINGUN id nuevo, fuera del bloque de 481 aceptado, puede aparecer sin
+//     descripcion -- esto ya destapa un items-desc.json vaciado del todo
+//     (los 1368 ids de fuera del bloque pasarian a faltar).
+// (2) Un suelo independiente del bloque aceptado: al menos 1368 objetos
+//     visibles (1849 - 481) tienen que traer descripcion HOY. Si alguien
+//     "colara" una regresion real ensanchando a mano el bloque de arriba
+//     para que (1) siga en verde, este segundo check la destapa igual,
+//     porque no consulta el bloque aceptado en absoluto -- cuenta
+//     directamente cuantos items tienen descripcion de verdad. Puede subir
+//     (PokeAPI traduciendo mas), nunca bajar de 1368.
+const ITEMS_SIN_DESCRIPCION_ACEPTADOS = new Set([
+  ...rango(1659, 1942), ...rango(2015, 2016), ...rango(2018, 2021),
+  ...rango(2023, 2026), ...rango(2028, 2031), ...rango(2033, 2160),
+  ...rango(2219, 2222), ...rango(2229, 2279),
+]);
+check('el bloque aceptado son 481 ids (misc 448 + key 19 + medicine 8 + pokeballs 5 + berries 1)',
+  ITEMS_SIN_DESCRIPCION_ACEPTADOS.size, 481);
+
+const sinDescripcionEnNingunIdioma = i => {
+  const par = itemsDesc[i.id];
+  return !par || !(par[0] || par[1]);
+};
+const itemsSinDescripcion = visibles.filter(sinDescripcionEnNingunIdioma);
+
+check('ningun objeto visible fuera del bloque aceptado se queda sin descripcion en ningun idioma',
+  itemsSinDescripcion.filter(i => !ITEMS_SIN_DESCRIPCION_ACEPTADOS.has(i.id)).map(i => i.id), []);
+
+const visiblesConDescripcion = visibles.length - itemsSinDescripcion.length;
+check('al menos 1368 objetos visibles traen descripcion en algun idioma', visiblesConDescripcion >= 1368, true);
+
+const porCategoriaHoy = {};
+for (const i of itemsSinDescripcion) porCategoriaHoy[i.category] = (porCategoriaHoy[i.category] || 0) + 1;
+console.log(`  --   total y desglose de hoy (informativo, puede bajar): ${itemsSinDescripcion.length} -- ${JSON.stringify(porCategoriaHoy)}`);
 
 console.log('\nEvoluciones: todo nombre de item/region (y el resto de campos resueltos) trae .es\n');
 
