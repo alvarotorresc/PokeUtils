@@ -920,7 +920,14 @@ const ITEM_NAME_OVERRIDES = {
 //   power-up-pocket, catching-pocket, battle-pocket): PokeAPI's own English
 //   is the placeholder "- - -" for all six -- there is no flavor text to
 //   translate in any language, so these are plain descriptions of what each
-//   pocket holds, per Bulbapedia's "List of items by pocket" for Let's Go.
+//   pocket holds, per Bulbapedia's Bag article
+//   (Bag#Pokémon:_Let's_Go,_Pikachu!_and_Let's_Go,_Eevee!, the page five of
+//   the six 301-redirect to, canonical link confirmed -- see the full
+//   comment above "battle-pocket" in ITEM_DESC_EN_OVERRIDES). pokemon-box is
+//   the one exception to that source: unlike its five siblings it has its
+//   own Bulbapedia page with a real Games/Description table, which is what
+//   this ES line here and its EN override both actually reflect -- same
+//   comment above "battle-pocket" has the detail.
 const ITEM_DESC_ES_OVERRIDES = {
   bicycle: 'Bicicleta plegable con la que se va mucho más rápido que con las Deportivas.',
   'devon-goods': 'Paquete que contiene piezas mecánicas de algún tipo, fabricadas por Devon S. A.',
@@ -975,6 +982,23 @@ const ITEM_DESC_ES_OVERRIDES = {
   'genius-mochi': 'La masa de este mochi está preparada con bayas. Aumenta el Ataque Especial de base de un Pokémon',
   'glimmering-charm': 'Misterioso amuleto refulgente que puede aumentar la cantidad de teralitos obtenidos en teraincursiones.',
   'health-mochi': 'La masa de este mochi está preparada con bayas. Aumenta los PS de base de un Pokémon',
+
+  // 6 legacy HM items (hm01-hm06) found during the anti-placeholder audit --
+  // see the matching comment in ITEM_DESC_EN_OVERRIDES (search "hm01") for
+  // the full story: latestFlavor() bug, sword-shield's placeholder winning
+  // over real text, category "machines" excluded from items.js's rendered
+  // list so nobody had ever seen this in the app. Taken from the same
+  // PokeAPI live fetch as the English side, lets-go-pikachu-lets-go-eevee
+  // version group (the newest non-placeholder one for Spanish too;
+  // ultra-sun-ultra-moon carries identical text, corroborating it), fetched
+  // live 2026-08-28.
+  'hm01': 'Corta al objetivo con una cuchilla o garra. También puede usarse para cortar árboles finos.',
+  'hm02': 'Quien lo usa levanta el vuelo y ataca en el siguiente turno. También se puede usar para volar a algún sitio conocido.',
+  'hm03': 'Inunda el terreno de combate con una ola gigante.',
+  'hm04': 'Genera mucha fuerza y ataca con gran energía al objetivo. También puede usarse para mover piedras grandes.',
+  'hm05': 'Carga contra el objetivo a una velocidad increíble. También puede usarse para remontar una cascada.',
+  'hm06': 'Ataca con los puños. Puede bajar la Defensa del objetivo y romper rocas fuera del combate.',
+
   'kofus-wallet': 'La cartera olvidada de Fuco, el Líder de Gimnasio de Ciudad Cántara. Búscalo en el mercado de Pueblo Marinada para entregársela.',
   'koraidons-poke-ball': 'La Poké Ball del misterioso Pokémon Koraidon. Te la entregó un chico llamado Damián.',
   'lapoke-ball': 'Misterioso instrumento con forma de bola que se lanza a un Pokémon salvaje para capturarlo. Puede elaborarse manualmente si se reúnen los materiales necesarios.',
@@ -1043,6 +1067,39 @@ const ITEM_DESC_EN_OVERRIDES = {
   "barred-cup": 'A cup that\'s as good for using at home as on a picnic. It\'s light, sturdy, and stacks well, so it\'s a cinch to pack up and carry around.',
   "basculin-fang": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "basil": 'A very bitter ingredient that\'s quite versatile, as herbs go. It\'s fragrant and goes well with tomatoes.',
+  // 6 Let's Go bag-pocket dividers (battle-pocket, candy-jar,
+  // catching-pocket, medicine-pocket, pokemon-box, power-up-pocket) found
+  // during the anti-placeholder audit: all six still carry PokeAPI's
+  // "- - -" placeholder for English, same as tm-case above. None of the
+  // five OTHER than pokemon-box has its own Bulbapedia page or a
+  // Games/Description table -- their nameEn URL (e.g. Medicine_Pocket)
+  // 301-redirects (canonical link confirmed) to
+  // Bag#Pokémon:_Let's_Go,_Pikachu!_and_Let's_Go,_Eevee!, a shared table of
+  // one-line pocket-contents summaries written by Bulbapedia's editors, NOT
+  // verbatim in-game flavor text -- proven by TM Case, which sits in that
+  // very row ("Contains all TMs.") yet ALSO has its own page with a real
+  // Games/Description entry with different wording (see tm-case above): two
+  // different registers for the same item is only possible if the shared
+  // table is paraphrase, not a quote. Taken anyway because it is the only
+  // description Bulbapedia gives these five, and it matches the register of
+  // ITEM_DESC_ES_OVERRIDES's existing entries for the same six (already
+  // labelled "plain descriptions of what each pocket holds", see the
+  // comment above that table) -- leaving the slot as the literal "- - -"
+  // placeholder is exactly what the new anti-placeholder invariant in
+  // check-descriptions.mjs exists to catch. power-up-pocket's text has NO
+  // trailing period in the source -- kept as found, not "fixed".
+  //
+  // pokemon-box is different: it DOES have its own Bulbapedia page
+  // ("Pokémon Box Link" -- "Pokémon_Box" 301-redirects there too) with a
+  // real Games/Description table, one row, tagged Sw/Sh, BD/SP, LA, S/V, not
+  // Let's Go specifically. Used anyway: PokeAPI models "pokemon-box" (id
+  // 1007) as ONE item spanning lets-go-pikachu-lets-go-eevee AND
+  // sword-shield version groups (both give the "- - -" placeholder for
+  // English), same item id, same in-game function (open the PC box from the
+  // Bag) -- exactly the tm-case precedent above (an EN override applied
+  // item-wide from whichever version group actually has real text).
+  // Fetched live 2026-08-28.
+  "battle-pocket": 'Contains all items which only have effect in battle, including Mega Stones.',
   "battle-tablecloth": 'A garish, eye-catching tablecloth. Putting this on your picnic table will inspire any person or Pokémon who eats there to do their best.',
   "bellsprout-vine": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "bergmite-ice": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
@@ -1071,8 +1128,12 @@ const ITEM_DESC_EN_OVERRIDES = {
   "butter": 'A condiment that unites salty and sweet and also packs a richness that makes bread a delight to eat. The finest butter products are made of 100 percent Moomoo Milk.',
   "bw-grass-tablecloth": 'A tablecloth with a fun, trendy black-and-white design featuring Pokémon that seem poised to leap from the tall grass at any moment.',
   "cacnea-needle": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
+  // Let's Go bag-pocket divider -- see the full comment above "battle-pocket".
+  "candy-jar": 'Contains all candy, including Rare Candies.',
   "capsakid-seed": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "carbink-jewel": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
+  // Let's Go bag-pocket divider -- see the full comment above "battle-pocket".
+  "catching-pocket": 'Contains all available varieties of Poké Ball and Berries.',
   "cetoddle-grease": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "chandelurite": 'One of a variety of mysterious Mega Stones. A Chandelure holding this stone will be able to Mega Evolve during battle.',
   "charcadet-soot": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
@@ -1210,6 +1271,35 @@ const ITEM_DESC_EN_OVERRIDES = {
   "herbed-sausage": 'A very salty and bitter ingredient. The balance between the potent saltiness and the herbs\' bitterness make this sausage a pleasure.',
   "heroic-sword-pick": 'A pick made to be the coolest. Once you\'ve eaten, you can pretend you\'re a hero of legend. Souvenir shops at tourist spots sell these for some reason.',
   "hippopotas-sand": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
+  // 6 legacy HM items (hm01-hm06, ids 397-402) found during the anti-
+  // placeholder audit that also turned up the pocket dividers above (search
+  // "battle-pocket"): PokeAPI carries real flavor text for these across many
+  // version groups (English: ruby-sapphire through lets-go; Spanish: x-y
+  // through lets-go), but the item's own NEWEST version group, sword-shield,
+  // gives the "-\n-\n-"/"-" placeholder in BOTH languages -- Sword/Shield
+  // dropped HMs from the game entirely, so PokeAPI's "newest" entry for the
+  // item is a null one, and latestFlavor() (line ~90) takes it anyway
+  // because it is non-empty, before this table is ever consulted. Same bug
+  // tm-case documents above, just with real text on both sides instead of
+  // only English. Taken straight from PokeAPI's own
+  // lets-go-pikachu-lets-go-eevee version group (the newest one that is NOT
+  // a placeholder, for both languages) -- no wiki needed, fetched live
+  // 2026-08-28; ultra-sun-ultra-moon's row has identical Spanish text,
+  // corroborating it. Spanish counterparts are in ITEM_DESC_ES_OVERRIDES
+  // (search "hm01" there). Out of items.js's normal item list --
+  // items.js:162 filters category "machines" before rendering, the same
+  // exclusion check-descriptions.mjs's own `visibles` already applies, and
+  // machines.json (not items-desc.json) is what actually feeds the MTs/MOs
+  // page -- so this was never surfaced by any prior audit. Filled here
+  // because the new anti-placeholder invariant in check-descriptions.mjs
+  // checks items-desc.json unqualified, and a "- - -" sitting in unrendered
+  // data is still a lie if someone reads the JSON directly.
+  "hm01": 'The target is cut with a scythe or claw. This can also be used to cut down thin trees.',
+  "hm02": 'The user soars and then strikes its target on the next turn. This can also be used to fly to any familiar town.',
+  "hm03": 'The user attacks everything around it by swamping its surroundings with a giant wave.',
+  "hm04": 'The target is slugged with a punch thrown at maximum power. This can also be used to move heavy boulders.',
+  "hm05": 'The user charges at the target and may make it flinch. This can also be used to climb a waterfall.',
+  "hm06": 'The user attacks with a punch. This may also lower the target’s Defense stat. This move can also shatter rocks in the field.',
   "hoothoot-feather": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "hopo-berry": 'A Berry that can be fed to a Pokémon to restore its PP. If a wild Pokémon eats one of these Berries, that Pokémon\'s reactions will be dulled.',
   "hoppip-leaf": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
@@ -1269,6 +1359,8 @@ const ITEM_DESC_EN_OVERRIDES = {
   "maschiff-fang": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "masterpiece-teacup": 'A peculiar teacup that can make a certain species of Pokémon evolve. It may be chipped, but tea drunk from it is delicious.',
   "mayonnaise": 'A condiment that packs a very tart punch yet pairs well with various ingredients.',
+  // Let's Go bag-pocket divider -- see the full comment above "battle-pocket".
+  "medicine-pocket": 'Contains all healing medicines.',
   "meditite-sweat": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "meganiumite": 'One of a variety of mysterious Mega Stones. A Meganium holding this stone will be able to Mega Evolve during battle.',
   "meowsticite": 'One of a variety of mysterious Mega Stones. A Meowstic holding this stone will be able to Mega Evolve during battle.',
@@ -1328,6 +1420,9 @@ const ITEM_DESC_EN_OVERRIDES = {
   "plaid-tablecloth-r": 'A sturdy tablecloth made of thick fabric. The quietly composed red plaid gives the table some flair.',
   "plaid-tablecloth-y": 'A sturdy tablecloth made of thick fabric. The cheery yellow plaid brightens up a table.',
   "poison-tera-shard": 'On rare occasions, these shards form when a Tera Pokémon falls in battle and its Tera Jewel shatters.',
+  // Let's Go bag-pocket divider -- see the full comment above "battle-pocket"
+  // (this is the one with its own real Games/Description page).
+  "pokemon-box": 'A device that allows you to access the Pokémon storage system. There are some places where it won\'t work.',
   "poliwag-slime": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "polka-dot-bottle": 'A polka-dot-patterned bottle that\'s small, light, and even comes with a cup. The detachable strap makes it handy for walking around with.',
   "polka-dot-cup": 'A cup for kids to use at picnics. It\'s made of light but strong material. It\'s stackable, which makes it handy for carrying around.',
@@ -1336,6 +1431,9 @@ const ITEM_DESC_EN_OVERRIDES = {
   "poochyena-fang": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "potato-salad": 'This very tart ingredient—a soft salad that\'s all about potatoes—pairs tremendously well with bread.',
   "potato-tortilla": 'A very salty ingredient and a popular dish in Paldea. It\'s undeniably filling.',
+  // Let's Go bag-pocket divider -- see the full comment above "battle-pocket".
+  // No trailing period in the source -- kept as found.
+  "power-up-pocket": 'Contains all Evolution stones, PP Ups, and PP Maxes',
   "prosciutto": 'This ingredient is very salty like regular ham, but the difference is prosciutto is not cooked after it is cured, giving it a fun freshness.',
   "psychic-tera-shard": 'On rare occasions, these shards form when a Tera Pokémon falls in battle and its Tera Jewel shatters.',
   "psyduck-down": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
@@ -1463,8 +1561,13 @@ const ITEM_DESC_EN_OVERRIDES = {
   // "ー ー ー" placeholders. Verified live against Bulbapedia
   // (https://bulbapedia.bulbagarden.net/wiki/TM_Case#Description, FRLG row)
   // 2026-08-27. Same placeholder-wins-over-real-text bug also affects the 6
-  // Let's Go bag-pocket dividers above (pokemon-box..battle-pocket) -- out of
-  // scope for this fix, not touched.
+  // Let's Go bag-pocket dividers (battle-pocket, candy-jar, catching-pocket,
+  // medicine-pocket, pokemon-box, power-up-pocket -- own comment above
+  // battle-pocket below) and the 6 legacy HM items (hm01-hm06, own comment
+  // above hm01 near "hoothoot-feather"). All three groups filled 2026-08-28
+  // while closing the anti-placeholder invariant in check-descriptions.mjs;
+  // all three are equally unreachable on a live rebuild for the same reason
+  // as tm-case here.
   "tm-case": 'A case that holds TMs and HMs. It is attached to the BAG’s compartment for important items.',
   "toedscool-flaps": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "tofu": 'An ingredient with a touch of sweetness. It\'s unclear how well this raw block of tofu will serve as a sandwich filling.',
