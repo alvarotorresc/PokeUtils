@@ -215,50 +215,29 @@ console.log('\nObjetos visibles: descripcion en al menos un idioma (items-desc.j
 // generación", tabla "Mochi", bloque de cita individual de 2 Poké Ball de
 // Hisui) y EN desde Bulbapedia (477 -- seccion "Description" de la pagina
 // individual, o el texto que esa misma wiki dice explicito que comparten
-// TODOS los "TM Material" salvo Gimmighoul Coin: 221 de los 477). Solo 3
-// quedan sin descripcion en NINGUN idioma, y por causas que no tienen fuente
-// posible, no por falta de busqueda:
-// - strange-ball (key) y lastrange-ball (pokeballs): Bulbapedia trae el
-//   mismo placeholder que PokeAPI usa para contenido sin texto real
-//   ("- - -"/"ー ー ー") -- el objeto nunca tuvo descripcion oficial en
-//   ningun juego (Strange Ball no es obtenible legitimamente, ver el
-//   comentario de fetch-descriptions.mjs).
-// - baxcalibrite (misc, una de las 45 "Megapiedras custom" que resultaron
-//   ser contenido real de Pokemon Legends: Z-A / Pokemon Champions --
-//   descubrimiento de la Task 9c, ver ITEM_NAME_OVERRIDES mas arriba, cuyo
-//   comentario de "fabricadas por esta app" quedo desactualizado por este
-//   hallazgo): su pagina de Bulbapedia existe pero no tiene seccion
-//   "Description" todavia -- contenido demasiado reciente sin documentar.
-//
-// Dos checks, cada uno cazando una direccion de regresion que el otro no ve:
-// (1) NINGUN id nuevo, fuera del bloque de 3 aceptado, puede aparecer sin
-//     descripcion -- esto ya destapa un items-desc.json vaciado del todo.
-// (2) Un suelo independiente del bloque aceptado: al menos 1845 objetos
-//     visibles (1848 - 3) tienen que traer descripcion HOY. Si alguien
-//     "colara" una regresion real ensanchando a mano el bloque de arriba
-//     para que (1) siga en verde, este segundo check la destapa igual,
-//     porque no consulta el bloque aceptado en absoluto -- cuenta
-//     directamente cuantos items tienen descripcion de verdad. Puede subir
-//     (PokeAPI o una fuente nueva traduciendo mas), nunca bajar de 1845.
-const ITEMS_SIN_DESCRIPCION_ACEPTADOS = new Set([1663, 2219, 2275]); // strange-ball, lastrange-ball, baxcalibrite
-check('el bloque aceptado son exactamente 3 ids (strange-ball, lastrange-ball, baxcalibrite)',
-  ITEMS_SIN_DESCRIPCION_ACEPTADOS.size, 3);
-
+// TODOS los "TM Material" salvo Gimmighoul Coin: 221 de los 477). Los 3 que
+// quedaban sin descripcion en NINGUN idioma -- strange-ball/lastrange-ball
+// (Bulbapedia trae el mismo placeholder que PokeAPI, "- - -"/"ー ー ー":
+// nunca tuvo descripcion oficial en ningun juego, no es obtenible
+// legitimamente) y baxcalibrite (una de las 45 "Megapiedras custom" que
+// resultaron ser contenido real de Pokemon Legends: Z-A / Pokemon Champions,
+// descubrimiento de la Task 9c -- su pagina de Bulbapedia existe pero no
+// tenia seccion "Description" a esa fecha) -- no tenian fuente posible en
+// ningun idioma, asi que la Task 10 los cierra con redaccion propia
+// (ITEM_DESC_HAND_WRITTEN_ES/EN en build-data.mjs; baxcalibrite queda
+// marcado PROVISIONAL en ese comentario, a la espera de que Bulbapedia
+// publique su seccion real). El invariante pasa a ser CERO, sin lista de
+// perdon: el suelo de 1845 (1848 - 3) sube al total, 1848.
 const sinDescripcionEnNingunIdioma = i => {
   const par = itemsDesc[i.id];
   return !par || !(par[0] || par[1]);
 };
 const itemsSinDescripcion = visibles.filter(sinDescripcionEnNingunIdioma);
 
-check('ningun objeto visible fuera del bloque aceptado se queda sin descripcion en ningun idioma',
-  itemsSinDescripcion.filter(i => !ITEMS_SIN_DESCRIPCION_ACEPTADOS.has(i.id)).map(i => i.id), []);
+check('ningun objeto visible se queda sin descripcion en ningun idioma', itemsSinDescripcion.map(i => i.id), []);
 
 const visiblesConDescripcion = visibles.length - itemsSinDescripcion.length;
-check('al menos 1845 objetos visibles traen descripcion en algun idioma', visiblesConDescripcion >= 1845, true);
-
-const porCategoriaHoy = {};
-for (const i of itemsSinDescripcion) porCategoriaHoy[i.category] = (porCategoriaHoy[i.category] || 0) + 1;
-console.log(`  --   total y desglose de hoy (informativo, puede bajar): ${itemsSinDescripcion.length} -- ${JSON.stringify(porCategoriaHoy)}`);
+check('los 1848 objetos visibles traen descripcion en algun idioma', visiblesConDescripcion, 1848);
 
 console.log('\nEvoluciones: todo nombre de item/region (y el resto de campos resueltos) trae .es\n');
 

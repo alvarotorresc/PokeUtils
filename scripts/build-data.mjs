@@ -1474,6 +1474,44 @@ const ITEM_DESC_EN_OVERRIDES = {
   "zygardite": 'One of a variety of mysterious Mega Stones. When in Complete Forme and holding this stone, Zygarde will be able to Mega Evolve during battle.',
 };
 
+// 3 items with NO description in any language, from any source -- the last
+// gap this task's brief calls out by name. Task 9c already ruled out every
+// source it checked (WikiDex, Bulbapedia) for these three specifically; see
+// their comment further up (search "strange-ball" above ITEM_DESC_ES_OVERRIDES)
+// for the "- - -"/"ー ー ー" placeholder evidence for the first two.
+//
+// - strange-ball (key, id 1663) / lastrange-ball (pokeballs, id 2219): both
+//   resolve to the same real item, "Strange Ball" -- Bulbapedia
+//   (https://bulbapedia.bulbagarden.net/wiki/Strange_Ball#Description)
+//   confirms it is a placeholder Poké Ball (Brilliant Diamond/Shining Pearl
+//   onward) used internally to stand in for a species' original ball when
+//   that ball doesn't exist in the current game, and that it "cannot be
+//   obtained in any game" -- so there is no in-game description to find in
+//   any language, ever. Minimal factual redaction, same text for both ids
+//   since they are the same real-world item under two PokeAPI category rows.
+// - baxcalibrite (misc, id 2275): the 45th "Megapiedra custom" (see
+//   ITEM_NAME_OVERRIDES above) -- Bulbapedia has a page for it
+//   (https://bulbapedia.bulbagarden.net/wiki/Baxcalibrite), confirmed live,
+//   but that page has no "Description" section yet (checked 2026-08-27),
+//   unlike its 44 siblings. Redacted from the exact pattern all 44 siblings
+//   share (verified against the real, PokeAPI-sourced Spanish template for
+//   the pre-existing Mega Stones -- e.g. venusaurite: "Una de las
+//   misteriosas Megapiedras. Permite megaevolucionar a Venusaur en
+//   combate." -- see ITEM_DESC_ES_TRANSLATED below for the 44 siblings).
+//   PROVISIONAL: the moment Bulbapedia publishes a real Description for
+//   this item, that official text replaces this entry -- this comment is
+//   the marker to come back and check.
+const ITEM_DESC_HAND_WRITTEN_ES = {
+  'strange-ball': 'Poké Ball que sirve de marcador interno para representar a un Pokémon capturado en una bola que no existe en el juego actual. No se puede obtener ni usar en ningún juego.',
+  'lastrange-ball': 'Poké Ball que sirve de marcador interno para representar a un Pokémon capturado en una bola que no existe en el juego actual. No se puede obtener ni usar en ningún juego.',
+  baxcalibrite: 'Una de las misteriosas Megapiedras. Permite megaevolucionar a Baxcalibur en combate.',
+};
+const ITEM_DESC_HAND_WRITTEN_EN = {
+  'strange-ball': 'A placeholder Poké Ball used internally to represent a Pokémon caught in a ball that does not exist in the current game. It cannot be obtained or used in any game.',
+  'lastrange-ball': 'A placeholder Poké Ball used internally to represent a Pokémon caught in a ball that does not exist in the current game. It cannot be obtained or used in any game.',
+  baxcalibrite: 'One of a variety of mysterious Mega Stones. A Baxcalibur holding this stone will be able to Mega Evolve during battle.',
+};
+
 const DUPLICATE_ITEM_IDS = new Set([2279]);
 
 async function buildItems() {
@@ -1515,8 +1553,10 @@ async function buildItems() {
       name: i.name,
       nameEs: localName(i.names, 'es') || ITEM_NAME_OVERRIDES[i.name]?.es || i.name,
       nameEn: localName(i.names, 'en') || ITEM_NAME_OVERRIDES[i.name]?.en || i.name,
-      descriptionEs: latestFlavor(i.flavor_text_entries, 'es', 'text') || ITEM_DESC_ES_OVERRIDES[i.name] || '',
-      descriptionEn: latestFlavor(i.flavor_text_entries, 'en', 'text') || ITEM_DESC_EN_OVERRIDES[i.name] || '',
+      descriptionEs: latestFlavor(i.flavor_text_entries, 'es', 'text') || ITEM_DESC_ES_OVERRIDES[i.name]
+        || ITEM_DESC_HAND_WRITTEN_ES[i.name] || '',
+      descriptionEn: latestFlavor(i.flavor_text_entries, 'en', 'text') || ITEM_DESC_EN_OVERRIDES[i.name]
+        || ITEM_DESC_HAND_WRITTEN_EN[i.name] || '',
       category: pocketByCategory.get(i.category.name) || '',
       // Power of Fling when this item is held. Absent means the item cannot be
       // flung, which is most of them.
