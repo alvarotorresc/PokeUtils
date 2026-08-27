@@ -239,6 +239,22 @@ check('ningun objeto visible se queda sin descripcion en ningun idioma', itemsSi
 const visiblesConDescripcion = visibles.length - itemsSinDescripcion.length;
 check('los 1848 objetos visibles traen descripcion en algun idioma', visiblesConDescripcion, 1848);
 
+console.log('\nObjetos visibles: descripcion en español (Task 10 tradujo los 454 "solo EN")\n');
+
+// Este check no existia antes de la Task 10: los checks de arriba solo piden
+// "algun idioma" (items-desc.json), y los 454 objetos "solo EN" de la Task 9c
+// pasaban ese check igual (tenian EN) sin que ningun check leyera items-desc.json
+// en busca de un hueco de ES en concreto -- a diferencia de moves/abilities,
+// que si tenian su propio check ES desde la Task 9a. La Task 10 tradujo los
+// 454 (200 textos EN unicos -- 10 grupos de duplicados legitimos mas 190
+// singulares, 42 de ellos Megapiedras) a ITEM_DESC_ES_TRANSLATED en
+// build-data.mjs. El invariante pasa a ser CERO, igual que en moves/abilities.
+const itemsSoloEn = visibles
+  .filter(i => { const par = itemsDesc[i.id]; return par && par[1] && !par[0]; })
+  .map(i => i.id)
+  .sort((a, b) => a - b);
+check('ningun objeto visible se queda sin descripcion en español', itemsSoloEn, []);
+
 console.log('\nEvoluciones: todo nombre de item/region (y el resto de campos resueltos) trae .es\n');
 
 const transiciones = [];
