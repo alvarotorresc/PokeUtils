@@ -19,7 +19,7 @@
 // evolucion 'other' (Tandemaus->Maushold, mas abajo), una categoria
 // legitima de PokeAPI, no un dato que falte.
 // Run with: node scripts/check-descriptions.mjs
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import es from '../js/i18n-es.js';
 import en from '../js/i18n-en.js';
 
@@ -294,6 +294,75 @@ const itemsSoloEs = visibles
   .map(i => i.id)
   .sort((a, b) => a - b);
 check('ningun objeto visible se queda sin descripcion en ingles', itemsSoloEs, []);
+
+console.log('\nNingun slot de descripcion (items-desc.json, moves, abilities, dex) tiene FORMA de placeholder\n');
+
+// Mini-fix del 2026-08-28: la re-revision de la ola final encontro 6
+// divisores de bolsillo de Let's Go (items-desc.json 1007-1010/1012/1013)
+// con el placeholder LITERAL de PokeAPI, "- - -", como descripcionEn -- y
+// ningun check de arriba lo cazaba porque "- - -" es una cadena NO VACIA:
+// pasa "algun idioma" (linea 266) y "solo EN"/"solo ES" (280-296) sin
+// problema, el mismo hueco que build-data.mjs ya documentaba para tm-case
+// (latestFlavor(), linea ~90 de ese fichero, prefiere el placeholder del
+// version group mas nuevo de PokeAPI a cualquier override, con
+// independencia de si tiene contenido real o no). Al medir el resto del
+// dataset con este mismo patron aparecieron 6 mas que la tarea original no
+// nombraba: las 6 MO/HM heredadas (hm01-hm06, items-desc.json 397-402),
+// TAMBIEN en español -- mismo bug, doble idioma. Las 12 se rellenaron antes
+// de este check (build-data.mjs: ITEM_DESC_ES_OVERRIDES/ITEM_DESC_EN_OVERRIDES,
+// buscar "battle-pocket"/"hm01"), asi que el invariante nace en CERO.
+//
+// El regex es generico a proposito, no solo la forma literal vista hoy:
+// cualquier cadena compuesta ENTERAMENTE de guiones/rayas/espacios cuenta,
+// incluida la variante japonesa "ー ー ー" que PokeAPI usa en ja/ja-hrkt (el
+// mismo placeholder que Bulbapedia enseña para strange-ball, ver el
+// comentario de la linea ~248 mas arriba) y las variantes con en-dash (–) o
+// em-dash (—) que ningun dato de hoy usa pero que romperian el check si
+// PokeAPI empezara a usarlas mañana. Una cadena vacia SIGUE sin matchear
+// (el regex exige 1+ caracteres) -- eso ya lo cazan los checks de arriba,
+// que miran presencia, no forma.
+const esPlaceholder = texto => typeof texto === 'string' && texto.length > 0 && /^[\s\-ー–—]+$/.test(texto);
+
+// items-desc.json: TODOS los ids, no solo `visibles` -- a diferencia de los
+// checks de arriba (que existen para proteger lo que items.js:162 renderiza
+// de verdad), este invariante es sobre el propio fichero de datos: un
+// placeholder ahi es una mentira aunque items.js nunca la pinte (los 6 HM
+// son justo ese caso -- categoria "machines", fuera de `visibles`, pero
+// items-desc.json los sigue llevando).
+const placeholdersItemsDesc = [];
+for (const [id, par] of Object.entries(itemsDesc)) {
+  if (esPlaceholder(par[0])) placeholdersItemsDesc.push(`${id}:ES`);
+  if (esPlaceholder(par[1])) placeholdersItemsDesc.push(`${id}:EN`);
+}
+check('items-desc.json: ningun slot ES/EN tiene forma de placeholder', placeholdersItemsDesc, []);
+
+const placeholdersMoves = [];
+for (const m of moves) {
+  if (esPlaceholder(m.descriptionEs)) placeholdersMoves.push(`${m.id}:ES`);
+  if (esPlaceholder(m.descriptionEn)) placeholdersMoves.push(`${m.id}:EN`);
+}
+check('moves.json: ningun descriptionEs/descriptionEn tiene forma de placeholder', placeholdersMoves, []);
+
+const placeholdersAbilities = [];
+for (const a of abilities) {
+  if (esPlaceholder(a.descriptionEs)) placeholdersAbilities.push(`${a.id}:ES`);
+  if (esPlaceholder(a.descriptionEn)) placeholdersAbilities.push(`${a.id}:EN`);
+}
+check('abilities.json: ningun descriptionEs/descriptionEn tiene forma de placeholder', placeholdersAbilities, []);
+
+// dex/*.json: la ficha de especie que fetchDex() sirve por id (js/api.js) --
+// no es un dataset de los que ya cargaba este fichero, asi que se lee aqui.
+// 1025 fichas, una por especie.
+const dexDir = new URL('../data/dex/', import.meta.url);
+const dexFiles = (await readdir(dexDir)).filter(f => f.endsWith('.json'));
+const placeholdersDex = [];
+for (const f of dexFiles) {
+  const ficha = JSON.parse(await readFile(new URL(f, dexDir), 'utf8'));
+  const id = f.replace(/\.json$/, '');
+  if (esPlaceholder(ficha.descriptionEs)) placeholdersDex.push(`${id}:ES`);
+  if (esPlaceholder(ficha.descriptionEn)) placeholdersDex.push(`${id}:EN`);
+}
+check(`dex/*.json (${dexFiles.length} fichas): ningun descriptionEs/descriptionEn tiene forma de placeholder`, placeholdersDex, []);
 
 console.log('\nEvoluciones: todo nombre de item/region (y el resto de campos resueltos) trae .es\n');
 
