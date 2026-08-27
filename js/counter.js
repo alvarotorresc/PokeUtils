@@ -11,17 +11,20 @@ import { loadingHTML, replaceQuery } from './ui.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
 import { t, pokeName } from './i18n.js';
+import { toolTabsHTML, wireToolTabs } from './hub.js';
 
 const TEAM_SIZE = 6;
 
 export async function renderCounter(container, query = new URLSearchParams()) {
   container.innerHTML = `
+    ${toolTabsHTML('competitive', 'counter')}
     <div class="page-header">
       <h1>${t('counter.title')}</h1>
       <p>${t('counter.subtitle')}</p>
     </div>
     <div id="ctBody">${loadingHTML()}</div>
   `;
+  wireToolTabs(container);
   const body = container.querySelector('#ctBody');
   const format = defaultFormat(getLevel());
   const [all, meta] = await Promise.all([

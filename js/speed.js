@@ -9,15 +9,18 @@ import { loadingHTML, replaceQuery } from './ui.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
 import { t, pokeName } from './i18n.js';
+import { toolTabsHTML, wireToolTabs } from './hub.js';
 
 export async function renderSpeed(container, query = new URLSearchParams()) {
   container.innerHTML = `
+    ${toolTabsHTML('competitive', 'speed')}
     <div class="page-header">
       <h1>${t('speed.title')}</h1>
       <p>${t('speed.subtitle')}</p>
     </div>
     <div id="spdBody">${loadingHTML()}</div>
   `;
+  wireToolTabs(container);
   const body = container.querySelector('#spdBody');
   const all = competitiveList(await fetchPokemonList());
 

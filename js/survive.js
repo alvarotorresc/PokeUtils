@@ -10,6 +10,7 @@ import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
 import { WEATHER, TERRAIN, SCREENS } from './battle-data.js';
 import { t, pokeName, typeName, statName, getLang } from './i18n.js';
+import { toolTabsHTML, wireToolTabs } from './hub.js';
 
 const PICKERS = [
   { key: 'a', label: 'survive.attacker' },
@@ -28,12 +29,14 @@ const FIELDS = [
 
 export async function renderSurvive(container, query = new URLSearchParams()) {
   container.innerHTML = `
+    ${toolTabsHTML('competitive', 'survive')}
     <div class="page-header">
       <h1>${t('survive.title')}</h1>
       <p>${t('survive.subtitle')}</p>
     </div>
     <div id="svBody">${loadingHTML()}</div>
   `;
+  wireToolTabs(container);
   const body = container.querySelector('#svBody');
   const [list, moves] = await Promise.all([fetchPokemonList(), fetchMoves()]);
   const all = competitiveList(list);

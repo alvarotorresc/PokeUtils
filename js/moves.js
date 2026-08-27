@@ -3,6 +3,7 @@ import { TYPES } from './data.js';
 import { fetchMoves } from './api.js';
 import { loadingHTML, renderPagination, replaceQuery } from './ui.js';
 import { t, typeName, categoryName, pokeName, getLang, statName } from './i18n.js';
+import { toolTabsHTML, wireToolTabs } from './hub.js';
 import {
   priorityLabel, statChangeLabel, hasBattleFields,
   matchesPriorityFilter, matchesStatFilter,
@@ -29,6 +30,7 @@ export function renderMoves(container, query = new URLSearchParams()) {
   let allMoves = null;
 
   container.innerHTML = `
+    ${toolTabsHTML('data', 'moves')}
     <div class="page-header">
       <h1>${t('moves.title')}</h1>
       <p>${t('moves.subtitle')}</p>
@@ -71,6 +73,7 @@ export function renderMoves(container, query = new URLSearchParams()) {
     </div>
     <div id="mvContent"></div>
   `;
+  wireToolTabs(container);
 
   const content = container.querySelector('#mvContent');
   const searchInput = container.querySelector('#mvSearch');

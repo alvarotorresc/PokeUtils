@@ -10,19 +10,20 @@ import { spriteIdFor } from './forms.js';
 import { loadingHTML, replaceQuery } from './ui.js';
 import { getLevel } from './level.js';
 import { t, pokeName, typeName, statName, getLang, natureName } from './i18n.js';
+import { toolTabsHTML, wireToolTabs } from './hub.js';
 
-// Competitivo es un hub con tarjetas, no una tira de pestanas, asi que esta
-// pagina no lleva toolTabsHTML -- igual que las otras cuatro de su categoria.
 const SHOWN = 30;
 
 export async function renderMeta(container, query = new URLSearchParams()) {
   container.innerHTML = `
+    ${toolTabsHTML('competitive', 'meta')}
     <div class="page-header">
       <h1>${t('meta.title')}</h1>
       <p>${t('meta.subtitle')}</p>
     </div>
     <div id="metaBody">${loadingHTML()}</div>
   `;
+  wireToolTabs(container);
   const body = container.querySelector('#metaBody');
 
   // Un formato inventado en la URL no puede dejar la pagina en blanco.
