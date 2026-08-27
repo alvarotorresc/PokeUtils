@@ -14,6 +14,14 @@ export const TYPE_NAMES_FULL = {
   steel: 'Acero', fairy: 'Hada'
 };
 
+export const TYPE_NAMES_FULL_EN = {
+  normal: 'Normal', fire: 'Fire', water: 'Water', electric: 'Electric',
+  grass: 'Grass', ice: 'Ice', fighting: 'Fighting', poison: 'Poison',
+  ground: 'Ground', flying: 'Flying', psychic: 'Psychic', bug: 'Bug',
+  rock: 'Rock', ghost: 'Ghost', dragon: 'Dragon', dark: 'Dark',
+  steel: 'Steel', fairy: 'Fairy'
+};
+
 // CHART[attacker][defender_index] = multiplier
 export const CHART = {
   normal:   [1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, .5,  0,  1,  1, .5,  1],
