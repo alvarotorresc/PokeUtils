@@ -29,8 +29,9 @@ export async function renderCompare(container, query = new URLSearchParams()) {
   const [list, abilities] = await Promise.all([fetchPokemonList(), fetchAbilities()]);
   const all = competitiveList(list);
   const abilityByName = new Map(abilities.map(a => [a.name, a]));
-  // Mismo patron que pokeName(): un `||` a secas ensenaria eelevate/fire-mane
-  // (megas custom) como el slug crudo en vez de caer al ingles.
+  // Mismo patron que pokeName(): un `||` a secas ensenaria el slug crudo de
+  // una habilidad sin nombre ES (hasta la Task 11, eelevate/fire-mane, las
+  // megas custom) en vez de caer al ingles.
   const abilityLabel = slug => {
     const info = abilityByName.get(slug);
     return info ? pokeName(info) : slug;

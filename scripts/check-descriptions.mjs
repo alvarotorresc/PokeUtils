@@ -3,13 +3,21 @@
 // nombre que sea el slug crudo cuando existe una version legible en el otro
 // idioma, ni una condicion de evolucion que evolution.js no sepa traducir.
 //
-// "Cero huecos" a ciegas fallaria hoy con datos legitimos: PokeAPI no tiene
-// flavor text en español para movimientos, habilidades u objetos muy
-// recientes, y esta app inventa objetos y habilidades propios (megas custom)
-// que PokeAPI no conoce en ningun idioma. Las excepciones de verdad van
-// explicitas mas abajo, cada una con su porque: el objetivo es que ningun
-// hueco NUEVO se cuele sin que alguien lo decida, no perseguir los que ya
-// estan aceptados.
+// El invariante final (Task 11) es CERO huecos de texto que dejen a un
+// registro SIN nombre/descripcion en ningun idioma, en moves, abilities,
+// items visibles y especies -- y CERO nombres iguales al slug crudo en
+// moves, pokemon y abilities (donde SI hay nombre ES real en todos los
+// casos hoy). Las dos ultimas excepciones de este tipo vivian en este
+// fichero hasta esta tarea (eelevate/fire-mane sin nombre ES, malignant-chain
+// sin descripcion ES); las cierra scripts/build-data.mjs
+// (ABILITY_NAME_OVERRIDES_ES, MOVE_DESC_ES_TRANSLATED), aplicado a mano en
+// data/abilities.json y data/moves.json (no via rebuild, que golpearia
+// PokeAPI en vivo) para que quede byte-identico a lo que ese builder ya
+// produciria. Dos excepciones reales quedan, ninguna es un hueco: los
+// objetos que caen a nameEn en vez de al slug (informativo, mas abajo --
+// items SI tienen nombre en algun idioma, solo no en ES) y el trigger de
+// evolucion 'other' (Tandemaus->Maushold, mas abajo), una categoria
+// legitima de PokeAPI, no un dato que falte.
 // Run with: node scripts/check-descriptions.mjs
 import { readFile } from 'node:fs/promises';
 import es from '../js/i18n-es.js';
@@ -57,7 +65,7 @@ console.log("\n'moves.nodesc' existe en los dos diccionarios (por si algun datas
 check("'moves.nodesc' en i18n-es.js", 'moves.nodesc' in es, true);
 check("'moves.nodesc' en i18n-en.js", 'moves.nodesc' in en, true);
 
-console.log('\nMovimientos: descripcion en español (Task 9a cerro 87 de los 88 "solo EN")\n');
+console.log('\nMovimientos: descripcion en español (Task 9a cerro 87 de los 88 "solo EN", Task 11 el ultimo)\n');
 
 // La Task 2 dejaba 88 movimientos recientes (Leyendas Arceus/Escarlata-Purpura,
 // ids 827-919) sin descriptionEs -- PokeAPI nunca ha publicado flavor text ES
@@ -65,18 +73,18 @@ console.log('\nMovimientos: descripcion en español (Task 9a cerro 87 de los 88 
 // en build-data.mjs), menos uno: malignant-chain (919, el ultimo id de todo
 // PokeAPI) cayo en un bug de desplazamiento de una posicion en la base de datos
 // de esa fuente para el bloque 905-919 -- su texto real estaria en la pagina
-// del "siguiente id", que no existe. Sigue cayendo a `descriptionEn` en la
-// ficha (moves-detail.js:124), nunca a 'moves.nodesc' (tiene EN). Si esta
-// lista cambiara -- se encuentra la fuente para malignant-chain, o aparece
-// una regresion en alguno de los 87 -- es una señal real que hay que revisar.
-const MOVES_SIN_DESCRIPTION_ES_ACEPTADOS = [919];
-
+// del "siguiente id", que no existe. Task 11 lo cierra por otra via:
+// traduccion propia de su descriptionEn oficial (que si tiene, via PokeAPI)
+// en MOVE_DESC_ES_TRANSLATED (build-data.mjs) -- misma tabla que las 18
+// shadow-*, ver el comentario alli para por que es un caso distinto. El
+// invariante pasa a ser CERO, sin lista de perdon: si algun movimiento con
+// descriptionEn se quedara sin descriptionEs, es una regresion real.
 const movesSinDescripcionEs = moves
   .filter(m => !m.descriptionEs && m.descriptionEn)
   .map(m => m.id)
   .sort((a, b) => a - b);
-check('exactamente los movimientos "solo EN" que quedan son los aceptados',
-  movesSinDescripcionEs, MOVES_SIN_DESCRIPTION_ES_ACEPTADOS);
+check('ningun movimiento con descripcionEn se queda sin descripcionEs',
+  movesSinDescripcionEs, []);
 
 console.log('\nPokemon y movimientos: nameEs/nameEn nunca faltan (no solo "no son el slug")\n');
 
@@ -106,18 +114,23 @@ console.log('\nHabilidades: nameEs/nameEn nunca faltan\n');
 // valor que rompe pokeName() y cualquier `.toLowerCase()` aguas abajo.
 check('abilities.json: entradas sin nameEs o sin nameEn', abilities.filter(a => !a.nameEs || !a.nameEn).map(a => a.id), []);
 
-console.log('\nHabilidades: si nameEs es el slug, nameEn tiene que ser un nombre de verdad\n');
+console.log('\nHabilidades: si nameEs cayera al slug, nameEn tendria que ser un nombre de verdad\n');
 
-// eelevate (312) y fire-mane (313) son las dos megas custom de esta app:
-// PokeAPI no tiene nombre en español para ellas, pero nameEn si esta bien
-// formado ("Eelevate", "Fire Mane"). i18n.js:71 (pokeName) ya cae a nameEn
-// cuando nameEs === name (arreglado en la Task 2, antes comparaba por
-// verdad); este check fija que ese fallback SIEMPRE tenga algo que enseñar,
-// no solo con estas dos de hoy.
+// eelevate (312) y fire-mane (313) eran las dos megas custom de esta app sin
+// nombre ES en PokeAPI: nameEn si estaba bien formado ("Eelevate",
+// "Fire Mane"), pero nameEs caia al slug en ingles. Task 11 les puso el
+// nombre oficial ES de Bulbapedia (ABILITY_NAME_OVERRIDES_ES en
+// build-data.mjs: "Impulso Anguila", "Crin de Fuego"), asi que hoy ninguna
+// habilidad cae al slug. El primer check se queda como red de seguridad
+// futura -- si un rebuild reabriera el hueco, i18n.js:71 (pokeName) cae a
+// nameEn cuando nameEs === name, y esto exige que ese fallback SIEMPRE tenga
+// algo de verdad que enseñar (doble invariante: no basta con "no es el slug
+// en ES" si nameEn tambien lo fuera). El segundo confirma que la poblacion
+// que cae al slug en ES es CERO, sin lista de perdon.
 check('ninguna habilidad se queda sin nombre en ningun idioma',
   abilities.filter(a => a.nameEs === a.name).filter(a => !a.nameEn || a.nameEn === a.name).map(a => a.id), []);
-check('eelevate y fire-mane siguen siendo las unicas con nameEs === name',
-  abilities.filter(a => a.nameEs === a.name).map(a => a.id), [312, 313]);
+check('ninguna habilidad se queda con nameEs === name (slug crudo)',
+  abilities.filter(a => a.nameEs === a.name).map(a => a.id), []);
 
 console.log('\nHabilidades: la cadena de fallback de la descripcion nunca llega a abilities.nodesc\n');
 
@@ -179,10 +192,12 @@ check('ningun objeto visible se queda sin nombre en ningun idioma', itemsSinNomb
 
 // Objetos que si tienen nameEs === name pero SI caen a un nameEn de verdad
 // (p.ej. "Origin Ball", "Black Augurite": recientes, sin nombre ES en
-// PokeAPI, pero con nombre EN bien formado). Hueco de idioma aceptado (mismo
-// trato que las 46 habilidades de arriba) y ya cubierto por el check de
-// arriba -- informativo, no gatea el build, porque esta poblacion se achica
-// cuando PokeAPI traduce mas objetos (la Task 2 ya vio pasar esto).
+// PokeAPI, pero con nombre EN bien formado). Hueco de idioma aceptado -- las
+// 46 habilidades que antes estaban en el mismo caso ya no lo estan (Task 9a/
+// 10 les puso descripcion, Task 11 nombre a las 2 que faltaban), asi que hoy
+// esta es la UNICA poblacion del dataset en este estado -- ya cubierto por
+// el check de arriba, informativo, no gatea el build, porque esta poblacion
+// se achica cuando PokeAPI traduce mas objetos (la Task 2 ya vio pasar esto).
 console.log(`  --   objetos que caen a nameEn en vez de al slug (informativo): ${
   visibles.filter(i => i.nameEs === i.name && i.nameEn && i.nameEn !== i.name).length}`);
 

@@ -370,8 +370,11 @@ function withoutDefaults(obj) {
 // borde. Los 14 recuperables de este bloque llevan aqui su texto real, leido
 // de la pagina de pkproject del SIGUIENTE id (que es donde el bug lo
 // enseñaba). malignant-chain (919, el ultimo id de todo PokeAPI) no tiene
-// forma de recuperarse -- no hay una pagina "siguiente" -- y se queda sin
-// descriptionEs; ver EXCEPCIONES en scripts/check-descriptions.mjs.
+// forma de recuperarse de pkproject.net -- no hay una pagina "siguiente" --
+// asi que Task 11 lo cierra por otra via: traduccion propia de su
+// descriptionEn oficial (PokeAPI SI lo tiene), en MOVE_DESC_ES_TRANSLATED
+// mas abajo (misma tabla que las 18 shadow-*, ver el comentario alli para
+// por que es un caso distinto).
 //
 // scripts/fetch-descriptions.mjs es el builder que bajo y valido estos 87
 // (throttle, cache en docs/wikidex-cache/moves-descriptions.json).
@@ -538,6 +541,18 @@ const MOVE_DESC_ES_TRANSLATED = {
   'shadow-panic': 'Un aura oscura emana y causa confusión.',
   'shadow-shed': 'Un aura oscura anula Reflejo y movimientos similares.',
   'shadow-sky': 'La oscuridad hiere a todos salvo a los Pokémon oscuros durante 5 turnos.',
+
+  // malignant-chain (919, Task 11): caso distinto a las 18 shadow-* de
+  // arriba -- aqui el EN de partida es el oficial que PokeAPI YA trae
+  // (descriptionEn no esta vacio, ver el comentario sobre el bug de
+  // pkproject.net encima de MOVE_DESC_ES_OVERRIDES), no un hallazgo de
+  // Bulbapedia. Solo el ES es traduccion propia de esta tarea: no hay fuente
+  // ES oficial en ningun sitio (ni PokeAPI ni pkproject.net, que aqui tiene
+  // el bug de desplazamiento explicado arriba y no llega hasta el ultimo
+  // id). Terminologia: "envenenar gravemente" es el termino de juego
+  // estandar para "badly poisoned" que ya usa este mismo dataset (toxic,
+  // poison-fang).
+  'malignant-chain': 'El usuario vierte toxinas en el objetivo al envolverlo en una cadena tóxica y corrosiva. Puede llegar a envenenarlo gravemente.',
 };
 
 // 5 "torque" moves, signature moves of the Starmobile forms Revavroom
@@ -680,14 +695,22 @@ async function buildMoves() {
 // aqui, porque esto SI es texto de fuente (pkproject.net), no una traduccion
 // nuestra.
 //
-// Hallazgo aparte para decision de Alvaro, no aplicado por esta tarea: la
-// tabla "In other languages" de Bulbapedia SI trae nombre oficial en español
-// para eelevate (313->312, "Impulso Anguila", LatAm y España iguales) y para
-// fire-mane (313, "Melena de Fuego" LatAm / "Crin de Fuego" España,
-// variantes DISTINTAS) -- hoy nameEs de ambas cae al slug en ingles porque
-// PokeAPI nunca trajo un nombre ES. No se toca nameEs en esta tarea (fuera
-// de alcance: Task 10 es solo descripciones, y los nombres ya estan
-// pusheados); ver el informe de Task 10 para el detalle y las URLs.
+// Task 10 encontro pero no aplico (fuera de alcance de esa tarea, que era
+// solo descripciones) que la tabla "In other languages" de Bulbapedia SI
+// trae nombre oficial en español para eelevate y fire-mane. Task 11 lo
+// aplica, verificado en vivo por una revision independiente: eelevate ->
+// "Impulso Anguila" (identico en España y LatAm); fire-mane -> "Crin de
+// Fuego" en España, "Melena de Fuego" en LatAm (variantes DISTINTAS -- este
+// sitio es es-ES, asi que se usa "Crin de Fuego", NUNCA la variante LatAm).
+// Antes de esta tabla, nameEs de ambas caia al slug en ingles porque PokeAPI
+// nunca trajo un nombre ES; el check "eelevate y fire-mane siguen siendo las
+// unicas con nameEs === name" en scripts/check-descriptions.mjs (312, 313)
+// era justo la excepcion que esta tabla cierra a cero.
+const ABILITY_NAME_OVERRIDES_ES = {
+  eelevate: 'Impulso Anguila',
+  'fire-mane': 'Crin de Fuego',
+};
+
 const ABILITY_DESC_ES_OVERRIDES = {
   'lingering-aroma': 'Contagia la habilidad Olor Persistente al Pokémon que lo ataque con un movimiento de contacto.',
   'seed-sower': 'Crea un campo de hierba al recibir un ataque.',
@@ -759,7 +782,7 @@ async function buildAbilities() {
     return {
       id: a.id,
       name: a.name,
-      nameEs: localName(a.names, 'es') || a.name,
+      nameEs: localName(a.names, 'es') || ABILITY_NAME_OVERRIDES_ES[a.name] || a.name,
       nameEn: localName(a.names, 'en') || a.name,
       effect: a.effect_entries.find(e => e.language.name === 'en')?.short_effect || '',
       descriptionEs: latestFlavor(a.flavor_text_entries, 'es', 'flavor_text') || ABILITY_DESC_ES_OVERRIDES[a.name]
