@@ -113,15 +113,34 @@ check('cuantos nombra en total', Object.keys(names.moves).length + Object.keys(n
 check('todo movimiento trae id para su enlace',
   Object.values(names.moves).filter(m => !m.id).length, 0);
 
+// Los 39 objetos que en la version anterior de meta-names.json se habian
+// quedado sin espanol (items.json los tradujo despues, y nadie regenero este
+// fichero) ya estan al dia: medido tras la ultima regeneracion, 0 de los 155
+// objetos que el meta usa se quedan sin `.es`. Esta linea falla alto si una
+// regeneracion futura reabre el hueco, en vez de depender de que alguien note
+// un nombre en ingles en la ficha.
+check('objetos del meta sin nombre espanol',
+  Object.values(names.items).filter(e => !e.es).length, 0);
+
 console.log('\nY se leen en los dos idiomas\n');
 
 check('una habilidad en espanol', metaName('abilities', 'chlorophyll', names, 'es'), 'Clorofila');
 check('y en ingles', metaName('abilities', 'chlorophyll', names, 'en'), 'Chlorophyll');
 check('un objeto en espanol', metaName('items', 'life-orb', names, 'es'), 'Vidasfera');
 check('un movimiento en espanol', metaName('moves', 'sludge-bomb', names, 'es'), 'Bomba Lodo');
-// 39 de los 155 objetos no tienen nombre espanol en PokeAPI: cae al ingles
-// antes que a maquillar el slug.
-check('sin espanol cae al ingles', metaName('items', 'booster-energy', names, 'es'), 'Booster Energy');
+// El check de arriba ya deja en 0 los objetos del meta sin espanol, asi que
+// hoy no queda ningun caso real que ejercite el fallback a ingles dentro de
+// metaName() -- antes lo hacia booster-energy, pero items.json ya lo tradujo
+// ("Energia Potenciadora"). De los otros 3 objetos de todo items.json que
+// siguen sin ES (god-stone, roto-stick, fresh-start-mochi), ninguno aparece
+// en un set del meta (verificado: ausentes de meta-ou.json y meta-vgc.json),
+// asi que ninguno tiene entrada en meta-names.json -- probarlos aqui
+// ejercitaria el camino de "sin entrada" (linea de abajo), no el de "con
+// entrada, sin `.es`". Se prueba con una entrada sintetica, mismo genero que
+// el slug 'no-existe' de la linea de abajo pero un camino distinto: aqui SI
+// hay entrada en `names`, solo le falta `.es`.
+const sinEsSintetico = { items: { 'sin-es-de-prueba': { en: 'Fallback Name' } } };
+check('sin espanol cae al ingles', metaName('items', 'sin-es-de-prueba', sinEsSintetico, 'es'), 'Fallback Name');
 check('un slug que no esta se formatea', metaName('items', 'no-existe', names, 'es'), 'No Existe');
 
 console.log('\nLos enlaces apuntan a donde toca\n');
