@@ -6,20 +6,20 @@ export const TYPES = [
   'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'
 ];
 
-export const TYPE_NAMES = {
-  normal: 'Normal', fire: 'Fuego', water: 'Agua', electric: 'Electr.',
-  grass: 'Planta', ice: 'Hielo', fighting: 'Lucha', poison: 'Veneno',
-  ground: 'Tierra', flying: 'Volador', psychic: 'Psiquic.', bug: 'Bicho',
-  rock: 'Roca', ghost: 'Fantas.', dragon: 'Dragon', dark: 'Siniestro',
-  steel: 'Acero', fairy: 'Hada'
-};
-
 export const TYPE_NAMES_FULL = {
   normal: 'Normal', fire: 'Fuego', water: 'Agua', electric: 'Eléctrico',
   grass: 'Planta', ice: 'Hielo', fighting: 'Lucha', poison: 'Veneno',
   ground: 'Tierra', flying: 'Volador', psychic: 'Psíquico', bug: 'Bicho',
   rock: 'Roca', ghost: 'Fantasma', dragon: 'Dragón', dark: 'Siniestro',
   steel: 'Acero', fairy: 'Hada'
+};
+
+export const TYPE_NAMES_FULL_EN = {
+  normal: 'Normal', fire: 'Fire', water: 'Water', electric: 'Electric',
+  grass: 'Grass', ice: 'Ice', fighting: 'Fighting', poison: 'Poison',
+  ground: 'Ground', flying: 'Flying', psychic: 'Psychic', bug: 'Bug',
+  rock: 'Rock', ghost: 'Ghost', dragon: 'Dragon', dark: 'Dark',
+  steel: 'Steel', fairy: 'Fairy'
 };
 
 // CHART[attacker][defender_index] = multiplier
@@ -102,13 +102,6 @@ export function spriteUrl(id) {
 export function itemSpriteUrl(name) {
   return `/sprites/items/${name}.png`;
 }
-
-// Category translations
-export const CATEGORY_NAMES = {
-  physical: 'Fisico',
-  special: 'Especial',
-  status: 'Estado',
-};
 
 // PokeAPI exposes no localized names at the version group level, so they live
 // here. Only the ones the learnset builder can pick are listed.

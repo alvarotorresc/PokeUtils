@@ -56,13 +56,16 @@ check('las Poke Ball de la calculadora de captura', faltanBall, []);
 
 console.log('\nLos objetos, donde PokeAPI tiene huecos de verdad\n');
 
-// 1029 de los 1849 que la lista pinta no tienen sprite en el repo de PokeAPI
+// 1029 de los 1848 que la lista pinta no tienen sprite en el repo de PokeAPI
 // (los Regalos Misteriosos, los bolsillos, las bayas de GO...). No es un fallo
 // de la descarga: alli no existen, y el onerror de items.js pinta la mochila.
+// (Task 7 bajo el total de 1849 a 1848 al quitar el duplicado roseli-berry
+// 2279 -- ese id si tenia sprite, mismo fichero que el 723 real, asi que el
+// hueco lo absorbe el bucket "con sprite": 820 -> 819, no el de "sin".)
 const pintados = items.filter(i => i.category !== 'machines');
 const sinSprite = [];
 for (const i of pintados) if (!await hay(`items/${i.name}.png`)) sinSprite.push(i.name);
-check('los que si tiene PokeAPI estan todos', pintados.length - sinSprite.length, 820);
+check('los que si tiene PokeAPI estan todos', pintados.length - sinSprite.length, 819);
 check('y los que no, siguen siendo los mismos', sinSprite.length, 1029);
 
 console.log('\nNada de sobra\n');

@@ -41,12 +41,13 @@ check('ni sobra ninguno', fichas.length, MAX);
 console.log('\nLa descripcion, que antes se pedia a pokeapi en cada visita\n');
 
 // PokeAPI no publica texto en espanol de la 899 a la 1025 -- Hisui y Paldea
-// enteras, 127 especies con una sola entrada y en ingles. Hasta ahora esas
-// fichas salian sin ninguna descripcion, porque api.js filtraba por `es` y se
-// quedaba con la cadena vacia; ahora la ficha cae al otro idioma.
-const sinEspanol = fichas.filter(([, f]) => !f.descriptionEs).map(([id]) => id);
-check('las 127 sin espanol son de la 899 en adelante',
-  [sinEspanol.length, sinEspanol[0], sinEspanol[sinEspanol.length - 1]], [127, 899, 1025]);
+// enteras, 127 especies con una sola entrada y en ingles. La Task 9b cerro
+// las 127 con overrides (SPECIES_DESC_ES_OVERRIDES en build-dex.mjs, fuente
+// WikiDex -- ver el informe de la Task 9b), asi que esto pasa de "las 127
+// vacias son estas" a un cero duro: cualquier hueco nuevo en descriptionEs
+// es una regresion real, no una excepcion conocida que haya que mantener.
+check('ninguna ficha se queda sin descriptionEs',
+  fichas.filter(([, f]) => !f.descriptionEs).map(([id]) => id), []);
 check('ninguna se queda sin ningun idioma',
   fichas.filter(([, f]) => !f.descriptionEs && !f.descriptionEn).map(([id]) => id), []);
 check('y en ingles no falta ninguna', fichas.filter(([, f]) => !f.descriptionEn).map(([id]) => id), []);

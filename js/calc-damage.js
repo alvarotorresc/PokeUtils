@@ -2,7 +2,7 @@
 //
 // One of the three panels of #/calculator. All the maths lives in damage.js and
 // battle-data.js; this module collects inputs and renders the result.
-import { TYPES, TYPE_NAMES_FULL, spriteUrl } from './data.js';
+import { TYPES, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN, spriteUrl } from './data.js';
 import { searchPokemon, fetchMoves, fetchItems, fetchBerries, fetchPokemonList } from './api.js';
 import { calcHP, calcStat } from './stats.js';
 import { resolveDamage, applyMultiHit, drainedHP } from './damage.js';
@@ -18,6 +18,13 @@ import { spriteIdFor } from './forms.js';
 // A neutral, average-ish pair so the panel shows a real number before the user
 // touches anything.
 const DEFAULT_LEVEL = 50;
+
+// TYPE_NAMES_FULL only has Spanish names; typeName() from i18n.js gives the
+// abbreviated badge form ("Electr."), not this full one. Same pattern as
+// VERSION_GROUP_NAMES/VERSION_GROUP_NAMES_EN in pokedex-detail.js.
+function typeFullName(ty) {
+  return (getLang() === 'es' ? TYPE_NAMES_FULL : TYPE_NAMES_FULL_EN)[ty] || ty;
+}
 
 export function renderDamage(container, query) {
   let attacker = null;
@@ -132,7 +139,7 @@ export function renderDamage(container, query) {
               ` : `
                 <select id="dmgdefTera">
                   <option value="">${t('dmg.none')}</option>
-                  ${TYPES.map(ty => `<option value="${ty}">${TYPE_NAMES_FULL[ty]}</option>`).join('')}
+                  ${TYPES.map(ty => `<option value="${ty}">${typeFullName(ty)}</option>`).join('')}
                 </select>
               `}
             </div>
@@ -150,7 +157,7 @@ export function renderDamage(container, query) {
                 <label>${t('dmg.tera')}</label>
                 <select id="dmgatkTera">
                   <option value="">${t('dmg.none')}</option>
-                  ${TYPES.map(ty => `<option value="${ty}">${TYPE_NAMES_FULL[ty]}</option>`).join('')}
+                  ${TYPES.map(ty => `<option value="${ty}">${typeFullName(ty)}</option>`).join('')}
                 </select>
               </div>
             </div>
@@ -175,7 +182,7 @@ export function renderDamage(container, query) {
         <img src="${spriteUrl(spriteIdFor(poke))}" alt="${pokeName(poke)}">
         <div>
           <div class="dmg-chosen-name">${pokeName(poke)}</div>
-          <div class="dmg-chosen-types">${poke.types.map(ty => TYPE_NAMES_FULL[ty]).join(' / ')}</div>
+          <div class="dmg-chosen-types">${poke.types.map(ty => typeFullName(ty)).join(' / ')}</div>
         </div>
       </div>
     `;

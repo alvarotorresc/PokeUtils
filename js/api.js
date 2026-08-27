@@ -143,9 +143,18 @@ export async function fetchPokemonDetail(id) {
     evYield: p.evYield || {},
     abilities: p.abilities.map(a => {
       const info = abilityInfo.get(a.nameEn);
+      // Defensivo, no muerto: hasta la Task 11, eelevate y fire-mane (megas
+      // custom) traian nameEs === el slug crudo porque PokeAPI no tiene
+      // nombre espanol para ellas -- hoy ninguna habilidad esta en ese caso,
+      // pero una habilidad futura sin nombre ES si podria estarlo. Comparar
+      // contra el slug (info.name) y no un `||` cae al ingles bien formado
+      // en vez del slug en minuscula. `name`/`nameEs` de este objeto son el
+      // valor YA resuelto para pantalla, no un slug -- por eso el fallback
+      // se calcula aqui y no donde se pinta.
+      const esName = info && info.nameEs !== info.name ? info.nameEs : (info?.nameEn || a.nameEn);
       return {
-        name: info?.nameEs || a.nameEn,
-        nameEs: info?.nameEs || a.nameEn,
+        name: esName,
+        nameEs: esName,
         nameEn: a.nameEn,
         displayEn: info?.nameEn || a.nameEn,
         isHidden: a.isHidden,

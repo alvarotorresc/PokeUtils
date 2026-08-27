@@ -1,5 +1,5 @@
 // ===== POKEMON DETAIL =====
-import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, TYPE_NAMES_FULL, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, NATURES } from './data.js';
+import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, NATURES } from './data.js';
 import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchDex } from './api.js';
 import { loadingHTML, renderError, hostDeRuta } from './ui.js';
 import { evolutionText, ramasResueltas, textoDeRama, nodoActual } from './evolution.js';
@@ -109,7 +109,6 @@ async function renderEvolutionSection(host, dexId, formId = dexId) {
 
     const lookups = {
       species: slug => displayName(pokeBySlug.get(slug)) || slug,
-      type: slug => TYPE_NAMES_FULL[slug] || slug,
     };
 
     // Por el sufijo del slug y no por una tabla de ids: la especie 745 ya se

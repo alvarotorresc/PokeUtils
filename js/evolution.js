@@ -18,7 +18,7 @@
 //     the detail page already loads)
 
 import { t } from './i18n.js';
-import { TYPE_NAMES_FULL } from './data.js';
+import { TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from './data.js';
 
 const TIME_KEYS = { day: 'evo.day', night: 'evo.night', dusk: 'evo.dusk' };
 
@@ -29,6 +29,15 @@ function named(value, lang) {
   if (!value) return '';
   if (lang === 'en') return value.en || value.name || '';
   return (value.es && value.es !== value.name) ? value.es : (value.en || value.name || '');
+}
+
+// TYPE_NAMES_FULL only has Spanish names; conditionTexts() gets `lang` as a
+// parameter (not from getLang()) so it stays testable, so the type lookup
+// has to switch tables the same way instead of calling typeName() from
+// i18n.js, which returns the abbreviated badge form ("Electr."), not this
+// full one.
+function typeFullName(type, lang) {
+  return (lang === 'en' ? TYPE_NAMES_FULL_EN : TYPE_NAMES_FULL)[type] || type;
 }
 
 function triggerText(d, lang, lookups) {
@@ -76,7 +85,7 @@ function conditionTexts(d, lang, lookups) {
   if (d.location) out.push(t('evo.at', { place: named(d.location, lang) }));
   else if (d.region) out.push(t('evo.at', { place: named(d.region, lang) }));
   if (d.known_move) out.push(t('evo.knowing', { move: named(d.known_move, lang) }));
-  if (d.known_move_type) out.push(t('evo.knowingtype', { type: TYPE_NAMES_FULL[d.known_move_type] || d.known_move_type }));
+  if (d.known_move_type) out.push(t('evo.knowingtype', { type: typeFullName(d.known_move_type, lang) }));
   if (d.gender === 1) out.push(t('evo.female'));
   if (d.gender === 2) out.push(t('evo.male'));
   // 0 is meaningful here (Attack equals Defense, i.e. Hitmontop), so each
@@ -86,7 +95,7 @@ function conditionTexts(d, lang, lookups) {
   if (d.relative_physical_stats === -1) out.push(t('evo.atkltdef'));
   if (d.needs_overworld_rain) out.push(t('evo.rain'));
   if (d.party_species) out.push(t('evo.party', { species: lookups.species(d.party_species) }));
-  if (d.party_type) out.push(t('evo.partytype', { type: TYPE_NAMES_FULL[d.party_type] || d.party_type }));
+  if (d.party_type) out.push(t('evo.partytype', { type: typeFullName(d.party_type, lang) }));
   if (d.turn_upside_down) out.push(t('evo.upsidedown'));
   if (d.min_steps) out.push(t('evo.steps', { n: d.min_steps }));
   if (d.near_special_rock) out.push(t('evo.rock'));
