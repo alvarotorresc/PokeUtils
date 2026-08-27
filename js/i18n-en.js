@@ -463,6 +463,7 @@ export default {
     'moves.notfound': 'Move not found',
     'moves.detail.data': 'DATA',
     'moves.detail.effect': 'EFFECT',
+    'moves.nodesc': 'No description available',
     'moves.detail.learners': 'WHO LEARNS IT',
     'moves.learners.none': 'No Pokemon learns it in the games we cover',
     'moves.learners.note': 'Each Pokemon\'s data comes from the most recent game it appears in',

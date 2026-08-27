@@ -233,7 +233,7 @@ export function renderMoves(container, query = new URLSearchParams()) {
       const tr = document.createElement('tr');
       tr.style.cursor = 'pointer';
       tr.dataset.moveId = m.id;
-      const desc = getLang() === 'es' ? m.descriptionEs : m.descriptionEn;
+      const desc = getLang() === 'es' ? (m.descriptionEs || m.descriptionEn) : (m.descriptionEn || m.descriptionEs);
       tr.innerHTML = `
         <td class="col-grow">
           <div class="mv-title">${pokeName(m)}</div>

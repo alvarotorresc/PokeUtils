@@ -475,6 +475,7 @@ export default {
     'moves.notfound': 'Movimiento no encontrado',
     'moves.detail.data': 'DATOS',
     'moves.detail.effect': 'EFECTO',
+    'moves.nodesc': 'Sin descripción disponible',
     'moves.detail.learners': 'QUIEN LO APRENDE',
     'moves.learners.none': 'Ningún Pokémon lo aprende en los juegos que cubrimos',
     'moves.learners.note': 'Los datos de cada Pokémon salen del juego más reciente en el que aparece',

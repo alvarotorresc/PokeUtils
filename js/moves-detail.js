@@ -121,7 +121,7 @@ export async function renderMoveDetail(container, id) {
   }
 
   const dash = '—';
-  const desc = getLang() === 'es' ? move.descriptionEs : move.descriptionEn;
+  const desc = getLang() === 'es' ? (move.descriptionEs || move.descriptionEn) : (move.descriptionEn || move.descriptionEs);
   const displayName = pokeName(move);
   const altName = getLang() === 'es' ? (move.nameEn || move.name) : move.nameEs;
   const changes = move.statChanges || [];
@@ -158,7 +158,7 @@ export async function renderMoveDetail(container, id) {
       <h3 class="section-title">${t('moves.detail.effect')}</h3>
       <div class="card" style="margin-bottom:20px">
         ${changes.length ? `<div class="mv-chips">${changes.map(c => `<span class="mv-chip ${c[1] > 0 ? 'up' : 'down'}">${statChangeLabel(c)}</span>`).join('')}</div>` : ''}
-        ${desc ? `<p class="move-desc">${desc}</p>` : ''}
+        <p class="move-desc">${desc || t('moves.nodesc')}</p>
       </div>
 
       <h3 class="section-title">${t('moves.detail.learners')}</h3>
