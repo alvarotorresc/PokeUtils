@@ -28,11 +28,18 @@
 // puede llevar -- ej. Surcavientos en Shiftry -- y hay que caer al siguiente
 // portador).
 //
-// Sin fuente posible (no se piden, se listan como fallo directo):
-// - Las 6 habilidades de las Megaevoluciones "champions" que PokeAPI se
-//   inventa (Feraligatr/Eelektross/Pyroar/Meganium/Excadrill/Scovillain
-//   Mega): no son contenido de ningun juego real, ninguna fuente puede
-//   tener su descripcion oficial porque no existe.
+// Sin fuente posible en español (no se piden, se listan como fallo directo):
+// - Las 6 habilidades de las Megaevoluciones de Feraligatr/Eelektross/Pyroar/
+//   Excadrill (Pokemon Champions) y Meganium/Scovillain (Pokemon Legends:
+//   Z-A): SI son contenido real, con pagina propia en Bulbapedia y
+//   descriptionEn oficial (via PokeAPI) -- pero ninguna tiene fila de español
+//   en la tabla de idiomas de Bulbapedia, y este fetcher no tiene pagina de
+//   pkproject.net que consultar para ellas (esa fuente no cubre Champions/
+//   Z-A). La traduccion propia de su EN oficial vive en
+//   ABILITY_DESC_ES_TRANSLATED (build-data.mjs), no aqui -- ver el mapa
+//   ABILITIES_SIN_FUENTE_POSIBLE mas abajo, que evita que este builder
+//   malgaste peticiones contra pkproject.net buscando algo que no existe
+//   alli.
 //
 // Cache en docs/wikidex-cache/<dataset>-descriptions.json (gitignorado):
 // permite re-ejecutar sin re-pedir lo ya resuelto (--force lo ignora) y le
@@ -208,7 +215,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DATA = join(ROOT, 'data');
 const CACHE_DIR = join(ROOT, 'docs', 'wikidex-cache');
-const UA = 'PokeUtils-DataAudit/1.0 (+contacto: alvarotorrescarrasco@gmail.com)';
+const UA = 'PokeUtils-DataAudit/1.0 (+https://github.com/alvarotorresc/PokeUtils)';
 const THROTTLE_MS = 450;
 const FORCE = process.argv.includes('--force');
 

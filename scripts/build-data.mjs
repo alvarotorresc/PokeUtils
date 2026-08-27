@@ -932,7 +932,7 @@ const ITEM_DESC_ES_OVERRIDES = {
   'oaks-parcel': 'Correo que hay que entregar al Profesor Oak. Te lo envían desde la Tienda Pokémon de Ciudad Verde.',
   'bike-voucher': 'Vale que se puede canjear por una bicicleta en la Tienda de Bicicletas de Ciudad Celeste.',
   'fame-checker': 'Dispositivo que permite recordar lo que has oído y visto sobre personajes famosos.',
-  'tm-case': 'Estuche donde se guardan las MT y las MO.',
+  'tm-case': 'Estuche donde se guardan las MT y las MO. Va sujeto al compartimento de objetos importantes de la Mochila.',
   'berry-pouch': 'Bolsa para llevar Bayas. Va sujeta al compartimento de objetos importantes de la Mochila.',
   'teachy-tv': 'Televisor sintonizado en un programa con consejos útiles para Entrenadores novatos.',
   'tri-pass': 'Pase para los ferris entre Isla Prima, Isla Secunda e Isla Tera. Tiene dibujadas las tres islas.',
@@ -1451,6 +1451,21 @@ const ITEM_DESC_EN_OVERRIDES = {
   "timburr-sweat": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "tinkatink-hair": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "tiny-bamboo-shoot": 'A small and rare bamboo shoot. It’s quite popular with a certain class of gourmands.',
+  // tm-case's own firered-leafgreen flavor text (below) has the BAG-compartment
+  // clause that its sibling berry-pouch keeps (line ~936 in
+  // ITEM_DESC_ES_OVERRIDES) -- but a rebuild would never read it: PokeAPI's
+  // newest version groups for this item (lets-go, sword-shield) both give the
+  // placeholder "- - -" for English, and latestFlavor() (line ~90) takes the
+  // newest version group's text whenever it's non-empty, placeholder or not,
+  // before this table is ever consulted. This entry is correct and matches
+  // items-desc.json id 550 byte for byte, but is unreachable from a live
+  // rebuild until latestFlavor() (or a caller of it) learns to skip "- - -"/
+  // "ー ー ー" placeholders. Verified live against Bulbapedia
+  // (https://bulbapedia.bulbagarden.net/wiki/TM_Case#Description, FRLG row)
+  // 2026-08-27. Same placeholder-wins-over-real-text bug also affects the 6
+  // Let's Go bag-pocket dividers above (pokemon-box..battle-pocket) -- out of
+  // scope for this fix, not touched.
+  "tm-case": 'A case that holds TMs and HMs. It is attached to the BAG’s compartment for important items.',
   "toedscool-flaps": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "tofu": 'An ingredient with a touch of sweetness. It\'s unclear how well this raw block of tofu will serve as a sandwich filling.',
   "tomato": 'This very tart ingredient has a lot of savory elements to it, making it popular with many Pokémon.',
@@ -1988,7 +2003,7 @@ const ITEM_DESC_ES_TRANSLATED = {
 // 3 items with NO description in any language, from any source -- the last
 // gap this task's brief calls out by name. Task 9c already ruled out every
 // source it checked (WikiDex, Bulbapedia) for these three specifically; see
-// their comment further up (search "strange-ball" above ITEM_DESC_ES_OVERRIDES)
+// their comment further up (search "strange-ball" above ITEM_DESC_EN_OVERRIDES)
 // for the "- - -"/"ー ー ー" placeholder evidence for the first two.
 //
 // - strange-ball (key, id 1663) / lastrange-ball (pokeballs, id 2219): both
@@ -2008,7 +2023,7 @@ const ITEM_DESC_ES_TRANSLATED = {
 //   share (verified against the real, PokeAPI-sourced Spanish template for
 //   the pre-existing Mega Stones -- e.g. venusaurite: "Una de las
 //   misteriosas Megapiedras. Permite megaevolucionar a Venusaur en
-//   combate." -- see ITEM_DESC_ES_TRANSLATED below for the 44 siblings).
+//   combate." -- see ITEM_DESC_ES_TRANSLATED above for the 44 siblings).
 //   PROVISIONAL: the moment Bulbapedia publishes a real Description for
 //   this item, that official text replaces this entry -- this comment is
 //   the marker to come back and check.
