@@ -41,9 +41,71 @@
 // Throttle >=450ms entre cada peticion: pkproject.net es un fansite pequeno,
 // no un CDN -- nada de concurrencia.
 //
+// Task 9b amplia este builder con un tercer dataset: las 127 especies
+// #899-1025 (Hisui/Paldea) sin descriptionEs. AQUI LA FUENTE CAMBIA: para
+// especies es WikiDex, NO pkproject.net -- al reves que movimientos/
+// habilidades. La comprobacion pedida por la revision de la Task 9a (mirar si
+// la seccion de Pokedex de pkproject tiene el mismo bug de desplazamiento que
+// las paginas de movimiento) destapo algo mas grave que un desplazamiento de
+// id:
+//
+// 1. **Columna Escarlata/Purpura cambiada**: comprobado en 7/7 especies
+//    "normales" (Meowscarada, Tarountula, Arboliva, Klawf, Cyclizar,
+//    Ferrodada, Wo-Chien) contra WikiDex -- lo que pkproject.net etiqueta
+//    "Escarlata" es, caracter a caracter, el texto que WikiDex atribuye a
+//    "Purpura", y viceversa. El contenido es real (texto oficial de ALGUNA
+//    de las dos versiones), pero la etiqueta de version esta mal.
+// 2. **Sustitucion por el juego equivocado, mas grave y SILENCIOSA**: para
+//    especies de Hisui con entrada SV propia (comprobado con Kleavor, 900),
+//    pkproject.net enseña el mismo texto en las DOS filas Escarlata/Purpura,
+//    y ese texto no es de ninguna de las dos -- es el de Leyendas: Arceus
+//    (WikiDex lo confirma con las 3 entradas por separado: Escarlata,
+//    Purpura y Leyendas: Arceus, las tres DISTINTAS entre si). Esto no es
+//    "version mal etiquetada" -- es servir el texto de otro juego cuando
+//    existe el correcto, exactamente lo que esta tarea pide NO hacer. Y no
+//    se puede detectar mirando solo pkproject.net (las dos filas coinciden
+//    entre si, sin ninguna señal de que estan mal) -- hace falta la fuente de
+//    contraste. Un unico caso confirmado de esto basta para descartar la
+//    fuente: si hay que verificar cada una contra WikiDex de todas formas,
+//    ya se esta usando WikiDex.
+// 3. **Huecos vacios**: Ondulagua (1009) y Ferroverdor (1010) tienen la fila
+//    Escarlata/Purpura presente pero en blanco en pkproject.net -- WikiDex si
+//    trae las dos.
+//
+// El chequeo de duplicados entre especies (pensado para pillar el patron del
+// bug de movimientos, un texto identico en dos especies DISTINTAS) NO destapa
+// nada de esto: los casos 1 y 2 no duplican el texto de OTRA especie, lo
+// mezclan/sustituyen DENTRO de la misma especie -- import a anotar en el
+// informe, porque es la comprobacion que pedia el brief y no basta sola.
+//
+// WikiDex si es fiable para esto: tabla propia "Descripción Pokédex" por
+// edicion, con "Fulano no aparece en Edicion" explicito quen no hay entrada
+// (en vez del hueco silencioso o la sustitucion silenciosa de pkproject), y
+// paginada por TITULO exacto (un wiki editado a mano, sin el riesgo de
+// desplazamiento de un backend generado por id que tiene pkproject.net).
+//
+// Complicacion propia de WikiDex: unas pocas especies con varias formas
+// (Ogerpon, Terapagos, Tatsugiri en este rango) meten las N entradas de la
+// celda en un <ul><li><b>Forma X:</b> texto</li>...</ul> -- se toma solo el
+// PRIMER <li> (la forma/mascara base, mismo criterio que embody-aspect en la
+// Task 9a). Y una fila cualquiera puede traer la variante regional
+// castellano/latino en un <span class="regional-lang-switch"> con dos
+// variantes separadas por "/" -- se usa castellano (es-ES), el dialecto que
+// ya trae el resto del dataset via PokeAPI. Ver extraerTextoCelda() y los dos
+// checks nuevos de validar() (etiqueta de forma sin recortar, barra suelta)
+// que existen justamente para que ninguna de las dos se cuele sin resolver.
+//
+// Identidad de cada pagina de WikiDex: el <title> trae "<Nombre> - WikiDex,
+// la enciclopedia Pokémon" -- se exige que coincida con el nombre esperado.
+//
+// Preferencia Escarlata > Purpura > Leyendas: Arceus > primera fila
+// disponible cuando varias tienen texto real (empate entre Escarlata/Purpura:
+// ambas igual de oficiales y recientes).
+//
 // Run with: node scripts/fetch-descriptions.mjs moves
 //           node scripts/fetch-descriptions.mjs abilities
-//           node scripts/fetch-descriptions.mjs moves abilities --force
+//           node scripts/fetch-descriptions.mjs species
+//           node scripts/fetch-descriptions.mjs moves abilities species --force
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -183,7 +245,46 @@ function decodeEntities(text) {
 }
 
 function stripTags(html) {
-  return decodeEntities(html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+  const texto = decodeEntities(html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+  // Un enlace inline pegado a un signo de puntuacion (p.ej. WikiDex:
+  // "...los <a>Scyther</a>, su enemigo natural." -> al convertir el <a> en
+  // hueco queda "los Scyther , su enemigo") deja un espacio suelto antes de
+  // la coma/punto -- se cierra aqui, no solo para especies. Las comillas de
+  // cierre son un caso aparte: solo se cierra el hueco cuando la comilla
+  // hace de CIERRE (le sigue puntuacion o el final de la cadena, p.ej.
+  // '...forma de <a>Cobalion</a>".' -> 'Cobalion ".'); una comilla de
+  // APERTURA legitima ('... esotérica como "un arma...') no se toca porque
+  // el hueco que la precede es real.
+  return texto
+    .replace(/\s+([,.;:)])/g, '$1')
+    .replace(/\(\s+/g, '(')
+    .replace(/\s+"(?=[.,;:)]|$)/g, '"');
+}
+
+// Celda de la tabla "Descripción Pokédex" de WikiDex: a veces es un parrafo
+// simple, pero para especies con varias formas/mascaras es
+// <ul><li><b>Forma X:</b> texto</li>...</ul> (Ogerpon, Terapagos, Tatsugiri
+// en el rango 899-1025) -- se toma el PRIMER <li> (la forma/mascara base,
+// mismo criterio que embody-aspect en la Task 9a) y se descarta el resto.
+// Independientemente de si hay varias formas, el texto de una fila puede
+// traer la variante regional castellano/latino en un
+// <span class="regional-lang-switch"> con dos <span lang="es-419">/
+// lang="es-ES"> separados por un divmarker "/" -- se usa es-ES (el dialecto
+// que ya trae el resto del dataset via PokeAPI, comprobado en data/dex/1.json
+// y otros: ninguna entrada existente lleva marcas de es-419) y se descarta la
+// variante latina, para no acabar concatenando las dos con una "/" suelta en
+// medio de la frase.
+function extraerTextoCelda(tdHtml) {
+  let html = tdHtml;
+  if (/<ul>/.test(html)) {
+    const primerLi = html.match(/<li>([\s\S]*?)<\/li>/);
+    if (primerLi) html = primerLi[1].replace(/^\s*<b>[^<]*<\/b>\s*/, '');
+  }
+  const regional = html.match(
+    /<span class="regional-lang-switch"><span lang="es-419">[\s\S]*?<\/span><span class="divmarker">\/<\/span><span lang="es-ES">([\s\S]*?)<\/span><\/span>/,
+  );
+  if (regional) html = regional[1];
+  return stripTags(html);
 }
 
 // no vacio, sin markup residual, longitud 10-500, y suena a español (evita
@@ -194,6 +295,12 @@ function validar(texto) {
   if (/<[^>]+>/.test(texto)) return 'contiene markup HTML sin quitar';
   if (/&\w+;|&#\d+;/.test(texto)) return 'contiene una entidad HTML sin decodificar';
   if (/\{\{|\[\[/.test(texto)) return 'contiene markup de wiki (plantilla/enlace) sin resolver';
+  if (/\s[,.;:]/.test(texto)) return 'espacio suelto antes de un signo de puntuacion (enlace inline mal cerrado)';
+  if (/\s"(?=[.,;:)]|$)/.test(texto)) return 'espacio suelto antes de una comilla de cierre (enlace inline mal cerrado)';
+  // Señal de que se colo una celda multi-forma sin recortar (Ogerpon,
+  // Terapagos, Tatsugiri) o una variante regional sin resolver.
+  if (/\b(Forma|Máscara)\s+[\wÀ-ÿ]{2,20}:/.test(texto)) return 'trae una etiqueta de forma/mascara sin recortar (celda multi-forma)';
+  if (/\s\/\s/.test(texto)) return 'trae una barra suelta (posible variante regional es-419/es-ES sin resolver)';
   const pintaAEspanol = /[áéíóúñÁÉÍÓÚÑ¿¡]/.test(texto) || /\b(el|la|los|las|de|que|con|su|al|un|una)\b/i.test(texto);
   if (!pintaAEspanol) return 'no tiene pinta de español (sin tildes/ñ ni palabras funcionales comunes)';
   return null;
@@ -246,6 +353,58 @@ async function fetchAbilityDescription(abilityNameEs, candidatosEs) {
   return { error: `ningun portador la lista en pkproject (${intentos.join('; ')})` };
 }
 
+// Especies #899-1025: WikiDex es la fuente unica (ver el comentario grande
+// del principio del fichero -- pkproject.net se descarto por la columna
+// Escarlata/Purpura cambiada y la sustitucion silenciosa por el texto de
+// Leyendas: Arceus). WikiDex trae la entrada oficial de Pokedex en una tabla
+// propia por edicion, con "Fulano no aparece en Edicion" explicito para las
+// ediciones sin texto -- confirmado con Ondulagua (Walking Wake, 1009) y
+// Ferroverdor (Iron Leaves, 1010), que en pkproject.net tenian la fila
+// Escarlata/Purpura presente pero vacia (un hueco real de su base de datos)
+// y en WikiDex si traen las dos.
+async function fetchSpeciesDescriptionWikiDex(nameEs) {
+  const url = `https://www.wikidex.net/wiki/${encodeURIComponent(nameEs)}`;
+  const { status, body } = await fetchThrottled(url);
+  if (status !== 200) return { url, error: `pagina no encontrada (HTTP ${status})` };
+
+  // Identidad por nombre (WikiDex es un wiki editado a mano, direccionado
+  // por titulo exacto -- no tiene el riesgo de desplazamiento de id de un
+  // backend generado que vimos en pkproject.net, así que no hace falta un id
+  // numerico para confirmarla).
+  const tituloMatch = body.match(/<title>([^<]+) - WikiDex, la enciclopedia Pok[eé]mon<\/title>/);
+  if (!tituloMatch) return { url, error: 'no se encontro el <title> de identidad de la pagina' };
+  const tituloNombre = decodeEntities(tituloMatch[1]).trim();
+  if (tituloNombre !== nameEs) {
+    return { url, error: `identidad no coincide: titulo dice "${tituloNombre}", esperabamos "${nameEs}"` };
+  }
+
+  const marker = 'id="Descripción_Pokédex"';
+  const markerIdx = body.indexOf(marker);
+  if (markerIdx < 0) return { url, error: 'no se encontro la seccion "Descripción Pokédex"' };
+  const tableMatch = body.slice(markerIdx).match(/<table class="pokedex[^>]*>([\s\S]*?)<\/table>/);
+  if (!tableMatch) return { url, error: 'no se encontro la tabla de descripciones' };
+
+  const filas = [];
+  for (const trMatch of tableMatch[1].matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)) {
+    const tr = trMatch[1];
+    const thMatches = [...tr.matchAll(/<th[^>]*>([\s\S]*?)<\/th>/g)];
+    const tdMatch = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/);
+    if (!thMatches.length || !tdMatch) continue; // fila de cabecera (Gen./Icono/Edicion), sin <td>
+    const version = stripTags(thMatches[thMatches.length - 1][1]);
+    const texto = extraerTextoCelda(tdMatch[1]);
+    if (!version || !texto) continue;
+    if (/no aparece en|no hay entrada de/i.test(texto)) continue; // placeholder de "sin entrada", no un texto real
+    filas.push({ version, texto });
+  }
+  if (!filas.length) return { url, error: 'la tabla no tiene ninguna fila de version con texto real' };
+
+  const fila = filas.find(f => f.version === 'Escarlata')
+    || filas.find(f => f.version === 'Púrpura')
+    || filas.find(f => f.version === 'Leyendas: Arceus')
+    || filas[0];
+  return { url, desc: fila.texto, version: fila.version, versionesDisponibles: filas.map(f => f.version) };
+}
+
 async function loadCache(dataset) {
   const file = join(CACHE_DIR, `${dataset}-descriptions.json`);
   if (FORCE) return { file, hits: {}, failed: {} };
@@ -257,11 +416,20 @@ async function loadCache(dataset) {
   }
 }
 
-async function saveCache(file, hits, failed) {
+const CACHE_SOURCE = {
+  moves: 'pkproject.net (dex/escarlata-purpura)',
+  abilities: 'pkproject.net (dex/escarlata-purpura)',
+  // pkproject.net se descarto para especies -- ver el comentario grande al
+  // principio del fichero (columna Escarlata/Purpura cambiada + sustitucion
+  // silenciosa por el texto de otro juego).
+  species: 'wikidex.net (tabla "Descripción Pokédex")',
+};
+
+async function saveCache(file, hits, failed, dataset) {
   await mkdir(CACHE_DIR, { recursive: true });
   const payload = {
     generatedAt: new Date().toISOString(),
-    source: 'pkproject.net (dex/escarlata-purpura)',
+    source: CACHE_SOURCE[dataset] || 'pkproject.net (dex/escarlata-purpura)',
     hits,
     failed,
   };
@@ -294,7 +462,7 @@ async function runMoves() {
 
   corregirDesplazamientoMoves(hits, failed);
 
-  await saveCache(file, hits, failed);
+  await saveCache(file, hits, failed, 'moves');
   console.log(`\nMovimientos: ${Object.keys(hits).length}/${objetivo.length} resueltos, ${Object.keys(failed).length} fallidos -> ${file}\n`);
 }
 
@@ -338,17 +506,76 @@ async function runAbilities() {
     console.log(`  ok    ${a.name} (${a.nameEs}) via ${r.especieEs}: ${r.desc.slice(0, 70)}...`);
   }
 
-  await saveCache(file, hits, failed);
+  await saveCache(file, hits, failed, 'abilities');
   console.log(`\nHabilidades: ${Object.keys(hits).length}/${objetivo.length} resueltas, ${Object.keys(failed).length} fallidas -> ${file}\n`);
 }
 
-const RUNNERS = { moves: runMoves, abilities: runAbilities };
+async function runSpecies() {
+  const pokemon = await read('pokemon');
+  const ids = Array.from({ length: 127 }, (_, i) => i + 899); // 899-1025 inclusive
+  const { file, hits, failed } = await loadCache('species');
+  console.log(`\nEspecies #899-1025 sin descriptionEs: ${ids.length} objetivo, ${Object.keys(hits).length} ya en cache\n`);
+
+  for (const id of ids) {
+    const key = String(id);
+    if (hits[key] || failed[key]) continue;
+
+    const p = pokemon.find(x => x.id === id);
+    if (!p) {
+      failed[key] = { cause: `id ${id} no tiene entrada base en pokemon.json` };
+      console.log(`  FALLO ${id}: sin entrada en pokemon.json`);
+      continue;
+    }
+
+    // WikiDex es la fuente unica -- pkproject.net se descarto para especies
+    // (ver el comentario grande del principio del fichero: columna
+    // Escarlata/Purpura cambiada + sustitucion silenciosa por el texto de
+    // otro juego cuando existe el correcto).
+    const r = await fetchSpeciesDescriptionWikiDex(p.nameEs);
+    if (r.error) {
+      failed[key] = { nameEs: p.nameEs, url: r.url, cause: r.error };
+      console.log(`  FALLO ${id} (${p.nameEs}): ${r.error}`);
+      continue;
+    }
+    const problema = validar(r.desc);
+    if (problema) {
+      failed[key] = { nameEs: p.nameEs, url: r.url, cause: `validacion: ${problema}`, textoDescartado: r.desc };
+      console.log(`  FALLO VALIDACION ${id} (${p.nameEs}): ${problema}`);
+      continue;
+    }
+    hits[key] = { nameEs: p.nameEs, url: r.url, version: r.version, descriptionEs: r.desc };
+    console.log(`  ok    ${id} (${p.nameEs}) [${r.version}]: ${r.desc.slice(0, 70)}...`);
+  }
+
+  // Deteccion de duplicados entre especies DISTINTAS: la misma senal que
+  // destapo el bug de desplazamiento en movimientos (Task 9a) -- un texto
+  // repetido caracter a caracter entre dos especies es sospechoso, no un
+  // check que deba pasar en silencio.
+  const porTexto = new Map();
+  for (const [id, h] of Object.entries(hits)) {
+    const lista = porTexto.get(h.descriptionEs) || [];
+    lista.push(id);
+    porTexto.set(h.descriptionEs, lista);
+  }
+  const duplicados = [...porTexto.entries()].filter(([, ids2]) => ids2.length > 1);
+  if (duplicados.length) {
+    console.log(`\n  AVISO: ${duplicados.length} texto(s) duplicados entre especies distintas -- revisar a mano:`);
+    for (const [texto, ids2] of duplicados) console.log(`    ${ids2.join(', ')}: ${texto.slice(0, 70)}...`);
+  } else {
+    console.log('\n  sin duplicados entre especies (ninguna senal de desplazamiento)');
+  }
+
+  await saveCache(file, hits, failed, 'species');
+  console.log(`\nEspecies: ${Object.keys(hits).length}/${ids.length} resueltas, ${Object.keys(failed).length} fallidas -> ${file}\n`);
+}
+
+const RUNNERS = { moves: runMoves, abilities: runAbilities, species: runSpecies };
 
 async function main() {
   const targets = process.argv.slice(2).filter(a => !a.startsWith('--'));
-  if (!targets.length) throw new Error('Uso: node scripts/fetch-descriptions.mjs moves|abilities [ambos] [--force]');
+  if (!targets.length) throw new Error('Uso: node scripts/fetch-descriptions.mjs moves|abilities|species [varios] [--force]');
   for (const t of targets) {
-    if (!RUNNERS[t]) throw new Error(`Dataset desconocido "${t}". Usa: moves, abilities`);
+    if (!RUNNERS[t]) throw new Error(`Dataset desconocido "${t}". Usa: moves, abilities, species`);
   }
   for (const t of targets) await RUNNERS[t]();
 }
