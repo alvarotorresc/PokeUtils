@@ -482,6 +482,16 @@ const ITEM_NAME_OVERRIDES = {
   'hopo-berry': { en: 'Hopo Berry', es: 'Baya Lupu' },
 };
 
+// PokeAPI's own item-category/7 (type-protection) lists "roseli-berry" TWICE:
+// id 723 (the real one, full names/effect/flavor text) and id 2279, a stub
+// with the same name but an empty names/effect/flavor_text_entries, verified
+// live against both endpoints. Nothing in this app's data references item id
+// 2279 by id (only calc-damage.js looks items up by `name`, and items.json is
+// id-sorted, so that lookup already resolves to 723 first) -- it is upstream
+// duplicate garbage, not a second real item, so it is dropped at the source
+// instead of also getting a name.
+const DUPLICATE_ITEM_IDS = new Set([2279]);
+
 async function buildItems() {
   // Resolve which categories belong to the pockets the app shows, so we only
   // fetch the items we actually need instead of all ~2200.
@@ -496,7 +506,11 @@ async function buildItems() {
   const itemUrls = [];
   for (const cat of categories) {
     pocketByCategory.set(cat.name, cat.pocket.name);
-    for (const item of cat.items) itemUrls.push(item.url);
+    for (const item of cat.items) {
+      const id = idFromUrl(item.url);
+      if (DUPLICATE_ITEM_IDS.has(id)) continue;
+      itemUrls.push(item.url);
+    }
   }
 
   // Items PokeAPI could not serve. One broken record upstream should not throw

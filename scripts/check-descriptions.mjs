@@ -122,12 +122,12 @@ console.log('\nHabilidades: la cadena de fallback de la descripcion nunca llega 
 check('ninguna habilidad se queda sin descriptionEn', abilities.filter(a => !a.descriptionEn).map(a => a.id), []);
 check('ninguna habilidad se queda sin effect', abilities.filter(a => !a.effect).map(a => a.id), []);
 
-console.log('\nObjetos visibles: mismo patron que habilidades, con la unica excepcion que de verdad no tiene nombre\n');
+console.log('\nObjetos visibles: mismo patron que habilidades -- cero objetos sin nombre en ningun idioma\n');
 
 // items.js:162 filtra la categoria "machines" (MT/MO) antes de pintar la
-// lista: la base real de la UI es esta, no las 2187 de items.json enteras.
+// lista: la base real de la UI es esta, no las 2186 de items.json enteras.
 const visibles = items.filter(i => i.category !== 'machines');
-check('base visible de items.js (items.json menos "machines")', visibles.length, 1849);
+check('base visible de items.js (items.json menos "machines")', visibles.length, 1848);
 
 // Mismo motivo que en pokemon/moves/abilities: `nameEs === name` no destapa
 // un `nameEs`/`nameEn` en `undefined`. items.js:181-182 hace
@@ -136,22 +136,22 @@ check('base visible de items.js (items.json menos "machines")', visibles.length,
 // la pagina de Objetos, no solo un nombre feo.
 check('items.json (visibles): entradas sin nameEs o sin nameEn', visibles.filter(i => !i.nameEs || !i.nameEn).map(i => i.id), []);
 
-// De los 47 objetos sin nombre en ningun idioma que este check destapo en la
-// Task 3, 46 ya tienen nameEn/nameEs escritos a mano en build-data.mjs (tabla
-// ITEM_NAME_OVERRIDES, misma idea que NAME_OVERRIDES_ES de mas arriba, asi
-// que el nombre sobrevive a una regeneracion): las 45 piedras Mega custom
-// (ids 2233-2277) y hopo-berry (2278). Queda solo roseli-berry (2279) --
-// diagnostico de si es basura de datos a quitar o si tambien le toca nombre,
-// en un commit aparte.
-const ITEMS_SIN_NOMBRE_NINGUN_IDIOMA = [2279];
-
+// Task 7 cerro los 47 huecos que este check destapo en la Task 3: 45 piedras
+// Mega custom (ids 2233-2277) y hopo-berry (2278) recibieron nameEn/nameEs
+// escritos a mano en build-data.mjs (tabla ITEM_NAME_OVERRIDES, misma idea
+// que NAME_OVERRIDES_ES de mas arriba, asi que el nombre sobrevive a una
+// regeneracion), y roseli-berry (2279) -- fila duplicada y vacia del objeto
+// que SI esta completo en el id 723 -- se elimino en el builder
+// (DUPLICATE_ITEM_IDS) por ser basura de datos de PokeAPI sin ninguna
+// referencia por id en el resto del dataset. La excepcion que vivia aqui
+// (ITEMS_SIN_NOMBRE_NINGUN_IDIOMA, 47 ids) desaparece: el check de abajo pasa
+// a ser un cero duro, sin lista de perdon.
 const itemsSinNombre = visibles
   .filter(i => i.nameEs === i.name)
   .filter(i => !i.nameEn || i.nameEn === i.name)
   .map(i => i.id)
   .sort((a, b) => a - b);
-check('exactamente el objeto esperado se queda sin nombre en ningun idioma',
-  itemsSinNombre, ITEMS_SIN_NOMBRE_NINGUN_IDIOMA);
+check('ningun objeto visible se queda sin nombre en ningun idioma', itemsSinNombre, []);
 
 // Objetos que si tienen nameEs === name pero SI caen a un nameEn de verdad
 // (p.ej. "Origin Ball", "Black Augurite": recientes, sin nombre ES en
@@ -160,7 +160,7 @@ check('exactamente el objeto esperado se queda sin nombre en ningun idioma',
 // arriba -- informativo, no gatea el build, porque esta poblacion se achica
 // cuando PokeAPI traduce mas objetos (la Task 2 ya vio pasar esto).
 console.log(`  --   objetos que caen a nameEn en vez de al slug (informativo): ${
-  visibles.filter(i => i.nameEs === i.name && i.id !== 2279 && i.nameEn && i.nameEn !== i.name).length}`);
+  visibles.filter(i => i.nameEs === i.name && i.nameEn && i.nameEn !== i.name).length}`);
 
 console.log("\n'items.nodesc' existe en los dos diccionarios (lo que pintan los objetos sin descripcion en ningun idioma)\n");
 
@@ -177,20 +177,22 @@ console.log('\nObjetos visibles: descripcion en al menos un idioma (items-desc.j
 // Task 2 -- su propio informe lo deja explicito como excepcion pendiente para
 // esta tarea -- y hasta ahora ningun check leia items-desc.json en absoluto.
 //
-// La auditoria midio 481 de los 1849 visibles asi, repartidos por categoria:
-// misc 448, key 19, medicine 8, pokeballs 5, berries 1. Casi todo contenido
-// muy reciente (DLC de Escarlata/Purpura, mas las 45 piedras Mega custom y
-// hopo-berry, que la Task 7 nombro pero sin tocar descripcion, y roseli-berry
-// 2279, todavia sin decision) sin flavor text en PokeAPI en ningun idioma --
-// traducirlo es contenido, no builder, y queda aceptado igual que las 46
-// habilidades y los 88->0 movimientos de la Task 2.
+// La auditoria midio 481 de los 1849 visibles asi (480 de los 1848 tras la
+// Task 7, que nombro los 46 de la seccion de arriba pero no les puso
+// descripcion, y borro el duplicado 2279 -- una menos, mismo desglose por lo
+// demas), repartidos por categoria: misc 448, key 19, medicine 8, pokeballs
+// 5, berries 0. Casi todo contenido muy reciente (DLC de Escarlata/Purpura,
+// mas las 45 piedras Mega custom y hopo-berry, que tienen nombre desde la
+// Task 7 pero siguen sin flavor text) sin flavor text en PokeAPI en ningun
+// idioma -- traducirlo es contenido, no builder, y queda aceptado igual que
+// las 46 habilidades y los 88->0 movimientos de la Task 2.
 //
 // Dos checks, cada uno cazando una direccion de regresion que el otro no ve:
-// (1) NINGUN id nuevo, fuera del bloque de 481 aceptado, puede aparecer sin
+// (1) NINGUN id nuevo, fuera del bloque de 480 aceptado, puede aparecer sin
 //     descripcion -- esto ya destapa un items-desc.json vaciado del todo
 //     (los 1368 ids de fuera del bloque pasarian a faltar).
 // (2) Un suelo independiente del bloque aceptado: al menos 1368 objetos
-//     visibles (1849 - 481) tienen que traer descripcion HOY. Si alguien
+//     visibles (1848 - 480) tienen que traer descripcion HOY. Si alguien
 //     "colara" una regresion real ensanchando a mano el bloque de arriba
 //     para que (1) siga en verde, este segundo check la destapa igual,
 //     porque no consulta el bloque aceptado en absoluto -- cuenta
@@ -199,10 +201,10 @@ console.log('\nObjetos visibles: descripcion en al menos un idioma (items-desc.j
 const ITEMS_SIN_DESCRIPCION_ACEPTADOS = new Set([
   ...rango(1659, 1942), ...rango(2015, 2016), ...rango(2018, 2021),
   ...rango(2023, 2026), ...rango(2028, 2031), ...rango(2033, 2160),
-  ...rango(2219, 2222), ...rango(2229, 2279),
+  ...rango(2219, 2222), ...rango(2229, 2278),
 ]);
-check('el bloque aceptado son 481 ids (misc 448 + key 19 + medicine 8 + pokeballs 5 + berries 1)',
-  ITEMS_SIN_DESCRIPCION_ACEPTADOS.size, 481);
+check('el bloque aceptado son 480 ids (misc 448 + key 19 + medicine 8 + pokeballs 5 + berries 0)',
+  ITEMS_SIN_DESCRIPCION_ACEPTADOS.size, 480);
 
 const sinDescripcionEnNingunIdioma = i => {
   const par = itemsDesc[i.id];
