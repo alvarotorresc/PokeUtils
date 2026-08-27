@@ -67,8 +67,16 @@ export function statName(stat) {
 }
 
 // Helper: get pokemon display name based on language
-export function pokeName(pokemon) {
-  return currentLang === 'es' ? (pokemon.nameEs || pokemon.name) : (pokemon.nameEn || pokemon.name);
+//
+// No es un `||` a secas: unas pocas habilidades (eelevate, fire-mane, de las
+// megas custom) y muchos objetos tienen `nameEs` igual al slug crudo porque
+// PokeAPI no publica su nombre en espanol y el builder cae al slug, no al
+// ingles. Un `||` ve ese slug como "verdadero" y lo ensena tal cual; comparar
+// contra el slug (el mismo patron que ya usan pokedex-detail.js y
+// evolution.js) cae al ingles bien formado en su lugar.
+export function pokeName(entry) {
+  if (currentLang === 'en') return entry.nameEn || entry.name;
+  return entry.nameEs && entry.nameEs !== entry.name ? entry.nameEs : (entry.nameEn || entry.name);
 }
 
 // Helper: get nature display name based on language

@@ -29,9 +29,11 @@ export async function renderCompare(container, query = new URLSearchParams()) {
   const [list, abilities] = await Promise.all([fetchPokemonList(), fetchAbilities()]);
   const all = competitiveList(list);
   const abilityByName = new Map(abilities.map(a => [a.name, a]));
+  // Mismo patron que pokeName(): un `||` a secas ensenaria eelevate/fire-mane
+  // (megas custom) como el slug crudo en vez de caer al ingles.
   const abilityLabel = slug => {
     const info = abilityByName.get(slug);
-    return (getLang() === 'es' ? info?.nameEs : info?.nameEn) || slug;
+    return info ? pokeName(info) : slug;
   };
 
   // Igual que en la ficha: enlace a la pagina de la habilidad y burbuja con lo
