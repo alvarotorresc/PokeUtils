@@ -86,6 +86,20 @@ const movesSinDescripcionEs = moves
 check('ningun movimiento con descripcionEn se queda sin descripcionEs',
   movesSinDescripcionEs, []);
 
+// El invariante de la Task 11 es de ida y vuelta: ademas de que ningun
+// movimiento con EN se quede sin ES (arriba), tampoco al reves. Sin este
+// check, un rebuild que perdiera descriptionEn para un movimiento que SI
+// tiene descriptionEs (por ejemplo, un fallo de red a mitad del builder que
+// dejara ese campo en '') pasaria todos los checks de arriba sin que nadie lo
+// destape: descripcionEs existe, y el check de "sin ningun idioma" (linea 61)
+// tampoco lo atrapa porque le sobra el ES. Medido: 0 hoy.
+const movesSinDescripcionEn = moves
+  .filter(m => !m.descriptionEn && m.descriptionEs)
+  .map(m => m.id)
+  .sort((a, b) => a - b);
+check('ningun movimiento con descripcionEs se queda sin descripcionEn',
+  movesSinDescripcionEn, []);
+
 console.log('\nPokemon y movimientos: nameEs/nameEn nunca faltan (no solo "no son el slug")\n');
 
 // Comprobar solo `nameEs === name` deja pasar en silencio un `nameEs`
@@ -269,6 +283,17 @@ const itemsSoloEn = visibles
   .map(i => i.id)
   .sort((a, b) => a - b);
 check('ningun objeto visible se queda sin descripcion en español', itemsSoloEn, []);
+
+// Mismo invariante de ida y vuelta que en moves (arriba): ningun objeto
+// visible con descripcion en español se queda sin la version en ingles. Sin
+// este check, par[0] sin par[1] pasaria todos los de arriba (tiene "algun
+// idioma", y el check "solo EN" de encima no mira esta direccion). Medido:
+// 0 hoy.
+const itemsSoloEs = visibles
+  .filter(i => { const par = itemsDesc[i.id]; return par && par[0] && !par[1]; })
+  .map(i => i.id)
+  .sort((a, b) => a - b);
+check('ningun objeto visible se queda sin descripcion en ingles', itemsSoloEs, []);
 
 console.log('\nEvoluciones: todo nombre de item/region (y el resto de campos resueltos) trae .es\n');
 
