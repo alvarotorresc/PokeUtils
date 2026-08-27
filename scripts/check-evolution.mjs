@@ -34,7 +34,6 @@ const nombreDe = new Map(pokemon.map(p => [p.id, p.nameEs || p.nameEn || p.name]
 const porSlug = new Map(pokemon.map(p => [p.name, p.nameEs || p.nameEn || p.name]));
 const lookups = {
   species: slug => porSlug.get(slug) || slug,
-  type: slug => slug,
 };
 
 // Todas las transiciones del dataset, aplanadas.
@@ -251,7 +250,7 @@ check('y Mime Jr. la de Galar',
 // arriba. `nameOf` tambien tiene que elegir por idioma, como hace la ficha.
 const objetoPorSlug = new Map(pokemon.map(p => [p.name, p]));
 const nameOfEn = id => byId.get(id)?.nameEn || `#${id}`;
-const lookupsEn = { species: slug => objetoPorSlug.get(slug)?.nameEn || slug, type: slug => slug };
+const lookupsEn = { species: slug => objetoPorSlug.get(slug)?.nameEn || slug };
 await setLang('en');
 check('en ingles dice a donde lleva la de Hisui',
   textoDeRama(sliggoo, ramasResueltas(goomy, sliggoo, formaDe), nameOfEn, 'en', lookupsEn),
