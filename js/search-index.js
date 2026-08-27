@@ -151,7 +151,9 @@ const TOOL_SYNONYMS = {
   meta: { es: ['sets competitivos', 'smogon'], en: ['competitive sets', 'smogon'] },
   ivev: { es: ['ivs y evs', 'calcular stats'], en: ['ivs and evs', 'calculate stats'] },
   damage: { es: ['calculadora de daño', 'cuanto daño hace'], en: ['damage calculator', 'how much damage'] },
-  capture: { es: ['atrapar', 'cuantas pokeballs', 'probabilidad de captura'], en: ['catch', 'catch rate', 'how many balls'] },
+  // "cuantas pokeballs" era un prestamo innecesario -- nadie en espanol dice
+  // "pokeballs" en plural asi, dice "bolas" o "pokebolas".
+  capture: { es: ['atrapar', 'cuantas bolas necesito', 'probabilidad de captura'], en: ['catch', 'catch rate', 'how many balls'] },
 };
 
 // `icon` is a Pokemon id already, the same field home.js and hub.js read for
@@ -167,12 +169,39 @@ const TOOL_INDEX = TOOLS.map((tool, idx) => {
   };
 });
 
+// score() gives full credit to a match anywhere in the string -- fine for the
+// four fetched domains, where "surf" is supposed to find "Surfista". Wrong for
+// tools: with plain `includes`, "rest" found CONTRARRESTAR (the letters fall
+// mid-word), "trap" found CAPTURA through "atrapar", "star" and "para" found
+// CONTRARRESTAR and COMPARADOR the same way. None of those are a word anyone
+// typed on purpose. A tool phrase only gets the "contains" tier if the term
+// starts an actual word in it, not just appears somewhere inside one.
+function scoreTool(phrase, term) {
+  const n = norm(phrase);
+  if (!n) return 0;
+  if (n === term) return 100;
+  if (n.startsWith(term)) return 60 - Math.min(n.length, 30) / 100;
+  const palabras = n.split(/[\s-]+/);
+  if (palabras.some(p => p !== n && p.startsWith(term))) {
+    return 30 - Math.min(n.length, 30) / 100;
+  }
+  return 0;
+}
+
+// Never more than 3: a short query like "de" matches a dozen tool phrases by
+// legitimate word starts (varias palabras del ingles y del espanol empiezan
+// por esas dos letras) and, uncapped, filled all 8 slots with tools and left
+// zero Pokemon/moves/items/abilities -- for a query 139 Pokemon actually
+// match. 3 keeps most of `limit` for the four real domains no matter how many
+// tools technically match.
+const TOOL_MAX = 3;
+
 function matchTools(q, lang) {
   const hits = [];
   for (const tool of TOOL_INDEX) {
     let best = 0;
     for (const phrase of tool.terms) {
-      const s = score(phrase, q);
+      const s = scoreTool(phrase, q);
       if (s > best) best = s;
     }
     if (best > 0) {
@@ -185,7 +214,7 @@ function matchTools(q, lang) {
   }
   // Tie-break on id (the TOOLS index) so two tools scoring the same keep a
   // stable order between keystrokes, same as the four fetched domains below.
-  return hits.sort((a, b) => b.score - a.score || a.id - b.id);
+  return hits.sort((a, b) => b.score - a.score || a.id - b.id).slice(0, TOOL_MAX);
 }
 
 export function searchAll(datasets, term, limit = 8, lang = 'es') {
@@ -193,11 +222,6 @@ export function searchAll(datasets, term, limit = 8, lang = 'es') {
   // One letter matches a third of the dataset and answers nothing.
   if (q.length < 2) return [];
 
-  // Tools go ahead of the four domains on purpose, not on score: a tool that
-  // only "contains" the term still wins over an exact Pokemon name, because a
-  // tool is a page this app HAS and the four domains are data it lists. They
-  // are their own group up top, with their own label -- the one slice of the
-  // DireccionB mockup that got approved.
   const toolHits = matchTools(q, lang);
 
   const hits = [];
@@ -223,9 +247,15 @@ export function searchAll(datasets, term, limit = 8, lang = 'es') {
     }
   }
 
-  // Tie-break on id so the order stays stable between keystrokes.
-  hits.sort((a, b) => b.score - a.score || a.id - b.id);
-
-  // toolHits first, unconditionally: see the comment above matchTools' call.
-  return [...toolHits, ...hits].slice(0, limit);
+  // Exact beats everyone, tool or domain: "natu" is a legitimate prefix of
+  // NATURALEZAS (tier 1, below), but it cannot outrank the Pokemon Natu, which
+  // is an exact match (tier 2/3) -- that would break the same "exact wins"
+  // guarantee check-search.mjs already asserts for growl/fire on the four
+  // domains. Within a tier, a tool still leads: that is the one slice of the
+  // DireccionB mockup that got approved, and TOOL_MAX above keeps it from ever
+  // costing the four domains their slots.
+  const rank = h => (h.score === 100 ? 2 : 0) + (h.kind === 'tool' ? 1 : 0);
+  return [...toolHits, ...hits]
+    .sort((a, b) => rank(b) - rank(a) || b.score - a.score || a.id - b.id)
+    .slice(0, limit);
 }

@@ -140,6 +140,41 @@ const metaHits = searchAll(datasets, 'meta', 8);
 check('la herramienta va primera', metaHits[0]?.kind, 'tool');
 check('los Pokemon siguen apareciendo detras', metaHits.slice(1).some(r => r.kind === 'pokemon'), true);
 
+console.log('\nUna herramienta nunca vacia los cuatro dominios reales\n');
+
+// "de" encajaba por el principio de alguna palabra en ocho herramientas
+// ("debilidades", "del", el propio "de" de "grupos de cria"...) y, sin tope,
+// se comia las 8 filas: cero Pokemon, movimiento u objeto para un termino que
+// 139 Pokemon cumplen de verdad. TOOL_MAX corta esto en 3 pase lo que pase.
+const deHits = searchAll(datasets, 'de', 8);
+check('como mucho 3 filas de herramienta', deHits.filter(r => r.kind === 'tool').length <= 3, true);
+check('y quedan resultados reales de los cuatro dominios', deHits.some(r => r.kind !== 'tool'), true);
+
+console.log('\nLa clase de colisiones por subcadena esta cerrada, no solo los casos vistos a mano\n');
+
+// Estos seis salieron de un barrido sistematico, no de mirar uno a uno: cada
+// uno tenia una herramienta colandose por letras que caen a mitad de palabra
+// ("rest" en CONTRARRESTAR, "trap" en "atrapar", "star"/"para" en
+// CONTRARRESTAR/COMPARADOR) o, en "natu", un prefijo legitimo de NATURALEZAS
+// que aun asi no puede tapar al Pokemon exacto. Ninguno debe traer una
+// herramienta por delante del resultado real.
+const PROBE = ['natu', 'revive', 'rest', 'star', 'para', 'trap'];
+check('ninguno de los seis pone una herramienta primera',
+  PROBE.filter(t => first(t).kind === 'tool'), []);
+
+// La garantia general, no termino a termino: si una fila es un match exacto
+// (score 100) de un dominio real, ninguna fila de herramienta que NO sea
+// exacta puede ir por delante suyo en el resultado ya ordenado.
+function exactoDominioDesplazado(hits) {
+  const iExacto = hits.findIndex(h => h.kind !== 'tool' && h.score === 100);
+  if (iExacto === -1) return false;
+  return hits.slice(0, iExacto).some(h => h.kind === 'tool' && h.score < 100);
+}
+const TODOS = [...new Set([...TERMINOS, ...CONTROL, ...PROBE,
+  'de', 'meta', 'poke', 'ball', 'velocidad', 'daño', 'captura'])];
+const desplazados = TODOS.filter(t => exactoDominioDesplazado(searchAll(datasets, t, 8)));
+check('un contains de herramienta nunca desplaza a un exacto de otro dominio', desplazados, []);
+
 console.log('\nUn termino sin herramienta se comporta como antes\n');
 
 check('bicicleta no encuentra nada, en ningun dominio', searchAll(datasets, 'bicicleta', 8).length, 0);
