@@ -351,10 +351,24 @@ function stripTags(html) {
   // '...forma de <a>Cobalion</a>".' -> 'Cobalion ".'); una comilla de
   // APERTURA legitima ('... esotérica como "un arma...') no se toca porque
   // el hueco que la precede es real.
+  //
+  // Comillas TIPOGRAFICAS (“ ”, las que usa Bulbapedia, distinto de la
+  // comilla recta " de arriba): bug encontrado en la revision de la Task
+  // 9c -- scarlet-book/violet-book llevaban '“<a href=...>Sada</a>”', y al
+  // convertir el <a> en hueco quedaba '“ Sada ”' (hueco DENTRO de las
+  // comillas, pegado a la marca, no fuera). A diferencia de la comilla
+  // recta, “ SIEMPRE abre y ” SIEMPRE cierra -- no hay ambiguedad de
+  // apertura/cierre que proteger, asi que aqui SI es seguro cerrar el hueco
+  // pegado a la marca en los dos lados sin condicion: nadie escribe
+  // '“ palabra ”' con margen a proposito. El hueco LEGITIMO (el que separa
+  // '“Sada”' de la palabra siguiente/anterior, ej. 'escrito “Sada” con')
+  // queda fuera de este patron porque no esta pegado a la marca por dentro.
   return texto
     .replace(/\s+([,.;:)])/g, '$1')
     .replace(/\(\s+/g, '(')
-    .replace(/\s+"(?=[.,;:)]|$)/g, '"');
+    .replace(/\s+"(?=[.,;:)]|$)/g, '"')
+    .replace(/“\s+/g, '“')
+    .replace(/\s+”/g, '”');
 }
 
 // Celda de la tabla "Descripción Pokédex" de WikiDex: a veces es un parrafo
@@ -393,6 +407,7 @@ function validar(texto) {
   if (/\{\{|\[\[/.test(texto)) return 'contiene markup de wiki (plantilla/enlace) sin resolver';
   if (/\s[,.;:]/.test(texto)) return 'espacio suelto antes de un signo de puntuacion (enlace inline mal cerrado)';
   if (/\s"(?=[.,;:)]|$)/.test(texto)) return 'espacio suelto antes de una comilla de cierre (enlace inline mal cerrado)';
+  if (/“\s|\s”/.test(texto)) return 'espacio suelto pegado a una comilla tipografica “ ” (enlace inline mal cerrado -- ver scarlet-book/violet-book en el informe de la Task 9c)';
   // Señal de que se colo una celda multi-forma sin recortar (Ogerpon,
   // Terapagos, Tatsugiri) o una variante regional sin resolver.
   if (/\b(Forma|Máscara)\s+[\wÀ-ÿ]{2,20}:/.test(texto)) return 'trae una etiqueta de forma/mascara sin recortar (celda multi-forma)';
@@ -517,6 +532,15 @@ function validarEn(texto) {
   if (/\{\{|\[\[/.test(texto)) return 'contiene markup de wiki sin resolver';
   if (/^[-\sー]+$/.test(texto)) return 'placeholder sin texto real (guiones/rayas sueltas)';
   if (/does not have an article|may refer to|This article's title/i.test(texto)) return 'pagina de error o desambiguacion de MediaWiki, no una descripcion';
+  // Bulbapedia usa comillas tipograficas (“ ”) para nombres citados dentro
+  // de la descripcion (ej. scarlet-book: 'the name "Sada" written on it').
+  // Si el nombre citado venia como enlace <a>, stripTags lo convertia en
+  // hueco y dejaba '“ Sada ”' -- hueco DENTRO de la comilla, no visto por
+  // este validador hasta la revision de la Task 9c (que encontro
+  // scarlet-book/violet-book asi en el dataset ya entregado). stripTags ya
+  // lo cierra en origen; este check es la red de seguridad para que no
+  // vuelva a colarse sin que el validador lo vea.
+  if (/“\s|\s”/.test(texto)) return 'espacio suelto pegado a una comilla tipografica “ ” (enlace inline mal cerrado)';
   const pintaAIngles = /\b(the|a|an|of|is|are|to|and|that|this|with)\b/i.test(texto);
   if (!pintaAIngles) return 'no tiene pinta de ingles (sin palabras funcionales comunes)';
   return null;
@@ -560,6 +584,16 @@ async function fetchBulbapediaDescription(itemName, nameEn) {
   // "LA", no la primera -- unico caso, ver EN_URL_OVERRIDES.
   const filas = [...section.matchAll(/<tr>\s*<td>([\s\S]*?)<\/td>\s*<td>([\s\S]*?)<\/td>\s*<\/tr>/g)];
   if (!filas.length) return { url, error: 'la seccion Description no tiene filas de datos (Games/Description)' };
+  // Por defecto se toma la PRIMERA fila. Decision explicita para las 45
+  // megapiedras (ver ITEM_NAME_OVERRIDES en build-data.mjs): su tabla trae 2
+  // filas, "ZA" (Pokemon Legends: Z-A) primero y "Champs" (Pokemon
+  // Champions) despues -- comprobado en Clefablite, las dos con texto
+  // distinto ("A Clefable holding this stone..." vs. "A held item that
+  // allows Clefable to Mega Evolve."). filas[0] elige ZA A PROPOSITO (el
+  // juego principal publicado, primera fila de la tabla), no por ser
+  // simplemente "la primera que hubiera" -- si Alvaro prefiere el texto de
+  // Champs para estas 45, es cuestion de buscar la fila que contenga
+  // "Champs" en vez de tomar filas[0], igual que se hizo para lapoke-ball.
   const filaElegida = (itemName === 'lapoke-ball' ? filas.find(f => />LA</.test(f[1])) : null) || filas[0];
   const desc = stripTags(filaElegida[2]);
   return { url, desc };

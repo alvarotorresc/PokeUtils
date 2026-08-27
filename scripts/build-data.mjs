@@ -615,20 +615,33 @@ async function buildAbilities() {
 // same defect class as the region/evolution-item overrides above, so it gets
 // the same treatment: a manual table, not a refetch.
 //
-// 45 mega stones (ids 2233-2277): PokeAPI's own fan-content extension of the
-// mega-evolution mechanic (version group "champions") for species that never
-// got an official Mega in the games -- this app's custom megas ride on it
-// (pokemon.json's -mega/-mega-x/-mega-y/-mega-z forms of the same 45+
-// species, e.g. clefable-mega). The slug itself already spells out the
-// franchise's irregular stone name per Pokemon (lucarionite, not
-// "lucarioite"), the same way the official Venusaurite/Charizardite/Absolite
-// do -- so naming is mechanical from the slug PokeAPI already chose, not a
-// re-derivation from the species name: capitalize for English (the official
-// pattern, e.g. Absolite), swap the trailing "ite" for "ita" for Spanish (the
-// official pattern, e.g. Absolita). The five with a bare "-x"/"-y"/"-z" are
-// split off as their own word, mirroring the official "Charizardite X" /
-// "Charizardita X" -- "Z" is this app's own extension (Game Freak never
-// shipped a Mega Z), kept consistent with the X/Y ones already in the games.
+// 45 mega stones (ids 2233-2277): NOT fan-content -- corrected by the Task
+// 9c review (2026-08-27). This comment used to call the "champions" version
+// group PokeAPI's own invented extension of the mega-evolution mechanic,
+// and this app's -mega/-mega-x/-mega-y/-mega-z forms in pokemon.json
+// (e.g. clefable-mega) "custom megas" riding on it. That was true when
+// written, but Task 9c (filling item descriptions from Bulbapedia) found
+// real "Description" sections for these same 45 items, tagged to games
+// that are published now: "ZA" (Pokemon Legends: Z-A) and/or "Champs"
+// (Pokemon Champions) -- read in full for Clefablite (both ZA and Champs
+// rows present, distinct text) and confirmed to exist (HTTP 200, own page)
+// for a further sample of 5. The X/Y/Z suffix is real too, not this app's
+// addition: Absolite Z has its own Bulbapedia page and Description tagged
+// "ZA" ("An Absol holding this stone will be able to Mega Evolve during
+// battle") -- Legends: Z-A did ship a Mega Z tier, contradicting the old
+// "Game Freak never shipped a Mega Z" claim below. Full detail in
+// docs/wikidex-cache/items-descriptions.json (gitignored) and
+// .superpowers/sdd/2026-08-27-backlog-p1/task-9c-report.md.
+//
+// The slug itself already spells out the franchise's irregular stone name
+// per Pokemon (lucarionite, not "lucarioite"), the same way the official
+// Venusaurite/Charizardite/Absolite do -- so naming is mechanical from the
+// slug PokeAPI already chose, not a re-derivation from the species name:
+// capitalize for English (the official pattern, e.g. Absolite), swap the
+// trailing "ite" for "ita" for Spanish (the official pattern, e.g.
+// Absolita). The five with a bare "-x"/"-y"/"-z" are split off as their own
+// word, mirroring the official "Charizardite X" / "Charizardita X" pattern
+// -- this part of the derivation was already correct and needs no change.
 const ITEM_NAME_OVERRIDES = {
   clefablite: { en: 'Clefablite', es: 'Clefablita' },
   victreebelite: { en: 'Victreebelite', es: 'Victreebelita' },
@@ -1170,7 +1183,7 @@ const ITEM_DESC_EN_OVERRIDES = {
   "sandshrew-claw": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "sandwich": 'A dish made by sandwiching vegetables, meat, or other ingredients between two pieces of bread. It makes a fantastic meal when out on a picnic.',
   "sandygast-sand": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
-  "scarlet-book": 'A record of the expedition that the author, Heath, went on within the Great Crater of Paldea. The book has the name “ Sada ” written on it in clumsy handwriting.',
+  "scarlet-book": 'A record of the expedition that the author, Heath, went on within the Great Crater of Paldea. The book has the name “Sada” written on it in clumsy handwriting.',
   "scatterbug-powder": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "scolipite": 'One of a variety of mysterious Mega Stones. A Scolipede holding this stone will be able to Mega Evolve during battle.',
   "scovillainite": 'One of a variety of mysterious Mega Stones. A Scovillain holding this stone will be able to Mega Evolve during battle.',
@@ -1265,7 +1278,7 @@ const ITEM_DESC_EN_OVERRIDES = {
   "venonat-fang": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "victreebelite": 'One of a variety of mysterious Mega Stones. A Victreebel holding this stone will be able to Mega Evolve during battle.',
   "vinegar": 'A very sour condiment. Vinegars derived from grapes are popular in Paldea. Highly effective when used to add just a light note of flavor.',
-  "violet-book": 'A record of the expedition that the author, Heath, went on within the Great Crater of Paldea. The book has the name “ Turo ” written on it in clumsy handwriting.',
+  "violet-book": 'A record of the expedition that the author, Heath, went on within the Great Crater of Paldea. The book has the name “Turo” written on it in clumsy handwriting.',
   "volbeat-fluid": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "voltorb-sparks": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "vullaby-feather": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
