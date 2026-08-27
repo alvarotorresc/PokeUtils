@@ -25,11 +25,6 @@ function check(label, actual, expected) {
   console.log(`${ok ? '  ok  ' : '  FAIL'} ${label}: ${JSON.stringify(actual)}${ok ? '' : ` (expected ${JSON.stringify(expected)})`}`);
 }
 
-// ids inclusive de a a b -- las listas de excepcion de mas abajo son casi
-// todas bloques contiguos, y esto se lee igual que "de la 899 en adelante"
-// en check-dex.mjs en vez de una lista plana de numeros sueltos.
-const rango = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
-
 const moves = await read('moves');
 const abilities = await read('abilities');
 const items = await read('items');
@@ -225,30 +220,42 @@ console.log('\nObjetos visibles: descripcion en al menos un idioma (items-desc.j
 // demas), repartidos por categoria: misc 448, key 19, medicine 8, pokeballs
 // 5, berries 0. Casi todo contenido muy reciente (DLC de Escarlata/Purpura,
 // mas las 45 piedras Mega custom y hopo-berry, que tienen nombre desde la
-// Task 7 pero siguen sin flavor text) sin flavor text en PokeAPI en ningun
-// idioma -- traducirlo es contenido, no builder, y queda aceptado por ahora
-// (el mismo trato que tenian movimientos y habilidades antes de la Task 9a,
-// que ya cerro casi todo el suyo -- ver los dos checks de descriptionEs de
-// mas arriba, que solo dejan malignant-chain y las 6 megas custom).
+// Task 7 pero seguian sin flavor text) sin flavor text en PokeAPI en ningun
+// idioma.
+//
+// La Task 9c cerro 477 de los 480 con scripts/fetch-descriptions.mjs items:
+// ES desde WikiDex (23 -- tabla "Lista de objetos clave de la novena
+// generación", tabla "Mochi", bloque de cita individual de 2 Poké Ball de
+// Hisui) y EN desde Bulbapedia (477 -- seccion "Description" de la pagina
+// individual, o el texto que esa misma wiki dice explicito que comparten
+// TODOS los "TM Material" salvo Gimmighoul Coin: 221 de los 477). Solo 3
+// quedan sin descripcion en NINGUN idioma, y por causas que no tienen fuente
+// posible, no por falta de busqueda:
+// - strange-ball (key) y lastrange-ball (pokeballs): Bulbapedia trae el
+//   mismo placeholder que PokeAPI usa para contenido sin texto real
+//   ("- - -"/"ー ー ー") -- el objeto nunca tuvo descripcion oficial en
+//   ningun juego (Strange Ball no es obtenible legitimamente, ver el
+//   comentario de fetch-descriptions.mjs).
+// - baxcalibrite (misc, una de las 45 "Megapiedras custom" que resultaron
+//   ser contenido real de Pokemon Legends: Z-A / Pokemon Champions --
+//   descubrimiento de la Task 9c, ver ITEM_NAME_OVERRIDES mas arriba, cuyo
+//   comentario de "fabricadas por esta app" quedo desactualizado por este
+//   hallazgo): su pagina de Bulbapedia existe pero no tiene seccion
+//   "Description" todavia -- contenido demasiado reciente sin documentar.
 //
 // Dos checks, cada uno cazando una direccion de regresion que el otro no ve:
-// (1) NINGUN id nuevo, fuera del bloque de 480 aceptado, puede aparecer sin
-//     descripcion -- esto ya destapa un items-desc.json vaciado del todo
-//     (los 1368 ids de fuera del bloque pasarian a faltar).
-// (2) Un suelo independiente del bloque aceptado: al menos 1368 objetos
-//     visibles (1848 - 480) tienen que traer descripcion HOY. Si alguien
+// (1) NINGUN id nuevo, fuera del bloque de 3 aceptado, puede aparecer sin
+//     descripcion -- esto ya destapa un items-desc.json vaciado del todo.
+// (2) Un suelo independiente del bloque aceptado: al menos 1845 objetos
+//     visibles (1848 - 3) tienen que traer descripcion HOY. Si alguien
 //     "colara" una regresion real ensanchando a mano el bloque de arriba
 //     para que (1) siga en verde, este segundo check la destapa igual,
 //     porque no consulta el bloque aceptado en absoluto -- cuenta
 //     directamente cuantos items tienen descripcion de verdad. Puede subir
-//     (PokeAPI traduciendo mas), nunca bajar de 1368.
-const ITEMS_SIN_DESCRIPCION_ACEPTADOS = new Set([
-  ...rango(1659, 1942), ...rango(2015, 2016), ...rango(2018, 2021),
-  ...rango(2023, 2026), ...rango(2028, 2031), ...rango(2033, 2160),
-  ...rango(2219, 2222), ...rango(2229, 2278),
-]);
-check('el bloque aceptado son 480 ids (misc 448 + key 19 + medicine 8 + pokeballs 5 + berries 0)',
-  ITEMS_SIN_DESCRIPCION_ACEPTADOS.size, 480);
+//     (PokeAPI o una fuente nueva traduciendo mas), nunca bajar de 1845.
+const ITEMS_SIN_DESCRIPCION_ACEPTADOS = new Set([1663, 2219, 2275]); // strange-ball, lastrange-ball, baxcalibrite
+check('el bloque aceptado son exactamente 3 ids (strange-ball, lastrange-ball, baxcalibrite)',
+  ITEMS_SIN_DESCRIPCION_ACEPTADOS.size, 3);
 
 const sinDescripcionEnNingunIdioma = i => {
   const par = itemsDesc[i.id];
@@ -260,7 +267,7 @@ check('ningun objeto visible fuera del bloque aceptado se queda sin descripcion 
   itemsSinDescripcion.filter(i => !ITEMS_SIN_DESCRIPCION_ACEPTADOS.has(i.id)).map(i => i.id), []);
 
 const visiblesConDescripcion = visibles.length - itemsSinDescripcion.length;
-check('al menos 1368 objetos visibles traen descripcion en algun idioma', visiblesConDescripcion >= 1368, true);
+check('al menos 1845 objetos visibles traen descripcion en algun idioma', visiblesConDescripcion >= 1845, true);
 
 const porCategoriaHoy = {};
 for (const i of itemsSinDescripcion) porCategoriaHoy[i.category] = (porCategoriaHoy[i.category] || 0) + 1;

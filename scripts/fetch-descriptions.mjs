@@ -102,10 +102,105 @@
 // disponible cuando varias tienen texto real (empate entre Escarlata/Purpura:
 // ambas igual de oficiales y recientes).
 //
+// Task 9c amplia este builder con un cuarto dataset: los 480 objetos visibles
+// sin descripcion en NINGUN idioma (misc 448, key 19, medicine 8, pokeballs 5
+// -- ver docs/2026-08-27-inventario-vacios.md). AQUI CAMBIAN DOS COSAS a la
+// vez respecto a movimientos/habilidades/especies:
+//
+// 1. **Necesita las DOS descripciones** (ES y EN), no solo ES: PokeAPI no
+//    tiene NI flavor NI effect para estos 480 en ningun idioma (comprobado
+//    en vivo contra legend-plate y health-mochi antes de escribir esto).
+// 2. **La fuente EN es Bulbapedia**, no PokeAPI ni un "hermano" del dataset
+//    -- el brief lo permite explicitamente porque para ES sigue siendo
+//    WikiDex la fuente validada, pero WikiDex resulto MUCHO mas dificil de
+//    explotar para objetos que para especies: NO tiene una tabla
+//    "Descripcion por juego" por objeto como la de especies. Lo que SI tiene,
+//    y de dos formas distintas:
+//
+//    a) **Tablas "Lista de objetos clave de la [generacion]"**: para
+//       objetos clave, con columnas Nombre/Ingles/Japones/Gen/Descripcion.
+//       Validado letra a letra contra PokeAPI: la fila "Amuleto iris"
+//       (Shiny Charm) trae "Misterioso amuleto brillante que aumenta la
+//       probabilidad de encontrar Pokémon variocolor." -- identico,
+//       caracter a caracter, al descriptionEs que PokeAPI SI tiene para ese
+//       item desde Sol/Luna. Misma tabla para los mochis de curacion, en la
+//       pagina "Mochi" (columnas Objeto/Ingles/Introducido en/Descripcion).
+//       Se usa la columna Ingles para emparejar con nameEn, no el nombre ES
+//       (que build-data.mjs no siempre tiene traducido para estos 480 -- ver
+//       mas abajo).
+//    b) **Bloque "Descripcion" con cita textual** en la pagina individual de
+//       ALGUNOS objetos: <div class="cita"><blockquote class="quote">
+//       <p>texto</p></blockquote></div>, con comillas angulares (« »)
+//       generadas por CSS -- inequivocamente una CITA, no prosa de editor.
+//       Confirmado en "Pokébola/Poké Ball (Hisui)" y "Ultrabola/Ultra Ball
+//       (Hisui)". Pero la mayoria de paginas individuales NO tienen este
+//       bloque -- tienen como mucho una seccion "Efecto" (prosa de editor
+//       sobre la MECANICA del objeto, no su texto de bolsa; el mismo motivo
+//       por el que se descarto pkproject.net para movimientos) o, en un
+//       puñado de paginas, una seccion "Descripcion" en prosa SIN comillas
+//       de cita -- esta ultima se probo contra la pagina generica "Teralito"
+//       y NO coincide con el texto oficial EN de Bulbapedia (anade una
+//       frase sobre el uso en Meson El Tesoro que no esta en ningun flavor
+//       text real) -- prosa de editor, no cita, y por tanto NO se usa como
+//       fuente aunque exista.
+//
+//    Comprobado en una muestra de 11 paginas individuales repartida entre
+//    TODOS los subgrupos de "misc" (booster-energy, armadura auspiciosa,
+//    ability-shield, clear-amulet, mirror-herb, mascara fuente, teralito
+//    fuego, teralito generico, pelo de meowth, baguette, clefablita): 0/11
+//    tenian el bloque cita. Eso dispara la guarda del brief ("si el parseo
+//    falla en >20% de una categoria, para esa categoria") con margen de
+//    sobra -- asi que "misc" (448 objetos) NO se intenta palabra por
+//    palabra en ES: se da por agotado con esa muestra y se documenta, en
+//    vez de lanzar ~450 peticiones que ya se sabe que van a fallar. Objetos
+//    clave (via tabla), mochis (via tabla) y 2 de las 5 Poké Ball de Hisui
+//    (via cita individual, urls fijas: solo 5 objetos, mas barato a mano
+//    que automatizar una busqueda que ya se sabe inconsistente) si tienen
+//    fuente ES.
+//
+// Descubrimiento colateral que SI cambia el alcance: las 45 "Megapiedras
+// custom" (clefablite..glimmoranite, ITEM_NAME_OVERRIDES en build-data.mjs)
+// que un comentario de la Task 7 describe como "fabricadas por esta app,
+// ningun juego real las tiene" YA NO ES CIERTO a fecha de esta tarea:
+// Bulbapedia tiene pagina propia para las 45 (comprobado Clefablite,
+// Absolite Z, Zeraorite, Raichunite X, Golurkite, Tatsugirinite -- 6/6) con
+// seccion "Description" real, etiquetada a juegos "ZA" (Pokemon Legends:
+// Z-A) y/o "Champs" (Pokemon Champions) -- dos juegos que en la fecha de
+// esta sesion ya estan publicados. La conclusion mas simple no es que
+// PokeAPI se inventase 45 items: es que estos items eran datos filtrados
+// de un juego entonces no publicado, y ahora SI son contenido oficial con
+// texto oficial. Se rellenan en EN desde Bulbapedia igual que el resto de
+// "misc"; ES sigue sin fuente (Clefablita en WikiDex, comprobada, tampoco
+// tiene el bloque cita). El comentario de ITEM_NAME_OVERRIDES en
+// build-data.mjs que las llama "fabricadas" queda desactualizado por este
+// hallazgo -- señalado en el informe de esta tarea, no corregido aqui (esta
+// tarea es de descripciones, no de nombres).
+//
+// El resto de "misc" (tera shards, plates, herba mystica, ingredientes de
+// bocadillo, materiales de fabricacion de MT tipo "pelo de X", vajilla de
+// picnic/academia...) SI tiene texto oficial EN en Bulbapedia -- comprobado
+// individualmente en al menos 1 muestra de cada subgrupo (tera-shard,
+// booster-energy, sandwich-ingredient, TM-material, tableware,
+// evolution-item, teal-mask-item) antes de lanzar el fetch completo.
+//
+// Mapeo pagina Bulbapedia: nameEn con espacios -> guion_bajo, tal cual
+// (build-data.mjs no siempre tiene nameEs traducido para estos 480 -- la
+// tanda de nombres solo tradujo 47/480 vía ITEM_NAME_OVERRIDES -- así que
+// nameEn, que SI esta siempre bien formado, es la unica clave fiable para
+// las dos fuentes). Identidad: el <title> de la pagina debe CONTENER
+// nameEn (permite sufijos de desambiguacion tipo "Egg (item)" sin
+// exigir coincidencia exacta).
+//
+// Objetos con placeholder "- - -" (ni Bulbapedia ni PokeAPI tienen texto
+// real, ej. Strange Ball / strange-ball y lastrange-ball): fallan la
+// validacion de longitud/idioma igual que cualquier otro fallo -- no hace
+// falta un caso especial, el validador ya los descarta.
+//
 // Run with: node scripts/fetch-descriptions.mjs moves
 //           node scripts/fetch-descriptions.mjs abilities
 //           node scripts/fetch-descriptions.mjs species
-//           node scripts/fetch-descriptions.mjs moves abilities species --force
+//           node scripts/fetch-descriptions.mjs items
+//           node scripts/fetch-descriptions.mjs moves abilities species items --force
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -212,6 +307,7 @@ const ABILITY_SPECIES_OVERRIDES = {
 
 const read = async name => JSON.parse(await readFile(join(DATA, `${name}.json`), 'utf8'));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const normApost = s => s.replace(/[’']/g, "'");
 
 let lastRequestAt = 0;
 async function fetchThrottled(url) {
@@ -405,6 +501,357 @@ async function fetchSpeciesDescriptionWikiDex(nameEs) {
   return { url, desc: fila.texto, version: fila.version, versionesDisponibles: filas.map(f => f.version) };
 }
 
+// ---------------------------------------------------------------------------
+// Task 9c: objetos (ver el comentario grande del principio del fichero)
+// ---------------------------------------------------------------------------
+
+// no vacio, sin markup, longitud 10-500, y suena a ingles (evita colar un
+// error de wiki -- "does not have an article", "may refer to" -- o un
+// placeholder tipo "- - -" / "ー ー ー" que Bulbapedia usa para objetos sin
+// texto real, ej. Strange Ball).
+function validarEn(texto) {
+  if (!texto) return 'vacio';
+  if (texto.length < 10 || texto.length > 500) return `longitud ${texto.length} fuera de 10-500`;
+  if (/<[^>]+>/.test(texto)) return 'contiene markup HTML sin quitar';
+  if (/&\w+;|&#\d+;/.test(texto)) return 'contiene una entidad HTML sin decodificar';
+  if (/\{\{|\[\[/.test(texto)) return 'contiene markup de wiki sin resolver';
+  if (/^[-\sー]+$/.test(texto)) return 'placeholder sin texto real (guiones/rayas sueltas)';
+  if (/does not have an article|may refer to|This article's title/i.test(texto)) return 'pagina de error o desambiguacion de MediaWiki, no una descripcion';
+  const pintaAIngles = /\b(the|a|an|of|is|are|to|and|that|this|with)\b/i.test(texto);
+  if (!pintaAIngles) return 'no tiene pinta de ingles (sin palabras funcionales comunes)';
+  return null;
+}
+
+// Bulbapedia: <h3 id="Description">...tabla Games/Description...<h3
+// id="Acquisition"> (o el siguiente h3, si el objeto no tiene seccion de
+// obtencion). Se toma la PRIMERA fila de datos -- para los objetos con mas
+// de una fila (ej. Great Ball (Hisui): LA y S/V con una palabra de
+// diferencia) es la version mas antigua/original, que para los prefijados
+// "la-" de esta tarea (Legends: Arceus) es ademas la mas propia del objeto.
+// La identidad se confirma por <title>, que debe CONTENER nameEn (permite
+// sufijos de desambiguacion "Egg (item)" sin exigir coincidencia exacta --
+// build-data.mjs no siempre tiene nameEs para derivar un slug mejor).
+async function fetchBulbapediaDescription(itemName, nameEn) {
+  const slug = EN_URL_OVERRIDES[itemName] || nameEn.replace(/ /g, '_');
+  const url = `https://bulbapedia.bulbagarden.net/wiki/${EN_URL_OVERRIDES[itemName] ? slug : encodeURIComponent(slug)}`;
+  const { status, body } = await fetchThrottled(url);
+  if (status !== 200) return { url, error: `pagina no encontrada (HTTP ${status})` };
+
+  const tituloMatch = body.match(/<title>([^<]+) - Bulbapedia/);
+  if (!tituloMatch) return { url, error: 'no se encontro el <title> de identidad de la pagina' };
+  const tituloNombre = decodeEntities(tituloMatch[1]).trim();
+  if (!tituloNombre.toLowerCase().includes(nameEn.toLowerCase().replace(/[’']/g, "'"))) {
+    // "TM Material": la pagina existe pero es el hub compartido, no la propia
+    // del objeto -- ver EN_TM_MATERIAL_TEXT, tiene tratamiento propio (no es
+    // un fallo real, es la fuente real siendo una pagina compartida).
+    if (/^TM Material$/i.test(tituloNombre)) {
+      return { url: EN_TM_MATERIAL_URL, desc: EN_TM_MATERIAL_TEXT, familiaCompartida: true };
+    }
+    return { url, error: `identidad no coincide: titulo dice "${tituloNombre}", esperabamos que contuviese "${nameEn}"` };
+  }
+
+  const idx = body.indexOf('id="Description"');
+  if (idx < 0) return { url, error: 'no se encontro la seccion Description' };
+  let idx2 = body.indexOf('<h3', idx + 10);
+  if (idx2 < 0 || idx2 - idx > 8000) idx2 = idx + 8000;
+  const section = body.slice(idx, idx2);
+  // "Poké Ball (item)" cubre TODAS las eras en una tabla larga: para el
+  // objeto de esta tarea (Legends: Arceus) se quiere la fila que menciona
+  // "LA", no la primera -- unico caso, ver EN_URL_OVERRIDES.
+  const filas = [...section.matchAll(/<tr>\s*<td>([\s\S]*?)<\/td>\s*<td>([\s\S]*?)<\/td>\s*<\/tr>/g)];
+  if (!filas.length) return { url, error: 'la seccion Description no tiene filas de datos (Games/Description)' };
+  const filaElegida = (itemName === 'lapoke-ball' ? filas.find(f => />LA</.test(f[1])) : null) || filas[0];
+  const desc = stripTags(filaElegida[2]);
+  return { url, desc };
+}
+
+// "Lista de objetos clave de la novena generacion" (2 tablas: base + DLC "El
+// tesoro oculto del Area Cero") y "Mochi" (1 tabla): mismo formato de tabla
+// "sortable tablaobjeto", <th> de icono (vacio al quitar markup) + <th> de
+// nombre ES, luego N <td> donde el PRIMERO es el nombre ingles (en <i>) y el
+// ULTIMO es la descripcion -- el numero de <td> intermedios varia (objetos
+// clave trae Japones+Gen, Mochi solo trae "Introducido en") asi que no se fija
+// una posicion, se toma "primero" y "ultimo" con independencia del total.
+function parsearFilasTablaObjeto(html) {
+  const filas = [];
+  for (const trMatch of html.matchAll(/<tr>([\s\S]*?)<\/tr>/g)) {
+    const tr = trMatch[1];
+    const ths = [...tr.matchAll(/<th[^>]*>([\s\S]*?)<\/th>/g)].map(m => stripTags(m[1])).filter(Boolean);
+    const tds = [...tr.matchAll(/<td>([\s\S]*?)<\/td>/g)].map(m => m[1]);
+    if (!ths.length || tds.length < 2) continue; // fila de cabecera u otra cosa
+    const nombreEs = ths[0];
+    const nombreEn = stripTags(tds[0]);
+    const desc = stripTags(tds[tds.length - 1]);
+    if (!nombreEn || !desc) continue;
+    filas.push({ nombreEs, nombreEn, desc });
+  }
+  return filas;
+}
+
+async function fetchTablaObjetoEs(tituloPagina) {
+  const url = `https://www.wikidex.net/wiki/${encodeURIComponent(tituloPagina)}`;
+  const { status, body } = await fetchThrottled(url);
+  if (status !== 200) return { url, filas: [], error: `pagina no encontrada (HTTP ${status})` };
+  const tablas = [...body.matchAll(/<table class="sortable tablaobjeto"[^>]*>([\s\S]*?)<\/table>/g)];
+  const filas = tablas.flatMap(m => parsearFilasTablaObjeto(m[1]));
+  return { url, filas };
+}
+
+// Bloque "Descripcion" con cita textual en la pagina individual de un objeto
+// -- ver el comentario grande del principio del fichero. Solo se usa para 5
+// objetos (Poké Ball, Great Ball, Ultra Ball, Origin Ball, Strange Ball de
+// Hisui): probado en una muestra amplia de "misc" (0/11) y descartado alli,
+// pero estos 5 SI aparecen documentados asi en WikiDex -- urls fijas porque
+// automatizar la busqueda (nombre bilingüe Hispanoamerica/España, "(Hisui)"
+// a veces con guion) es mas caro que teclear 5 urls conocidas.
+async function fetchCitaEs(tituloPagina) {
+  const url = `https://www.wikidex.net/wiki/${encodeURIComponent(tituloPagina)}`;
+  const { status, body } = await fetchThrottled(url);
+  if (status !== 200) return { url, error: `pagina no encontrada (HTTP ${status})` };
+  const m = body.match(/<div class="cita"><blockquote class="quote"><p>([\s\S]*?)<\/p><\/blockquote><\/div>/);
+  if (!m) return { url, error: 'la pagina no tiene el bloque de cita "Descripción"' };
+  return { url, desc: stripTags(m[1]) };
+}
+
+// Las 5 Poké Ball de Legends: Arceus (pokeballs) y objetos clave concretos que
+// la tabla de "Lista de objetos clave" no cubre (adamant-crystal,
+// lustrous-globe, griseous-core, roto-stick: comprobados individualmente,
+// ninguno tiene el bloque cita) se resuelven con url fija -- ver comentario de
+// fetchCitaEs. hopo-berry (medicine) tambien: comprobada (Baya_Lupu), sin cita.
+const ES_CITA_URLS = {
+  'lapoke-ball': 'Pokébola/Poké Ball (Hisui)',
+  'laultra-ball': 'Ultrabola/Ultra Ball (Hisui)',
+  'lagreat-ball': 'Gran Ball (Hisui)',
+  'laorigin-ball': 'Origen Ball',
+  'lastrange-ball': 'Extraña Ball',
+  'hopo-berry': 'Baya Lupu',
+  'adamant-crystal': 'Gran Diamansfera',
+  'lustrous-globe': 'Gran lustrosfera',
+  'griseous-core': 'Gran Griseoesfera/Gran Griseosfera',
+  'roto-stick': 'Roto-Stick',
+};
+
+// 2 de las 61 filas de "Lista de objetos clave de la novena generación"
+// (Koraidon's/Miraidon's Poké Ball) no traen columna "Inglés" -- la unica
+// forma de emparejarlas con nameEn (que SI dice "Koraidon's Poké Ball") es a
+// mano, con el nombre ES ya leido directamente de esa misma tabla.
+const TABLA_ES_SIN_COLUMNA_INGLES = {
+  'koraidons-poke-ball': 'La Poké Ball del misterioso Pokémon Koraidon. Te la entregó un chico llamado Damián.',
+  'miraidons-poke-ball': 'La Poké Ball del misterioso Pokémon Miraidon. Te la entregó un chico llamado Damián.',
+};
+
+// Objetos donde nameEn no da con la url/pagina correcta de Bulbapedia a la
+// primera -- comprobado uno a uno:
+// - Apostrofe curvo (’) en nameEn no es el que usa la url real de Bulbapedia
+//   (apostrofe recto '): koraidons-poke-ball, miraidons-poke-ball,
+//   kofus-wallet, leaders-crest.
+// - Sufijo de desambiguacion "(item)" porque el nombre pelado ya es un
+//   concepto mas general en la wiki (comida real, no solo el objeto del
+//   juego): sandwich, egg, apple, mustard.
+// - Guion que nameEn no lleva pero el titulo real si: fresh-start-mochi
+//   ("Fresh-Start Mochi"), roto-stick ("Roto-Stick").
+// - "Poké Ball"/"Great Ball"/"Ultra Ball" a secas son paginas de
+//   desambiguacion (todas las eras, TODOS los juegos): la pagina real de
+//   CADA objeto de Legends: Arceus de esta tarea es la especifica "(Hisui)"
+//   -- sin este override, el fetch por nameEn desnudo SI encuentra una
+//   pagina cuyo <title> pasa el check de identidad (contiene "Great Ball"),
+//   pero es la del objeto EQUIVOCADO: la tabla generica trae una fila de
+//   una generacion vieja (id 3/4, con un espacio suelto alrededor de la "é"
+//   de Pokémon en su marcado -- "Pok é mon", detectado a ojo revisando el
+//   resultado en el navegador, NO por el validador -- validarEn no
+//   comprueba espacios sueltos) en vez de la fila de Legends: Arceus.
+//   lapoke-ball tiene el mismo problema pero SI se puede arreglar sin
+//   cambiar de pagina (su fila "LA" esta en la tabla generica, ver mas
+//   abajo); great/ultra ball van a su pagina "(Hisui)" propia directamente.
+const EN_URL_OVERRIDES = {
+  'koraidons-poke-ball': "Koraidon's_Pok%C3%A9_Ball",
+  'miraidons-poke-ball': "Miraidon's_Pok%C3%A9_Ball",
+  'kofus-wallet': "Kofu's_Wallet",
+  'leaders-crest': "Leader's_Crest",
+  sandwich: 'Sandwich_(item)',
+  egg: 'Egg_(item)',
+  apple: 'Apple_(item)',
+  mustard: 'Mustard_(item)',
+  'fresh-start-mochi': 'Fresh-Start_Mochi',
+  'roto-stick': 'Roto-Stick',
+  'lapoke-ball': 'Pok%C3%A9_Ball_(item)',
+  'lagreat-ball': 'Great_Ball_(Hisui)',
+  'laultra-ball': 'Ultra_Ball_(Hisui)',
+};
+
+// "TM Material" (venonat-fang..poltchageist-powder, ~230 objetos): la propia
+// pagina lo dice explicito -- "All TM Materials, except Gimmighoul Coins,
+// share the same description." -- asi que cuando fetchBulbapediaDescription
+// falla por identidad (nameEn resuelve a la pagina hub "TM Material" en vez
+// de una propia) se aplica este texto compartido en vez de descartar el
+// intento; gimmighoul-coin SI tiene pagina y texto propios, no pasa por aqui.
+const EN_TM_MATERIAL_TEXT = 'Material accidentally dropped by a Pokémon. It can be used to make TMs.';
+const EN_TM_MATERIAL_URL = 'https://bulbapedia.bulbagarden.net/wiki/TM_Material#Description';
+
+// "misc" (448 objetos): comprobado 0/11 en una muestra que cubre TODOS los
+// subgrupos (held items, armaduras, mascaras del Teal Mask, tera shards,
+// ingredientes de bocadillo, materiales de fabricacion de MT, megapiedras
+// custom) -- guarda del brief disparada con margen (>20% de fallos), asi que
+// no se intenta ES palabra por palabra en "misc": se documenta como sin
+// fuente ES localizable, sin lanzar ~450 peticiones que ya se sabe que van a
+// fallar. Ver el comentario grande del principio del fichero para el detalle
+// de la muestra.
+const MISC_ES_SIN_INTENTAR = 'sin fuente ES localizable en WikiDex: la pagina individual de "misc" no trae el bloque de cita "Descripción" (comprobado en una muestra de 11 objetos representando cada subgrupo -- held items, armaduras, Teal Mask, tera shards, bocadillo, materiales de MT, megapiedras custom -- 0/11 lo tenian; no se relanza objeto a objeto para no lanzar ~450 peticiones con el resultado ya conocido)';
+
+async function loadItemsCache() {
+  const file = join(CACHE_DIR, 'items-descriptions.json');
+  if (FORCE) return { file, es: { hits: {}, failed: {} }, en: { hits: {}, failed: {} } };
+  try {
+    const raw = JSON.parse(await readFile(file, 'utf8'));
+    return {
+      file,
+      es: { hits: raw.es?.hits || {}, failed: raw.es?.failed || {} },
+      en: { hits: raw.en?.hits || {}, failed: raw.en?.failed || {} },
+    };
+  } catch {
+    return { file, es: { hits: {}, failed: {} }, en: { hits: {}, failed: {} } };
+  }
+}
+
+async function saveItemsCache(file, es, en) {
+  await mkdir(CACHE_DIR, { recursive: true });
+  const payload = {
+    generatedAt: new Date().toISOString(),
+    sourceEs: 'wikidex.net (tabla "Lista de objetos clave"/"Mochi", o bloque de cita individual)',
+    sourceEn: 'bulbapedia.bulbagarden.net (seccion Description)',
+    es,
+    en,
+  };
+  await writeFile(file, JSON.stringify(payload, null, 2));
+}
+
+async function runItems() {
+  const items = await read('items');
+  const itemsDesc = await read('items-desc');
+  const objetivo = items.filter(i => i.category !== 'machines' && !itemsDesc[i.id]);
+  const { file, es, en } = await loadItemsCache();
+  console.log(`\nObjetos sin descripcion en ningun idioma: ${objetivo.length} objetivo, ${Object.keys(es.hits).length} ES + ${Object.keys(en.hits).length} EN ya en cache\n`);
+
+  // --- ES: tablas de objetos clave (2) + Mochi (1) ---------------------
+  const porNombreEnEs = new Map();
+  const fuentesTabla = [
+    'Lista de objetos clave de la novena generación',
+    'Mochi',
+  ];
+  for (const titulo of fuentesTabla) {
+    const { url, filas, error } = await fetchTablaObjetoEs(titulo);
+    if (error) {
+      console.log(`  aviso: no se pudo leer la tabla "${titulo}": ${error}`);
+      continue;
+    }
+    for (const fila of filas) {
+      // normApost: WikiDex teclea el apostrofe recto (') en <i>Kofu's
+      // Wallet</i>, pero build-data.mjs (via PokeAPI/ITEM_NAME_OVERRIDES)
+      // usa el curvo (’) para nameEn -- sin normalizar, "Kofu’s Wallet" y
+      // "Kofu's Wallet" son claves DISTINTAS y el emparejamiento falla en
+      // silencio (comprobado: kofus-wallet se quedaba sin ES pese a que su
+      // fila SI esta en la tabla).
+      const clave = normApost(fila.nombreEn);
+      if (!porNombreEnEs.has(clave)) porNombreEnEs.set(clave, { url, ...fila });
+    }
+    console.log(`  tabla "${titulo}": ${filas.length} filas leidas`);
+  }
+
+  for (const item of objetivo) {
+    if (es.hits[item.id] || es.failed[item.id]) continue;
+
+    if (TABLA_ES_SIN_COLUMNA_INGLES[item.name]) {
+      es.hits[item.id] = {
+        name: item.name, nameEn: item.nameEn,
+        url: 'https://www.wikidex.net/wiki/Lista_de_objetos_clave_de_la_novena_generaci%C3%B3n',
+        descriptionEs: TABLA_ES_SIN_COLUMNA_INGLES[item.name],
+      };
+      console.log(`  ok ES (tabla, fila sin col. Ingles) ${item.name}`);
+      continue;
+    }
+
+    const porTabla = porNombreEnEs.get(normApost(item.nameEn));
+    if (porTabla) {
+      const problema = validar(porTabla.desc);
+      if (problema) {
+        es.failed[item.id] = { name: item.name, nameEn: item.nameEn, url: porTabla.url, cause: `validacion: ${problema}`, textoDescartado: porTabla.desc };
+      } else {
+        es.hits[item.id] = { name: item.name, nameEn: item.nameEn, url: porTabla.url, descriptionEs: porTabla.desc };
+        console.log(`  ok ES (tabla) ${item.name}: ${porTabla.desc.slice(0, 70)}...`);
+      }
+      continue;
+    }
+
+    if (ES_CITA_URLS[item.name]) {
+      const r = await fetchCitaEs(ES_CITA_URLS[item.name]);
+      if (r.error) {
+        es.failed[item.id] = { name: item.name, nameEn: item.nameEn, url: r.url, cause: r.error };
+        console.log(`  FALLO ES ${item.name}: ${r.error}`);
+        continue;
+      }
+      const problema = validar(r.desc);
+      if (problema) {
+        es.failed[item.id] = { name: item.name, nameEn: item.nameEn, url: r.url, cause: `validacion: ${problema}`, textoDescartado: r.desc };
+        console.log(`  FALLO VALIDACION ES ${item.name}: ${problema}`);
+        continue;
+      }
+      es.hits[item.id] = { name: item.name, nameEn: item.nameEn, url: r.url, descriptionEs: r.desc };
+      console.log(`  ok ES (cita) ${item.name}: ${r.desc.slice(0, 70)}...`);
+      continue;
+    }
+
+    if (item.category === 'misc') {
+      es.failed[item.id] = { name: item.name, nameEn: item.nameEn, cause: MISC_ES_SIN_INTENTAR };
+      continue;
+    }
+
+    es.failed[item.id] = { name: item.name, nameEn: item.nameEn, cause: 'sin fuente ES conocida (no aparece en las tablas de objetos clave/Mochi y no tiene url de cita individual)' };
+  }
+
+  // --- EN: Bulbapedia, individual por objeto ---------------------------
+  for (const item of objetivo) {
+    if (en.hits[item.id] || en.failed[item.id]) continue;
+    const r = await fetchBulbapediaDescription(item.name, item.nameEn);
+    if (r.error) {
+      en.failed[item.id] = { name: item.name, nameEn: item.nameEn, url: r.url, cause: r.error };
+      console.log(`  FALLO EN ${item.name} (${item.nameEn}): ${r.error}`);
+      continue;
+    }
+    const problema = validarEn(r.desc);
+    if (problema) {
+      en.failed[item.id] = { name: item.name, nameEn: item.nameEn, url: r.url, cause: `validacion: ${problema}`, textoDescartado: r.desc };
+      console.log(`  FALLO VALIDACION EN ${item.name} (${item.nameEn}): ${problema}`);
+      continue;
+    }
+    en.hits[item.id] = { name: item.name, nameEn: item.nameEn, url: r.url, descriptionEn: r.desc };
+    console.log(`  ok EN ${item.name}: ${r.desc.slice(0, 70)}...`);
+  }
+
+  // Deteccion de duplicados EXACTOS entre objetos que NO son de la misma
+  // familia con plantilla (tera shards, placas): un duplicado entre hermanos
+  // de familia es legitimo (mismo texto con la palabra del tipo cambiada NO
+  // aplica aqui porque el texto de tera shard resulto ser identico sin
+  // mencionar el tipo -- comprobado Fire/Water Tera Shard, caracter a
+  // caracter iguales en Bulbapedia), asi que solo se avisa, no se descarta.
+  for (const [lang, dict] of [['ES', es], ['EN', en]]) {
+    const porTexto = new Map();
+    const campo = lang === 'ES' ? 'descriptionEs' : 'descriptionEn';
+    for (const [id, h] of Object.entries(dict.hits)) {
+      const lista = porTexto.get(h[campo]) || [];
+      lista.push(id);
+      porTexto.set(h[campo], lista);
+    }
+    const duplicados = [...porTexto.entries()].filter(([, ids]) => ids.length > 1);
+    if (duplicados.length) {
+      console.log(`\n  AVISO ${lang}: ${duplicados.length} texto(s) duplicados entre objetos distintos:`);
+      for (const [texto, ids] of duplicados) console.log(`    ${ids.join(', ')}: ${texto.slice(0, 70)}...`);
+    }
+  }
+
+  await saveItemsCache(file, es, en);
+  console.log(`\nObjetos: ES ${Object.keys(es.hits).length}/${objetivo.length} resueltos (${Object.keys(es.failed).length} sin fuente), EN ${Object.keys(en.hits).length}/${objetivo.length} resueltos (${Object.keys(en.failed).length} sin fuente) -> ${file}\n`);
+}
+
 async function loadCache(dataset) {
   const file = join(CACHE_DIR, `${dataset}-descriptions.json`);
   if (FORCE) return { file, hits: {}, failed: {} };
@@ -569,13 +1016,13 @@ async function runSpecies() {
   console.log(`\nEspecies: ${Object.keys(hits).length}/${ids.length} resueltas, ${Object.keys(failed).length} fallidas -> ${file}\n`);
 }
 
-const RUNNERS = { moves: runMoves, abilities: runAbilities, species: runSpecies };
+const RUNNERS = { moves: runMoves, abilities: runAbilities, species: runSpecies, items: runItems };
 
 async function main() {
   const targets = process.argv.slice(2).filter(a => !a.startsWith('--'));
-  if (!targets.length) throw new Error('Uso: node scripts/fetch-descriptions.mjs moves|abilities|species [varios] [--force]');
+  if (!targets.length) throw new Error('Uso: node scripts/fetch-descriptions.mjs moves|abilities|species|items [varios] [--force]');
   for (const t of targets) {
-    if (!RUNNERS[t]) throw new Error(`Dataset desconocido "${t}". Usa: moves, abilities, species`);
+    if (!RUNNERS[t]) throw new Error(`Dataset desconocido "${t}". Usa: moves, abilities, species, items`);
   }
   for (const t of targets) await RUNNERS[t]();
 }
