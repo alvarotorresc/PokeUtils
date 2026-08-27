@@ -34,32 +34,25 @@ const evolutions = await read('evolutions');
 
 console.log(`\nMovimientos: descripcion en al menos un idioma (${moves.length} en total)\n`);
 
-// Los unicos 23 sin descripcion en NINGUN idioma: 5 "torque" de Gen 9
-// (Miraidon/Koraidon, ids 896-900) y 18 "shadow-*" del spin-off Pokemon
-// Colosseum/XD (ids 10001-10018). PokeAPI nunca ha publicado flavor text para
-// estos -- ni en español ni en ingles -- asi que no hay fallback posible; la
-// ficha muestra 'moves.nodesc' (moves-detail.js:161). Si este conjunto
-// cambiara -- una entrada sale o entra -- es una señal real de que el dataset
-// cambio y hay que revisar el porque, no un fallo de este check.
-const SIN_DESCRIPCION_NINGUN_IDIOMA = [
-  896, 897, 898, 899, 900,
-  10001, 10002, 10003, 10004, 10005, 10006, 10007, 10008, 10009, 10010,
-  10011, 10012, 10013, 10014, 10015, 10016, 10017, 10018,
-].sort((a, b) => a - b);
-
+// Task 2/9a habian dejado 23 movimientos sin descripcion en NINGUN idioma: 5
+// "torque" del Starmobile de Revavroom (ids 896-900) y 18 "shadow-*" del
+// spin-off Pokemon Colosseum/XD (ids 10001-10018). PokeAPI nunca publico
+// flavor text para estos, ni en español ni en ingles. La Task 10 cerro el
+// hueco entero: los 18 "shadow-*" llevan el texto EN oficial de Bulbapedia
+// (verificado pagina a pagina, seccion Description, fila XD -- WikiDex NO
+// tiene una version oficial ES, solo la seccion "Efecto" redactada por
+// editores que Task 9a ya habia descartado para movimientos) traducido al
+// español por esta tarea (no hay fuente ES posible); los 5 "torque" no
+// tienen texto oficial en NINGUN idioma en ninguna fuente (ni PokeAPI ni
+// Bulbapedia, que muestra "---" en su tabla Description para los 5) y llevan
+// redaccion ES+EN propia desde su mecanica real (ver MOVE_DESC_HAND_WRITTEN
+// en build-data.mjs). El invariante pasa a ser CERO, sin lista de perdon:
+// si algun movimiento se quedara sin descripcion en algun idioma, es una
+// regresion real.
 const movesSinNingunIdioma = moves.filter(m => !m.descriptionEs && !m.descriptionEn).map(m => m.id).sort((a, b) => a - b);
-check('exactamente los 23 movimientos sin descripcion son los esperados',
-  movesSinNingunIdioma, SIN_DESCRIPCION_NINGUN_IDIOMA);
+check('ningun movimiento se queda sin descripcion en ningun idioma', movesSinNingunIdioma, []);
 
-// El invariante que de verdad usa la UI, sin depender de que la lista de
-// arriba siga completa: moves.js:236 y moves-detail.js:124 pintan
-// `descriptionEs || descriptionEn` (o al reves en ingles) desde la Task 2;
-// fuera de la excepcion, algo tiene que haber en algun idioma.
-const exceptuados = new Set(SIN_DESCRIPCION_NINGUN_IDIOMA);
-check('ningun movimiento fuera de la excepcion se queda sin descripcion',
-  moves.filter(m => !exceptuados.has(m.id) && !m.descriptionEs && !m.descriptionEn).map(m => m.id), []);
-
-console.log("\n'moves.nodesc' existe en los dos diccionarios (lo que pintan esos 23)\n");
+console.log("\n'moves.nodesc' existe en los dos diccionarios (por si algun dataset futuro reabre el hueco)\n");
 
 check("'moves.nodesc' en i18n-es.js", 'moves.nodesc' in es, true);
 check("'moves.nodesc' en i18n-en.js", 'moves.nodesc' in en, true);
@@ -79,7 +72,7 @@ console.log('\nMovimientos: descripcion en español (Task 9a cerro 87 de los 88 
 const MOVES_SIN_DESCRIPTION_ES_ACEPTADOS = [919];
 
 const movesSinDescripcionEs = moves
-  .filter(m => !exceptuados.has(m.id) && !m.descriptionEs && m.descriptionEn)
+  .filter(m => !m.descriptionEs && m.descriptionEn)
   .map(m => m.id)
   .sort((a, b) => a - b);
 check('exactamente los movimientos "solo EN" que quedan son los aceptados',

@@ -465,6 +465,132 @@ const MOVE_DESC_ES_OVERRIDES = {
   'upper-hand': 'Se anticipa al objetivo golpeándolo rápidamente con la palma y lo amedrenta. Falla si el objetivo no está preparando un movimiento de prioridad alta.',
 };
 
+// 18 shadow moves from the Pokemon Colosseum/XD spin-offs (ids 10001-10018)
+// have ZERO flavor text in PokeAPI, in any language -- verified live, no
+// `flavor_text_entries` at all. Task 10 investigated whether these games
+// (which shipped in European Spanish) have an official description
+// somewhere: Bulbapedia DOES publish one, in its move-page "Description"
+// section, tagged by game version (Colo/XD). Verified per move against the
+// live page: https://bulbapedia.bulbagarden.net/wiki/<Move_Name>_(move)#Description
+// -- e.g. Shadow Rush shows two DIFFERENT rows ("An attack that is so harsh,
+// it also hurts the attacker." for Colosseum's power-90 version, "A Pokémon
+// executes a tackle while exuding a shadowy aura." for XD's power-55
+// version); the other 17 only ever existed in XD (Colosseum's only Shadow
+// move was Shadow Rush -- every Shadow Pokémon knew it from the start) and
+// show a single XD row. This dataset models the XD stats (power 55 for
+// Shadow Rush, matching moves.json), so the XD row is the one that applies
+// here in every case.
+//
+// WikiDex was checked FIRST per this task's brief, before reaching for
+// Bulbapedia's English: none of the 18 Spanish pages carry an official
+// quoted description (no `<div class="cita">`/`<blockquote class="quote">`
+// block, the pattern scripts/fetch-descriptions.mjs already relies on for
+// items) -- only a wiki-editor-written "Efecto" section in third person
+// about the move's mechanics, same defect class Task 9a already ruled out
+// for move pages (see the comment above MOVE_DESC_ES_OVERRIDES). Sampled
+// all 18 pages live (e.g. https://www.wikidex.net/wiki/Carga_Oscura), 0/18
+// had the quote block. So EN below is official (hand-collected from
+// Bulbapedia, PokeAPI never had it); ES has no official source in any
+// language and is this app's own translation of that EN, in
+// MOVE_DESC_ES_TRANSLATED further down -- never mixed into this table.
+const MOVE_DESC_EN_OFFICIAL = {
+  'shadow-rush': 'A Pokémon executes a tackle while exuding a shadowy aura.',
+  'shadow-blast': 'A wicked blade of air is formed using a shadowy aura.',
+  'shadow-blitz': 'A Pokémon throws this tackle while casting a shadowy aura.',
+  'shadow-bolt': 'A shadowy thunder attack that may paralyze.',
+  'shadow-break': 'A shattering ram attack with a shadowy aura.',
+  'shadow-chill': 'A shadowy ice attack that may freeze.',
+  'shadow-end': 'A shadowy aura ram attack that also rebounds on the user.',
+  'shadow-fire': 'A shadowy fireball attack that may inflict a burn.',
+  'shadow-rave': 'A shadowy aura in the ground is used to launch spikes.',
+  'shadow-storm': 'A shadowy aura is used to whip up a vicious tornado.',
+  'shadow-wave': 'Shadowy aura waves are loosed to inflict damage.',
+  'shadow-down': "A shadowy aura sharply cuts the foe's Defense.",
+  'shadow-half': "A shadowy aura's energy cuts everyone's HP by half.",
+  'shadow-hold': 'The opponent Pokémon cannot escape.',
+  'shadow-mist': "A shadowy aura sharply cuts the foe's evasiveness.",
+  'shadow-panic': 'A shadowy aura emanates to cause a confuse condition.',
+  'shadow-shed': 'A shadowy aura eliminates Reflect and similar moves.',
+  'shadow-sky': 'Darkness hurts all but Shadow Pokémon for 5 turns.',
+};
+
+// Task 10's own translation of MOVE_DESC_EN_OFFICIAL above into Spanish --
+// NOT sourced from any Spanish document (WikiDex has none, see the comment
+// on that table), so this is redaction-by-translation, not a quote. Kept in
+// its own table, never merged into MOVE_DESC_ES_OVERRIDES (official-sourced
+// text), per this task's traceability rule.
+const MOVE_DESC_ES_TRANSLATED = {
+  'shadow-rush': 'Un Pokémon ejecuta un placaje mientras desprende un aura oscura.',
+  'shadow-blast': 'Se forma una perversa hoja de aire con un aura oscura.',
+  'shadow-blitz': 'Un Pokémon lanza este placaje mientras invoca un aura oscura.',
+  'shadow-bolt': 'Un ataque eléctrico teñido de oscuridad que puede paralizar.',
+  'shadow-break': 'Un embite arrollador envuelto en un aura oscura.',
+  'shadow-chill': 'Un ataque de hielo teñido de oscuridad que puede congelar.',
+  'shadow-end': 'Un embite envuelto en un aura oscura que también golpea al usuario.',
+  'shadow-fire': 'Una bola de fuego teñida de oscuridad que puede causar quemaduras.',
+  'shadow-rave': 'Un aura oscura brota del suelo y lanza púas.',
+  'shadow-storm': 'Un aura oscura se emplea para desatar un tornado feroz.',
+  'shadow-wave': 'Se liberan ondas de un aura oscura que infligen daño.',
+  'shadow-down': 'Un aura oscura reduce mucho la Defensa del rival.',
+  'shadow-half': 'La energía de un aura oscura reduce a la mitad los PS de todos.',
+  'shadow-hold': 'El Pokémon rival no puede huir.',
+  'shadow-mist': 'Un aura oscura reduce mucho la Evasión del rival.',
+  'shadow-panic': 'Un aura oscura emana y causa confusión.',
+  'shadow-shed': 'Un aura oscura anula Reflejo y movimientos similares.',
+  'shadow-sky': 'La oscuridad hiere a todos salvo a los Pokémon oscuros durante 5 turnos.',
+};
+
+// 5 "torque" moves, signature moves of the Starmobile forms Revavroom
+// adopts in Scarlet/Violet's Team Star boss battles (ids 896-900): PokeAPI
+// has NOTHING for these, in either language -- no flavor_text_entries AND
+// no `meta`/`effect_entries` at all (verified live against
+// pokeapi.co/api/v2/move/<name>, `effect_chance: null, meta: null`, no
+// `short_effect`), unlike every other move in this dataset. Bulbapedia's own
+// in-game "Description" table shows the placeholder "---" for all 5 (S/V
+// row, checked live) -- these NPC-exclusive signature moves never got
+// official flavor text in any game, in any language.
+//
+// The MECHANIC is real and documented (Bulbapedia's "Effect" section, prose,
+// not the flavor-text table): each is a physical move with a fixed secondary
+// effect (verified against the live page for all 5, quoted in this table's
+// entry below), matching moves.json's own power/accuracy/pp for each. Both
+// ES and EN below are this app's own redaction from that verified mechanic,
+// in the register of the game's own move descriptions (short, present
+// tense) -- not a translation of anything, since nothing to translate
+// exists. Source for the mechanic, one per move:
+// - blazing-torque: https://bulbapedia.bulbagarden.net/wiki/Blazing_Torque_(move)#Effect
+//   ("inflicts damage and has a 30% chance of burning the target")
+// - wicked-torque: https://bulbapedia.bulbagarden.net/wiki/Wicked_Torque_(move)#Effect
+//   ("...a 10% chance of putting the target to sleep")
+// - noxious-torque: https://bulbapedia.bulbagarden.net/wiki/Noxious_Torque_(move)#Effect
+//   ("...a 30% chance of poisoning the target")
+// - combat-torque: https://bulbapedia.bulbagarden.net/wiki/Combat_Torque_(move)#Effect
+//   ("...a 30% chance of paralyzing the target")
+// - magical-torque: https://bulbapedia.bulbagarden.net/wiki/Magical_Torque_(move)#Effect
+//   ("...a 30% chance of confusing the target")
+const MOVE_DESC_HAND_WRITTEN = {
+  'blazing-torque': {
+    es: 'El usuario sobrecalienta su motor y embiste al objetivo con un par motor ardiente. Puede causar quemaduras.',
+    en: 'The user overheats its engine and rams the target with fiery torque. This may also leave the target with a burn.',
+  },
+  'wicked-torque': {
+    es: 'El usuario libera un siniestro estallido de par motor y embiste al objetivo. Puede llegar a dormirlo.',
+    en: 'The user unleashes a dark burst of torque and rams the target. This may also put the target to sleep.',
+  },
+  'noxious-torque': {
+    es: 'El usuario acelera su motor tóxico y embiste al objetivo con un par motor nocivo. Puede llegar a envenenarlo.',
+    en: 'The user revs a toxic engine and rams the target with noxious torque. This may also poison the target.',
+  },
+  'combat-torque': {
+    es: 'El usuario canaliza toda su fuerza en el motor y embiste al objetivo con un par motor combativo. Puede llegar a paralizarlo.',
+    en: 'The user channels raw power into its engine and rams the target with fighting torque. This may also leave the target with paralysis.',
+  },
+  'magical-torque': {
+    es: 'El motor del usuario vibra con energía feérica mientras embiste al objetivo con un par motor mágico. Puede llegar a confundirlo.',
+    en: "The user's engine hums with fairy energy as it rams the target with magical torque. This may also confuse the target.",
+  },
+};
+
 async function buildMoves() {
   const index = await getJson(`${API}/move?limit=2000`);
 
@@ -492,8 +618,10 @@ async function buildMoves() {
       power: m.power,
       accuracy: m.accuracy,
       pp: m.pp,
-      descriptionEs: latestFlavor(m.flavor_text_entries, 'es', 'flavor_text') || MOVE_DESC_ES_OVERRIDES[m.name] || '',
-      descriptionEn: latestFlavor(m.flavor_text_entries, 'en', 'flavor_text'),
+      descriptionEs: latestFlavor(m.flavor_text_entries, 'es', 'flavor_text') || MOVE_DESC_ES_OVERRIDES[m.name]
+        || MOVE_DESC_ES_TRANSLATED[m.name] || MOVE_DESC_HAND_WRITTEN[m.name]?.es || '',
+      descriptionEn: latestFlavor(m.flavor_text_entries, 'en', 'flavor_text') || MOVE_DESC_EN_OFFICIAL[m.name]
+        || MOVE_DESC_HAND_WRITTEN[m.name]?.en || '',
       // Written even when it is 0, unlike the fields below: the app uses its
       // presence to tell whether a cached moves.json predates this build.
       priority: m.priority,
