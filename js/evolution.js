@@ -37,7 +37,7 @@ function named(value, lang) {
 // i18n.js, which returns the abbreviated badge form ("Electr."), not this
 // full one.
 function typeFullName(type, lang) {
-  return (lang === 'es' ? TYPE_NAMES_FULL : TYPE_NAMES_FULL_EN)[type] || type;
+  return (lang === 'en' ? TYPE_NAMES_FULL_EN : TYPE_NAMES_FULL)[type] || type;
 }
 
 function triggerText(d, lang, lookups) {
