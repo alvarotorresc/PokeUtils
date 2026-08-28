@@ -47,37 +47,44 @@ async function pesoDe(dir) {
   return total;
 }
 
-// El script de index.html que traduce el hero y el nav antes del primer
-// pintado (justo antes del modulo diferido) no puede importar i18n.js -- va
-// antes de que exista ningun modulo -- asi que sus nueve cadenas EN son una
-// copia a mano de js/i18n-en.js. No se generan en build (index.html tiene que
-// funcionar traducido sirviendo el fuente sin build, con scripts/serve.mjs,
-// que es como se programa y se verifica normalmente): en vez de inyectarlas,
-// el build las compara contra el diccionario real y falla si alguien cambia
-// una clave alli sin acordarse de esta copia -- mismo principio que el resto
-// de asertos de esta funcion, solo que contra un modulo en vez de un string.
+// Los dos scripts de index.html que adelantan la traduccion del nav (justo
+// tras </nav>) y del hero (justo tras </main>) a antes del primer pintado no
+// pueden importar i18n.js -- van antes de que exista ningun modulo -- asi que
+// sus cadenas EN son una copia a mano de js/i18n-en.js. No se generan en
+// build (index.html tiene que funcionar traducido sirviendo el fuente sin
+// build, con scripts/serve.mjs, que es como se programa y se verifica
+// normalmente): en vez de inyectarlas, el build las compara contra el
+// diccionario real y falla si alguien cambia una clave alli sin acordarse de
+// esta copia -- mismo principio que el resto de asertos de esta funcion,
+// solo que contra un modulo en vez de un string.
 async function comprobarLiteralesEN(html) {
-  const bloque = html.match(/var EN = (\{[\s\S]*?\});/);
-  if (!bloque) {
-    throw new Error('index.html ya no tiene el bloque "var EN = {...}" del script '
-      + 'que adelanta la traduccion del hero y el nav antes del primer pintado');
-  }
-  const literales = JSON.parse(bloque[1]);
   const { default: en } = await import(pathToFileURL(join(ROOT, 'js', 'i18n-en.js')));
-  const CLAVES = {
+
+  function comprobarBloque(nombreVar, claves) {
+    const bloque = html.match(new RegExp(`var ${nombreVar} = (\\{[\\s\\S]*?\\});`));
+    if (!bloque) {
+      throw new Error(`index.html ya no tiene el bloque "var ${nombreVar} = {...}" de uno de los `
+        + 'scripts que adelantan la traduccion del nav o del hero antes del primer pintado');
+    }
+    const literales = JSON.parse(bloque[1]);
+    for (const [campo, clave] of Object.entries(claves)) {
+      if (literales[campo] !== en[clave]) {
+        throw new Error(
+          `index.html copia "${literales[campo]}" para ${clave} en su bloque "var ${nombreVar}", `
+          + `pero js/i18n-en.js dice "${en[clave]}" -- actualiza esa copia a mano en index.html`,
+        );
+      }
+    }
+  }
+
+  comprobarBloque('EN_NAV', {
     navHome: 'nav.home', navPokedex: 'nav.pokedex', navData: 'nav.data',
     navCompetitive: 'nav.competitive', navCalculator: 'nav.calculator',
     navSearch: 'nav.search',
+  });
+  comprobarBloque('EN_HERO', {
     heroA: 'home.claim.a', heroB: 'home.claim.b', heroSearch: 'home.search',
-  };
-  for (const [campo, clave] of Object.entries(CLAVES)) {
-    if (literales[campo] !== en[clave]) {
-      throw new Error(
-        `index.html copia "${literales[campo]}" para ${clave} en su bloque "var EN", pero `
-        + `js/i18n-en.js dice "${en[clave]}" -- actualiza esa copia a mano en index.html`,
-      );
-    }
-  }
+  });
 }
 
 async function main() {

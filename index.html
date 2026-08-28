@@ -79,6 +79,49 @@
     </div>
   </nav>
 
+  <!-- Si el idioma guardado es "en", el nav nace en espanol: esta escrito a
+       mano mas arriba porque va antes de que exista el modulo de i18n
+       (app.js:61-92 ya lo traduce tras hidratar -- esto solo adelanta el
+       cambio a antes del primer pintado). Va aqui, inmediatamente despues de
+       </nav> y no compartido con el del hero de mas abajo, para que su ventana
+       sea la minima posible: solo necesita el <nav> ya parseado, no el resto
+       del documento.
+       PRECONDICION, no garantia incondicional: "nada se pinta hasta que
+       termina de parsear y ejecutar todo lo sincrono" asume que el HTML llega
+       de una pieza. Si la red parte la respuesta dentro de esta ventana (entre
+       el ultimo byte de </nav> y el cierre de este <script>), el navegador
+       puede pintar el nav en espanol antes de que este script corra --
+       medido con un servidor adversarial: 0/3 con la respuesta de una pieza,
+       4/5 con un corte de 20ms a mitad del fichero, 6/6 con uno de 300ms. Es
+       un riesgo real en moviles con perdida de paquetes, aceptado y no
+       eliminado por este cambio -- solo encogido, separando este script del
+       hero para que la ventana de LO PRIMERO que se ve (el nav, arriba del
+       todo) sea casi nula.
+       EN_NAV es una copia de seis claves de js/i18n-en.js. scripts/build.mjs
+       compara ambos bloques (este y el del hero) con el diccionario real en
+       cada build -- ver comprobarLiteralesEN. -->
+  <script>
+    (function () {
+      if ((localStorage.getItem('pkutils_lang') || 'es') !== 'en') return;
+      var EN_NAV = {
+        "navHome": "HOME", "navPokedex": "POKEDEX", "navData": "DATA",
+        "navCompetitive": "COMPETITIVE", "navCalculator": "CALCULATOR",
+        "navSearch": "Search..."
+      };
+      var LABELS = { home: EN_NAV.navHome, pokedex: EN_NAV.navPokedex, data: EN_NAV.navData,
+        competitive: EN_NAV.navCompetitive, calculator: EN_NAV.navCalculator };
+      document.querySelectorAll('.nav-link').forEach(function (a) {
+        var label = LABELS[a.dataset.page];
+        if (label) a.textContent = label;
+      });
+      var navSearch = document.getElementById('navSearch');
+      if (navSearch) {
+        navSearch.placeholder = EN_NAV.navSearch;
+        navSearch.setAttribute('aria-label', EN_NAV.navSearch);
+      }
+    })();
+  </script>
+
   <!-- Solo escritorio (style.css lo apaga bajo 900px): la pagina de detras se
        atenua mientras el desplegable del buscador del nav esta abierto, como
        en el artboard aprobado. app.js lo sincroniza observando el "hidden"
@@ -110,6 +153,37 @@
     </div>
   </main>
 
+  <!-- Traduccion adelantada del hero, separada de la del nav de mas arriba
+       para acortar SU ventana: va justo despues de </main>, asi que ya no
+       tiene que esperar a que baje el footer entero para poder correr (el
+       footer no es texto que este script tenga que tocar, pero antes obligaba
+       a esperarlo igual, porque el script unico vivia al final del body).
+       Misma precondicion que el de arriba, y no menos real para este tramo:
+       la ventana vulnerable de ESTE script sigue siendo el <main> completo (el
+       hero no existe hasta que su propio bloque termina de parsear, no hay
+       forma de acortar eso sin tambien mover el hero de sitio), asi que un
+       corte de red ahi puede seguir pintando el <h1> en espanol un par de
+       frames -- mismo riesgo medido que arriba (0/3, 4/5, 6/6 segun el corte),
+       aceptado, no eliminado.
+       EN_HERO es una copia de tres claves de js/i18n-en.js, comprobada junto
+       con EN_NAV en cada build -- ver comprobarLiteralesEN en build.mjs. -->
+  <script>
+    (function () {
+      if ((localStorage.getItem('pkutils_lang') || 'es') !== 'en') return;
+      var EN_HERO = {
+        "heroA": "1351 Pokemon.", "heroB": "16 tools.",
+        "heroSearch": "Search a Pokemon, a move, an item..."
+      };
+      var h1 = document.querySelector('.swarm-fg h1');
+      if (h1) h1.innerHTML = EN_HERO.heroA + '<br><span class="hl">' + EN_HERO.heroB + '</span>';
+      var heroSearch = document.getElementById('globalSearch');
+      if (heroSearch) {
+        heroSearch.placeholder = EN_HERO.heroSearch;
+        heroSearch.setAttribute('aria-label', EN_HERO.heroSearch);
+      }
+    })();
+  </script>
+
   <footer class="footer">
     <p>Datos de <a href="https://pokeapi.co" target="_blank" rel="noopener">PokeAPI</a></p>
     <p style="margin-top:8px;font-size:0.46rem;color:var(--ink-2);line-height:1.6">Made with <span class="pokeball-inline"></span> by <a href="https://github.com/alvarotorresc" target="_blank" rel="noopener">Alvaro Torres</a></p>
@@ -119,55 +193,6 @@
       <p class="footer-hint">Pok&eacute;mon &copy; 2002-2026 Pok&eacute;mon. &copy; 1995-2026 Nintendo/Creatures Inc./GAME FREAK inc.</p>
     </div>
   </footer>
-
-  <!-- Si el idioma guardado es "en", el hero, su buscador, los cinco enlaces
-       del nav y el buscador del nav nacen en espanol: estan escritos a mano
-       en el HTML de mas arriba porque van antes de que exista el modulo de
-       i18n (esto mismo, ver app.js:61-92 y home.js:144-150, ya los traduce
-       tras hidratar -- este script solo adelanta ese cambio a antes del
-       primer pintado). Sin esto el criterio "sin texto ES en el primer
-       pintado" fallaba en EN, y el fade-in que se le quito al hero mas arriba
-       lo dejaba mas tiempo y mas nitido en pantalla, no menos.
-       No va en la cabecera con las otras dos guardas: esas solo tocan el
-       elemento raiz, que ya existe alli; esta necesita el nav, el hero y sus
-       campos ya parseados, asi que va aqui, sincrona, justo antes del modulo
-       diferido -- misma tecnica que las de la cabecera (bloquea el parser
-       HTML, y nada se pinta hasta que termina de parsear y ejecutar todo lo
-       sincrono que hay en el documento), solo que en el unico punto del
-       cuerpo donde ya puede alcanzar lo que tiene que tocar.
-       EN es una copia de nueve claves de js/i18n-en.js. scripts/build.mjs la
-       compara con el diccionario real en cada build y falla si se
-       desincronizan -- ver la funcion comprobarLiteralesEN. -->
-  <script>
-    (function () {
-      if ((localStorage.getItem('pkutils_lang') || 'es') !== 'en') return;
-      var EN = {
-        "navHome": "HOME", "navPokedex": "POKEDEX", "navData": "DATA",
-        "navCompetitive": "COMPETITIVE", "navCalculator": "CALCULATOR",
-        "navSearch": "Search...",
-        "heroA": "1351 Pokemon.", "heroB": "16 tools.",
-        "heroSearch": "Search a Pokemon, a move, an item..."
-      };
-      var NAV = { home: EN.navHome, pokedex: EN.navPokedex, data: EN.navData,
-        competitive: EN.navCompetitive, calculator: EN.navCalculator };
-      document.querySelectorAll('.nav-link').forEach(function (a) {
-        var label = NAV[a.dataset.page];
-        if (label) a.textContent = label;
-      });
-      var navSearch = document.getElementById('navSearch');
-      if (navSearch) {
-        navSearch.placeholder = EN.navSearch;
-        navSearch.setAttribute('aria-label', EN.navSearch);
-      }
-      var h1 = document.querySelector('.swarm-fg h1');
-      if (h1) h1.innerHTML = EN.heroA + '<br><span class="hl">' + EN.heroB + '</span>';
-      var heroSearch = document.getElementById('globalSearch');
-      if (heroSearch) {
-        heroSearch.placeholder = EN.heroSearch;
-        heroSearch.setAttribute('aria-label', EN.heroSearch);
-      }
-    })();
-  </script>
 
   <script type="module" src="js/app.js"></script>
 </body>
