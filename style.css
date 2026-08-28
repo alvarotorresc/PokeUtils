@@ -2784,7 +2784,13 @@ a.evo-node:hover img {
   opacity: 0.9;
 }
 
-.result-badge.dimmed { opacity: 0.55; }
+/* Un tipo sin ventaja ofensiva que ademas esta resistido por el propio
+   equipo. La opacidad de grupo bajaba el contraste del texto a 2.3-4.3:1
+   (medido, 5 tipos, ambos temas); el texto ya dice RESISTE, asi que la
+   senal visual es el borde discontinuo y el badge conserva contraste pleno. */
+.result-badge.dimmed {
+  border: 2px dashed rgba(255, 255, 255, 0.35);
+}
 
 /* The matrix is 18 rows by up to six members, so cells stay tight and the
    sprites in the header carry the identification. */
