@@ -1,0 +1,25 @@
+# Valida cada push y PR a main con lo que el repo de verdad tiene:
+# los 18 checks de datos (npm run check propaga el exit desde el 2026-08-28,
+# antes un check en rojo salia verde aqui) y el build de esbuild que corre
+# Netlify. No hay paso de lint porque el repo no tiene linter configurado.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
