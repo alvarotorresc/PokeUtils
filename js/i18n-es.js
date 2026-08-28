@@ -162,7 +162,7 @@ export default {
     'home.pokedex.desc': 'Los 1025 Pokémon con stats, tipos y habilidades',
     'home.types.desc': 'Tabla de tipos interactiva con debilidades y resistencias',
     'home.team.desc': 'Debilidades y cobertura de tu equipo de 6',
-    'home.capture.desc': 'Cuántas balls necesitas y con qué probabilidad',
+    'home.capture.desc': 'Cuántas bolas necesitas y con qué probabilidad',
     'home.moves.desc': 'Todos los movimientos con tipo, poder y descripción',
     'home.abilities.desc': 'Lista completa de habilidades y sus efectos',
     'home.items.desc': 'Objetos con imagen, descripción y categoría',

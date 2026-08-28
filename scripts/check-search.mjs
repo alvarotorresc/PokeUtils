@@ -117,6 +117,13 @@ check('captura navega a catch, no a capture', first('captura').route, '#/calcula
 // nameEn: el mismo bug que labelOf ya evita en los otros cuatro dominios.
 check('un termino en espanol con la app en ingles sale en ingles',
   searchAll(datasets, 'velocidad', 8, 'en')[0]?.name, 'SPEED');
+// "dex" es jerga tan comun para la Pokedex que el limite de palabra (que
+// arreglo natu/revive/rest/star/para/trap) se la comio de paso: "pokedex" no
+// EMPIEZA por "dex", asi que dejo de encontrarla hasta que se anadio como
+// sinonimo exacto.
+check('dex encuentra la Pokedex', first('dex').kind, 'tool');
+check('y es la Pokedex, no otra herramienta', first('dex').route, '#/pokedex');
+check('lo mismo en ingles', searchAll(datasets, 'dex', 8, 'en')[0]?.route, '#/pokedex');
 
 console.log('\nNingun sinonimo se cuela por substring en un termino de control\n');
 

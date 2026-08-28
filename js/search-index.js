@@ -136,7 +136,12 @@ export const TOOL_NAMES = {
 };
 
 const TOOL_SYNONYMS = {
-  pokedex: { es: ['lista de pokemon', 'todos los pokemon'], en: ['pokemon list', 'all pokemon'] },
+  // "dex" es jerga tan comun para la Pokedex que con el limite de palabra
+  // dejaba de encontrarla: "pokedex" no EMPIEZA por "dex" (esta al final), asi
+  // que scoreTool ya no le daba credito por el "contains" pelado que antes lo
+  // encontraba en cualquier punto de la palabra. Como sinonimo aparte, "dex"
+  // iguala la palabra entera y es un match exacto, no uno que haya que colar.
+  pokedex: { es: ['lista de pokemon', 'todos los pokemon', 'dex'], en: ['pokemon list', 'all pokemon', 'dex'] },
   compare: { es: ['comparar pokemon', 'comparar stats'], en: ['compare pokemon', 'compare stats'] },
   egg: { es: ['cria', 'huevos', 'grupos de cria'], en: ['breeding', 'eggs', 'egg group'] },
   moves: { es: ['ataques', 'lista de movimientos'], en: ['attacks', 'move list'] },

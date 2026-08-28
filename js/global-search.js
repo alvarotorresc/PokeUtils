@@ -75,16 +75,16 @@ export function attachGlobalSearch(input, alGuardar) {
     cursor = -1;
     panel.hidden = results.length === 0;
     ultimos = results;
-    // Las herramientas son siempre un prefijo contiguo de `results`
-    // (searchAll las antepone), asi que esta cabecera solo puede dispararse
-    // una vez, justo antes de la primera fila.
-    let toolsHeaderShown = false;
+    // searchAll ordena por rango (exacto antes que no-exacto, herramienta
+    // antes que dominio solo entre no-exactos -- ver el comentario de rank()
+    // en search-index.js), no por "herramientas primero, siempre": un match
+    // exacto de dominio en medio de dos herramientas no-exactas SI podria
+    // partir el bloque en dos tandas. No se depende de que sean un prefijo
+    // contiguo: la cabecera se repinta en cada transicion hacia una fila de
+    // herramienta, venga o no precedida de otra.
     panel.innerHTML = results.map((r, i) => {
-      let header = '';
-      if (r.kind === 'tool' && !toolsHeaderShown) {
-        header = `<div class="gs-group">${t('search.group.tools')}</div>`;
-        toolsHeaderShown = true;
-      }
+      const esInicioDeTanda = r.kind === 'tool' && results[i - 1]?.kind !== 'tool';
+      const header = esInicioDeTanda ? `<div class="gs-group">${t('search.group.tools')}</div>` : '';
       // Sin etiqueta de fila para herramientas: la cabecera del grupo ya dice
       // "HERRAMIENTAS" y repetirla en cada fila era el mismo texto dos veces.
       const kind = r.kind === 'tool' ? '' : t(KIND_KEY[r.kind]);
