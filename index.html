@@ -28,6 +28,18 @@
       document.head.appendChild(l);
     } catch (e) {}
   </script>
+  <!-- El hero estatico de mas abajo solo vale para la portada: en cualquier
+       otra ruta hay que ocultarlo antes de la primera pintura, o el <h1> de la
+       portada parpadea un frame hasta que el JS diferido lo borre. Replica el
+       "home o no" de parseHash en app.js -- '', '#/' y '#/home' (con o sin
+       query) son portada, cualquier otra cosa no. -->
+  <script>
+    (function () {
+      var raw = location.hash.slice(1) || '/';
+      var path = raw.split('?')[0].split('/').filter(Boolean).join('/');
+      if (path !== '' && path !== 'home') document.documentElement.classList.add('no-hero');
+    })();
+  </script>
 </head>
 <body>
   <div class="scanlines"></div>
@@ -67,6 +79,49 @@
     </div>
   </nav>
 
+  <!-- Si el idioma guardado es "en", el nav nace en espanol: esta escrito a
+       mano mas arriba porque va antes de que exista el modulo de i18n
+       (app.js:61-92 ya lo traduce tras hidratar -- esto solo adelanta el
+       cambio a antes del primer pintado). Va aqui, inmediatamente despues de
+       </nav> y no compartido con el del hero de mas abajo, para que su ventana
+       sea la minima posible: solo necesita el <nav> ya parseado, no el resto
+       del documento.
+       PRECONDICION, no garantia incondicional: "nada se pinta hasta que
+       termina de parsear y ejecutar todo lo sincrono" asume que el HTML llega
+       de una pieza. Si la red parte la respuesta dentro de esta ventana (entre
+       el ultimo byte de </nav> y el cierre de este <script>), el navegador
+       puede pintar el nav en espanol antes de que este script corra --
+       medido con un servidor adversarial: 0/3 con la respuesta de una pieza,
+       4/5 con un corte de 20ms a mitad del fichero, 6/6 con uno de 300ms. Es
+       un riesgo real en moviles con perdida de paquetes, aceptado y no
+       eliminado por este cambio -- solo encogido, separando este script del
+       hero para que la ventana de LO PRIMERO que se ve (el nav, arriba del
+       todo) sea casi nula.
+       EN_NAV es una copia de seis claves de js/i18n-en.js. scripts/build.mjs
+       compara ambos bloques (este y el del hero) con el diccionario real en
+       cada build -- ver comprobarLiteralesEN. -->
+  <script>
+    (function () {
+      if ((localStorage.getItem('pkutils_lang') || 'es') !== 'en') return;
+      var EN_NAV = {
+        "navHome": "HOME", "navPokedex": "POKEDEX", "navData": "DATA",
+        "navCompetitive": "COMPETITIVE", "navCalculator": "CALCULATOR",
+        "navSearch": "Search..."
+      };
+      var LABELS = { home: EN_NAV.navHome, pokedex: EN_NAV.navPokedex, data: EN_NAV.navData,
+        competitive: EN_NAV.navCompetitive, calculator: EN_NAV.navCalculator };
+      document.querySelectorAll('.nav-link').forEach(function (a) {
+        var label = LABELS[a.dataset.page];
+        if (label) a.textContent = label;
+      });
+      var navSearch = document.getElementById('navSearch');
+      if (navSearch) {
+        navSearch.placeholder = EN_NAV.navSearch;
+        navSearch.setAttribute('aria-label', EN_NAV.navSearch);
+      }
+    })();
+  </script>
+
   <!-- Solo escritorio (style.css lo apaga bajo 900px): la pagina de detras se
        atenua mientras el desplegable del buscador del nav esta abierto, como
        en el artboard aprobado. app.js lo sincroniza observando el "hidden"
@@ -77,8 +132,12 @@
        que el <h1> (el LCP) no existia hasta que bajaba el JS: 1884 ms, y al
        inyectarlo el footer ya pintado saltaba hacia abajo, 0,208 de CLS.
        Los textos van en espanol, que es el idioma por defecto; si hay otro
-       guardado, renderHome los cambia sin mover el alto. -->
-  <main class="main fade-in" id="app" data-reservando>
+       guardado, renderHome los cambia sin mover el alto.
+       Sin fade-in aqui: el <h1> ya esta pintado en este HTML, y la animacion de
+       opacidad hace que Chrome no lo cuente como pintado hasta que termina --
+       ~350ms de "element render delay" sumados al LCP por algo que ya se veia.
+       app.js no se lo vuelve a poner mientras adopta este hero (ver route()). -->
+  <main class="main" id="app" data-reservando>
     <div class="swarm-wrap" data-shell>
       <div class="swarm" aria-hidden="true"></div>
       <div class="swarm-fg">
@@ -93,6 +152,37 @@
       </div>
     </div>
   </main>
+
+  <!-- Traduccion adelantada del hero, separada de la del nav de mas arriba
+       para acortar SU ventana: va justo despues de </main>, asi que ya no
+       tiene que esperar a que baje el footer entero para poder correr (el
+       footer no es texto que este script tenga que tocar, pero antes obligaba
+       a esperarlo igual, porque el script unico vivia al final del body).
+       Misma precondicion que el de arriba, y no menos real para este tramo:
+       la ventana vulnerable de ESTE script sigue siendo el <main> completo (el
+       hero no existe hasta que su propio bloque termina de parsear, no hay
+       forma de acortar eso sin tambien mover el hero de sitio), asi que un
+       corte de red ahi puede seguir pintando el <h1> en espanol un par de
+       frames -- mismo riesgo medido que arriba (0/3, 4/5, 6/6 segun el corte),
+       aceptado, no eliminado.
+       EN_HERO es una copia de tres claves de js/i18n-en.js, comprobada junto
+       con EN_NAV en cada build -- ver comprobarLiteralesEN en build.mjs. -->
+  <script>
+    (function () {
+      if ((localStorage.getItem('pkutils_lang') || 'es') !== 'en') return;
+      var EN_HERO = {
+        "heroA": "1351 Pokemon.", "heroB": "16 tools.",
+        "heroSearch": "Search a Pokemon, a move, an item..."
+      };
+      var h1 = document.querySelector('.swarm-fg h1');
+      if (h1) h1.innerHTML = EN_HERO.heroA + '<br><span class="hl">' + EN_HERO.heroB + '</span>';
+      var heroSearch = document.getElementById('globalSearch');
+      if (heroSearch) {
+        heroSearch.placeholder = EN_HERO.heroSearch;
+        heroSearch.setAttribute('aria-label', EN_HERO.heroSearch);
+      }
+    })();
+  </script>
 
   <footer class="footer">
     <p>Datos de <a href="https://pokeapi.co" target="_blank" rel="noopener">PokeAPI</a></p>

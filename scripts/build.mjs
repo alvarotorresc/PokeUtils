@@ -25,7 +25,7 @@ import { build } from 'esbuild';
 import { rm, mkdir, cp, readFile, writeFile, readdir, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { join, dirname, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -45,6 +45,46 @@ async function pesoDe(dir) {
     total += entrada.isDirectory() ? await pesoDe(ruta) : (await stat(ruta)).size;
   }
   return total;
+}
+
+// Los dos scripts de index.html que adelantan la traduccion del nav (justo
+// tras </nav>) y del hero (justo tras </main>) a antes del primer pintado no
+// pueden importar i18n.js -- van antes de que exista ningun modulo -- asi que
+// sus cadenas EN son una copia a mano de js/i18n-en.js. No se generan en
+// build (index.html tiene que funcionar traducido sirviendo el fuente sin
+// build, con scripts/serve.mjs, que es como se programa y se verifica
+// normalmente): en vez de inyectarlas, el build las compara contra el
+// diccionario real y falla si alguien cambia una clave alli sin acordarse de
+// esta copia -- mismo principio que el resto de asertos de esta funcion,
+// solo que contra un modulo en vez de un string.
+async function comprobarLiteralesEN(html) {
+  const { default: en } = await import(pathToFileURL(join(ROOT, 'js', 'i18n-en.js')));
+
+  function comprobarBloque(nombreVar, claves) {
+    const bloque = html.match(new RegExp(`var ${nombreVar} = (\\{[\\s\\S]*?\\});`));
+    if (!bloque) {
+      throw new Error(`index.html ya no tiene el bloque "var ${nombreVar} = {...}" de uno de los `
+        + 'scripts que adelantan la traduccion del nav o del hero antes del primer pintado');
+    }
+    const literales = JSON.parse(bloque[1]);
+    for (const [campo, clave] of Object.entries(claves)) {
+      if (literales[campo] !== en[clave]) {
+        throw new Error(
+          `index.html copia "${literales[campo]}" para ${clave} en su bloque "var ${nombreVar}", `
+          + `pero js/i18n-en.js dice "${en[clave]}" -- actualiza esa copia a mano en index.html`,
+        );
+      }
+    }
+  }
+
+  comprobarBloque('EN_NAV', {
+    navHome: 'nav.home', navPokedex: 'nav.pokedex', navData: 'nav.data',
+    navCompetitive: 'nav.competitive', navCalculator: 'nav.calculator',
+    navSearch: 'nav.search',
+  });
+  comprobarBloque('EN_HERO', {
+    heroA: 'home.claim.a', heroB: 'home.claim.b', heroSearch: 'home.search',
+  });
 }
 
 async function main() {
@@ -102,6 +142,7 @@ async function main() {
 
   // ===== index.html =====
   let html = await readFile(join(ROOT, 'index.html'), 'utf8');
+  await comprobarLiteralesEN(html);
   html = html
     .replace('href="style.css"', `href="/${cssNombre}"`)
     .replace('src="js/app.js"', `src="/${appJs}"`)

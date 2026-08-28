@@ -830,6 +830,17 @@ a:hover {
 }
 
 /* ===== HOME: THE SWARM ===== */
+/* El guardian sincrono del <head> marca el <html> antes de la primera pintura
+   cuando la ruta no es la portada. El selector se ata a [data-shell] y no a
+   .swarm-wrap: esa marca solo la lleva el hero que viene ya en el HTML, y
+   home.js se la quita en cuanto lo adopta. Si apuntara a .swarm-wrap, una
+   sesion que arrancara fuera de la portada y navegara luego hasta ella se
+   encontraria el hero repintado por home.js oculto para siempre, porque esa
+   clase nunca se quita del <html>. */
+html.no-hero [data-shell] {
+  display: none;
+}
+
 .swarm-wrap {
   position: relative;
   padding: 56px 0 40px;
