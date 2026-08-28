@@ -1627,13 +1627,6 @@ a:hover {
   align-items: center;
   gap: 6px;
   white-space: nowrap;
-  /* Border reserved (transparent) on every badge, not just .dimmed: with no
-     fixed width/height, a border added only on .dimmed grows that badge's box
-     and, through flex-wrap's cross-axis stretch, the whole row it shares with
-     plain siblings -- measured 26.4px -> 32.7px on a real row (team.js:225,
-     Vaporeon+Milotic+Politoed). Reserving the space up front keeps every
-     badge, dimmed or not, the same size. */
-  border: 2px solid transparent;
 }
 
 .result-badge .multiplier {
@@ -2797,11 +2790,13 @@ a.evo-node:hover img {
    equipo. La opacidad de grupo bajaba el contraste del texto a 2.3-4.3:1
    (medido, 5 tipos, ambos temas); el texto ya dice RESISTE, asi que la
    senal visual es el borde discontinuo y el badge conserva contraste pleno.
-   Solo estilo y color: el ancho del borde ya lo reserva .result-badge base,
-   asi que este badge no crece frente a sus hermanos de fila. */
+   outline en vez de border: no participa en el box model (no suma al layout,
+   no estira la fila flex de team.js:225 via align-items), y con
+   outline-offset: 0 el anillo se pega al borde igual que un border, respetando
+   border-radius en motores modernos (Chromium/Firefox/Safari actuales). */
 .result-badge.dimmed {
-  border-style: dashed;
-  border-color: rgba(255, 255, 255, 0.35);
+  outline: 2px dashed rgba(255, 255, 255, 0.35);
+  outline-offset: 0;
 }
 
 /* The matrix is 18 rows by up to six members, so cells stay tight and the
