@@ -147,6 +147,7 @@ export default {
     'home.claim.a': '1351 Pokemon.',
     'home.claim.b': '16 tools.',
     'home.search': 'Search a Pokemon, a move, an item...',
+    'nav.search': 'Search...',
     'home.mostwanted': 'MOST WANTED',
     'home.toolCount': '{n} tools',
     'search.kind.pokemon': 'POKEMON',

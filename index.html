@@ -38,11 +38,22 @@
         <div class="pokeball-icon-sm"></div>
         <span>POKEUTILS</span>
       </a>
+      <div class="nav-search nav-search--hidden" id="navSearchWrap">
+        <div class="nav-search-box">
+          <svg class="nav-search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.5" y2="16.5"></line></svg>
+          <input type="search" id="navSearch" autocomplete="off"
+                 placeholder="Buscar..." aria-label="Buscar...">
+          <span class="nav-search-kbd" aria-hidden="true">/</span>
+        </div>
+      </div>
       <div class="nav-toggles" id="navToggles">
         <button class="nav-toggle-btn" id="levelToggle" title="Nivel 50 / 100">Nv50</button>
         <button class="nav-toggle-btn" id="langToggle" title="ES/EN">EN</button>
         <button class="nav-toggle-btn" id="themeToggle" title="Theme">☀️</button>
       </div>
+      <button class="nav-search-toggle nav-search-toggle--hidden" id="navSearchToggle" aria-label="Buscar" aria-expanded="false">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.5" y2="16.5"></line></svg>
+      </button>
       <button class="nav-toggle" id="navToggle" aria-label="Menu">
         <span></span><span></span><span></span>
       </button>
@@ -55,6 +66,12 @@
       </div>
     </div>
   </nav>
+
+  <!-- Solo escritorio (style.css lo apaga bajo 900px): la pagina de detras se
+       atenua mientras el desplegable del buscador del nav esta abierto, como
+       en el artboard aprobado. app.js lo sincroniza observando el "hidden"
+       del panel -- no existe para el buscador de la home, que no cambia. -->
+  <div class="nav-search-scrim" id="navSearchScrim"></div>
 
   <!-- La portada de la home viene pintada del servidor. #app estaba vacio, asi
        que el <h1> (el LCP) no existia hasta que bajaba el JS: 1884 ms, y al

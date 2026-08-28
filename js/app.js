@@ -9,15 +9,27 @@ import { getLevel, setLevel, onLevelChange } from './level.js';
 import { t, getLang, setLang, onLangChange } from './i18n.js';
 import { purgeLegacyCache } from './api.js';
 import { renderError } from './ui.js';
+import { attachGlobalSearch } from './global-search.js';
 
 purgeLegacyCache();
 
 const app = document.getElementById('app');
+const nav = document.getElementById('nav');
 const navToggle = document.getElementById('navToggle');
 const navLinks = document.getElementById('navLinks');
 const langToggle = document.getElementById('langToggle');
 const themeToggle = document.getElementById('themeToggle');
 const levelToggle = document.getElementById('levelToggle');
+const navSearchWrap = document.getElementById('navSearchWrap');
+const navSearchInput = document.getElementById('navSearch');
+const navSearchToggle = document.getElementById('navSearchToggle');
+const navSearchScrim = document.getElementById('navSearchScrim');
+
+// La ruta actual decide "home o no", tanto para el nav-link activo como para
+// el buscador del nav: la misma condicion que ya usaba updateActiveNav.
+function esRutaHome(path) {
+  return path === '/' || path === '/home';
+}
 
 // ===== THEME =====
 function initTheme() {
@@ -59,6 +71,11 @@ function updateNavLabels() {
     // A category with a single tool links straight to it; targetOf decides.
     link.setAttribute('href', targetOf(category.id));
   });
+  // Reescribir texto y aria-label es idempotente: no hace falta volver a
+  // montar attachGlobalSearch, que solo se llama una vez mas abajo.
+  navSearchInput.placeholder = t('nav.search');
+  navSearchInput.setAttribute('aria-label', t('nav.search'));
+  navSearchToggle.setAttribute('aria-label', t('nav.search'));
 }
 
 langToggle.addEventListener('click', () => {
@@ -102,6 +119,86 @@ navLinks.addEventListener('click', (e) => {
   }
 });
 
+// ===== NAV SEARCH =====
+// El nav es estatico: se monta una vez aqui, nunca por ruta. attachGlobalSearch
+// no sabe nada de home ni de nav -- funciona por el elemento que se le pasa,
+// igual que en home.js:180. La visibilidad (home fuera/dentro) la decide
+// route() con classList.toggle, sin volver a llamar a esto.
+attachGlobalSearch(navSearchInput);
+
+// El scrim (solo escritorio, CSS lo apaga bajo 900px) sigue al desplegable
+// del nav observando su atributo "hidden": cubre Escape, blur, Enter y
+// resultados vacios sin duplicar ninguna de esas rutas de cierre de
+// global-search.js. El desplegable de la home no se observa aqui, asi que
+// nunca le sale scrim.
+const navGsPanel = document.querySelector('.nav-search .gs-panel');
+if (navGsPanel) {
+  const sincronizarScrim = () => navSearchScrim.classList.toggle('show', !navGsPanel.hidden);
+  new MutationObserver(sincronizarScrim).observe(navGsPanel, { attributes: true, attributeFilter: ['hidden'] });
+  // Clic en el scrim cierra el desplegable, como cualquier scrim de modal.
+  navSearchScrim.addEventListener('click', () => { navGsPanel.hidden = true; });
+}
+
+function cerrarBusquedaMovil() {
+  navSearchWrap.classList.remove('open');
+  navSearchToggle.classList.remove('active');
+  navSearchToggle.setAttribute('aria-expanded', 'false');
+}
+
+function abrirBusquedaMovil() {
+  // La fila y el menu hamburguesa comparten hueco (absolute bajo la barra):
+  // abrir uno cierra el otro para que no se pisen a 360px.
+  navToggle.classList.remove('open');
+  navLinks.classList.remove('open');
+  navSearchWrap.classList.add('open');
+  navSearchToggle.classList.add('active');
+  navSearchToggle.setAttribute('aria-expanded', 'true');
+}
+
+navSearchToggle.addEventListener('click', () => {
+  if (navSearchWrap.classList.contains('open')) cerrarBusquedaMovil();
+  else { abrirBusquedaMovil(); navSearchInput.focus(); }
+});
+
+// El menu hamburguesa tambien cierra la fila del buscador al abrirse.
+navToggle.addEventListener('click', () => {
+  if (navToggle.classList.contains('open')) cerrarBusquedaMovil();
+});
+
+// Escape: global-search.js ya oculta el desplegable (gs-panel) con su propio
+// listener en el input; este solo colapsa la fila movil, que global-search
+// no conoce.
+navSearchInput.addEventListener('keydown', e => {
+  if (e.key === 'Escape') cerrarBusquedaMovil();
+});
+
+// Atajo "/": enfoca el buscador visible -- el central de la home dentro de
+// la home, el del nav en cualquier otra pagina (abriendo antes la fila movil
+// si hiciera falta). Nunca si el foco ya esta en un campo de texto.
+document.addEventListener('keydown', e => {
+  if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+  const activo = document.activeElement;
+  const enCampo = activo && (
+    activo.tagName === 'INPUT' || activo.tagName === 'TEXTAREA' ||
+    activo.tagName === 'SELECT' || activo.isContentEditable
+  );
+  if (enCampo) return;
+
+  const esHome = esRutaHome(parseHash().path);
+  if (esHome) {
+    // El input central lo pinta home.js; en la primera pintura ya esta en el
+    // HTML, pero conviene comprobarlo en vivo y no asumir que existe.
+    const inputHome = document.getElementById('globalSearch');
+    if (!inputHome) return;
+    e.preventDefault();
+    inputHome.focus();
+    return;
+  }
+  e.preventDefault();
+  abrirBusquedaMovil();
+  navSearchInput.focus();
+});
+
 // ===== ROUTER =====
 // The hash carries page state as a query string: #/pokedex?gen=1&sort=spe
 function parseHash() {
@@ -116,7 +213,7 @@ function parseHash() {
 // The tab that lights up is the tool's category, which the path does not carry:
 // #/moves has to light up Datos. tools.js holds that map.
 function updateActiveNav(path) {
-  const active = path === '/' || path === '/home' ? 'home' : categoryOf(path);
+  const active = esRutaHome(path) ? 'home' : categoryOf(path);
   document.querySelectorAll('.nav-link').forEach(link => {
     link.classList.toggle('active', link.dataset.page === active);
   });
@@ -131,16 +228,32 @@ async function route() {
   const token = ++navegacion;
   const { path, parts, query } = parseHash();
   updateActiveNav(path);
+  const esHome = esRutaHome(path);
+  // El buscador del nav no existe en la home -- el central del enjambre
+  // sigue siendo el unico. classList.toggle, no un remontaje: attachGlobalSearch
+  // ya se llamo una vez al arrancar. Y cualquier navegacion colapsa la fila
+  // movil si se habia quedado abierta, vaya o no a la home.
+  navSearchWrap.classList.toggle('nav-search--hidden', esHome);
+  navSearchToggle.classList.toggle('nav-search-toggle--hidden', esHome);
+  cerrarBusquedaMovil();
+  // .nav-inner centra [logo+buscador+enlaces] como bloque, y Nv50/EN/tema
+  // flotan aparte (position:absolute) confiando en que ese bloque no llegue
+  // tan lejos. El buscador (flex:1 1 auto, hasta 300px) rompe ese margen a
+  // 900-1100px: los enlaces acababan debajo de los toggles, alcanzables solo
+  // con el scroll horizontal oculto que ya tenian de fallback. Con el
+  // buscador visible se reserva ese hueco explicitamente; en la home, sin
+  // buscador, el margen que ya habia de sobra sigue intacto.
+  nav.classList.toggle('nav-has-search', !esHome);
   // La portada de la home ya viene pintada en el HTML. Si la primera ruta es la
   // home, se queda donde esta: vaciarla aqui devolveria el salto que vino a
   // quitar. Cualquier otra ruta la borra como siempre.
-  const conservarShell = app.querySelector('[data-shell]') && (path === '/' || path === '/home');
+  const conservarShell = app.querySelector('[data-shell]') && esHome;
   if (!conservarShell) app.innerHTML = '';
   app.className = 'main fade-in';
   window.scrollTo(0, 0);
 
   let destino;
-  if (path === '/' || path === '/home') {
+  if (esHome) {
     destino = [() => import('./home.js'), m => m.renderHome(app)];
   } else if (path === '/types') {
     destino = [() => import('./type-chart.js'), m => m.renderTypeChart(app)];
