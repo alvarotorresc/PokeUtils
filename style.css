@@ -1146,13 +1146,44 @@ a:hover {
   margin-right: auto;
 }
 
+/* La cabecera de categoria se pintaba mas floja que las tarjetas que agrupa
+   (ink-3, 0.6rem) cuando la relacion es la contraria: categoria > herramienta.
+   Sube al mismo nivel que el logo (0.7rem) y a accent-text con su resplandor,
+   y gana la regla del artboard -- etiqueta, linea de acento y contador -- para
+   que "DATOS" se lea por encima de "MOVIMIENTOS" un renglon mas abajo. Sigue
+   siendo el unico amarillo del bloque: las tarjetas de debajo no lo llevan. */
 .home-group {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  row-gap: 4px;
+  column-gap: 12px;
   margin: 28px 0 0;
-  font-size: 0.6rem;
-  color: var(--ink-3);
+  font-size: 0.7rem;
+  color: var(--accent-text);
   letter-spacing: 1px;
   text-transform: uppercase;
+  text-shadow: 0 0 12px rgba(255, 204, 0, 0.3);
+}
+
+.home-group-line {
+  flex: 1 1 24px;
+  min-width: 24px;
+  height: 2px;
+  background: var(--border-accent);
+}
+
+/* El contador hereda el mismo tono que .mw .d / .mw .rank -- VT323 a 18px en
+   ink-3 -- para que lea como un dato y no como un segundo titulo. */
+.home-group-count {
+  flex: 0 0 auto;
+  font-family: var(--font-data);
+  font-size: 18px;
+  color: var(--ink-3);
+  text-transform: none;
+  letter-spacing: normal;
+  text-shadow: none;
+  white-space: nowrap;
 }
 
 .home-grid {

@@ -129,7 +129,7 @@ export const TOOL_NAMES = {
   counter: { es: 'CONTRARRESTAR', en: 'COUNTER' },
   speed: { es: 'VELOCIDAD', en: 'SPEED' },
   survive: { es: 'SOBREVIVE', en: 'SURVIVE' },
-  meta: { es: 'Sets del meta', en: 'Meta sets' },
+  meta: { es: 'SETS DEL META', en: 'META SETS' },
   ivev: { es: 'CALCULADORA', en: 'CALCULATOR' },
   damage: { es: 'DAÑO', en: 'DAMAGE' },
   capture: { es: 'CAPTURA', en: 'CAPTURE' },
