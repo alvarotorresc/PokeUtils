@@ -108,6 +108,13 @@ export function wireScrollFade(wrap, strip) {
   markScroll();
   // The active tab is not always the first one.
   strip.querySelector('.tab.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  // scrollIntoView schedules the actual scroll, it does not perform it inline
+  // -- markScroll() just above read scrollLeft BEFORE that scroll landed, so a
+  // tab scrolled all the way to one edge still shows a fade on that side as if
+  // there were more content hiding there. Two frames, not one: the first is
+  // where the browser applies the scroll, the second is where its layout is
+  // guaranteed settled for markScroll to read.
+  requestAnimationFrame(() => requestAnimationFrame(markScroll));
 }
 
 // ===== HELPER: pagination =====

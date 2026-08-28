@@ -780,6 +780,14 @@ a:hover {
   flex: 0 0 108px;
 }
 
+/* Tool rows carry no label (the group header already says "HERRAMIENTAS") --
+   collapse the reserved column instead of leaving 108px of blank space in
+   front of the name. Domain rows keep the fixed width above untouched, so a
+   mixed panel's entity names still line up in their own column. */
+.gs-row-tool .gs-kind {
+  flex-basis: 0;
+}
+
 .gs-name {
   font-family: var(--font-data);
   font-size: 21px;
@@ -974,7 +982,9 @@ a:hover {
 .spd-spread { background: var(--bg-surface); border: 2px solid var(--border); border-radius: 10px; padding: 12px 8px; text-align: center; }
 .spd-spread.best { border-color: var(--accent); }
 .spd-spread .label { font-family: var(--font-retro); font-size: 0.4rem; color: var(--ink-3); line-height: 1.6; }
-.spd-spread .value { font-family: var(--font-retro); font-size: 0.8rem; color: var(--accent-text); margin-top: 8px; }
+/* Los 4 repartos comparten valor en ink-1; el "mejor" se senala SOLO con
+   el borde ambar de .spd-spread.best -- un ambar por bloque. */
+.spd-spread .value { font-family: var(--font-retro); font-size: 0.8rem; color: var(--ink-1); margin-top: 8px; }
 .spd-tiers { display: grid; grid-template-columns: 1fr; gap: 20px; }
 @media (min-width: 640px) { .spd-tiers { grid-template-columns: repeat(2, 1fr); } }
 .spd-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-size: 0.8rem; }
@@ -2784,7 +2794,18 @@ a.evo-node:hover img {
   opacity: 0.9;
 }
 
-.result-badge.dimmed { opacity: 0.55; }
+/* Un tipo sin ventaja ofensiva que ademas esta resistido por el propio
+   equipo. La opacidad de grupo bajaba el contraste del texto a 2.3-4.3:1
+   (medido, 5 tipos, ambos temas); el texto ya dice RESISTE, asi que la
+   senal visual es el borde discontinuo y el badge conserva contraste pleno.
+   outline en vez de border: no participa en el box model (no suma al layout,
+   no estira la fila flex de team.js:225 via align-items), y con
+   outline-offset: 0 el anillo se pega al borde igual que un border, respetando
+   border-radius en motores modernos (Chromium/Firefox/Safari actuales). */
+.result-badge.dimmed {
+  outline: 2px dashed rgba(255, 255, 255, 0.35);
+  outline-offset: 0;
+}
 
 /* The matrix is 18 rows by up to six members, so cells stay tight and the
    sprites in the header carry the identification. */

@@ -36,8 +36,8 @@
 //   en la tabla de idiomas de Bulbapedia, y este fetcher no tiene pagina de
 //   pkproject.net que consultar para ellas (esa fuente no cubre Champions/
 //   Z-A). La traduccion propia de su EN oficial vive en
-//   ABILITY_DESC_ES_TRANSLATED (build-data.mjs), no aqui -- ver el mapa
-//   ABILITIES_SIN_FUENTE_POSIBLE mas abajo, que evita que este builder
+//   ABILITY_DESC_ES_TRANSLATED (scripts/overrides/abilities.mjs), no aqui --
+//   ver el mapa ABILITIES_SIN_FUENTE_POSIBLE mas abajo, que evita que este builder
 //   malgaste peticiones contra pkproject.net buscando algo que no existe
 //   alli.
 //
@@ -166,22 +166,24 @@
 //    fuente ES.
 //
 // Descubrimiento colateral que SI cambia el alcance: las 45 "Megapiedras
-// custom" (clefablite..glimmoranite, ITEM_NAME_OVERRIDES en build-data.mjs)
-// que un comentario de la Task 7 describe como "fabricadas por esta app,
-// ningun juego real las tiene" YA NO ES CIERTO a fecha de esta tarea:
-// Bulbapedia tiene pagina propia para las 45 (comprobado Clefablite,
-// Absolite Z, Zeraorite, Raichunite X, Golurkite, Tatsugirinite -- 6/6) con
-// seccion "Description" real, etiquetada a juegos "ZA" (Pokemon Legends:
-// Z-A) y/o "Champs" (Pokemon Champions) -- dos juegos que en la fecha de
-// esta sesion ya estan publicados. La conclusion mas simple no es que
-// PokeAPI se inventase 45 items: es que estos items eran datos filtrados
-// de un juego entonces no publicado, y ahora SI son contenido oficial con
-// texto oficial. Se rellenan en EN desde Bulbapedia igual que el resto de
-// "misc"; ES sigue sin fuente (Clefablita en WikiDex, comprobada, tampoco
-// tiene el bloque cita). El comentario de ITEM_NAME_OVERRIDES en
-// build-data.mjs que las llama "fabricadas" queda desactualizado por este
-// hallazgo -- señalado en el informe de esta tarea, no corregido aqui (esta
-// tarea es de descripciones, no de nombres).
+// custom" (clefablite..glimmoranite, ITEM_NAME_OVERRIDES en
+// scripts/overrides/items.mjs) que un comentario de la Task 7 describe como
+// "fabricadas por esta app, ningun juego real las tiene" YA NO ES CIERTO a
+// fecha de esta tarea: Bulbapedia tiene pagina propia para las 45
+// (comprobado Clefablite, Absolite Z, Zeraorite, Raichunite X, Golurkite,
+// Tatsugirinite -- 6/6) con seccion "Description" real, etiquetada a juegos
+// "ZA" (Pokemon Legends: Z-A) y/o "Champs" (Pokemon Champions) -- dos juegos
+// que en la fecha de esta sesion ya estan publicados. La conclusion mas
+// simple no es que PokeAPI se inventase 45 items: es que estos items eran
+// datos filtrados de un juego entonces no publicado, y ahora SI son
+// contenido oficial con texto oficial. Se rellenan en EN desde Bulbapedia
+// igual que el resto de "misc"; ES sigue sin fuente (Clefablita en WikiDex,
+// comprobada, tampoco tiene el bloque cita). El comentario de
+// ITEM_NAME_OVERRIDES en scripts/overrides/items.mjs que las llama
+// "fabricadas" quedaba desactualizado por este hallazgo -- señalado en el
+// informe de esta tarea, no corregido aqui (esta tarea es de descripciones,
+// no de nombres); ese comentario ya esta corregido hoy (ver la cabecera de
+// scripts/overrides/items.mjs).
 //
 // El resto de "misc" (tera shards, plates, herba mystica, ingredientes de
 // bocadillo, materiales de fabricacion de MT tipo "pelo de X", vajilla de
@@ -231,7 +233,7 @@ const FORCE = process.argv.includes('--force');
 // habilidades, no descripciones) ni WikiDex (no tienen pagina). Este mapa
 // sigue evitando que este fetcher malgaste peticiones contra pkproject.net
 // buscando algo que no existe alli; la traduccion propia del EN vive en
-// ABILITY_DESC_ES_TRANSLATED (build-data.mjs), no aqui.
+// ABILITY_DESC_ES_TRANSLATED (scripts/overrides/abilities.mjs), no aqui.
 const ABILITIES_SIN_FUENTE_POSIBLE = new Map([
   ['dragonize', 'habilidad de Feraligatr Mega (Pokemon Champions) -- sin fila de español en Bulbapedia; traducida a mano en ABILITY_DESC_ES_TRANSLATED'],
   ['eelevate', 'habilidad de Eelektross Mega (Pokemon Champions) -- sin fila de español en Bulbapedia; traducida a mano en ABILITY_DESC_ES_TRANSLATED'],
@@ -602,8 +604,8 @@ async function fetchBulbapediaDescription(itemName, nameEn) {
   const filas = [...section.matchAll(/<tr>\s*<td>([\s\S]*?)<\/td>\s*<td>([\s\S]*?)<\/td>\s*<\/tr>/g)];
   if (!filas.length) return { url, error: 'la seccion Description no tiene filas de datos (Games/Description)' };
   // Por defecto se toma la PRIMERA fila. Decision explicita para las 45
-  // megapiedras (ver ITEM_NAME_OVERRIDES en build-data.mjs): su tabla trae 2
-  // filas, "ZA" (Pokemon Legends: Z-A) primero y "Champs" (Pokemon
+  // megapiedras (ver ITEM_NAME_OVERRIDES en scripts/overrides/items.mjs): su
+  // tabla trae 2 filas, "ZA" (Pokemon Legends: Z-A) primero y "Champs" (Pokemon
   // Champions) despues -- comprobado en Clefablite, las dos con texto
   // distinto ("A Clefable holding this stone..." vs. "A held item that
   // allows Clefable to Mega Evolve."). filas[0] elige ZA A PROPOSITO (el

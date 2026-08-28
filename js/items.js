@@ -99,6 +99,11 @@ export function renderItems(container, query = new URLSearchParams()) {
   function showModal(item) {
     cerrarModalAbierto = closeModal;
     const catLabel = CATEGORY_MAP[item.category] ? t(CATEGORY_MAP[item.category]) : item.category;
+    // Subtitulo: el nombre en el otro idioma, como hace la ficha de Pokemon.
+    // El slug tecnico no aporta nada al usuario y era el ultimo kebab-case visible.
+    const titulo = pokeName(item);
+    const sub = getLang() === 'es' ? (item.nameEn || '') : (item.nameEs || '');
+    const subFinal = sub && sub !== titulo ? sub : '';
     modal.innerHTML = `
       <div class="modal-overlay" id="itModalOverlay">
         <div class="modal-content">
@@ -108,8 +113,8 @@ export function renderItems(container, query = new URLSearchParams()) {
                  style="width:64px;height:64px;image-rendering:pixelated;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.4))"
                  onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><text x=%2220%22 y=%2226%22 text-anchor=%22middle%22 font-size=%2224%22>🎒</text></svg>'">
           </div>
-          <h3 style="font-size:0.55rem;color:var(--accent-text);text-align:center;margin-bottom:4px">${pokeName(item)}</h3>
-          <div style="font-size:0.44rem;color:var(--ink-3);text-align:center;margin-bottom:16px">${item.name}</div>
+          <h3 style="font-size:0.55rem;color:var(--accent-text);text-align:center;margin-bottom:4px">${titulo}</h3>
+          <div style="font-size:0.44rem;color:var(--ink-3);text-align:center;margin-bottom:16px">${subFinal}</div>
           ${catLabel ? `<div style="font-size:0.44rem;color:var(--ink-3);text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">${catLabel}</div>` : ''}
           <div id="itModalDesc" style="font-size:0.48rem;color:var(--ink-2);line-height:2;text-align:center">${descripcionDe(item)}</div>
         </div>

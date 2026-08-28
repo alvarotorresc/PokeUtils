@@ -35,8 +35,10 @@ export const prettySlug = slug => slug
 // activo. `names` es meta-names.json, que build-meta-names.mjs saca de los
 // datasets grandes para que la ficha no tenga que bajarselos.
 //
-// El espanol falta en 39 de los 155 objetos y en 2 de las 194 habilidades, asi
-// que cae al ingles antes que a maquillar el slug. Mismo orden que en la
+// Tras la campana de traduccion tanto los 155 objetos como las 194 habilidades
+// que usa el meta ya traen `.es` (medido en check-meta.mjs, 0 de cada uno);
+// el fallback a ingles antes que a maquillar el slug se deja de todos modos,
+// por si una regeneracion futura reabre el hueco. Mismo orden que en la
 // cabecera de la ficha y en las condiciones de evolucion.
 export function metaName(kind, slug, names, lang) {
   const entrada = names?.[kind]?.[slug];
