@@ -67,6 +67,12 @@
     </div>
   </nav>
 
+  <!-- Solo escritorio (style.css lo apaga bajo 900px): la pagina de detras se
+       atenua mientras el desplegable del buscador del nav esta abierto, como
+       en el artboard aprobado. app.js lo sincroniza observando el "hidden"
+       del panel -- no existe para el buscador de la home, que no cambia. -->
+  <div class="nav-search-scrim" id="navSearchScrim"></div>
+
   <!-- La portada de la home viene pintada del servidor. #app estaba vacio, asi
        que el <h1> (el LCP) no existia hasta que bajaba el JS: 1884 ms, y al
        inyectarlo el footer ya pintado saltaba hacia abajo, 0,208 de CLS.

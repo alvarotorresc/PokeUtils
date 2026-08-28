@@ -86,6 +86,9 @@
   --warning-text: #F59E0B;
   --border: rgba(255, 255, 255, 0.08);
   --border-accent: rgba(255, 204, 0, 0.3);
+  /* El fondo de la pagina, con transparencia: el scrim tras el desplegable
+     del buscador del nav (escritorio). Mismo valor que --bg, no uno nuevo. */
+  --scrim: rgba(15, 15, 35, 0.55);
   --danger: #FB7185;
   --success: #34D399;
   --info: #60A5FA;
@@ -155,6 +158,7 @@
   --warning-text: #8A5200;
   --border: rgba(0, 0, 0, 0.1);
   --border-accent: rgba(184, 136, 0, 0.3);
+  --scrim: rgba(238, 238, 245, 0.55);
   --stat-up: #0B6B4A;   /* 5.27:1 on #e6e6f0 */
   --stat-down: #B3123C; /* 5.52:1 on #e6e6f0 */
 }
@@ -651,6 +655,41 @@ a:hover {
 
   .nav.nav-has-search .nav-toggle {
     padding: 5px;
+  }
+}
+
+/* ===== NAV SEARCH SCRIM =====
+   El artboard (docs/design-nav-proposal/HeaderBusqueda.dc.html) lo declara
+   como comportamiento: "la pagina de detras se atenua mientras el
+   desplegable esta abierto". Solo escritorio -- en movil el buscador ya se
+   resuelve inline en su propia fila, sin nada de fondo que atenuar. Vive
+   fuera de .nav a proposito: .nav tiene backdrop-filter, que le crea su
+   propio contenedor para los descendientes position:fixed, y un scrim ahi
+   dentro quedaria encajonado en los 56px de la barra en vez de cubrir la
+   pantalla. app.js alterna .show observando el "hidden" del panel del nav
+   (nunca el de la home, que no lleva scrim). */
+.nav-search-scrim {
+  display: none;
+  position: fixed;
+  top: var(--nav-height);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  background: var(--scrim);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease-out;
+}
+
+@media (min-width: 900px) {
+  .nav-search-scrim {
+    display: block;
+  }
+
+  .nav-search-scrim.show {
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 

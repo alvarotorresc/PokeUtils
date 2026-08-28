@@ -23,6 +23,7 @@ const levelToggle = document.getElementById('levelToggle');
 const navSearchWrap = document.getElementById('navSearchWrap');
 const navSearchInput = document.getElementById('navSearch');
 const navSearchToggle = document.getElementById('navSearchToggle');
+const navSearchScrim = document.getElementById('navSearchScrim');
 
 // La ruta actual decide "home o no", tanto para el nav-link activo como para
 // el buscador del nav: la misma condicion que ya usaba updateActiveNav.
@@ -124,6 +125,19 @@ navLinks.addEventListener('click', (e) => {
 // igual que en home.js:180. La visibilidad (home fuera/dentro) la decide
 // route() con classList.toggle, sin volver a llamar a esto.
 attachGlobalSearch(navSearchInput);
+
+// El scrim (solo escritorio, CSS lo apaga bajo 900px) sigue al desplegable
+// del nav observando su atributo "hidden": cubre Escape, blur, Enter y
+// resultados vacios sin duplicar ninguna de esas rutas de cierre de
+// global-search.js. El desplegable de la home no se observa aqui, asi que
+// nunca le sale scrim.
+const navGsPanel = document.querySelector('.nav-search .gs-panel');
+if (navGsPanel) {
+  const sincronizarScrim = () => navSearchScrim.classList.toggle('show', !navGsPanel.hidden);
+  new MutationObserver(sincronizarScrim).observe(navGsPanel, { attributes: true, attributeFilter: ['hidden'] });
+  // Clic en el scrim cierra el desplegable, como cualquier scrim de modal.
+  navSearchScrim.addEventListener('click', () => { navGsPanel.hidden = true; });
+}
 
 function cerrarBusquedaMovil() {
   navSearchWrap.classList.remove('open');
