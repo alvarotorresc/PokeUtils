@@ -28,6 +28,7 @@ const TYPES = {
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.ico': 'image/x-icon',
+  '.webmanifest': 'application/manifest+json',
 };
 
 // Los sprites ya son ficheros del repo (scripts/fetch-sprites.mjs), asi que

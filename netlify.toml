@@ -46,6 +46,16 @@
   [headers.values]
     Cache-Control = "public, max-age=2592000, stale-while-revalidate=31536000"
 
+# icons/ (manifest, favicon, og:image) no llevan el nombre hasheado como el JS
+# o el CSS -- misma razon que los sprites, y la misma cabecera: no cambian
+# salvo que cambie el diseno entero, y si cambia, el mes de max-age mas el ano
+# de stale-while-revalidate lo reparte sin dejar a nadie con el icono viejo
+# para siempre como haria `immutable`.
+[[headers]]
+  for = "/icons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000, stale-while-revalidate=31536000"
+
 # El JS y el CSS llevan el hash del contenido en el nombre desde que hay build,
 # asi que cada version es OTRO fichero y no hay nada que revalidar: un ano y
 # `immutable`. Sin hash esto habria sido peligroso -- un deploy podia dejar a un

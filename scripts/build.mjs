@@ -32,7 +32,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'dist');
 // Lo que se copia tal cual: son ficheros generados o binarios, y ya llevan su
 // propia politica de cache en netlify.toml.
-const COPIAR = ['data', 'sprites', 'fonts'];
+const COPIAR = ['data', 'sprites', 'fonts', 'icons'];
 
 const hash8 = buf => createHash('sha256').update(buf).digest('hex').slice(0, 8);
 const kb = n => `${(n / 1024).toFixed(1)} KB`;
@@ -163,6 +163,12 @@ async function main() {
   for (const carpeta of COPIAR) {
     await cp(join(ROOT, carpeta), join(OUT, carpeta), { recursive: true });
   }
+
+  // manifest.webmanifest es un fichero suelto en la raiz, no una carpeta: el
+  // bucle de arriba no lo toca. Como index.html, se sirve directo desde la
+  // raiz sin build en local (`scripts/serve.mjs`), asi que tampoco necesita
+  // la reescritura de rutas que si llevan el CSS y el JS.
+  await cp(join(ROOT, 'manifest.webmanifest'), join(OUT, 'manifest.webmanifest'));
 
   // ===== cuentas =====
   const jsFuente = (await Promise.all(
