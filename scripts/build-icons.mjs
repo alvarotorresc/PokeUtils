@@ -135,7 +135,7 @@ async function withChrome(fn) {
   }
 }
 
-async function shoot(port, { html, width, height, waitFonts = false, assertFonts = null }) {
+async function shoot(port, { html, width, height, waitFonts = false, assertFonts = null, transparent = false }) {
   const target = await (await fetch(
     `http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' },
   )).json();
@@ -146,6 +146,16 @@ async function shoot(port, { html, width, height, waitFonts = false, assertFonts
   await client.send('Emulation.setDeviceMetricsOverride', {
     width, height, deviceScaleFactor: 1, mobile: false,
   });
+  // Sin esto, Page.captureScreenshot compone el `background: transparent`
+  // del CSS sobre el lienzo blanco opaco que Chrome usa por defecto: el PNG
+  // sale RGB de fondo solido, no RGBA. Solo para los assets que de verdad
+  // deben salir transparentes -- og-image y los iconos de app son opacos a
+  // proposito, y a esos no se les llama con `transparent: true`.
+  if (transparent) {
+    await client.send('Emulation.setDefaultBackgroundColorOverride', {
+      color: { r: 0, g: 0, b: 0, a: 0 },
+    });
+  }
   // Page.navigate resuelve al confirmarse la navegacion, no al terminar de
   // cargar -- para eso hay que esperar el evento por separado. Con HTML sin
   // red de por medio (todo en la data: URL) la carga es practicamente
@@ -203,13 +213,99 @@ function pngLooksFlat(buf) {
   return variance < 4;
 }
 
-async function verifyAndWrite(file, buf, expected) {
+// Decodificador PNG minimo (solo bit depth 8, que es lo que saca Chrome):
+// descomprime los IDAT y deshace el filtro por fila (spec PNG 9.2 -- None,
+// Sub, Up, Average, Paeth) para tener los pixeles de verdad, no solo los
+// bytes comprimidos. `pngLooksFlat` no sirve para esto: una imagen con la
+// bola pintada pero fondo blanco solido (el bug real) varia de sobra en
+// bytes -- hace falta mirar el pixel, no la varianza.
+function decodePng(buf) {
+  const width = buf.readUInt32BE(16);
+  const height = buf.readUInt32BE(20);
+  const bitDepth = buf.readUInt8(24);
+  const colorType = buf.readUInt8(25);
+  const CHANNELS = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 };
+  const channels = CHANNELS[colorType];
+  if (bitDepth !== 8 || !channels) {
+    throw new Error(`PNG con bitDepth=${bitDepth} colorType=${colorType}, el decodificador solo espera bitDepth 8`);
+  }
+  let offset = 8;
+  const idat = [];
+  while (offset < buf.length) {
+    const len = buf.readUInt32BE(offset);
+    const type = buf.toString('ascii', offset + 4, offset + 8);
+    if (type === 'IDAT') idat.push(buf.subarray(offset + 8, offset + 8 + len));
+    if (type === 'IEND') break;
+    offset += 8 + len + 4;
+  }
+  const raw = inflateSync(Buffer.concat(idat));
+  const stride = width * channels;
+  const pixels = Buffer.alloc(height * stride);
+  let rawOffset = 0;
+  let prevRow = Buffer.alloc(stride);
+  for (let y = 0; y < height; y++) {
+    const filterType = raw[rawOffset++];
+    const row = raw.subarray(rawOffset, rawOffset + stride);
+    rawOffset += stride;
+    const outRow = pixels.subarray(y * stride, (y + 1) * stride);
+    for (let x = 0; x < stride; x++) {
+      const a = x >= channels ? outRow[x - channels] : 0; // izquierda, ya reconstruido
+      const b = prevRow[x]; // arriba
+      const c = x >= channels ? prevRow[x - channels] : 0; // arriba-izquierda
+      let value = row[x];
+      switch (filterType) {
+        case 0: break;
+        case 1: value = (value + a) & 0xff; break;
+        case 2: value = (value + b) & 0xff; break;
+        case 3: value = (value + Math.floor((a + b) / 2)) & 0xff; break;
+        case 4: {
+          const p = a + b - c;
+          const pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c);
+          value = (value + (pa <= pb && pa <= pc ? a : pb <= pc ? b : c)) & 0xff;
+          break;
+        }
+        default: throw new Error(`filtro PNG desconocido: ${filterType}`);
+      }
+      outRow[x] = value;
+    }
+    prevRow = outRow;
+  }
+  return { width, height, colorType, channels, stride, pixels };
+}
+
+function pixelAt({ pixels, stride, channels }, x, y) {
+  const i = y * stride + x * channels;
+  return Array.from(pixels.subarray(i, i + channels));
+}
+
+// El asset debe ser RGBA (color_type 6) de verdad, no solo "parece que si":
+// las cuatro esquinas -- fuera del circulo de la bola en todos los tamanos
+// que genera este script -- tienen que salir con alpha 0.
+function assertTransparentCorners(file, buf) {
+  const decoded = decodePng(buf);
+  if (decoded.colorType !== 6) {
+    throw new Error(`${file}: se esperaba RGBA (color_type 6) y salio color_type ${decoded.colorType} -- sin canal alfa no puede ser transparente`);
+  }
+  const { width, height } = decoded;
+  const corners = [[0, 0], [width - 1, 0], [0, height - 1], [width - 1, height - 1]];
+  for (const [x, y] of corners) {
+    const alpha = pixelAt(decoded, x, y)[3];
+    if (alpha !== 0) {
+      throw new Error(`${file}: la esquina (${x},${y}) no es transparente (alpha=${alpha}, se esperaba 0)`);
+    }
+  }
+}
+
+async function verifyAndWrite(file, buf, expected, { transparent = false } = {}) {
   const { width, height } = readPngSize(buf);
   if (width !== expected || height !== expected) {
     throw new Error(`${file}: esperaba ${expected}x${expected} y salio ${width}x${height}`);
   }
   if (pngLooksFlat(buf)) {
     throw new Error(`${file}: el PNG sale practicamente de un solo color (vacio/negro)`);
+  }
+  if (transparent) {
+    assertTransparentCorners(file, buf);
   }
   await writeFile(join(ICONS, file), buf);
   console.log(`  wrote icons/${file} (${width}x${height}, ${(buf.length / 1024).toFixed(1)} KB)`);
@@ -306,13 +402,15 @@ async function main() {
       await verifyAndWrite(file, buf, size);
     }
 
-    // favicon-32.png: fallback PNG del mismo dibujo, fondo transparente.
+    // favicon-32.png: fallback PNG del mismo dibujo, fondo transparente de
+    // verdad -- `transparent: true` en la captura (ver el comentario en
+    // shoot()) y verificado en la escritura (RGBA + esquinas en alpha 0).
     const faviconPngSvg = pokeballSvg(32, FAVICON_RATIO, { proportions: NAV, bg: false });
     const faviconHtml = `<!doctype html><html><head><meta charset="utf-8"><style>
       html, body { margin: 0; padding: 0; width: 32px; height: 32px; background: transparent; overflow: hidden; }
     </style></head><body>${faviconPngSvg}</body></html>`;
-    const faviconBuf = await shoot(port, { html: faviconHtml, width: 32, height: 32 });
-    await verifyAndWrite('favicon-32.png', faviconBuf, 32);
+    const faviconBuf = await shoot(port, { html: faviconHtml, width: 32, height: 32, transparent: true });
+    await verifyAndWrite('favicon-32.png', faviconBuf, 32, { transparent: true });
 
     await buildOgImage(port);
   });
