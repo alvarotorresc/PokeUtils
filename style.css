@@ -443,6 +443,217 @@ a:hover {
   }
 }
 
+/* ===== NAV SEARCH (buscador global fuera de la home) =====
+   Misma forma que .swarm-search: una caja que envuelve solo el input, dentro
+   de un contenedor position:relative del que cuelga el desplegable (el
+   selector generalizado en attachGlobalSearch, global-search.js -- ver el
+   comentario ahi). En movil ese contenedor es la fila a ancho completo bajo
+   la barra, igual que .nav-links; en escritorio vive en el hueco entre el
+   logo y los enlaces. */
+.nav-search {
+  position: relative;
+  display: none;
+}
+
+.nav-search.open {
+  display: block;
+  position: absolute;
+  top: var(--nav-height);
+  left: 0;
+  right: 0;
+  background: var(--bg-surface);
+  border-bottom: 2px solid var(--border);
+  padding: 10px 0;
+  z-index: 60;
+}
+
+/* El nav de la home no lleva buscador: el central del enjambre sigue siendo
+   el unico. !important gana sobre un .open que se hubiera quedado puesto al
+   volver a la home desde movil (por si acaso; route() tambien lo cierra). */
+.nav-search--hidden {
+  display: none !important;
+}
+
+.nav-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  margin: 0 16px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  background: var(--bg);
+  border: 2px solid var(--border-accent);
+  border-radius: 8px;
+}
+
+.nav-search-box:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 16px rgba(255, 204, 0, 0.18);
+}
+
+.nav-search-icon {
+  flex-shrink: 0;
+  color: var(--ink-3);
+}
+
+.nav-search-box input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--ink-1);
+  font-family: var(--font-data);
+  font-size: 20px;
+}
+
+.nav-search-box input::placeholder {
+  color: var(--ink-ui);
+}
+
+.nav-search-kbd {
+  display: none;
+}
+
+/* gs-panel trae left:50%/width:min(780px,100%) pensados para .swarm-fg (la
+   home); aqui ancla al contenedor del buscador del nav en vez de al centro
+   de la pagina. */
+.nav-search .gs-panel {
+  left: 16px;
+  right: 16px;
+  transform: none;
+  width: auto;
+  /* El de la home nunca pasa de la altura de la pantalla porque el buscador
+     vive a media pagina; este cuelga justo bajo el nav, con toda la pantalla
+     debajo -- ocho resultados ya la llenan en movil. Que scrollee dentro de
+     si en vez de empujar la pagina entera hacia abajo. */
+  max-height: calc(100vh - var(--nav-height) - 24px);
+  overflow-y: auto;
+}
+
+/* La lupa movil, junto a la hamburguesa. Ambar cuando la fila esta abierta. */
+.nav-search-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 4px;
+  color: var(--ink-ui);
+  cursor: pointer;
+}
+
+.nav-search-toggle.active {
+  color: var(--accent-text);
+}
+
+.nav-search-toggle--hidden {
+  display: none !important;
+}
+
+@media (min-width: 900px) {
+  .nav-search {
+    display: block;
+    flex: 1 1 auto;
+    max-width: 300px;
+    margin-left: 24px;
+    /* Suelo practico: por debajo de esto la caja deja de poder mostrar nada
+       util. Si el hueco real es menor (900-950px con los cinco enlaces),
+       quien cede es la fila de enlaces con el scroll horizontal oculto que
+       ya tenia de reserva, no el buscador quedandose en una lupa sola. */
+    min-width: 130px;
+  }
+
+  /* Sin fila movil en escritorio: si "open" se quedo puesto de una sesion
+     anterior en movil, aqui no cambia nada. */
+  .nav-search.open {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    background: none;
+    border-bottom: none;
+    padding: 0;
+    z-index: auto;
+  }
+
+  .nav-search-box {
+    height: 34px;
+    margin: 0;
+  }
+
+  .nav-search-box input {
+    font-size: 19px;
+  }
+
+  .nav-search-kbd {
+    display: inline-block;
+    margin-left: auto;
+    flex-shrink: 0;
+    font-family: var(--font-retro);
+    font-size: 7px;
+    color: var(--ink-3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 5px;
+  }
+
+  .nav-search .gs-panel {
+    left: 0;
+    right: auto;
+    width: 340px;
+  }
+
+  .nav-search-toggle {
+    display: none;
+  }
+
+  /* .nav-inner centra [logo+buscador+enlaces] como un bloque, y Nv50/EN/tema
+     flotan aparte, con position:absolute, confiando en que ese bloque no
+     llegue tan lejos. El buscador (flex:1 1 auto, hasta 300px) le quita ese
+     margen entre 900 y 1100px: reservarle este hueco a la derecha evita que
+     los enlaces acaben debajo de los toggles. app.js pone la clase solo
+     cuando el buscador esta visible (fuera de la home). */
+  .nav.nav-has-search .nav-inner {
+    padding-right: calc(var(--gutter) + 150px);
+  }
+}
+
+/* La lupa movil suma ~34px (icono+gap) a una barra de 360px que ya iba con
+   2px de sobra (ver el comentario de .nav-toggle): logo+3 toggles+hamburguesa
+   sin ella. Apretar gaps/paddings solo cuando el buscador esta presente
+   (misma clase que arriba) deja intacta la home, que nunca lleva lupa ni
+   sufre el aprieto.
+   Solo hasta 639px, donde --gutter ya baja a 16 (ver la regla de mas abajo):
+   entre 640 y 899 sobran 560px de hueco para 372px de contenido -- si este
+   bloque llegara hasta 899 el nav-inner quedaria con menos padding que
+   --main, y el logo saltaria 28px al navegar de la home a cualquier
+   herramienta. Sin tocar el padding aqui: keep el mismo var(--gutter) que
+   el resto de la pagina, y sacar los 8px que antes daba ese padding de
+   .nav-toggle-btn y .nav-toggle en su lugar. */
+@media (max-width: 639px) {
+  .nav.nav-has-search .nav-inner {
+    gap: 8px;
+  }
+
+  .nav.nav-has-search .nav-toggle-btn {
+    padding: 4px;
+  }
+
+  .nav.nav-has-search .nav-toggles {
+    gap: 1px;
+  }
+
+  .nav.nav-has-search .nav-search-toggle {
+    padding: 2px;
+  }
+
+  .nav.nav-has-search .nav-toggle {
+    padding: 5px;
+  }
+}
+
 /* ===== MAIN ===== */
 .main {
   width: 100%;

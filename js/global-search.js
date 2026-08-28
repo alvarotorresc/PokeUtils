@@ -47,7 +47,12 @@ export function attachGlobalSearch(input, alGuardar) {
   const panel = document.createElement('div');
   panel.className = 'gs-panel';
   panel.hidden = true;
-  input.closest('.swarm-search').after(panel);
+  // El input decide donde ancla el desplegable, no un id fijo: la home usa
+  // .swarm-search, el nav usa .nav-search-box -- misma forma (una caja que
+  // envuelve solo el input) dentro de un contenedor position:relative, asi
+  // que el desplegable cae justo debajo en los dos sitios sin tocar mas
+  // que este selector.
+  input.closest('.swarm-search, .nav-search-box').after(panel);
 
   const datasets = {};
   let cursor = -1;

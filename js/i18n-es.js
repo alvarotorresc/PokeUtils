@@ -152,6 +152,7 @@ export default {
     'home.claim.a': '1351 Pokémon.',
     'home.claim.b': '16 herramientas.',
     'home.search': 'Busca un Pokémon, un movimiento, un objeto...',
+    'nav.search': 'Buscar...',
     'home.mostwanted': 'LO MÁS BUSCADO',
     'home.toolCount': '{n} herramientas',
     'search.kind.pokemon': 'POKEMON',
