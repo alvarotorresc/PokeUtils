@@ -120,6 +120,55 @@
     </div>
   </footer>
 
+  <!-- Si el idioma guardado es "en", el hero, su buscador, los cinco enlaces
+       del nav y el buscador del nav nacen en espanol: estan escritos a mano
+       en el HTML de mas arriba porque van antes de que exista el modulo de
+       i18n (esto mismo, ver app.js:61-92 y home.js:144-150, ya los traduce
+       tras hidratar -- este script solo adelanta ese cambio a antes del
+       primer pintado). Sin esto el criterio "sin texto ES en el primer
+       pintado" fallaba en EN, y el fade-in que se le quito al hero mas arriba
+       lo dejaba mas tiempo y mas nitido en pantalla, no menos.
+       No va en la cabecera con las otras dos guardas: esas solo tocan el
+       elemento raiz, que ya existe alli; esta necesita el nav, el hero y sus
+       campos ya parseados, asi que va aqui, sincrona, justo antes del modulo
+       diferido -- misma tecnica que las de la cabecera (bloquea el parser
+       HTML, y nada se pinta hasta que termina de parsear y ejecutar todo lo
+       sincrono que hay en el documento), solo que en el unico punto del
+       cuerpo donde ya puede alcanzar lo que tiene que tocar.
+       EN es una copia de nueve claves de js/i18n-en.js. scripts/build.mjs la
+       compara con el diccionario real en cada build y falla si se
+       desincronizan -- ver la funcion comprobarLiteralesEN. -->
+  <script>
+    (function () {
+      if ((localStorage.getItem('pkutils_lang') || 'es') !== 'en') return;
+      var EN = {
+        "navHome": "HOME", "navPokedex": "POKEDEX", "navData": "DATA",
+        "navCompetitive": "COMPETITIVE", "navCalculator": "CALCULATOR",
+        "navSearch": "Search...",
+        "heroA": "1351 Pokemon.", "heroB": "16 tools.",
+        "heroSearch": "Search a Pokemon, a move, an item..."
+      };
+      var NAV = { home: EN.navHome, pokedex: EN.navPokedex, data: EN.navData,
+        competitive: EN.navCompetitive, calculator: EN.navCalculator };
+      document.querySelectorAll('.nav-link').forEach(function (a) {
+        var label = NAV[a.dataset.page];
+        if (label) a.textContent = label;
+      });
+      var navSearch = document.getElementById('navSearch');
+      if (navSearch) {
+        navSearch.placeholder = EN.navSearch;
+        navSearch.setAttribute('aria-label', EN.navSearch);
+      }
+      var h1 = document.querySelector('.swarm-fg h1');
+      if (h1) h1.innerHTML = EN.heroA + '<br><span class="hl">' + EN.heroB + '</span>';
+      var heroSearch = document.getElementById('globalSearch');
+      if (heroSearch) {
+        heroSearch.placeholder = EN.heroSearch;
+        heroSearch.setAttribute('aria-label', EN.heroSearch);
+      }
+    })();
+  </script>
+
   <script type="module" src="js/app.js"></script>
 </body>
 </html>
