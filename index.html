@@ -89,8 +89,12 @@
        que el <h1> (el LCP) no existia hasta que bajaba el JS: 1884 ms, y al
        inyectarlo el footer ya pintado saltaba hacia abajo, 0,208 de CLS.
        Los textos van en espanol, que es el idioma por defecto; si hay otro
-       guardado, renderHome los cambia sin mover el alto. -->
-  <main class="main fade-in" id="app" data-reservando>
+       guardado, renderHome los cambia sin mover el alto.
+       Sin fade-in aqui: el <h1> ya esta pintado en este HTML, y la animacion de
+       opacidad hace que Chrome no lo cuente como pintado hasta que termina --
+       ~350ms de "element render delay" sumados al LCP por algo que ya se veia.
+       app.js no se lo vuelve a poner mientras adopta este hero (ver route()). -->
+  <main class="main" id="app" data-reservando>
     <div class="swarm-wrap" data-shell>
       <div class="swarm" aria-hidden="true"></div>
       <div class="swarm-fg">

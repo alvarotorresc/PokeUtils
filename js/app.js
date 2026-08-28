@@ -249,7 +249,11 @@ async function route() {
   // quitar. Cualquier otra ruta la borra como siempre.
   const conservarShell = app.querySelector('[data-shell]') && esHome;
   if (!conservarShell) app.innerHTML = '';
-  app.className = 'main fade-in';
+  // El fade-in es para el contenido que se acaba de pintar de golpe. La
+  // portada estatica ya esta visible desde el primer frame -- ponerselo aqui
+  // la habria hecho parpadear (opacidad 0 otra vez) sin necesidad, ademas de
+  // ser justo la animacion que retrasaba el LCP (ver index.html).
+  app.className = conservarShell ? 'main' : 'main fade-in';
   window.scrollTo(0, 0);
 
   let destino;
