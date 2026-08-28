@@ -28,6 +28,18 @@
       document.head.appendChild(l);
     } catch (e) {}
   </script>
+  <!-- El hero estatico de mas abajo solo vale para la portada: en cualquier
+       otra ruta hay que ocultarlo antes de la primera pintura, o el <h1> de la
+       portada parpadea un frame hasta que el JS diferido lo borre. Replica el
+       "home o no" de parseHash en app.js -- '', '#/' y '#/home' (con o sin
+       query) son portada, cualquier otra cosa no. -->
+  <script>
+    (function () {
+      var raw = location.hash.slice(1) || '/';
+      var path = raw.split('?')[0].split('/').filter(Boolean).join('/');
+      if (path !== '' && path !== 'home') document.documentElement.classList.add('no-hero');
+    })();
+  </script>
 </head>
 <body>
   <div class="scanlines"></div>
