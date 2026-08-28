@@ -1,6 +1,7 @@
 // ===== TYPE CHART PAGE =====
 import { TYPES, CHART } from './data.js';
 import { t, typeName } from './i18n.js';
+import { toolTabsHTML, wireToolTabs } from './hub.js';
 
 let selectedTypes = [];
 let activeTab = 'defense';
@@ -51,6 +52,7 @@ function renderBadgeList(items) {
 
 export function renderTypeChart(container) {
   container.innerHTML = `
+    ${toolTabsHTML('data', 'types')}
     <div class="page-header">
       <h1>${t('types.title')}</h1>
       <p>${t('types.subtitle')}</p>
@@ -75,6 +77,7 @@ export function renderTypeChart(container) {
       <div id="tcAtkPanel" class="tab-content" style="display:none"></div>
     </div>
   `;
+  wireToolTabs(container);
 
   const grid = container.querySelector('#tcGrid');
   const resultsEl = container.querySelector('#tcResults');

@@ -555,6 +555,7 @@ a:hover {
   text-shadow: 0 0 20px rgba(255, 204, 0, 0.3);
   letter-spacing: 2px;
   margin-bottom: 8px;
+  text-transform: uppercase;
 }
 
 .page-header p {
@@ -726,6 +727,18 @@ a:hover {
   overflow: hidden;
   box-shadow: 0 16px 50px rgba(0, 0, 0, 0.5);
   text-align: left;
+}
+
+/* La cabecera del grupo de herramientas: mismo tono y trazo que .section-title
+   en el resto de la app, pero a la escala del desplegable. Solo aparece si
+   alguna herramienta encaja, y siempre antes que el resto. */
+.gs-group {
+  padding: 8px 16px;
+  font-size: 0.5rem;
+  color: var(--accent-text);
+  letter-spacing: 1px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-accent);
 }
 
 .gs-row {
@@ -967,8 +980,8 @@ a:hover {
 .spd-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-size: 0.8rem; }
 .spd-row:hover { background: rgba(255,255,255,0.04); text-decoration: none; }
 .spd-row img { width: 32px; height: 32px; image-rendering: pixelated; }
-.spd-name { flex: 1; }
-.spd-value { font-family: var(--font-retro); font-size: 0.5rem; color: var(--accent-text); }
+.spd-name { flex: 1; color: var(--ink-1); }
+.spd-value { font-family: var(--font-retro); font-size: 0.5rem; color: var(--ink-3); }
 
 .cmp-chips {
   display: flex;
@@ -1133,13 +1146,44 @@ a:hover {
   margin-right: auto;
 }
 
+/* La cabecera de categoria se pintaba mas floja que las tarjetas que agrupa
+   (ink-3, 0.6rem) cuando la relacion es la contraria: categoria > herramienta.
+   Sube al mismo nivel que el logo (0.7rem) y a accent-text con su resplandor,
+   y gana la regla del artboard -- etiqueta, linea de acento y contador -- para
+   que "DATOS" se lea por encima de "MOVIMIENTOS" un renglon mas abajo. Sigue
+   siendo el unico amarillo del bloque: las tarjetas de debajo no lo llevan. */
 .home-group {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  row-gap: 4px;
+  column-gap: 12px;
   margin: 28px 0 0;
-  font-size: 0.6rem;
-  color: var(--ink-3);
+  font-size: 0.7rem;
+  color: var(--accent-text);
   letter-spacing: 1px;
   text-transform: uppercase;
+  text-shadow: 0 0 12px rgba(255, 204, 0, 0.3);
+}
+
+.home-group-line {
+  flex: 1 1 24px;
+  min-width: 24px;
+  height: 2px;
+  background: var(--border-accent);
+}
+
+/* El contador hereda el mismo tono que .mw .d / .mw .rank -- VT323 a 18px en
+   ink-3 -- para que lea como un dato y no como un segundo titulo. */
+.home-group-count {
+  flex: 0 0 auto;
+  font-family: var(--font-data);
+  font-size: 18px;
+  color: var(--ink-3);
+  text-transform: none;
+  letter-spacing: normal;
+  text-shadow: none;
+  white-space: nowrap;
 }
 
 .home-grid {
@@ -2087,7 +2131,7 @@ a:hover {
 
 .mv-level {
   font-size: 0.38rem;
-  color: var(--accent-text);
+  color: var(--ink-3);
   text-align: right;
 }
 
@@ -2848,7 +2892,7 @@ a.evo-node:hover img {
 .learner {
   background: var(--bg-surface);
   border: 2px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 8px 4px;
   text-align: center;
   text-decoration: none;
@@ -3412,6 +3456,21 @@ a.evo-node:hover img {
 .tool-tabs .tab {
   text-decoration: none;
   text-align: center;
+}
+
+/* Four tools or more do not fit an equal-width row at 360px (five did not
+   either) -- CONTRARRESTAR and NATURALEZAS are long words. Below that, the
+   strip switches to the Pikachu form strip's own scroll: natural-width tabs
+   inside .form-tabs-wrap, whose fade already does nothing until JS finds an
+   overflow to report. Above it there is room, so the row stays the equal-fill
+   .tool-tabs Pokedex and Calculator already use. */
+@media (max-width: 639px) {
+  .tool-tabs-scroll {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tool-tabs-scroll::-webkit-scrollbar { display: none; }
+  .tool-tabs-scroll .tab { flex: 0 0 auto; white-space: nowrap; }
 }
 
 .tab-content {

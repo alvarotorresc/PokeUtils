@@ -1,17 +1,22 @@
 // ===== THE TOOL TABLE =====
 //
-// One table feeds three things: the home cards, the list inside each hub, and
-// which nav tab lights up. Adding a tool is one entry here, not three places
+// One table feeds four things: the home cards, the list inside each hub, which
+// nav tab lights up, and the tab strip every tool page shows above its title
+// (js/hub.js toolTabsHTML). Adding a tool is one entry here, not four places
 // that drift apart.
 //
 // `base` is the first segment of the route. It is what maps a detail page like
 // #/moves/53 back to its category, which the path alone does not carry.
 
 export const CATEGORIES = [
-  // Pokedex holds three tools, and by the measured rule -- up to 3, tabs; 4 or
-  // more, a hub -- they go in a tab strip. Its tab therefore goes straight to
-  // the list, which is also the route already shared around and the one that
-  // carries filters in its URL.
+  // Pokedex holds three tools and goes straight to the list instead of a hub:
+  // it is the route already shared around, and the one that carries filters in
+  // its URL. Every category's tools carry the tab strip now regardless of
+  // count -- that decision used to also gate whether a category got a hub at
+  // all (up to 3, tabs instead of a hub; 4 or more, a hub with no strip), but
+  // a hub with nothing linking past it made every sibling tool a click through
+  // the hub to reach. The hub survives as the landing page; `direct` below is
+  // now its own decision, made per category, not derived from a tool count.
   { id: 'pokedex', route: '#/pokedex', label: 'nav.pokedex', direct: true },
   { id: 'data', route: '#/data', label: 'nav.data' },
   { id: 'competitive', route: '#/competitive', label: 'nav.competitive' },
@@ -30,14 +35,17 @@ export const TOOLS = [
   { id: 'compare', category: 'pokedex', route: '#/compare', base: 'compare', icon: 132, label: 'nav.compare', tab: 'compare.tab', desc: 'home.compare.desc' },
   { id: 'egg', category: 'pokedex', route: '#/egg', base: 'egg', icon: 113, label: 'nav.egg', tab: 'egg.tab', desc: 'home.egg.desc' },
 
+  // Five tools too, same fallback to `label` and the same scroll at 360 px.
   { id: 'moves', category: 'data', route: '#/moves', base: 'moves', icon: 94, label: 'nav.moves', desc: 'home.moves.desc' },
   { id: 'abilities', category: 'data', route: '#/abilities', base: 'abilities', icon: 151, label: 'nav.abilities', desc: 'home.abilities.desc' },
   { id: 'items', category: 'data', route: '#/items', base: 'items', icon: 143, label: 'nav.items', desc: 'home.items.desc' },
   { id: 'natures', category: 'data', route: '#/natures', base: 'natures', icon: 133, label: 'nav.natures', desc: 'home.natures.desc' },
   { id: 'types', category: 'data', route: '#/types', base: 'types', icon: 25, label: 'nav.types', desc: 'home.types.desc' },
 
-  // Five tools, so by the measured rule this category is a hub and not tabs:
-  // four of these names already did not fit on one line at 360 px.
+  // Five tools: none of them carry `tab`, so their strip falls back to the
+  // full `label` (CONTRARRESTAR and friends), and at 360 px it scrolls -- four
+  // of these names already did not fit on one line. The category still opens
+  // its hub first, since it is not marked `direct` above.
   { id: 'team', category: 'competitive', route: '#/team', base: 'team', icon: 248, label: 'nav.team', desc: 'home.team.desc' },
   { id: 'counter', category: 'competitive', route: '#/counter', base: 'counter', icon: 461, label: 'nav.counter', desc: 'home.counter.desc' },
   { id: 'speed', category: 'competitive', route: '#/speed', base: 'speed', icon: 101, label: 'nav.speed', desc: 'home.speed.desc' },

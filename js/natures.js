@@ -1,6 +1,7 @@
 // ===== NATURES PAGE =====
 import { NATURES } from './data.js';
 import { t, statName, natureName, natureNameAlt, getLang } from './i18n.js';
+import { toolTabsHTML, wireToolTabs } from './hub.js';
 
 export function renderNatures(container) {
   const stats = ['atk', 'def', 'spa', 'spd', 'spe'];
@@ -9,6 +10,7 @@ export function renderNatures(container) {
   const neutralNatures = NATURES.filter(n => !n.increase);
 
   container.innerHTML = `
+    ${toolTabsHTML('data', 'natures')}
     <div class="page-header">
       <h1>${t('natures.title')}</h1>
       <p>${t('natures.subtitle')}</p>
@@ -50,6 +52,7 @@ export function renderNatures(container) {
       </table>
     </div>
   `;
+  wireToolTabs(container);
 
   // List table
   const tbody = container.querySelector('#natBody');

@@ -9,6 +9,7 @@ import { competitiveList, spriteIdFor } from './forms.js';
 import { loadingHTML, renderError, replaceQuery, hostDeRuta } from './ui.js';
 import { t, typeName, pokeName } from './i18n.js';
 import { defensiveMatrix, threats, unresisted, stabTypes, offensiveCoverage } from './team-analysis.js';
+import { toolTabsHTML, wireToolTabs } from './hub.js';
 
 const TEAM_SIZE = 6;
 const MAX_RESULTS = 10;
@@ -61,6 +62,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
   };
 
   host.innerHTML = `
+    ${toolTabsHTML('competitive', 'team')}
     <div class="page-header">
       <h1>${t('team.title')}</h1>
       <p>${t('team.subtitle')}</p>
@@ -74,6 +76,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
     <p class="back-link" id="teamCounterLink" hidden></p>
     <div id="teamAnalysis"></div>
   `;
+  wireToolTabs(host);
 
   const slotsEl = host.querySelector('#teamSlots');
   const searchBar = host.querySelector('#teamSearchBar');

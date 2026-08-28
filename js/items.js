@@ -3,6 +3,7 @@ import { itemSpriteUrl } from './data.js';
 import { fetchItems, fetchItemDescriptions } from './api.js';
 import { loadingHTML, renderPagination } from './ui.js';
 import { t, pokeName, getLang } from './i18n.js';
+import { toolTabsHTML, wireToolTabs } from './hub.js';
 
 const PAGE_SIZE = 48;
 
@@ -40,6 +41,7 @@ export function renderItems(container, query = new URLSearchParams()) {
   let descripciones = null;
 
   container.innerHTML = `
+    ${toolTabsHTML('data', 'items')}
     <div class="page-header">
       <h1>${t('items.title')}</h1>
       <p>${t('items.subtitle')}</p>
@@ -52,6 +54,7 @@ export function renderItems(container, query = new URLSearchParams()) {
     <div id="itContent"></div>
     <div id="itModal"></div>
   `;
+  wireToolTabs(container);
 
   const content = container.querySelector('#itContent');
   const modal = container.querySelector('#itModal');

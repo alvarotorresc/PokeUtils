@@ -2,6 +2,7 @@
 import { fetchAbilities } from './api.js';
 import { loadingHTML, renderPagination } from './ui.js';
 import { t, pokeName, getLang } from './i18n.js';
+import { toolTabsHTML, wireToolTabs } from './hub.js';
 
 const PAGE_SIZE = 30;
 
@@ -12,6 +13,7 @@ export function renderAbilities(container, highlightName = null) {
   let targetName = highlightName;
 
   container.innerHTML = `
+    ${toolTabsHTML('data', 'abilities')}
     <div class="page-header">
       <h1>${t('abilities.title')}</h1>
       <p>${t('abilities.subtitle')}</p>
@@ -23,6 +25,7 @@ export function renderAbilities(container, highlightName = null) {
     </div>
     <div id="abContent"></div>
   `;
+  wireToolTabs(container);
 
   const content = container.querySelector('#abContent');
   const searchInput = container.querySelector('#abSearch');

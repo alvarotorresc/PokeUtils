@@ -102,5 +102,89 @@ check('dos llamadas iguales dan lo mismo',
   searchAll(datasets, 'pika', 8).map(r => r.id),
   searchAll(datasets, 'pika', 8).map(r => r.id));
 
+console.log('\nEl quinto dominio: las 16 herramientas\n');
+
+// El caso que le da sentido a la tarea: escribir "velocidad" no encontraba
+// nunca la herramienta Velocidad.
+check('velocidad encuentra la herramienta, no un Pokemon o movimiento', first('velocidad').kind, 'tool');
+check('y navega a su ruta', first('velocidad').route, '#/speed');
+check('speed responde lo mismo en ingles', searchAll(datasets, 'speed', 8, 'en')[0]?.kind, 'tool');
+check('con el nombre en ingles', searchAll(datasets, 'speed', 8, 'en')[0]?.name, 'SPEED');
+check('dano encuentra la Calculadora de Dano', first('daño').kind, 'tool');
+check('y su pestana es damage, no capture', first('daño').route, '#/calculator?tab=damage');
+check('captura navega a catch, no a capture', first('captura').route, '#/calculator?tab=catch');
+// "velocidad" empareja por nameEs, pero con la app en ingles hay que ensenar
+// nameEn: el mismo bug que labelOf ya evita en los otros cuatro dominios.
+check('un termino en espanol con la app en ingles sale en ingles',
+  searchAll(datasets, 'velocidad', 8, 'en')[0]?.name, 'SPEED');
+// "dex" es jerga tan comun para la Pokedex que el limite de palabra (que
+// arreglo natu/revive/rest/star/para/trap) se la comio de paso: "pokedex" no
+// EMPIEZA por "dex", asi que dejo de encontrarla hasta que se anadio como
+// sinonimo exacto.
+check('dex encuentra la Pokedex', first('dex').kind, 'tool');
+check('y es la Pokedex, no otra herramienta', first('dex').route, '#/pokedex');
+check('lo mismo en ingles', searchAll(datasets, 'dex', 8, 'en')[0]?.route, '#/pokedex');
+
+console.log('\nNingun sinonimo se cuela por substring en un termino de control\n');
+
+// El riesgo real de escribir sinonimos a mano: "type chart" contenia "char" y
+// ponia la herramienta Tipos delante de Charizard; "aguanta el golpe" (la
+// frase textual de home.survive.desc) contenia "agua". Ninguno de los dos se
+// veia en ningun otro check hasta que se comparaba termino por termino contra
+// los ocho de la seccion de arriba. "ball" y "poke" quedan fuera a proposito:
+// esos SI encajan con una herramienta (Captura, Pokedex) y es lo esperado.
+const CONTROL = ['pikachu', 'surf', 'levitate', 'master ball', 'restos',
+  'growl', 'fire', 'gengar', 'char'];
+check('ningun termino de control despierta una herramienta',
+  CONTROL.filter(t => searchAll(datasets, t, 8).some(r => r.kind === 'tool')), []);
+
+console.log('\nLas herramientas van primero cuando encajan, sin desplazar a las que no\n');
+
+// "meta" encaja con la herramienta (contains en "Sets del meta") y con tres
+// Pokemon (Metang, Metapod, Metagross empiezan por "Meta"): la herramienta
+// sale primero aunque su score sea mas bajo que el de "empieza por".
+const metaHits = searchAll(datasets, 'meta', 8);
+check('la herramienta va primera', metaHits[0]?.kind, 'tool');
+check('los Pokemon siguen apareciendo detras', metaHits.slice(1).some(r => r.kind === 'pokemon'), true);
+
+console.log('\nUna herramienta nunca vacia los cuatro dominios reales\n');
+
+// "de" encajaba por el principio de alguna palabra en ocho herramientas
+// ("debilidades", "del", el propio "de" de "grupos de cria"...) y, sin tope,
+// se comia las 8 filas: cero Pokemon, movimiento u objeto para un termino que
+// 139 Pokemon cumplen de verdad. TOOL_MAX corta esto en 3 pase lo que pase.
+const deHits = searchAll(datasets, 'de', 8);
+check('como mucho 3 filas de herramienta', deHits.filter(r => r.kind === 'tool').length <= 3, true);
+check('y quedan resultados reales de los cuatro dominios', deHits.some(r => r.kind !== 'tool'), true);
+
+console.log('\nLa clase de colisiones por subcadena esta cerrada, no solo los casos vistos a mano\n');
+
+// Estos seis salieron de un barrido sistematico, no de mirar uno a uno: cada
+// uno tenia una herramienta colandose por letras que caen a mitad de palabra
+// ("rest" en CONTRARRESTAR, "trap" en "atrapar", "star"/"para" en
+// CONTRARRESTAR/COMPARADOR) o, en "natu", un prefijo legitimo de NATURALEZAS
+// que aun asi no puede tapar al Pokemon exacto. Ninguno debe traer una
+// herramienta por delante del resultado real.
+const PROBE = ['natu', 'revive', 'rest', 'star', 'para', 'trap'];
+check('ninguno de los seis pone una herramienta primera',
+  PROBE.filter(t => first(t).kind === 'tool'), []);
+
+// La garantia general, no termino a termino: si una fila es un match exacto
+// (score 100) de un dominio real, ninguna fila de herramienta que NO sea
+// exacta puede ir por delante suyo en el resultado ya ordenado.
+function exactoDominioDesplazado(hits) {
+  const iExacto = hits.findIndex(h => h.kind !== 'tool' && h.score === 100);
+  if (iExacto === -1) return false;
+  return hits.slice(0, iExacto).some(h => h.kind === 'tool' && h.score < 100);
+}
+const TODOS = [...new Set([...TERMINOS, ...CONTROL, ...PROBE,
+  'de', 'meta', 'poke', 'ball', 'velocidad', 'daño', 'captura'])];
+const desplazados = TODOS.filter(t => exactoDominioDesplazado(searchAll(datasets, t, 8)));
+check('un contains de herramienta nunca desplaza a un exacto de otro dominio', desplazados, []);
+
+console.log('\nUn termino sin herramienta se comporta como antes\n');
+
+check('bicicleta no encuentra nada, en ningun dominio', searchAll(datasets, 'bicicleta', 8).length, 0);
+
 console.log(`\n${failed ? `${failed} fallos` : 'All checks passed'}\n`);
 process.exit(failed ? 1 : 0);

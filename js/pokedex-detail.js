@@ -1,7 +1,7 @@
 // ===== POKEMON DETAIL =====
 import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, NATURES } from './data.js';
 import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchDex } from './api.js';
-import { loadingHTML, renderError, hostDeRuta } from './ui.js';
+import { loadingHTML, renderError, hostDeRuta, wireScrollFade } from './ui.js';
 import { evolutionText, ramasResueltas, textoDeRama, nodoActual } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
 import { rangeAt100 } from './stats.js';
@@ -553,7 +553,7 @@ export async function renderPokedexDetail(container, id) {
             `;
           }).join('')}
           <div class="stat-row" style="margin-top:6px;border-top:2px solid var(--border);padding-top:10px">
-            <span class="stat-label" style="color:var(--accent-text)">${t('common.total')}</span>
+            <span class="stat-label">${t('common.total')}</span>
             <span class="stat-value stat-total">${statTotal}</span>
             <div></div>
             <span></span>
@@ -669,27 +669,9 @@ export async function renderPokedexDetail(container, id) {
   renderMetaSection(host.querySelector('#metaSection'), dexId, format, meta, allPokemon);
 
   // Pikachu carries 17 forms and the strip only shows five of them at a time.
-  // The scrollbar is hidden, so without this the last tab is simply cut in half
-  // and reads as a bug: these classes light a fade on whichever side has more.
-  const tabsWrap = host.querySelector('#formTabsWrap');
-  const tabsStrip = host.querySelector('#formTabs');
-  if (tabsWrap && tabsStrip) {
-    const markScroll = () => {
-      // 8px, not 1: landing on the last form leaves 4px of slack and a fade
-      // over nothing reads as a tab still hiding there.
-      const max = tabsStrip.scrollWidth - tabsStrip.clientWidth;
-      tabsWrap.classList.toggle('more-right', tabsStrip.scrollLeft < max - 8);
-      tabsWrap.classList.toggle('more-left', tabsStrip.scrollLeft > 8);
-    };
-    tabsStrip.addEventListener('scroll', markScroll, { passive: true });
-    // The strip is measured after layout, and again whenever the card changes
-    // width: at 1280 it lives in a 540px masonry column, at 360 in the page.
-    new ResizeObserver(markScroll).observe(tabsStrip);
-    markScroll();
-    // The active tab is not always the first one: opening #/pokedex/10094
-    // lands on a form that sits off-screen to the right.
-    tabsStrip.querySelector('.tab.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }
+  // wireScrollFade (js/ui.js) lights a fade on whichever side has more; the
+  // tool tab strips on the ten category tool pages share the same call.
+  wireScrollFade(host.querySelector('#formTabsWrap'), host.querySelector('#formTabs'));
 
   host.querySelector('#formTabs')?.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-form]');

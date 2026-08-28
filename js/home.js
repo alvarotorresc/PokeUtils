@@ -67,7 +67,8 @@ const chipHTML = (href, name, sprite) =>
     ? `<img src="${sprite}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : ''}${name}</a>`;
 
 // Todos los dominios traen sprite: el suyo los Pokemon y los objetos, la MT de
-// su tipo los movimientos y la Capsula Habilidad las habilidades.
+// su tipo los movimientos, la Capsula Habilidad las habilidades y el icono de
+// la propia herramienta las herramientas.
 const chipsHTML = () => {
   const historial = leerHistorial();
   if (!historial.length) {
@@ -75,6 +76,21 @@ const chipsHTML = () => {
   }
   return historial.map(e => chipHTML(e.route, e.name, e.sprite || spriteUrl(e.id))).join('');
 };
+
+// El rotulo de categoria: etiqueta, linea de acento y -- solo si se le pasa un
+// numero -- el contador. "Lo mas buscado" lo usa sin contador: sus cinco no
+// son "todas las herramientas de una categoria" (son un top curado de WANTED,
+// no una fila de tools.js) y ya llevan su propio 01-05 en cada tarjeta; sumarle
+// un "5 herramientas" al lado seria redundante. Sigue siendo <h2 class=
+// "home-group"> a secas -- el selector `.home-group + .home-grid` de style.css
+// necesita que el hermano directo del grid sea este elemento, no un envoltorio.
+const groupHeaderHTML = (label, count) => `
+  <h2 class="home-group">
+    <span class="home-group-label">${label}</span>
+    <span class="home-group-line"></span>
+    ${count == null ? '' : `<span class="home-group-count">${t('home.toolCount', { n: count })}</span>`}
+  </h2>
+`;
 
 const wantedHTML = () => WANTED.map((id, i) => {
   const tool = TOOLS.find(x => x.id === id);
@@ -94,7 +110,7 @@ export function renderHome(container) {
     const tools = toolsIn(category.id);
     if (!tools.length) return '';
     return `
-      <h2 class="home-group">${t(`hub.${category.id}.title`)}</h2>
+      ${groupHeaderHTML(t(`hub.${category.id}.title`), tools.length)}
       <div class="home-grid">
         ${tools.map(tool => `
           <a href="${tool.route}" class="home-card">
@@ -111,7 +127,7 @@ export function renderHome(container) {
   // 40px away, and it was spending 190px of the first screen repeating it.
   const abajo = `
     <section class="mostwanted">
-      <h2 class="home-group">${t('home.mostwanted')}</h2>
+      ${groupHeaderHTML(t('home.mostwanted'))}
       <div class="mw-grid stagger">${wantedHTML()}</div>
     </section>
     ${groups}
