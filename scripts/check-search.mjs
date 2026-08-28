@@ -140,7 +140,7 @@ check('ningun termino de control despierta una herramienta',
 
 console.log('\nLas herramientas van primero cuando encajan, sin desplazar a las que no\n');
 
-// "meta" encaja con la herramienta (contains en "Sets del meta") y con tres
+// "meta" encaja con la herramienta (contains en "SETS DEL META") y con tres
 // Pokemon (Metang, Metapod, Metagross empiezan por "Meta"): la herramienta
 // sale primero aunque su score sea mas bajo que el de "empieza por".
 const metaHits = searchAll(datasets, 'meta', 8);

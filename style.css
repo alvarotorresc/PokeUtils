@@ -780,6 +780,14 @@ a:hover {
   flex: 0 0 108px;
 }
 
+/* Tool rows carry no label (the group header already says "HERRAMIENTAS") --
+   collapse the reserved column instead of leaving 108px of blank space in
+   front of the name. Domain rows keep the fixed width above untouched, so a
+   mixed panel's entity names still line up in their own column. */
+.gs-row-tool .gs-kind {
+  flex-basis: 0;
+}
+
 .gs-name {
   font-family: var(--font-data);
   font-size: 21px;

@@ -87,9 +87,13 @@ export function attachGlobalSearch(input, alGuardar) {
       const header = esInicioDeTanda ? `<div class="gs-group">${t('search.group.tools')}</div>` : '';
       // Sin etiqueta de fila para herramientas: la cabecera del grupo ya dice
       // "HERRAMIENTAS" y repetirla en cada fila era el mismo texto dos veces.
-      const kind = r.kind === 'tool' ? '' : t(KIND_KEY[r.kind]);
+      const esHerramienta = r.kind === 'tool';
+      const kind = esHerramienta ? '' : t(KIND_KEY[r.kind]);
+      // gs-row-tool: la columna .gs-kind de una fila de herramienta esta
+      // vacia (linea de arriba), pero sin esta clase reservaba igual los
+      // 108px fijos del resto -- ver la regla de flex-basis en style.css.
       return `${header}
-      <a class="gs-row" href="${r.route}" data-i="${i}">
+      <a class="gs-row${esHerramienta ? ' gs-row-tool' : ''}" href="${r.route}" data-i="${i}">
         <img class="gs-sprite" src="${r.sprite}" alt="" loading="lazy"
              onerror="this.style.visibility='hidden'">
         <span class="gs-kind">${kind}</span>

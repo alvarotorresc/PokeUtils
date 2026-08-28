@@ -9,8 +9,9 @@
 // moves, pokemon y abilities (donde SI hay nombre ES real en todos los
 // casos hoy). Las dos ultimas excepciones de este tipo vivian en este
 // fichero hasta esta tarea (eelevate/fire-mane sin nombre ES, malignant-chain
-// sin descripcion ES); las cierra scripts/build-data.mjs
-// (ABILITY_NAME_OVERRIDES_ES, MOVE_DESC_ES_TRANSLATED), aplicado a mano en
+// sin descripcion ES); las cierra scripts/overrides/abilities.mjs
+// (ABILITY_NAME_OVERRIDES_ES) y scripts/overrides/moves.mjs
+// (MOVE_DESC_ES_TRANSLATED), aplicado a mano en
 // data/abilities.json y data/moves.json (no via rebuild, que golpearia
 // PokeAPI en vivo) para que quede byte-identico a lo que ese builder ya
 // produciria. Dos excepciones reales quedan, ninguna es un hueco: los
@@ -54,9 +55,9 @@ console.log(`\nMovimientos: descripcion en al menos un idioma (${moves.length} e
 // tienen texto oficial en NINGUN idioma en ninguna fuente (ni PokeAPI ni
 // Bulbapedia, que muestra "---" en su tabla Description para los 5) y llevan
 // redaccion ES+EN propia desde su mecanica real (ver MOVE_DESC_HAND_WRITTEN
-// en build-data.mjs). El invariante pasa a ser CERO, sin lista de perdon:
-// si algun movimiento se quedara sin descripcion en algun idioma, es una
-// regresion real.
+// en scripts/overrides/moves.mjs). El invariante pasa a ser CERO, sin lista
+// de perdon: si algun movimiento se quedara sin descripcion en algun idioma,
+// es una regresion real.
 const movesSinNingunIdioma = moves.filter(m => !m.descriptionEs && !m.descriptionEn).map(m => m.id).sort((a, b) => a - b);
 check('ningun movimiento se queda sin descripcion en ningun idioma', movesSinNingunIdioma, []);
 
@@ -70,15 +71,16 @@ console.log('\nMovimientos: descripcion en español (Task 9a cerro 87 de los 88 
 // La Task 2 dejaba 88 movimientos recientes (Leyendas Arceus/Escarlata-Purpura,
 // ids 827-919) sin descriptionEs -- PokeAPI nunca ha publicado flavor text ES
 // para ellos. La Task 9a los relleno desde pkproject.net (MOVE_DESC_ES_OVERRIDES
-// en build-data.mjs), menos uno: malignant-chain (919, el ultimo id de todo
-// PokeAPI) cayo en un bug de desplazamiento de una posicion en la base de datos
-// de esa fuente para el bloque 905-919 -- su texto real estaria en la pagina
-// del "siguiente id", que no existe. Task 11 lo cierra por otra via:
-// traduccion propia de su descriptionEn oficial (que si tiene, via PokeAPI)
-// en MOVE_DESC_ES_TRANSLATED (build-data.mjs) -- misma tabla que las 18
-// shadow-*, ver el comentario alli para por que es un caso distinto. El
-// invariante pasa a ser CERO, sin lista de perdon: si algun movimiento con
-// descriptionEn se quedara sin descriptionEs, es una regresion real.
+// en scripts/overrides/moves.mjs), menos uno: malignant-chain (919, el ultimo
+// id de todo PokeAPI) cayo en un bug de desplazamiento de una posicion en la
+// base de datos de esa fuente para el bloque 905-919 -- su texto real estaria
+// en la pagina del "siguiente id", que no existe. Task 11 lo cierra por otra
+// via: traduccion propia de su descriptionEn oficial (que si tiene, via
+// PokeAPI) en MOVE_DESC_ES_TRANSLATED (scripts/overrides/moves.mjs) -- misma
+// tabla que las 18 shadow-*, ver el comentario alli para por que es un caso
+// distinto. El invariante pasa a ser CERO, sin lista de perdon: si algun
+// movimiento con descriptionEn se quedara sin descriptionEs, es una regresion
+// real.
 const movesSinDescripcionEs = moves
   .filter(m => !m.descriptionEs && m.descriptionEn)
   .map(m => m.id)
@@ -134,13 +136,14 @@ console.log('\nHabilidades: si nameEs cayera al slug, nameEn tendria que ser un 
 // nombre ES en PokeAPI: nameEn si estaba bien formado ("Eelevate",
 // "Fire Mane"), pero nameEs caia al slug en ingles. Task 11 les puso el
 // nombre oficial ES de Bulbapedia (ABILITY_NAME_OVERRIDES_ES en
-// build-data.mjs: "Impulso Anguila", "Crin de Fuego"), asi que hoy ninguna
-// habilidad cae al slug. El primer check se queda como red de seguridad
-// futura -- si un rebuild reabriera el hueco, i18n.js:71 (pokeName) cae a
-// nameEn cuando nameEs === name, y esto exige que ese fallback SIEMPRE tenga
-// algo de verdad que enseñar (doble invariante: no basta con "no es el slug
-// en ES" si nameEn tambien lo fuera). El segundo confirma que la poblacion
-// que cae al slug en ES es CERO, sin lista de perdon.
+// scripts/overrides/abilities.mjs: "Impulso Anguila", "Crin de Fuego"), asi
+// que hoy ninguna habilidad cae al slug. El primer check se queda como red
+// de seguridad futura -- si un rebuild reabriera el hueco, i18n.js:71
+// (pokeName) cae a nameEn cuando nameEs === name, y esto exige que ese
+// fallback SIEMPRE tenga algo de verdad que enseñar (doble invariante: no
+// basta con "no es el slug en ES" si nameEn tambien lo fuera). El segundo
+// confirma que la poblacion que cae al slug en ES es CERO, sin lista de
+// perdon.
 check('ninguna habilidad se queda sin nombre en ningun idioma',
   abilities.filter(a => a.nameEs === a.name).filter(a => !a.nameEn || a.nameEn === a.name).map(a => a.id), []);
 check('ninguna habilidad se queda con nameEs === name (slug crudo)',
@@ -161,15 +164,15 @@ console.log('\nHabilidades: descripcion en español (Task 9a cerro 40 de las 46,
 
 // La Task 2 dejaba 46 habilidades de Gen 9 sin descriptionEs -- PokeAPI nunca
 // ha publicado flavor text ES para ellas. La Task 9a relleno 40 desde
-// pkproject.net (ABILITY_DESC_ES_OVERRIDES en build-data.mjs). Las 6 que
-// quedaban (308-313, las Megaevoluciones ids 308-313) no son invencion de
-// PokeAPI sin fuente posible como decia este comentario -- son contenido
-// real de Pokemon Legends: Z-A / Pokemon Champions (Task 9c) con pagina
-// propia en Bulbapedia, pero sin fila de español en su tabla de idiomas
-// (a diferencia de items). Task 10 las cierra con traduccion propia del EN
-// oficial (ABILITY_DESC_ES_TRANSLATED en build-data.mjs, nunca mezclada con
-// las 40 de fuente real). El invariante pasa a ser CERO, sin lista de
-// perdon.
+// pkproject.net (ABILITY_DESC_ES_OVERRIDES en scripts/overrides/abilities.mjs).
+// Las 6 que quedaban (308-313, las Megaevoluciones ids 308-313) no son
+// invencion de PokeAPI sin fuente posible como decia este comentario -- son
+// contenido real de Pokemon Legends: Z-A / Pokemon Champions (Task 9c) con
+// pagina propia en Bulbapedia, pero sin fila de español en su tabla de
+// idiomas (a diferencia de items). Task 10 las cierra con traduccion propia
+// del EN oficial (ABILITY_DESC_ES_TRANSLATED en
+// scripts/overrides/abilities.mjs, nunca mezclada con las 40 de fuente real).
+// El invariante pasa a ser CERO, sin lista de perdon.
 check('ninguna habilidad se queda sin descriptionEs',
   abilities.filter(a => !a.descriptionEs && a.descriptionEn).map(a => a.id), []);
 
@@ -189,9 +192,9 @@ check('items.json (visibles): entradas sin nameEs o sin nameEn', visibles.filter
 
 // Task 7 cerro los 47 huecos que este check destapo en la Task 3: 45 piedras
 // Mega custom (ids 2233-2277) y hopo-berry (2278) recibieron nameEn/nameEs
-// escritos a mano en build-data.mjs (tabla ITEM_NAME_OVERRIDES, misma idea
-// que NAME_OVERRIDES_ES de mas arriba, asi que el nombre sobrevive a una
-// regeneracion), y roseli-berry (2279) -- fila duplicada y vacia del objeto
+// escritos a mano en scripts/overrides/items.mjs (tabla ITEM_NAME_OVERRIDES,
+// misma idea que NAME_OVERRIDES_ES de mas arriba, asi que el nombre sobrevive
+// a una regeneracion), y roseli-berry (2279) -- fila duplicada y vacia del objeto
 // que SI esta completo en el id 723 -- se elimino en el builder
 // (DUPLICATE_ITEM_IDS) por ser basura de datos de PokeAPI sin ninguna
 // referencia por id en el resto del dataset. La excepcion que vivia aqui
@@ -253,8 +256,8 @@ console.log('\nObjetos visibles: descripcion en al menos un idioma (items-desc.j
 // descubrimiento de la Task 9c -- su pagina de Bulbapedia existe pero no
 // tenia seccion "Description" a esa fecha) -- no tenian fuente posible en
 // ningun idioma, asi que la Task 10 los cierra con redaccion propia
-// (ITEM_DESC_HAND_WRITTEN_ES/EN en build-data.mjs; baxcalibrite queda
-// marcado PROVISIONAL en ese comentario, a la espera de que Bulbapedia
+// (ITEM_DESC_HAND_WRITTEN_ES/EN en scripts/overrides/items.mjs; baxcalibrite
+// queda marcado PROVISIONAL en ese comentario, a la espera de que Bulbapedia
 // publique su seccion real). El invariante pasa a ser CERO, sin lista de
 // perdon: el suelo de 1845 (1848 - 3) sube al total, 1848.
 const sinDescripcionEnNingunIdioma = i => {
@@ -277,7 +280,8 @@ console.log('\nObjetos visibles: descripcion en español (Task 10 tradujo los 45
 // que si tenian su propio check ES desde la Task 9a. La Task 10 tradujo los
 // 454 (200 textos EN unicos -- 10 grupos de duplicados legitimos mas 190
 // singulares, 42 de ellos Megapiedras) a ITEM_DESC_ES_TRANSLATED en
-// build-data.mjs. El invariante pasa a ser CERO, igual que en moves/abilities.
+// scripts/overrides/items.mjs. El invariante pasa a ser CERO, igual que en
+// moves/abilities.
 const itemsSoloEn = visibles
   .filter(i => { const par = itemsDesc[i.id]; return par && par[1] && !par[0]; })
   .map(i => i.id)
@@ -309,8 +313,9 @@ console.log('\nNingun slot de descripcion (items-desc.json, moves, abilities, de
 // dataset con este mismo patron aparecieron 6 mas que la tarea original no
 // nombraba: las 6 MO/HM heredadas (hm01-hm06, items-desc.json 397-402),
 // TAMBIEN en español -- mismo bug, doble idioma. Las 12 se rellenaron antes
-// de este check (build-data.mjs: ITEM_DESC_ES_OVERRIDES/ITEM_DESC_EN_OVERRIDES,
-// buscar "battle-pocket"/"hm01"), asi que el invariante nace en CERO.
+// de este check (scripts/overrides/items.mjs: ITEM_DESC_ES_OVERRIDES/
+// ITEM_DESC_EN_OVERRIDES, buscar "battle-pocket"/"hm01"), asi que el
+// invariante nace en CERO.
 //
 // El regex es generico a proposito, no solo la forma literal vista hoy:
 // cualquier cadena compuesta ENTERAMENTE de guiones/rayas/espacios cuenta,
