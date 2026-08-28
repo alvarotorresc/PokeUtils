@@ -86,12 +86,23 @@ const idFromUrl = url => Number(url.replace(/\/$/, '').split('/').pop());
 
 const localName = (names, lang) => names.find(n => n.language.name === lang)?.name || null;
 
+// Same shape as check-descriptions.mjs's esPlaceholder: "- - -", "ー ー ー"
+// and friends are PokeAPI's "no flavor text for this version group" filler,
+// not real text.
+const ES_PLACEHOLDER = /^[\s\-ー–—]+$/;
+
 // GraphQL took the newest version group; mirror that so text does not change.
 function latestFlavor(entries, lang, field) {
   const matching = entries
     .filter(e => e.language.name === lang)
     .sort((a, b) => idFromUrl(b.version_group.url) - idFromUrl(a.version_group.url));
-  return matching[0]?.[field]?.replace(/[\n\f\r]/g, ' ').trim() || '';
+  const texto = matching[0]?.[field]?.replace(/[\n\f\r]/g, ' ').trim() || '';
+  // The newest version group can itself be a placeholder (Sword/Shield
+  // dropped HMs and bag-pocket dividers, and tm-case's own newest groups
+  // give "- - -"). Returning '' here, instead of the placeholder text, lets
+  // `latestFlavor(...) || OVERRIDE || ''` fall through to the override table.
+  if (ES_PLACEHOLDER.test(texto)) return '';
+  return texto;
 }
 
 const STAT_KEYS = {
@@ -1278,10 +1289,11 @@ const ITEM_DESC_EN_OVERRIDES = {
   // through lets-go), but the item's own NEWEST version group, sword-shield,
   // gives the "-\n-\n-"/"-" placeholder in BOTH languages -- Sword/Shield
   // dropped HMs from the game entirely, so PokeAPI's "newest" entry for the
-  // item is a null one, and latestFlavor() (line ~90) takes it anyway
-  // because it is non-empty, before this table is ever consulted. Same bug
-  // tm-case documents above, just with real text on both sides instead of
-  // only English. Taken straight from PokeAPI's own
+  // item is a null one, which used to make latestFlavor() (line ~90) take it
+  // anyway (non-empty is non-empty) before this table was ever consulted.
+  // Same bug tm-case documents above (search "tm-case's own"), now fixed the
+  // same way: latestFlavor() returns '' for placeholder-shaped text, so this
+  // override is reachable on a live rebuild. Taken straight from PokeAPI's own
   // lets-go-pikachu-lets-go-eevee version group (the newest one that is NOT
   // a placeholder, for both languages) -- no wiki needed, fetched live
   // 2026-08-28; ultra-sun-ultra-moon's row has identical Spanish text,
@@ -1551,23 +1563,25 @@ const ITEM_DESC_EN_OVERRIDES = {
   "tiny-bamboo-shoot": 'A small and rare bamboo shoot. It’s quite popular with a certain class of gourmands.',
   // tm-case's own firered-leafgreen flavor text (below) has the BAG-compartment
   // clause that its sibling berry-pouch keeps (line ~936 in
-  // ITEM_DESC_ES_OVERRIDES) -- but a rebuild would never read it: PokeAPI's
-  // newest version groups for this item (lets-go, sword-shield) both give the
-  // placeholder "- - -" for English, and latestFlavor() (line ~90) takes the
-  // newest version group's text whenever it's non-empty, placeholder or not,
-  // before this table is ever consulted. This entry is correct and matches
-  // items-desc.json id 550 byte for byte, but is unreachable from a live
-  // rebuild until latestFlavor() (or a caller of it) learns to skip "- - -"/
-  // "ー ー ー" placeholders. Verified live against Bulbapedia
+  // ITEM_DESC_ES_OVERRIDES). PokeAPI's newest version groups for this item
+  // (lets-go, sword-shield) both give the placeholder "- - -" for English --
+  // this used to make the override below unreachable on a live rebuild,
+  // because latestFlavor() (line ~90) took the newest version group's text
+  // whenever it was non-empty, placeholder or not, before this table was ever
+  // consulted. Not deuda anymore: latestFlavor() now returns '' for
+  // placeholder-shaped text (fixed 2026-08-28), so `latestFlavor(...) ||
+  // ITEM_DESC_EN_OVERRIDES[...]` correctly falls through to this entry on a
+  // live rebuild. This entry is correct and matches items-desc.json id 550
+  // byte for byte. Verified live against Bulbapedia
   // (https://bulbapedia.bulbagarden.net/wiki/TM_Case#Description, FRLG row)
-  // 2026-08-27. Same placeholder-wins-over-real-text bug also affects the 6
+  // 2026-08-27. Same placeholder-wins-over-real-text bug also affected the 6
   // Let's Go bag-pocket dividers (battle-pocket, candy-jar, catching-pocket,
   // medicine-pocket, pokemon-box, power-up-pocket -- own comment above
   // battle-pocket below) and the 6 legacy HM items (hm01-hm06, own comment
-  // above hm01 near "hoothoot-feather"). All three groups filled 2026-08-28
-  // while closing the anti-placeholder invariant in check-descriptions.mjs;
-  // all three are equally unreachable on a live rebuild for the same reason
-  // as tm-case here.
+  // above hm01 near "hoothoot-feather"). All three groups were filled
+  // 2026-08-28 while closing the anti-placeholder invariant in
+  // check-descriptions.mjs, and all three are now equally reachable on a
+  // live rebuild for the same reason as tm-case here.
   "tm-case": 'A case that holds TMs and HMs. It is attached to the BAG’s compartment for important items.',
   "toedscool-flaps": 'Material accidentally dropped by a Pokémon. It can be used to make TMs.',
   "tofu": 'An ingredient with a touch of sweetness. It\'s unclear how well this raw block of tofu will serve as a sandwich filling.',
