@@ -7,7 +7,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "serve": "node scripts/serve.mjs",
-    "check": "for s in scripts/check-*.mjs; do node \"$s\" > /dev/null && echo \"$(basename $s) OK\" || echo \"$(basename $s) FAILED\"; done"
+    "check": "f=0; for s in scripts/check-*.mjs; do node \"$s\" > /dev/null && echo \"$(basename $s) OK\" || { echo \"$(basename $s) FAILED\"; f=1; }; done; exit $f"
   },
   "devDependencies": {
     "esbuild": "^0.28.2"
