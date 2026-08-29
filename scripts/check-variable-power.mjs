@@ -83,6 +83,24 @@ check('Flail at 1 HP of 200 is 200',
   resolvePower(move('flail'), { ...ctx, attackerHPCurrent: 1, attackerHPMax: 200 }).power, 200);
 check('Reversal at full HP is 20',
   resolvePower(move('reversal'), { ...ctx, attackerHPCurrent: 200, attackerHPMax: 200 }).power, 20);
+
+// Los seis escalones de Desquite y Represalia son rangos CERRADOS de
+// P = floor(48 · PS / PSmax): 0-1 -> 200, 2-4 -> 150, 5-9 -> 100, 10-16 -> 80,
+// 17-32 -> 40, 33-48 -> 20. Con PSmax = 48 cada P sale de tener exactamente
+// esos PS, asi que los diez bordes se piden directamente.
+//
+// El caso de arriba («1 PS de 200») da P = 0 y por eso pasaba incluso con los
+// tres primeros umbrales desplazados uno: por si solo no prueba ningun borde.
+const flailAt = p => resolvePower(move('flail'), { ...ctx, attackerHPCurrent: p, attackerHPMax: 48 }).power;
+for (const [p, esperado] of [
+  [1, 200], [2, 150],   // ultimo de 200 / primero de 150
+  [4, 150], [5, 100],   // ultimo de 150 / primero de 100
+  [9, 100], [10, 80],   // ultimo de 100 / primero de 80
+  [16, 80], [17, 40],   // ultimo de 80  / primero de 40
+  [32, 40], [33, 20],   // ultimo de 40  / primero de 20
+]) {
+  check(`  Desquite con P=${p} vale ${esperado}`, flailAt(p), esperado);
+}
 check('Wring Out at full HP is 120',
   resolvePower(move('wring-out'), { ...ctx, defenderHPCurrent: 300, defenderHPMax: 300 }).power, 120);
 check('Wring Out at half HP is 60',

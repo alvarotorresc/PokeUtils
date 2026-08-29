@@ -81,11 +81,14 @@ function electroBallPower(attackerSpeed, defenderSpeed) {
 
 // --- 8. The attacker's own HP -----------------------------------------------
 // Flail and Reversal hit hardest on the brink.
+// The table is six CLOSED ranges of P: 0-1 -> 200, 2-4 -> 150, 5-9 -> 100,
+// 10-16 -> 80, 17-32 -> 40, 33-48 -> 20. Each bound is written as the first P
+// of the next range, so `p < 2` is the honest spelling of `p <= 1`.
 function flailPower(hpCurrent, hpMax) {
   const p = Math.floor(48 * hpCurrent / Math.max(hpMax, 1));
-  if (p < 1) return 200;
-  if (p < 4) return 150;
-  if (p < 9) return 100;
+  if (p < 2) return 200;
+  if (p < 5) return 150;
+  if (p < 10) return 100;
   if (p < 17) return 80;
   if (p < 33) return 40;
   return 20;
