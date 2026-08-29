@@ -81,11 +81,14 @@ function electroBallPower(attackerSpeed, defenderSpeed) {
 
 // --- 8. The attacker's own HP -----------------------------------------------
 // Flail and Reversal hit hardest on the brink.
+// The table is six CLOSED ranges of P: 0-1 -> 200, 2-4 -> 150, 5-9 -> 100,
+// 10-16 -> 80, 17-32 -> 40, 33-48 -> 20. Each bound is written as the first P
+// of the next range, so `p < 2` is the honest spelling of `p <= 1`.
 function flailPower(hpCurrent, hpMax) {
   const p = Math.floor(48 * hpCurrent / Math.max(hpMax, 1));
-  if (p < 1) return 200;
-  if (p < 4) return 150;
-  if (p < 9) return 100;
+  if (p < 2) return 200;
+  if (p < 5) return 150;
+  if (p < 10) return 100;
   if (p < 17) return 80;
   if (p < 33) return 40;
   return 20;
@@ -253,6 +256,22 @@ export function toZMove(move) {
   const zName = Z_MOVES[move.type];
   if (!zName) return null;
   return { name: zName, power: zPower(move.power) };
+}
+
+/**
+ * What identity and target a move presents to resolveDamage. A Z-move is a
+ * different move: it has its own name (Tectonic Rage, not Earthquake) and
+ * always hits one target. Grassy Terrain's `weakensMoves` and the doubles
+ * `isSpreadMove` both key off `move.name` / `move.target`, so a caller that
+ * forwards the base move's fields for a Z-move manufactures a rebate the
+ * game never applies -- one gate for both fields, so the next by-name rule
+ * does not need its own ternary to remember.
+ * @returns {{name:string|null, target:string|null}}
+ */
+export function zGate(move, zForm) {
+  return zForm
+    ? { name: zForm.name, target: null }
+    : { name: move.name, target: move.target };
 }
 
 // Which extra inputs a move needs from the user, so the UI can show exactly

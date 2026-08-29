@@ -8,6 +8,15 @@
 import { readFile } from 'node:fs/promises';
 import { metaSetOf, hasMeta, checksOf, usageRanking, metaName, metaLink } from '../js/meta.js';
 
+// Misma regla que js/abilities.js (matchesTarget), copiada aqui a mano:
+// js/abilities.js no trae la garantia de "sin DOM" que js/meta.js si trae en
+// su cabecera, y arrastra api.js/ui.js/i18n.js/hub.js al importarlo. Si esa
+// regla cambia, este duplicado hay que actualizarlo a la vez.
+const matchesTarget = (a, targetName) =>
+  a.name.toLowerCase() === targetName.toLowerCase() ||
+  a.nameEs.toLowerCase() === targetName.toLowerCase() ||
+  a.nameEn.toLowerCase() === targetName.toLowerCase();
+
 const read = async name =>
   JSON.parse(await readFile(new URL(`../data/${name}.json`, import.meta.url), 'utf8'));
 
@@ -146,9 +155,31 @@ check('un slug que no esta se formatea', metaName('items', 'no-existe', names, '
 console.log('\nLos enlaces apuntan a donde toca\n');
 
 check('el movimiento a su ficha', metaLink('moves', 'sludge-bomb', names), '#/moves/188');
-check('la habilidad a la suya', metaLink('abilities', 'chlorophyll', names), '#/abilities/Chlorophyll');
+check('la habilidad a la suya', metaLink('abilities', 'chlorophyll', names), '#/abilities/chlorophyll');
 check('el objeto a su lista filtrada', metaLink('items', 'life-orb', names), '#/items?q=Vidasfera');
 check('y lo que no esta no lleva enlace', metaLink('items', 'no-existe', names), null);
+
+console.log('\nLas 194 habilidades del meta resuelven de verdad\n');
+
+// Dos afirmaciones porque una sola no basta: la red de seguridad de nameEn en
+// js/abilities.js resuelve por si sola los enlaces viejos (nombre ingles de
+// pantalla), asi que "resuelven contra abilities.json" queda en verde aunque
+// js/meta.js:57 siga construyendo el enlace equivocado. La de forma es la que
+// de verdad vigila meta.js: el enlace tiene que llevar el slug, no el nombre.
+const slugsHabilidad = Object.keys(names.abilities);
+
+const formaEquivocada = slugsHabilidad.filter(slug =>
+  metaLink('abilities', slug, names) !== `#/abilities/${encodeURIComponent(slug)}`);
+
+const noResuelven = slugsHabilidad.filter(slug => {
+  const link = metaLink('abilities', slug, names);
+  const targetName = decodeURIComponent(link.slice('#/abilities/'.length));
+  return abilities.findIndex(a => matchesTarget(a, targetName)) === -1;
+});
+
+check('cuantas claves de habilidad tiene meta-names.json', slugsHabilidad.length, 194);
+check('enlaces de habilidad con la forma equivocada (no llevan el slug)', formaEquivocada, []);
+check('enlaces de habilidad que no resuelven', noResuelven, []);
 
 console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);

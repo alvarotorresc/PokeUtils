@@ -11,6 +11,7 @@
 // which surfaces in the browser as an unexplained network failure.
 
 import { competitiveList, isForm } from './forms.js';
+import { borrar } from './storage.js';
 
 const DATA_URL = new URL('../data/', import.meta.url);
 
@@ -225,14 +226,37 @@ export async function searchPokemon(term, { speciesOnly = false } = {}) {
     }));
 }
 
+// The prefixes the old GraphQL client cached under. It wrote
+// `localStorage.setItem('pkutils_' + cacheKey(prefix, params))`, with
+// `cacheKey = prefix + ':' + JSON.stringify(params)`, so every key it ever
+// produced looks like `pkutils_<prefix>:<JSON>`. Two generations existed: the
+// original set (first commit, a3be7aa) and the _v2 rename (75cc442). Both were
+// retired in 622b31d, and a browser out there can still be holding either, so
+// both are listed.
+const DEAD_CACHE_PREFIXES = [
+  'poke_list', 'poke_list_v2', 'poke_detail', 'moves', 'moves_v2',
+  'abilities', 'abilities_v2', 'items', 'items_v2', 'poke_search', 'poke_search_v2',
+];
+
+// The colon is the load-bearing part: cacheKey always emitted one, and no key
+// the app actually keeps has one, so a settings key can never match by accident.
+const isDeadCacheKey = key =>
+  DEAD_CACHE_PREFIXES.some(prefix => key.startsWith(`pkutils_${prefix}:`));
+
 // Drop caches written by the old GraphQL client; they are dead weight and
 // filling the quota made every write fail silently.
+//
+// The criterion is positive on purpose. It used to be "delete every pkutils_
+// key except theme and lang" -- a blacklist written when those were the only
+// two things worth saving, which condemned every key added afterwards. It ate
+// pkutils_level and pkutils_search_history, so saved format levels and the
+// "last thing you looked at" chips never survived a reload. Deleting only what
+// is positively recognised as dead means the next key added is safe by default
+// instead of broken by default. scripts/check-storage-keys.mjs holds the line.
 export function purgeLegacyCache() {
   try {
     for (const key of Object.keys(localStorage)) {
-      if (key.startsWith('pkutils_') && key !== 'pkutils_theme' && key !== 'pkutils_lang') {
-        localStorage.removeItem(key);
-      }
+      if (isDeadCacheKey(key)) borrar(key);
     }
   } catch {}
 }

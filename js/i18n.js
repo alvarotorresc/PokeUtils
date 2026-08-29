@@ -4,7 +4,11 @@
 // que bajaba el arranque. Y la mitad era siempre para el idioma que esa visita
 // no iba a mirar. Ahora cada uno es su propio modulo y solo baja el que se usa.
 
-let currentLang = localStorage.getItem('pkutils_lang') || 'es';
+import { leer, escribir } from './storage.js';
+
+// En el cuerpo del modulo: con el almacenamiento bloqueado, un getItem pelado
+// lanzaba aqui y ningun importador de i18n llegaba a correr. Ver js/storage.js.
+let currentLang = leer('pkutils_lang') || 'es';
 let onChangeCallbacks = [];
 const diccionarios = {};
 
@@ -47,8 +51,13 @@ export function getLang() {
 // hasta que el suyo esta bajado, o t() responderia en el idioma viejo.
 export async function setLang(lang) {
   await cargar(lang);
+  // La escritura va ANTES de tocar el estado. Al reves, un fallo suyo dejaba
+  // currentLang ya cambiado sin haber disparado los callbacks: t() contestaba
+  // en el idioma nuevo con toda la interfaz pintada aun en el viejo, hasta que
+  // algo la repintara por otro motivo. escribir() ya no puede lanzar, pero el
+  // orden lo deja inmune tambien a lo que venga.
+  escribir('pkutils_lang', lang);
   currentLang = lang;
-  localStorage.setItem('pkutils_lang', lang);
   onChangeCallbacks.forEach(cb => cb(lang));
 }
 

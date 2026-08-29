@@ -8,6 +8,7 @@ import { CATEGORIES, categoryOf, targetOf } from './tools.js';
 import { getLevel, setLevel, onLevelChange } from './level.js';
 import { t, getLang, setLang, onLangChange } from './i18n.js';
 import { purgeLegacyCache } from './api.js';
+import { leer, escribir } from './storage.js';
 import { renderError } from './ui.js';
 import { attachGlobalSearch } from './global-search.js';
 
@@ -36,7 +37,7 @@ function esRutaHome(path) {
 
 // ===== THEME =====
 function initTheme() {
-  const saved = localStorage.getItem('pkutils_theme') || 'dark';
+  const saved = leer('pkutils_theme') || 'dark';
   if (saved === 'light') document.documentElement.classList.add('light');
   updateThemeBtn();
 }
@@ -44,7 +45,7 @@ function initTheme() {
 function toggleTheme() {
   document.documentElement.classList.toggle('light');
   const isLight = document.documentElement.classList.contains('light');
-  localStorage.setItem('pkutils_theme', isLight ? 'light' : 'dark');
+  escribir('pkutils_theme', isLight ? 'light' : 'dark');
   updateThemeBtn();
 }
 

@@ -89,8 +89,15 @@ const ouTeam = [984, 1000, 983, 888, 149, 645].map(byId);
 const teorico = counters(ouTeam, pokemon, 50);
 const medido = counters(ouTeam, pokemon, 50, meta);
 
-check('el teorico de este equipo', teorico.total, 206);
-check('con el meta sube, no baja', medido.total, 210);
+// 206 y 210 hasta que se arreglo `dark -> steel` en CHART (valia 0.5, resto de
+// la 5.ª generacion). Gholdengo es Acero/Fantasma: Siniestro contra el era
+// 0.5x2 = 1 y ahora es 1x2 = 2, asi que los atacantes Siniestro pasan a
+// amenazarlo. Medido, no supuesto: el arreglo anade 81 pares atacante-miembro y
+// no quita ninguno, los 81 contra Gholdengo, y 12 de esos atacantes cruzan el
+// umbral de la mitad del equipo. Lo que el par de checks vigila -- que el indice
+// del meta SUME y nunca reste -- sigue igual: 221 >= 218.
+check('el teorico de este equipo', teorico.total, 218);
+check('con el meta sube, no baja', medido.total, 221);
 check('alguna fila viene marcada', medido.rows.some(r => r.fromMeta), true);
 check('sin indice, ninguna lo esta', teorico.rows.some(r => r.fromMeta), false);
 check('Great Tusk tiene checks medidos', checksOf(984, 'ou', meta).length, 6);

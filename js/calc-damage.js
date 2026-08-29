@@ -5,8 +5,8 @@
 import { TYPES, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN, spriteUrl } from './data.js';
 import { searchPokemon, fetchMoves, fetchItems, fetchBerries, fetchPokemonList } from './api.js';
 import { calcHP, calcStat } from './stats.js';
-import { resolveDamage, applyMultiHit, drainedHP } from './damage.js';
-import { resolvePower, toZMove, requiredInputs, isCalculable } from './variable-power.js';
+import { resolveDamage, applyMultiHit, multiHitTurn, drainedHP, koLine } from './damage.js';
+import { resolvePower, toZMove, zGate, requiredInputs, isCalculable } from './variable-power.js';
 import {
   WEATHER, TERRAIN, SCREENS, DAMAGE_ITEMS, DAMAGE_ABILITIES,
 } from './battle-data.js';
@@ -558,7 +558,7 @@ export function renderDamage(container, query) {
       return renderSpecial({ kind: 'range', range: resolved.damageRange, hp: defenderHPMax });
     }
 
-    const result = resolveDamage({
+    const runDamage = power => resolveDamage({
       attacker: {
         types: attacker.types,
         level: atkLevel,
@@ -578,13 +578,26 @@ export function renderDamage(container, query) {
         hp: defenderHPMax,
       },
       move: {
+        // Name and target travel together through `zGate`: Grassy Terrain
+        // weakens Earthquake, Bulldoze and Magnitude by name, and the
+        // "Doubles" checkbox cuts a quarter off whoever spreads, by target.
+        // Without either field here, neither rebate would ever apply from
+        // this page.
+        //
+        // A Z-move is a different move: Earthquake becomes Tectonic Rage,
+        // which is neither on Grassy Terrain's list nor a spread move (it
+        // hits one target even when its base move hit several). `zGate`
+        // gives it its own name instead of inheriting Earthquake's, and
+        // strips the target -- inheriting either one manufactures a rebate
+        // the game does not apply.
+        ...zGate(move, zForm),
         // Sin rama para el movimiento Z: `toZMove` solo sube la potencia, y el
         // Z conserva el tipo del movimiento del que sale -- Z_MOVES se indexa
         // justo por ese tipo. Antes esto era un ternario con las dos ramas
         // identicas, que se leia como si faltara algo.
         type: resolved.overrideType || move.type,
         category: move.category,
-        power: resolved.power,
+        power,
       },
       field: {
         weather: $('#dmgWeather').value,
@@ -595,10 +608,30 @@ export function renderDamage(container, query) {
       },
     });
 
-    renderResult(result, move);
+    // Magnitud y Regalo: el juego sortea la POTENCIA, no el dano, asi que la
+    // respuesta honesta es el rango que sale de pasar el formulario dos veces,
+    // una por cada extremo. Sin esta rama el objeto caia al camino normal con
+    // `power === undefined`, `damageRolls` lo leia como 0 y la pagina pintaba
+    // dieciseis ceros -- «no lo se» servido como «cero», sin ningun aviso.
+    if (resolved.powerRange) {
+      const flojo = runDamage(resolved.powerRange[0]);
+      const fuerte = runDamage(resolved.powerRange[1]);
+      // Con inmunidad no hay rango que ensenar, y un «0 - 0» aqui seria
+      // exactamente el fallo que esta rama viene a quitar.
+      if (fuerte.effectiveness === 0) return renderResult(fuerte, move, defenderHPMax);
+      return renderSpecial({
+        kind: 'range',
+        range: [flojo.min, fuerte.max],
+        hp: defenderHPMax,
+        effectiveness: fuerte.effectiveness,
+        note: resolved.note,
+      });
+    }
+
+    renderResult(runDamage(resolved.power), move, defenderHPMax);
   }
 
-  function renderSpecial({ kind, key, damage, hp, range, note }) {
+  function renderSpecial({ kind, key, damage, hp, range, note, effectiveness }) {
     const resultEl = $('#dmgResult');
     const pctOf = n => ((n / hp) * 100).toFixed(1);
 
@@ -621,11 +654,23 @@ export function renderDamage(container, query) {
     }
 
     if (kind === 'range') {
+      // La barra sale del extremo alto, igual que en la tarjeta normal: es el
+      // rollo que decide si esto mata o no.
+      const share = Math.min((range[1] / hp) * 100, 100);
+      const colour = share >= 100 ? 'var(--stat-down)' : share >= 50 ? 'var(--accent)' : 'var(--stat-up)';
       resultEl.innerHTML = `
         <div class="card dmg-result">
           <div class="dmg-headline" style="color:var(--accent-text)">${range[0]} - ${range[1]}</div>
           <div class="dmg-sub">${pctOf(range[0])}% - ${pctOf(range[1])}% ${t('dmg.ofhp')}</div>
+          <div class="dmg-bar">
+            <div class="dmg-bar-min" style="width:${Math.min((range[0] / hp) * 100, 100)}%;background:${colour}"></div>
+            <div class="dmg-bar-max" style="width:${Math.max(share - Math.min((range[0] / hp) * 100, 100), 0)}%;background:${colour}"></div>
+          </div>
           <div class="dmg-eff">${t('vp.rolled')}</div>
+          ${effectiveness != null && effectiveness !== 1 ? `
+            <div class="dmg-eff">${t('dmg.effectiveness')}: x${effectiveness}</div>
+          ` : ''}
+          ${note ? `<div class="dmg-notes">⚠ ${t(note)}</div>` : ''}
         </div>`;
       return;
     }
@@ -647,7 +692,7 @@ export function renderDamage(container, query) {
       </div>`;
   }
 
-  function renderResult(r, m) {
+  function renderResult(r, m, hp) {
     const resultEl = $('#dmgResult');
 
     if (r.effectiveness === 0) {
@@ -660,31 +705,44 @@ export function renderDamage(container, query) {
       return;
     }
 
-    const pct = `${r.pctMin.toFixed(1)}% - ${r.pctMax.toFixed(1)}%`;
-    // Tres ramas y no dos: con cinco golpes o mas la probabilidad no se calcula
-    // (la convolucion cuesta), asi que se dice en cuantos golpes cae en el mejor
-    // de los casos y no se inventa un porcentaje.
-    const koText = r.koIn === null
+    // Un multigolpe se usa UNA vez y golpea varias. El titular, el «KO en n»,
+    // el porcentaje y el color responden a cuanto hace el turno entero, no un
+    // golpe suelto: antes la cifra grande decia «25 - 31, KO en 5» en verde
+    // mientras la linea de abajo decia «50 - 155» sobre 155 PS, que es matar
+    // en uno. Dos respuestas a preguntas distintas en la misma tarjeta, y la
+    // grande era la equivocada.
+    const meta = m.meta || {};
+    const multi = applyMultiHit(r, meta.minHits, meta.maxHits);
+    const view = multi ? multiHitTurn(multi, hp) : r;
+
+    const pct = `${view.pctMin.toFixed(1)}% - ${view.pctMax.toFixed(1)}%`;
+    // Cuatro ramas y no dos, y la eleccion vive en damage.js para que un check
+    // pueda verla. Con cinco golpes o mas la probabilidad no se calcula (la
+    // convolucion cuesta) y con menos del 0.05% no cabe en un decimal: en los
+    // dos casos se dice en cuantos golpes cae y no se imprime un «0.0%», que
+    // se leia como «nunca» debajo de una linea que decia que si pasa.
+    const line = koLine(view);
+    const koText = line.kind === 'none'
       ? t('dmg.noko')
-      : r.guaranteed
-        ? t('dmg.ko.guaranteed').replace('{n}', r.koIn)
-        : r.koChance === null
-          ? t('dmg.ko.best').replace('{n}', r.koIn)
-          : t('dmg.ko.chance').replace('{n}', r.koIn).replace('{pct}', (r.koChance * 100).toFixed(1));
+      : line.kind === 'guaranteed'
+        ? t('dmg.ko.guaranteed').replace('{n}', line.koIn)
+        : line.kind === 'best'
+          ? t('dmg.ko.best').replace('{n}', line.koIn)
+          : t('dmg.ko.chance').replace('{n}', line.koIn).replace('{pct}', line.pct.toFixed(1));
 
     // The colour tracks how much of the bar the hit takes, not the raw number.
-    const share = Math.min(r.pctMax, 100);
+    const share = Math.min(view.pctMax, 100);
     const colour = share >= 100 ? 'var(--stat-down)' : share >= 50 ? 'var(--accent)' : 'var(--stat-up)';
     const ink = share >= 100 ? 'var(--stat-down)' : share >= 50 ? 'var(--accent-text)' : 'var(--stat-up)';
 
     resultEl.innerHTML = `
       <div class="card dmg-result">
-        <div class="dmg-headline" style="color:${ink}">${r.min} - ${r.max}</div>
+        <div class="dmg-headline" style="color:${ink}">${view.min} - ${view.max}</div>
         <div class="dmg-sub">${pct} ${t('dmg.ofhp')}</div>
 
         <div class="dmg-bar">
-          <div class="dmg-bar-min" style="width:${Math.min(r.pctMin, 100)}%;background:${colour}"></div>
-          <div class="dmg-bar-max" style="width:${Math.min(r.pctMax - r.pctMin, 100 - Math.min(r.pctMin, 100))}%;background:${colour}"></div>
+          <div class="dmg-bar-min" style="width:${Math.min(view.pctMin, 100)}%;background:${colour}"></div>
+          <div class="dmg-bar-max" style="width:${Math.min(view.pctMax - view.pctMin, 100 - Math.min(view.pctMin, 100))}%;background:${colour}"></div>
         </div>
 
         <div class="dmg-ko">${koText}</div>
@@ -693,7 +751,7 @@ export function renderDamage(container, query) {
           <div class="dmg-eff">${t('dmg.effectiveness')}: x${r.effectiveness}</div>
         ` : ''}
 
-        ${extraLines(r, m)}
+        ${extraLines(r, m, multi)}
 
         ${r.notes.length ? `
           <div class="dmg-notes">
@@ -706,11 +764,13 @@ export function renderDamage(container, query) {
 
   // Multi-hit totals, drain and recoil: the three things that make the single
   // roll an incomplete answer.
-  function extraLines(r, m) {
+  //
+  // `multi` llega ya calculado desde renderResult: el titular y esta linea
+  // tienen que salir del mismo objeto o vuelven a poder contradecirse.
+  function extraLines(r, m, multi) {
     const lines = [];
     const meta = m.meta || {};
 
-    const multi = applyMultiHit(r, meta.minHits, meta.maxHits);
     if (multi) {
       const hits = multi.fixed
         ? t('dmg.hits.fixed').replace('{n}', multi.minHits)

@@ -152,6 +152,31 @@ function koChanceIn(rolls, hp, hits) {
 }
 
 /**
+ * PokeAPI's target vocabulary for the two ways a move hits more than one
+ * Pokemon, and the only two that earn the 0.75x cut of a double battle:
+ *
+ *   all-opponents      both foes (Blizzard, Rock Slide, Discharge)
+ *   all-other-pokemon  both foes and the ally (Earthquake, Surf, Explosion)
+ *
+ * `random-opponent` (Outrage, Thrash) is deliberately not here: it picks one
+ * target at random, and one target is one target. The 560 ordinary moves are
+ * `selected-pokemon`, which build-data.mjs stores as no target at all.
+ */
+export const SPREAD_TARGETS = ['all-opponents', 'all-other-pokemon'];
+
+/**
+ * Whether a move splits its damage between several targets.
+ *
+ * Read off the move rather than asked of the caller. There used to be a
+ * `move.spread` flag here and not one caller set it, so the doubles toggle
+ * quietly did nothing; `target` already travels in data/moves.json, so nobody
+ * has to remember anything.
+ */
+export function isSpreadMove(move) {
+  return SPREAD_TARGETS.includes(move?.target);
+}
+
+/**
  * Full result for one move against one target.
  * @returns {{rolls:number[], min:number, max:number, pctMin:number,
  *            pctMax:number, koIn:number|null, guaranteed:boolean,
@@ -192,6 +217,31 @@ export function calcDamage(ctx) {
   };
 }
 
+// The card prints the odds with one decimal, so anything under 0.05% comes out
+// as "0.0% of the time" -- a zero that reads as "never" directly under a line
+// that has just said the KO happens. The odds themselves are fine; it is one
+// decimal that cannot hold them.
+export const KO_CHANCE_FLOOR = 0.0005;
+
+/**
+ * Which of the four KO lines the card prints, and with what odds.
+ *
+ * Presentation, not maths: calcDamage keeps the exact probability, because that
+ * is the truth of the model, and the decision about what fits on a card belongs
+ * to the card. Below KO_CHANCE_FLOOR there is already an honest line to fall
+ * back on -- the one used past four hits, where the odds are never computed --
+ * so nothing new had to be invented and no string was added.
+ *
+ * @param {object} result  calcDamage's, or multiHitTurn's
+ * @returns {{kind:'none'|'guaranteed'|'best'|'chance', koIn?:number, pct?:number}}
+ */
+export function koLine({ koIn, guaranteed, koChance }) {
+  if (koIn == null) return { kind: 'none' };
+  if (guaranteed) return { kind: 'guaranteed', koIn };
+  if (koChance === null || koChance < KO_CHANCE_FLOOR) return { kind: 'best', koIn };
+  return { kind: 'chance', koIn, pct: koChance * 100 };
+}
+
 // ===== COMPOSITION =====
 //
 // Turns the choices made in the UI into the multipliers calcDamage() expects.
@@ -203,8 +253,12 @@ export function calcDamage(ctx) {
  * @param {object} input.attacker {types, attack, defenseless stats already
  *   computed, boost, item, ability, teraType, burned}
  * @param {object} input.defender {types, defense, boost, item, ability,
- *   teraType, hp, hpCurrent, grounded}
- * @param {object} input.move     {type, category, power}
+ *   teraType, hp, hpCurrent}
+ * @param {object} input.move     {name, type, category, power, target} -- the
+ *   last two come straight from moves.json and both change the number. `name`
+ *   is the slug, and Grassy Terrain weakens three moves by name; `target` says
+ *   whether the move reparte, which is the whole of the doubles cut. A caller
+ *   that builds a move object without them loses both, silently.
  * @param {object} input.field    {weather, terrain, screen, doubles, critical}
  */
 export function resolveDamage({ attacker, defender, move, field = {} }) {
@@ -227,11 +281,21 @@ export function resolveDamage({ attacker, defender, move, field = {} }) {
     };
   }
 
-  const effectiveness = typeEffectiveness(
-    move.type,
-    // Terastallising replaces the defender's types outright.
-    defender.teraType ? [defender.teraType] : defender.types
-  );
+  // Terastallising replaces a Pokemon's types outright, so both the type chart
+  // and the question of who is standing on the ground read these, not the
+  // originals.
+  const atkTypes = attacker.teraType ? [attacker.teraType] : attacker.types;
+  const defTypes = defender.teraType ? [defender.teraType] : defender.types;
+
+  const effectiveness = typeEffectiveness(move.type, defTypes);
+
+  // Terrain is climbed from the ground: a Flying type or a Ground immunity
+  // (Levitate) neither collects the boost nor pays the cut. Derived rather
+  // than asked for, because a caller that has to remember a flag forgets it.
+  const grounded = (types, ability) =>
+    !types.includes('flying') && !ability.immuneTo?.includes('ground');
+  const atkGrounded = grounded(atkTypes, atkAbility);
+  const defGrounded = grounded(defTypes, defAbility);
 
   const stab = stabMultiplier({
     moveType: move.type,
@@ -244,11 +308,16 @@ export function resolveDamage({ attacker, defender, move, field = {} }) {
   let weatherMult = weather.boosts?.[move.type] ?? 1;
   let other = 1;
 
-  if (terrain.boosts?.[move.type] && attacker.grounded !== false) {
+  if (terrain.boosts?.[move.type] && atkGrounded) {
     other *= terrain.boosts[move.type];
   }
-  if (terrain.weakens?.[move.type] && defender.grounded !== false) {
+  // Two different rules, so two different fields: Misty halves a whole type
+  // (every Dragon move), Grassy halves three moves it names one by one.
+  if (terrain.weakens?.[move.type] && defGrounded) {
     other *= terrain.weakens[move.type];
+  }
+  if (terrain.weakensMoves?.includes(move.name) && defGrounded) {
+    other *= terrain.weakensMovesMult;
   }
 
   // Screens are ignored by a critical hit, which is the point of them.
@@ -290,9 +359,12 @@ export function resolveDamage({ attacker, defender, move, field = {} }) {
   if (atkAbility.statMult) attack = Math.floor(attack * atkAbility.statMult);
   if (defAbility.statMult) defense = Math.floor(defense * defAbility.statMult);
 
-  // Sandstorm and snow raise a defensive stat instead of scaling the move.
+  // Sandstorm and snow raise a defensive stat instead of scaling the move. The
+  // types that qualify are the post-Tera ones, the same as everywhere else on
+  // this side: a Rock type that Teras into something else is no longer a Rock
+  // type, and the storm stops helping it.
   const defBoost = weather.defBoost;
-  if (defBoost && defender.types.some(x => defBoost.types.includes(x))
+  if (defBoost && defTypes.some(x => defBoost.types.includes(x))
       && ((defBoost.stat === 'spd' && move.category === 'special')
        || (defBoost.stat === 'def' && move.category === 'physical'))) {
     defense = Math.floor(defense * defBoost.mult);
@@ -308,8 +380,11 @@ export function resolveDamage({ attacker, defender, move, field = {} }) {
     critical: Boolean(field.critical),
     stab,
     effectiveness,
-    burned: Boolean(attacker.burned) && move.category === 'physical',
-    targets: field.doubles && move.spread ? 0.75 : 1,
+    // Guts is the one ability here that both raises the Attack and ignores the
+    // burn's cut. Applying the cut on top of the 1.5x left a burned Guts user
+    // hitting for less than one without the ability, which is backwards.
+    burned: Boolean(attacker.burned) && move.category === 'physical' && atkAbility.id !== 'guts',
+    targets: field.doubles && isSpreadMove(move) ? 0.75 : 1,
     weather: weatherMult,
     other,
     defenderHP: defender.hp,
@@ -347,6 +422,39 @@ export function applyMultiHit(result, minHits, maxHits) {
     // opposite. The spread of a multi-hit move is much wider than a single one.
     totalMin: result.min * minHits,
     totalMax: result.max * maxHits,
+  };
+}
+
+/**
+ * What a multi-hit move does in ONE turn, from what one of its hits does.
+ *
+ * A multi-hit move is used once and connects several times, so "how much does
+ * it do" and "how many uses to KO" are questions about the whole turn. Reading
+ * them off a single hit answers a different question and answers it wrong: a
+ * 25-31 hit that lands five times on a 155 HP target is not a KO in five, it
+ * is a possible KO in one.
+ *
+ * No KO odds on purpose. The 2-5 spread is not uniform (35/35/15/15, the
+ * HIT_WEIGHTS above), so any percentage here would be invented. The honest
+ * answer is the range, plus `guaranteed` when even the worst turn gets there.
+ *
+ * @param {object} multi  what applyMultiHit returned
+ * @param {number} hp     the defender's HP
+ */
+export function multiHitTurn(multi, hp) {
+  const total = Math.max(hp || 1, 1);
+
+  let koIn = multi.totalMax > 0 ? Math.ceil(total / multi.totalMax) : null;
+  if (koIn > 9) koIn = null;
+
+  return {
+    min: multi.totalMin,
+    max: multi.totalMax,
+    pctMin: (multi.totalMin / total) * 100,
+    pctMax: (multi.totalMax / total) * 100,
+    koIn,
+    guaranteed: multi.totalMin > 0 && koIn !== null && Math.ceil(total / multi.totalMin) === koIn,
+    koChance: null,
   };
 }
 

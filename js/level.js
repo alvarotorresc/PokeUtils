@@ -8,16 +8,21 @@
 // Pokemon -- attacker and defender can differ -- and it already travels in the
 // shared URL as `al`/`dl`. A global override would quietly change the result of
 // links that are already out there.
+import { leer, escribir } from './storage.js';
+
 const KEY = 'pkutils_level';
 const listeners = [];
 
-let level = Number(localStorage.getItem(KEY)) === 100 ? 100 : 50;
+// Esta linea es la primera del grafo de modulos que importa app.js: con el
+// almacenamiento bloqueado, un getItem pelado lanzaba aqui y se llevaba por
+// delante la app entera. Ver js/storage.js.
+let level = Number(leer(KEY)) === 100 ? 100 : 50;
 
 export const getLevel = () => level;
 
 export function setLevel(next) {
   level = next === 100 ? 100 : 50;
-  localStorage.setItem(KEY, String(level));
+  escribir(KEY, String(level));
   listeners.forEach(cb => cb(level));
 }
 
