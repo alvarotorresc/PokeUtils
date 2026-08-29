@@ -85,7 +85,7 @@ export async function renderMeta(container, query = new URLSearchParams()) {
             <span class="egg-key">${t('meta.tera')}</span>
             <div class="meta-line">${set.t.map(([type, p]) => (type === 'nothing'
               ? `${t('meta.tera.none')} ${pct(p)}`
-              : `<span class="type-badge sm" data-type="${type}">${typeName(type)}</span> ${pct(p)}`)).join(' ')}</div>
+              : `<span class="type-badge sm" data-type="${esc(type)}">${typeName(type)}</span> ${pct(p)}`)).join(' ')}</div>
           </div>
         </div>
         <span class="egg-key">${t('meta.moves')}</span>
