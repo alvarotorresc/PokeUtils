@@ -642,7 +642,7 @@ export async function renderPokedexDetail(container, id) {
       <div class="poke-nav">
         ${dexId > 1 ? `<a href="#/pokedex/${dexId - 1}" class="page-btn poke-nav-btn">
           <span class="poke-nav-arrow">◀</span>
-          <img src="${spriteUrl(dexId - 1)}" onerror="this.style.display='none'">
+          <img src="${spriteUrl(dexId - 1)}" alt="" onerror="this.style.display='none'">
           <span class="poke-nav-label">
             <span class="poke-nav-dex">#${String(dexId - 1).padStart(4, '0')}</span>
             <span class="poke-nav-name">${pokemon.prevName || ''}</span>
@@ -653,7 +653,7 @@ export async function renderPokedexDetail(container, id) {
             <span class="poke-nav-dex">#${String(dexId + 1).padStart(4, '0')}</span>
             <span class="poke-nav-name">${pokemon.nextName || ''}</span>
           </span>
-          <img src="${spriteUrl(dexId + 1)}" onerror="this.style.display='none'">
+          <img src="${spriteUrl(dexId + 1)}" alt="" onerror="this.style.display='none'">
           <span class="poke-nav-arrow">▶</span>
         </a>` : '<div></div>'}
       </div>

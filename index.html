@@ -130,6 +130,13 @@
   <script>
     (function () {
       if ((localStorage.getItem('pkutils_lang') || 'es') !== 'en') return;
+      // El <html lang> tiene que coincidir con lo que se pinta desde el
+      // primer frame, no solo el nav: <html lang="es"> es el valor estatico
+      // de arriba, correcto para quien no ha guardado idioma o guardo 'es'.
+      // js/app.js:onLangChange lo mantiene correcto el resto de la sesion,
+      // en cualquier direccion del toggle -- esta linea solo cubre el hueco
+      // entre "nace en HTML" y "app.js ya corrio" para quien guardo 'en'.
+      document.documentElement.lang = 'en';
       var EN_NAV = {
         "navHome": "HOME", "navPokedex": "POKEDEX", "navData": "DATA",
         "navCompetitive": "COMPETITIVE", "navCalculator": "CALCULATOR",

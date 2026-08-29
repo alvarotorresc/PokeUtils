@@ -82,7 +82,11 @@ langToggle.addEventListener('click', () => {
   setLang(getLang() === 'es' ? 'en' : 'es');
 });
 
-onLangChange(() => {
+onLangChange((lang) => {
+  // The pre-paint script in index.html only covers the first paint (and only
+  // for a saved 'en'); this is the one spot that keeps it correct for the
+  // rest of the session, on every toggle either direction.
+  document.documentElement.lang = lang;
   updateLangBtn();
   updateNavLabels();
   route(); // re-render current page
