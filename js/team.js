@@ -10,6 +10,7 @@ import { loadingHTML, renderError, replaceQuery, hostDeRuta, esc } from './ui.js
 import { t, typeName, pokeName } from './i18n.js';
 import { defensiveMatrix, threats, unresisted, stabTypes, offensiveCoverage } from './team-analysis.js';
 import { toolTabsHTML, wireToolTabs } from './hub.js';
+import { norm } from './normalize.js';
 
 const TEAM_SIZE = 6;
 const MAX_RESULTS = 10;
@@ -123,12 +124,13 @@ export async function renderTeam(container, query = new URLSearchParams()) {
       resultsEl.innerHTML = '';
       return;
     }
+    const q = norm(term);
     const found = pokemon
       .filter(p => !state.ids.includes(p.id))
       .filter(p =>
-        p.nameEs.toLowerCase().includes(term) ||
-        p.nameEn.toLowerCase().includes(term) ||
-        p.name.toLowerCase().includes(term)
+        norm(p.nameEs).includes(q) ||
+        norm(p.nameEn).includes(q) ||
+        norm(p.name).includes(q)
       )
       .slice(0, MAX_RESULTS);
 

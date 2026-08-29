@@ -12,6 +12,7 @@ import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
 import { t, pokeName } from './i18n.js';
 import { toolTabsHTML, wireToolTabs } from './hub.js';
+import { norm } from './normalize.js';
 
 const TEAM_SIZE = 6;
 
@@ -97,9 +98,11 @@ export async function renderCounter(container, query = new URLSearchParams()) {
         results.hidden = true;
         return;
       }
+      // El termino se pliega una vez, no una por Pokemon.
+      const nq = norm(q);
       const hits = all
         .filter(p => !ids.includes(p.id))
-        .filter(p => p.nameEs.toLowerCase().includes(q) || p.nameEn.toLowerCase().includes(q) || String(p.id) === q)
+        .filter(p => norm(p.nameEs).includes(nq) || norm(p.nameEn).includes(nq) || String(p.id) === q)
         .slice(0, 8);
       results.hidden = hits.length === 0;
       results.innerHTML = hits.map(p => `

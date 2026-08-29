@@ -14,6 +14,7 @@ import { FIELDS, VP_FIELDS, encodeDamageState, decodeDamageState } from './damag
 import { replaceQuery, esc } from './ui.js';
 import { t, getLang, pokeName, categoryName, typeName } from './i18n.js';
 import { spriteIdFor } from './forms.js';
+import { norm } from './normalize.js';
 
 // A neutral, average-ish pair so the panel shows a real number before the user
 // touches anything.
@@ -267,11 +268,15 @@ export function renderDamage(container, query) {
     if (term.length < 2) { moveResults.style.display = 'none'; return; }
     moveTimer = setTimeout(async () => {
       if (!allMoves) allMoves = await fetchMoves();
+      // 287 de los 937 movimientos llevan tilde o ñ. Este buscador esta al lado
+      // del de Pokemon, que pliega tildes desde searchPokemon: no puede ser el
+      // unico de la pagina que no lo haga.
+      const nq = norm(term);
       const hits = allMoves
         .filter(m => m.category !== 'status' && isCalculable(m))
-        .filter(m => m.name.includes(term)
-          || m.nameEs.toLowerCase().includes(term)
-          || m.nameEn.toLowerCase().includes(term))
+        .filter(m => norm(m.name).includes(nq)
+          || norm(m.nameEs).includes(nq)
+          || norm(m.nameEn).includes(nq))
         .slice(0, 10);
 
       moveResults.style.display = '';

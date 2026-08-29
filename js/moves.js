@@ -4,6 +4,7 @@ import { fetchMoves } from './api.js';
 import { loadingHTML, renderPagination, replaceQuery, esc } from './ui.js';
 import { t, typeName, categoryName, pokeName, getLang, statName } from './i18n.js';
 import { toolTabsHTML, wireToolTabs } from './hub.js';
+import { norm } from './normalize.js';
 import {
   priorityLabel, statChangeLabel, hasBattleFields,
   matchesPriorityFilter, matchesStatFilter,
@@ -173,10 +174,13 @@ export function renderMoves(container, query = new URLSearchParams()) {
 
     let filtered = allMoves;
     if (state.q) {
+      // El termino se guarda como se tecleo porque viaja a la URL y al value
+      // del input; el plegado de tildes es solo para comparar.
+      const q = norm(state.q);
       filtered = filtered.filter(m =>
-        m.nameEs.toLowerCase().includes(state.q) ||
-        m.nameEn.toLowerCase().includes(state.q) ||
-        m.name.toLowerCase().includes(state.q)
+        norm(m.nameEs).includes(q) ||
+        norm(m.nameEn).includes(q) ||
+        norm(m.name).includes(q)
       );
     }
     if (state.type) filtered = filtered.filter(m => m.type === state.type);

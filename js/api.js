@@ -12,6 +12,7 @@
 
 import { competitiveList, isForm } from './forms.js';
 import { borrar } from './storage.js';
+import { norm } from './normalize.js';
 
 const DATA_URL = new URL('../data/', import.meta.url);
 
@@ -195,14 +196,17 @@ export async function fetchPokemonDetail(id) {
 // would return a real-looking ball rate for something no ball ever touches.
 export async function searchPokemon(term, { speciesOnly = false } = {}) {
   const pokemon = competitiveList(await loadDataset('pokemon'));
-  const q = term.toLowerCase();
+  // Accents fold on both sides, the same way the nav search does it: the three
+  // calculators hang off this function, and "flabebe" has to find Flabebe here
+  // too or half the app answers to one rule and half to another.
+  const q = norm(term);
 
   return pokemon
     .filter(p => !speciesOnly || !isForm(p))
     .filter(p =>
-      p.name.toLowerCase().includes(q) ||
-      p.nameEs.toLowerCase().includes(q) ||
-      p.nameEn.toLowerCase().includes(q)
+      norm(p.name).includes(q) ||
+      norm(p.nameEs).includes(q) ||
+      norm(p.nameEn).includes(q)
     )
     .slice(0, 10)
     .map(p => ({

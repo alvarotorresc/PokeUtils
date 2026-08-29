@@ -11,6 +11,7 @@ import { loadingHTML, replaceQuery, esc } from './ui.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
 import { toolTabsHTML } from './hub.js';
 import { attachTooltip } from './tooltip.js';
+import { norm } from './normalize.js';
 
 const MAX = 4;
 
@@ -180,9 +181,10 @@ export async function renderCompare(container, query = new URLSearchParams()) {
         results.hidden = true;
         return;
       }
+      const nq = norm(q);
       const hits = all
         .filter(p => !ids.includes(p.id))
-        .filter(p => p.nameEs.toLowerCase().includes(q) || p.nameEn.toLowerCase().includes(q) || String(p.id) === q)
+        .filter(p => norm(p.nameEs).includes(nq) || norm(p.nameEn).includes(nq) || String(p.id) === q)
         .slice(0, 8);
       results.hidden = hits.length === 0;
       results.innerHTML = hits.map(p => `
