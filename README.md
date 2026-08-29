@@ -1,3 +1,5 @@
+***Español** · [English](README.en.md)*
+
 # PokeUtils
 
 **Tu guía Pokémon retro.** Si juegas competitivo, aquí sabes si tu equipo aguanta
@@ -156,6 +158,11 @@ consultar y esto se sirve como ficheros estáticos en un dominio propio:
   ni un texto, ni un set escrito a mano.
 - La atribución se muestra en la propia aplicación, junto a los datos, con el mes
   del que vienen.
+
+Los textos en español que PokeAPI no trae están recopilados del texto oficial de
+los juegos vía WikiDex, Bulbapedia y pkproject.net, con la fuente documentada
+entrada a entrada en el código. Unas pocas descripciones están redactadas por
+PokeUtils y van marcadas como tales.
 
 ## Legal
 
