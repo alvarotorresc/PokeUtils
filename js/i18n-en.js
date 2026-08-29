@@ -180,6 +180,8 @@ export default {
     'capture.turns': 'Turn',
     'capture.hp': 'HP left',
     'capture.rate': 'Rate',
+    'capture.rate.unknown': 'unknown',
+    'capture.unknown': 'This Pokemon has no known capture rate, so the odds cannot be worked out.',
     'capture.expected': 'Balls needed on average',
     'capture.guaranteed': 'Guaranteed catch',
     'capture.guaranteed.sub': 'It cannot fail',
