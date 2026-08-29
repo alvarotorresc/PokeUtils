@@ -558,7 +558,7 @@ export function renderDamage(container, query) {
       return renderSpecial({ kind: 'range', range: resolved.damageRange, hp: defenderHPMax });
     }
 
-    const result = resolveDamage({
+    const runDamage = power => resolveDamage({
       attacker: {
         types: attacker.types,
         level: atkLevel,
@@ -588,7 +588,7 @@ export function renderDamage(container, query) {
         // identicas, que se leia como si faltara algo.
         type: resolved.overrideType || move.type,
         category: move.category,
-        power: resolved.power,
+        power,
       },
       field: {
         weather: $('#dmgWeather').value,
@@ -599,10 +599,30 @@ export function renderDamage(container, query) {
       },
     });
 
-    renderResult(result, move);
+    // Magnitud y Regalo: el juego sortea la POTENCIA, no el dano, asi que la
+    // respuesta honesta es el rango que sale de pasar el formulario dos veces,
+    // una por cada extremo. Sin esta rama el objeto caia al camino normal con
+    // `power === undefined`, `damageRolls` lo leia como 0 y la pagina pintaba
+    // dieciseis ceros -- «no lo se» servido como «cero», sin ningun aviso.
+    if (resolved.powerRange) {
+      const flojo = runDamage(resolved.powerRange[0]);
+      const fuerte = runDamage(resolved.powerRange[1]);
+      // Con inmunidad no hay rango que ensenar, y un «0 - 0» aqui seria
+      // exactamente el fallo que esta rama viene a quitar.
+      if (fuerte.effectiveness === 0) return renderResult(fuerte, move);
+      return renderSpecial({
+        kind: 'range',
+        range: [flojo.min, fuerte.max],
+        hp: defenderHPMax,
+        effectiveness: fuerte.effectiveness,
+        note: resolved.note,
+      });
+    }
+
+    renderResult(runDamage(resolved.power), move);
   }
 
-  function renderSpecial({ kind, key, damage, hp, range, note }) {
+  function renderSpecial({ kind, key, damage, hp, range, note, effectiveness }) {
     const resultEl = $('#dmgResult');
     const pctOf = n => ((n / hp) * 100).toFixed(1);
 
@@ -625,11 +645,23 @@ export function renderDamage(container, query) {
     }
 
     if (kind === 'range') {
+      // La barra sale del extremo alto, igual que en la tarjeta normal: es el
+      // rollo que decide si esto mata o no.
+      const share = Math.min((range[1] / hp) * 100, 100);
+      const colour = share >= 100 ? 'var(--stat-down)' : share >= 50 ? 'var(--accent)' : 'var(--stat-up)';
       resultEl.innerHTML = `
         <div class="card dmg-result">
           <div class="dmg-headline" style="color:var(--accent-text)">${range[0]} - ${range[1]}</div>
           <div class="dmg-sub">${pctOf(range[0])}% - ${pctOf(range[1])}% ${t('dmg.ofhp')}</div>
+          <div class="dmg-bar">
+            <div class="dmg-bar-min" style="width:${Math.min((range[0] / hp) * 100, 100)}%;background:${colour}"></div>
+            <div class="dmg-bar-max" style="width:${Math.max(share - Math.min((range[0] / hp) * 100, 100), 0)}%;background:${colour}"></div>
+          </div>
           <div class="dmg-eff">${t('vp.rolled')}</div>
+          ${effectiveness != null && effectiveness !== 1 ? `
+            <div class="dmg-eff">${t('dmg.effectiveness')}: x${effectiveness}</div>
+          ` : ''}
+          ${note ? `<div class="dmg-notes">⚠ ${t(note)}</div>` : ''}
         </div>`;
       return;
     }
