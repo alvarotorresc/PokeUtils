@@ -417,6 +417,48 @@ check('la quemadura no toca un movimiento especial',
 checkTrue('otra habilidad quemada sigue perdiendo la mitad',
   guts({ attacker: { ability: 'huge-power' } }).max < guts({ attacker: { ability: 'huge-power', burned: false } }).max);
 
+console.log('\nLas habilidades que doblan una estadistica van DETRAS de la etapa\n');
+
+// El juego aplica primero la etapa de cambio y sobre el resultado el
+// modificador de la habilidad, encadenado con pokeRound. Al reves salia un
+// punto de mas y no se quedaba en la estadistica: llegaba a los dieciseis
+// lanzamientos.
+//
+//   orden del juego:  floor(101 x 1.5) = 151 -> pokeRound(151 x 2) = 302
+//   orden de antes:   floor(101 x 2)   = 202 -> floor(202 x 1.5)   = 303
+//
+// Nivel 50, Ataque 101, Defensa 100, movimiento Normal de 100 contra un Normal:
+// sin STAB y sin tipo, para que el unico numero en juego sea el Ataque.
+const potencia = (over = {}) => resolveDamage({
+  attacker: {
+    types: ['fighting'], level: 50, attack: 101, boost: 1,
+    item: 'none', ability: 'huge-power', ...over.attacker,
+  },
+  defender: { types: ['normal'], defense: 100, boost: 0, ability: 'none', hp: 300, ...over.defender },
+  move: { name: 'body-slam', type: 'normal', category: 'physical', power: 100, ...over.move },
+  field: {},
+});
+
+const conEtapa = potencia();
+check('Potencia con +1 de etapa, el lanzamiento bajo', conEtapa.min, 113);
+check('Potencia con +1 de etapa, el alto', conEtapa.max, 134);
+// El control que explica por que esto pasaba desapercibido: sin etapa los dos
+// ordenes dan el mismo numero, porque no hay nada que truncar entre medias.
+const sinEtapa = potencia({ attacker: { boost: 0 } });
+check('sin etapa el numero no se mueve', [sinEtapa.min, sinEtapa.max], [76, 90]);
+check('  y es exactamente el de multiplicar el Ataque a mano',
+  sinEtapa.rolls,
+  potencia({ attacker: { boost: 0, ability: 'none', attack: 202 } }).rolls);
+// Pelaje Recio es el mismo reorden en el lado del defensor.
+const pelaje = potencia({
+  attacker: { ability: 'none' },
+  defender: { ability: 'fur-coat', boost: 1, defense: 101 },
+});
+check('Pelaje Recio con +1 de etapa en la Defensa', [pelaje.min, pelaje.max], [20, 24]);
+check('  y la Defensa que sale es 302, no 303',
+  pelaje.rolls,
+  potencia({ attacker: { ability: 'none' }, defender: { defense: 302 } }).rolls);
+
 check('Tera replaces the defender types',
   fight({ defender: { teraType: 'water' } }).effectiveness, 0.5);
 checkTrue('Adaptability raises a STAB move',
