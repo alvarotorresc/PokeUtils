@@ -127,11 +127,28 @@ export function replaceQuery(path, params) {
   // normalization, so a caller writing '/pokedex/' is not a different route.
   if (parseHash().path !== normalizePath(path)) return;
 
-  const qs = new URLSearchParams();
+  // encodeURIComponent y no URLSearchParams.toString(), que escribe el espacio
+  // como "+". El "+" solo significa espacio en un cuerpo de formulario
+  // (application/x-www-form-urlencoded), y esto es un fragmento: cualquiera que
+  // lo lea con decodeURIComponent -- app.js ya lo hace con los nombres de
+  // #/abilities/<nombre> y #/egg/<grupo> -- se encuentra un "+" literal.
+  //
+  // Y sobre todo, la otra mitad de la aplicacion ya escribia %20: el buscador
+  // global monta sus destinos con encodeURIComponent. Con las dos ortografias
+  // vivas, abrir un enlace compartido como #/pokedex?q=mr%20mime lo reescribia
+  // en la barra como #/pokedex?q=mr+mime en el primer render -- el mismo estado
+  // con dos direcciones, y la que se comparte no es la que se ve. Medido en el
+  // navegador, sin tocar una tecla.
+  //
+  // Los enlaces viejos con "+" siguen funcionando: parseHash los lee con
+  // URLSearchParams, que decodifica las dos ortografias como espacio.
+  const partes = [];
   for (const [key, value] of Object.entries(params)) {
-    if (value !== '' && value != null) qs.set(key, String(value));
+    if (value !== '' && value != null) {
+      partes.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+    }
   }
-  const query = qs.toString();
+  const query = partes.join('&');
   history.replaceState(null, '', `#${path}${query ? '?' + query : ''}`);
 }
 
