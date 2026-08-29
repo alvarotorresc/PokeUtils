@@ -162,7 +162,6 @@ export function renderMoves(container, query = new URLSearchParams()) {
 
   async function render() {
     if (!allMoves) await loadAll();
-    syncUrl();
 
     // netlify.toml caches data/*.json for an hour but not the JS, so right
     // after a deploy this code runs against the previous moves.json, which has
@@ -187,6 +186,11 @@ export function renderMoves(container, query = new URLSearchParams()) {
 
     const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
     if (state.p > totalPages) state.p = totalPages || 1;
+    // After the clamp, never before it: at the top of render() the page has not
+    // been bounded yet and #/moves?p=999 painted page 19 with 999 still in the
+    // bar. Above the empty-results return, so a search with no matches still
+    // drops its stale page.
+    syncUrl();
     const start = (state.p - 1) * PAGE_SIZE;
     const page = filtered.slice(start, start + PAGE_SIZE);
 

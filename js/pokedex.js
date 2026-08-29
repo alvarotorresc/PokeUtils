@@ -250,7 +250,6 @@ export function renderPokedex(container, query = new URLSearchParams()) {
 
   async function render() {
     if (!allPokemon) await loadAll();
-    syncUrl();
 
     // The dex opens with its 1025 species. Forms answer a search and live on
     // their species' page: putting 326 of them in the default list adds 32% of
@@ -312,6 +311,13 @@ export function renderPokedex(container, query = new URLSearchParams()) {
 
     const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
     if (state.p > totalPages) state.p = totalPages || 1;
+    // The URL is written here and not at the top of render(): up there the page
+    // has not been clamped yet, so #/pokedex?p=99 painted page 21 and left 99
+    // in the bar -- a link that does not show what it showed when it was
+    // copied. Clamping needs totalPages, which needs the filtered list, so the
+    // sync is what moves, not the clamp. Above the empty-results return, so a
+    // search with no matches still drops its stale page from the URL.
+    syncUrl();
     const start = (state.p - 1) * PAGE_SIZE;
     const page = filtered.slice(start, start + PAGE_SIZE);
 

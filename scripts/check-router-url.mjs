@@ -125,5 +125,40 @@ check('rutas de replaceQuery que el router ya no reconoce', huerfanas, []);
 // sobre una lista vacia y no comprobaria nada.
 check('se han encontrado llamantes que revisar', llamantes.length > 0, true);
 
+// ===== El recorte de pagina va ANTES de escribir la URL =====
+//
+// La otra mitad del mismo bug: render() sincronizaba la URL al entrar y
+// recortaba la pagina fuera de rango despues, asi que #/pokedex?p=99 pintaba la
+// 21 y la barra seguia diciendo 99 -- una URL que al compartirla no ensena lo
+// que ensenaba.
+//
+// Esto es orden de lineas, y el orden no se puede ejecutar en node: el recorte
+// necesita la lista filtrada, que necesita el DOM y los datos. La verificacion
+// de verdad es el navegador (#/pokedex?p=99 -> p=21); esto es el cable trampa
+// que avisa si alguien vuelve a subir la sincronizacion.
+const PAGINADAS = [
+  { fichero: 'pokedex.js', recorte: /if \(state\.p > totalPages\)/, sync: /^\s*syncUrl\(\);/m },
+  { fichero: 'moves.js', recorte: /if \(state\.p > totalPages\)/, sync: /^\s*syncUrl\(\);/m },
+  { fichero: 'egg-pages.js', recorte: /if \(page > totalPages\)/, sync: /replaceQuery\(`\/egg\//m },
+];
+
+console.log('\nLa pagina se recorta antes de escribirla en la URL\n');
+
+for (const { fichero, recorte, sync } of PAGINADAS) {
+  const src = readFileSync(join(RAIZ, 'js', fichero), 'utf8');
+  const iRecorte = src.search(recorte);
+  const iSync = src.search(sync);
+  if (iRecorte === -1 || iSync === -1) {
+    failed++;
+    console.log(`  FAIL js/${fichero}: no se encuentra ${iRecorte === -1 ? 'el recorte de pagina' : 'la llamada que escribe la URL'}`
+      + ' -- este check quedo desfasado, actualiza el patron en scripts/check-router-url.mjs');
+    continue;
+  }
+  const ok = iRecorte < iSync;
+  if (!ok) failed++;
+  console.log(`${ok ? '  ok  ' : '  FAIL'} js/${fichero}: el recorte va ${ok ? 'antes' : 'DESPUES'} de escribir la URL`
+    + (ok ? '' : ' -- mueve la llamada que sincroniza la URL por debajo del recorte de pagina, y por encima del return de "sin resultados"'));
+}
+
 console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);
