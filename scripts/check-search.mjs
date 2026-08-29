@@ -182,6 +182,50 @@ const TODOS = [...new Set([...TERMINOS, ...CONTROL, ...PROBE,
 const desplazados = TODOS.filter(t => exactoDominioDesplazado(searchAll(datasets, t, 8)));
 check('un contains de herramienta nunca desplaza a un exacto de otro dominio', desplazados, []);
 
+console.log('\nNi un hueco del panel se gasta en una fila que lleva al mismo sitio que otra\n');
+
+// La ruta de un objeto es #/items?q=<nombre> (no tiene ficha propia: la lista se
+// abre filtrada), asi que tres filas de la BD que comparten nombre visible dan
+// la MISMA etiqueta y el MISMO destino. "bici" son bicycle/bike--green/
+// bike--yellow: entradas distintas, pagina identica. De 8 resultados, seis
+// podian ser el mismo texto repetido.
+const rutasDe = t => searchAll(datasets, t, 8).map(r => r.route);
+const repetidas = t => {
+  const rutas = rutasDe(t);
+  return rutas.filter((r, i) => rutas.indexOf(r) !== i);
+};
+
+check('bici no repite ninguna ruta', repetidas('bici'), []);
+check('meteorito tampoco', repetidas('meteorito'), []);
+// La garantia general, no termino a termino.
+check('ningun termino de la bateria repite ruta',
+  [...TERMINOS, ...CONTROL, ...PROBE, 'bici', 'meteorito', 'de', 'meta'].filter(t => repetidas(t).length), []);
+
+// El control que impide pasarse: mismo NOMBRE, rutas distintas. Zygarde Forma
+// 10% son dos Pokemon reales (ids 10118 y 10181) con ficha propia cada uno;
+// deduplicar por etiqueta escondería uno detras del otro. La ruta es la clave,
+// no el texto.
+check('zygarde 10 sigue dando los dos Pokemon', searchAll(datasets, 'zygarde 10', 8).length, 2);
+check('con sus dos fichas distintas',
+  searchAll(datasets, 'zygarde 10', 8).map(r => r.id), [10118, 10181]);
+
+// Quitar duplicados ANTES del corte deja sitio a resultados reales que antes ni
+// se veian, no huecos vacios: "bici" daba 8 filas con solo 3 destinos, y "Bici
+// de Carreras" y "Bono Bici" no llegaban a salir. Ahora salen los 5 que existen.
+check('bici ensena los 5 destinos que hay, no 3 repetidos', searchAll(datasets, 'bici', 8).length, 5);
+check('y los dos que antes no cabian ya salen',
+  searchAll(datasets, 'bici', 8).map(r => r.id).includes(527)
+  && searchAll(datasets, 'bici', 8).map(r => r.id).includes(545), true);
+// Un termino con destinos de sobra sigue llenando el panel entero.
+check('meteorito sigue llenando los 8 huecos', searchAll(datasets, 'meteorito', 8).length, 8);
+check('pika tambien', searchAll(datasets, 'pika', 8).length, 8);
+
+// El primer resultado no puede moverse: la dedupe se queda con la primera de
+// cada ruta sobre la lista YA ordenada, y la cabeza siempre sobrevive.
+check('el primer resultado no cambia en ningun termino',
+  [...TERMINOS, ...CONTROL, ...PROBE, 'bici', 'meteorito', 'natu']
+    .filter(t => first(t).id !== searchAll(datasets, t, 60)[0]?.id), []);
+
 console.log('\nEl apostrofo de teclado encuentra lo mismo que el tipografico\n');
 
 // El indice guarda "Farfetch’d" con U+2019, que no esta en ningun teclado

@@ -268,7 +268,25 @@ export function searchAll(datasets, term, limit = 8, lang = 'es') {
   // DireccionB mockup that got approved, and TOOL_MAX above keeps it from ever
   // costing the four domains their slots.
   const rank = h => (h.score === 100 ? 2 : 0) + (h.kind === 'tool' ? 1 : 0);
-  return [...toolHits, ...hits]
-    .sort((a, b) => rank(b) - rank(a) || b.score - a.score || a.id - b.id)
-    .slice(0, limit);
+  const ordenados = [...toolHits, ...hits]
+    .sort((a, b) => rank(b) - rank(a) || b.score - a.score || a.id - b.id);
+
+  // Una fila por destino, y la dedupe va AQUI: entre el sort y el corte. Detras
+  // del corte solo vaciaria huecos; delante del sort se quedaria con una
+  // cualquiera en vez de con la de mas puntuacion.
+  //
+  // Por ruta y no por etiqueta. Un objeto no tiene ficha propia -- su ruta es
+  // #/items?q=<nombre>, la lista abierta filtrada (ver SOURCES) -- asi que
+  // bicycle, bike--green y bike--yellow son tres registros distintos de la BD
+  // que llevan a una pagina byte a byte identica: buscar "bici" gastaba tres de
+  // los ocho huecos en la misma fila, y otros cuatro en "Bici Rotom". No se
+  // esconde informacion al quitarlas, porque no habia ninguna que ver.
+  //
+  // Deduplicar por NOMBRE si escondería algo: "Zygarde Forma 10%" son dos
+  // Pokemon con ficha propia (#/pokedex/10118 y #/pokedex/10181) que se llaman
+  // igual. Ahi el arreglo seria que labelOf desambiguara, no tapar uno.
+  const vistas = new Set();
+  const unicos = ordenados.filter(h => !vistas.has(h.route) && vistas.add(h.route));
+
+  return unicos.slice(0, limit);
 }
