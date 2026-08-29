@@ -164,11 +164,14 @@ async function main() {
     await cp(join(ROOT, carpeta), join(OUT, carpeta), { recursive: true });
   }
 
-  // manifest.webmanifest es un fichero suelto en la raiz, no una carpeta: el
-  // bucle de arriba no lo toca. Como index.html, se sirve directo desde la
-  // raiz sin build en local (`scripts/serve.mjs`), asi que tampoco necesita
-  // la reescritura de rutas que si llevan el CSS y el JS.
-  await cp(join(ROOT, 'manifest.webmanifest'), join(OUT, 'manifest.webmanifest'));
+  // manifest.webmanifest, robots.txt y sitemap.xml son ficheros sueltos en la
+  // raiz, no una carpeta: el bucle de arriba no los toca. Como index.html, se
+  // sirven directo desde la raiz sin build en local (`scripts/serve.mjs`),
+  // asi que tampoco necesitan la reescritura de rutas que si llevan el CSS y
+  // el JS.
+  for (const suelto of ['manifest.webmanifest', 'robots.txt', 'sitemap.xml']) {
+    await cp(join(ROOT, suelto), join(OUT, suelto));
+  }
 
   // ===== cuentas =====
   const jsFuente = (await Promise.all(

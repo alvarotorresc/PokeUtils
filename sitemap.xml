@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Solo la raiz. PokeUtils es una SPA con rutas por fragmento (#/pokedex,
+  #/team...): un sitemap no puede listarlas porque el protocolo de sitemaps
+  no admite fragmentos: todo lo que va detras de un "#" es invisible para un
+  rastreador, que solo ve "https://pokeutils.alvarotc.com/" sea cual sea la
+  URL completa. Si algun dia hay prerender por ruta (servidor o build-time,
+  con contenido real en cada URL sin fragmento), este sitemap se amplia
+  entonces con esas rutas.
+
+  Sin lastmod: no hay una fecha de "ultima modificacion" real que ofrecer,
+  esto no lo genera un build con timestamp, es un fichero estatico, y
+  poner la fecha del deploy seria mentir con una fecha que no dice nada sobre
+  si el contenido cambio.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://pokeutils.alvarotc.com/</loc>
+  </url>
+</urlset>
