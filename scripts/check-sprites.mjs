@@ -41,7 +41,7 @@ const hay = async ruta => {
 
 const { spriteIdFor } = await import('../js/forms.js');
 const { POKEBALLS } = await import('../js/battle-data.js');
-const { TYPES, itemSpriteUrl } = await import('../js/data.js');
+const { TYPES, itemSprite } = await import('../js/data.js');
 
 let failed = 0;
 function check(label, actual, expected) {
@@ -101,30 +101,55 @@ for (const i of pintados) if (!await hay(`items/${i.name}.png`)) sinSprite.push(
 check('los que si tiene PokeAPI estan todos', pintados.length - sinSprite.length, 819);
 check('y los que no, siguen siendo los mismos', sinSprite.length, 1029);
 
-// Ese 1029 era un cubo: hasta aqui el check daba por iguales a los 1029, y no
-// lo son. Un hueco cuesta distinto segun lo sepa la app o no --
-// `itemSpriteUrl()` devuelve el placeholder de mochila para los nombres de su
-// lista de excepciones y ese <img> no llega a pedir la red; para el resto
-// devuelve `/sprites/items/<name>.png` y el navegador anota un 404 en consola
-// aunque el onerror tape el hueco a la vista.
+console.log('\nLa marca noSprite dice exactamente lo que hay en el directorio\n');
+
+// Ese 1029 era un cubo: el check daba por iguales a los 1029 y no lo son. Un
+// hueco cuesta distinto segun lo sepa la app o no. Hasta la marca, 1010 de
+// ellos pedian /sprites/items/<name>.png y se llevaban un 404 en consola
+// (los tres visibles al abrir la lista -- rotom-bike, pikachu-cup,
+// farfetchd-candy -- eran tres de esos, y el check estaba verde con ellos
+// dentro); los otros 19 los tapaba una lista de nombres escrita a mano en
+// js/data.js, atada a nada.
 //
-// Se fija el reparto porque el total no lo veia: los tres 404 de objeto que se
-// ven al abrir la lista (rotom-bike, pikachu-cup, farfetchd-candy) son tres de
-// estos 1010, y el check estaba verde con ellos dentro. Comprobado contra el
-// upstream que los tres devuelven 404 alli: es un hueco de PokeAPI, no un fallo
-// de la descarga.
-//
-// Bajar ese 1010 no es trabajo de check: pide un campo por objeto en items.json
-// como el `noSprite` que ya llevan los Pokemon, y eso es regenerar datos.
-const conPlaceholder = pintados.filter(i => !itemSpriteUrl(i.name).startsWith('/sprites/'))
-  .map(i => i.name);
-check('los que la app tapa sin llegar a pedir la red', conPlaceholder.length, 19);
-// Una excepcion sobre un objeto que SI tiene sprite pinta la mochila encima de
-// un icono que existe. Nada ata hoy esa lista a lo que hay en disco salvo esto.
-check('ninguna excepcion tapa un sprite que existe',
-  conPlaceholder.filter(n => !sinSprite.includes(n)), []);
-check('y los que piden la red y se llevan un 404 en consola',
-  sinSprite.filter(n => !conPlaceholder.includes(n)).length, 1010);
+// Ahora `noSprite` lo pone scripts/build-item-sprites.mjs leyendo
+// sprites/items/, e itemSprite() devuelve la mochila sin pedir la red. Este es
+// el cable que impide que el dato y el directorio se separen: se comprueba en
+// las DOS direcciones y sobre los 2186 objetos, no solo sobre los que se
+// pintan. Una marca de menos vuelve a abrir el 404; una marca de mas pinta la
+// mochila encima de un icono que existe, que es como fallaba la lista a mano.
+const marcaSobra = [];
+const marcaFalta = [];
+for (const i of items) {
+  const existe = await hay(`items/${i.name}.png`);
+  if (i.noSprite && existe) marcaSobra.push(i.name);
+  if (!i.noSprite && !existe) marcaFalta.push(i.name);
+}
+// Un fallo aqui puede nombrar a los 1367 a la vez (es lo que pasa si nadie ha
+// corrido build-item-sprites.mjs), y mil nombres en una linea no se leen: se
+// resume en cuantos son y los cinco primeros, que es lo que hace falta para
+// saber que script hay que correr.
+const resumen = lista => (lista.length ? { cuantos: lista.length, primeros: lista.slice(0, 5) } : []);
+check('ningun objeto sin fichero se queda sin marcar', resumen(marcaFalta), []);
+check('ninguna marca tapa un sprite que existe', resumen(marcaSobra), []);
+check('y las marcas son las que tienen que ser', items.filter(i => i.noSprite).length, 1367);
+
+// El numero que importa, que es el que se llevaba los 404: cuantos de los que
+// la lista pinta acaban pidiendo la red. Tienen que ser exactamente los que
+// tienen fichero.
+const piden = pintados.filter(i => itemSprite(i).startsWith('/sprites/'));
+check('los que la lista pinta pidiendo la red', piden.length, 819);
+check('y ninguno de ellos pide un fichero que no esta',
+  resumen(piden.filter(i => sinSprite.includes(i.name)).map(i => i.name)), []);
+
+// El indice del buscador es una copia destilada de items.json, y pinta los
+// mismos sprites: si build-search.mjs corre sin build-item-sprites.mjs delante,
+// el panel vuelve a pedir los 1029 aunque la lista ya no lo haga.
+const marcaItems = new Map(items.map(i => [i.name, Boolean(i.noSprite)]));
+const search = await read('search');
+check('el indice del buscador lleva la misma marca que items.json',
+  search.items.filter(i => Boolean(i.noSprite) !== marcaItems.get(i.name)).map(i => i.name), []);
+check('y son las mismas 1029 del lado que el buscador pinta',
+  search.items.filter(i => i.noSprite).length, 1029);
 
 console.log('\nNada de sobra\n');
 

@@ -10,7 +10,7 @@
 
 // El sprite viene de aqui y no del componente porque cada dominio lo saca de un
 // sitio distinto, y es la fuente la que sabe de donde.
-import { spriteUrl, itemSpriteUrl } from './data.js';
+import { spriteUrl, itemSpriteUrl, itemSprite } from './data.js';
 import { spriteIdFor } from './forms.js';
 import { TOOLS } from './tools.js';
 
@@ -73,7 +73,11 @@ const SOURCES = [
     skip: i => i.category === 'machines',
     names: i => [i.nameEs, i.nameEn, i.name],
     route: i => `#/items?q=${encodeURIComponent(i.nameEs || i.name)}`,
-    sprite: i => itemSpriteUrl(i.name),
+    // Por itemSprite y no por el nombre: 1029 de los 1848 objetos no tienen
+    // sprite arriba, y una fila de objeto que salga en el panel pedia un
+    // fichero que no existe. El `noSprite` viaja en el indice (build-search.mjs
+    // lo copia de items.json) por la misma razon que ya viajaba el de Pokemon.
+    sprite: itemSprite,
   },
 ];
 

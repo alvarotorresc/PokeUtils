@@ -39,7 +39,15 @@ async function main() {
     // Las 338 MT quedan fuera del indice, que es lo que search-index.js ya
     // hacia en el navegador con `skip`. Filtrarlas aqui ademas las quita del
     // fichero: son bytes que no se descargaban para nada.
-    items: items.filter(i => i.category !== 'machines').map(nombres),
+    //
+    // noSprite viaja por lo mismo que el de Pokemon: 1029 de los 1848 objetos
+    // no tienen sprite en sprites/items/, y sin la marca el panel del buscador
+    // pide un fichero que no existe. Lo pone build-item-sprites.mjs en
+    // items.json; hay que correr ese script ANTES que este.
+    items: items.filter(i => i.category !== 'machines').map(i => ({
+      ...nombres(i),
+      ...(i.noSprite ? { noSprite: true } : {}),
+    })),
   };
 
   const texto = JSON.stringify(index);
