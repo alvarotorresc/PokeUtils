@@ -269,5 +269,62 @@ console.log('\nUn termino sin herramienta se comporta como antes\n');
 
 check('bicicleta no encuentra nada, en ningun dominio', searchAll(datasets, 'bicicleta', 8).length, 0);
 
+// ===== El historial que la home convierte en chips =====
+//
+// Lo que se abre desde el buscador se guarda en pkutils_search_history y
+// sustituye a los chips fijos de la home. leerHistorial protegia el JSON.parse
+// y comprobaba Array.isArray, pero no miraba la FORMA de los elementos, y
+// home.js los interpola uno a uno.
+//
+// Medido en el navegador con el valor puesto a mano: [1,2,3] pintaba tres chips
+// vacios con href="" (tres enlaces que recargan la pagina), el esquema viejo
+// {nombre,url} pintaba uno, y [null,null] tumbaba el render entero de la home
+// -- TypeError leyendo .route de null, recogido por route(), asi que la portada
+// se cambiaba por la pantalla de error. El esquema ya cambio una vez (las
+// claves pkutils_* legacy), asi que el caso no es hipotetico: le pasa a quien
+// ya tenia datos guardados el dia que la forma cambie.
+//
+// La garantia vive aqui y no en la plantilla porque leerHistorial tiene DOS
+// consumidores: los chips de home.js y el apuntar() del propio buscador, que
+// filtra por e.route antes de guardar y tambien reventaba con [null,null].
+//
+// Nombre y ruta se exigen NO VACIOS: "" pasa el typeof y deja exactamente el
+// chip en blanco que el filtro viene a quitar -- un enlace invisible a ninguna
+// parte es peor que uno roto, porque no se ve.
+console.log('\nUn historial corrupto no llega a la home\n');
+
+let almacenado = null;
+globalThis.localStorage = { getItem: () => almacenado, setItem: () => {} };
+const { leerHistorial } = await import('../js/global-search.js');
+const historialDe = valor => { almacenado = valor; return leerHistorial(); };
+
+check('numeros sueltos', historialDe('[1,2,3]'), []);
+check('el esquema viejo, con nombre/url', historialDe('[{"nombre":"Pikachu","url":"#/pokedex/25"}]'), []);
+check('un objeto que no es lista', historialDe('{"a":1}'), []);
+check('un JSON truncado', historialDe('[{"name":"Pikachu","route":"#/pokedex/25"'), []);
+check('nulos', historialDe('[null,null]'), []);
+check('cadenas en vez de entradas', historialDe('["Pikachu"]'), []);
+check('sin nada guardado', historialDe(null), []);
+check('con el nombre vacio', historialDe('[{"name":"","route":"#/x"}]'), []);
+check('con la ruta vacia', historialDe('[{"name":"Pikachu","route":""}]'), []);
+check('con la ruta de otro tipo', historialDe('[{"name":"Pikachu","route":25}]'), []);
+
+console.log('\nY lo que si tiene forma pasa entero\n');
+
+check('una entrada valida', historialDe('[{"name":"Pikachu","route":"#/pokedex/25","id":25}]'),
+  [{ name: 'Pikachu', route: '#/pokedex/25', id: 25 }]);
+// El caso real de un cambio de esquema: lo bueno se queda, lo viejo cae.
+check('de una lista mezclada sobrevive solo lo que tiene forma',
+  historialDe('[1,null,{"nombre":"viejo"},{"name":"Surf","route":"#/moves/57"}]'),
+  [{ name: 'Surf', route: '#/moves/57' }]);
+check('y nunca mas de seis',
+  historialDe(JSON.stringify(Array.from({ length: 9 }, (_, i) => ({ name: `P${i}`, route: `#/p/${i}` })))).length, 6);
+// El marcado guardado a mano SI pasa el filtro: tiene nombre y ruta, que es lo
+// que este comprueba. Quien lo neutraliza es el esc() de chipHTML, y son dos
+// capas distintas -- si el filtro se comiera esta fila, el check estaria
+// midiendo la capa equivocada y el escapado podria caerse sin que nadie lo note.
+check('el marcado guardado a mano sigue siendo una entrada valida',
+  historialDe('[{"name":"<img src=x onerror=window.__xss=1>","route":"#/x"}]').length, 1);
+
 console.log(`\n${failed ? `${failed} fallos` : 'All checks passed'}\n`);
 process.exit(failed ? 1 : 0);

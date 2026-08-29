@@ -24,10 +24,26 @@ const KIND_KEY = {
 const HISTORIAL = 'pkutils_search_history';
 const MAX_HISTORIAL = 6;
 
+// Que sea una lista no basta: hay que mirar la FORMA de cada entrada. La home
+// las interpola una a una para pintar sus chips, asi que [1,2,3] daba tres
+// chips en blanco con href="" -- enlaces invisibles que recargan la pagina --
+// el esquema viejo {nombre,url} daba uno, y [null,null] tumbaba el render
+// entero de la portada leyendo .route de null.
+//
+// El filtro va aqui y no en la plantilla porque esto tiene dos consumidores:
+// los chips de home.js y el apuntar() de abajo, que tambien lee e.route y
+// tambien reventaba. Y se exigen no vacios: "" pasa el typeof y deja justo el
+// chip en blanco que esto viene a quitar, que es peor que uno roto porque no
+// se ve. El escapado de chipHTML sigue siendo la otra capa, para el marcado
+// que se guarde a mano; esta es la que garantiza que lo que se pinta se lee.
+const tieneForma = e => e
+  && typeof e.route === 'string' && e.route !== ''
+  && typeof e.name === 'string' && e.name !== '';
+
 export function leerHistorial() {
   try {
     const guardado = JSON.parse(localStorage.getItem(HISTORIAL) || '[]');
-    return Array.isArray(guardado) ? guardado.slice(0, MAX_HISTORIAL) : [];
+    return Array.isArray(guardado) ? guardado.filter(tieneForma).slice(0, MAX_HISTORIAL) : [];
   } catch {
     return []; // un localStorage corrupto no puede tumbar la home
   }
