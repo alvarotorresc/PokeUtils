@@ -34,12 +34,10 @@
 # mas abajo: las cuatro cabeceras de aqui no las pone ningun otro bloque, y no
 # hay colision que resolver mande quien mande cuando dos patrones casan.
 #
-# X-Frame-Options ADEMAS de frame-ancestors, a proposito: frame-ancestors es el
-# mecanismo mejor (cubre el anidado a cualquier profundidad y no depende de una
-# cabecera obsoleta), pero vive en una CSP que aqui va en Report-Only, o sea que
-# hoy REPORTA y no bloquea nada. Mientras la politica no pase a modo bloqueo,
-# quien de verdad para un clickjacking es X-Frame-Options. Se quita en la PR que
-# promocione la CSP, no antes.
+# Ya no hay X-Frame-Options: frame-ancestors 'none' lo sustituye ahora que la
+# CSP bloquea de verdad. Es el mecanismo mejor (cubre el anidado a cualquier
+# profundidad y no depende de una cabecera obsoleta), y mantener las dos solo
+# invitaria a que alguien cambiara una y se olvidara de la otra.
 #
 # interest-cohort en Permissions-Policy es el opt-out de FLoC: el token ya no
 # existe en Chrome y la consola avisa de que no lo reconoce. Es ruido esperado y
@@ -49,15 +47,23 @@
   [headers.values]
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    X-Frame-Options = "DENY"
     Permissions-Policy = "geolocation=(), microphone=(), camera=(), interest-cohort=()"
 
-    # CSP en Report-Only, primer paso de dos. En modo bloqueo, un fallo de la
-    # politica es el sitio roto en produccion, y esto NO se puede validar en
-    # local: scripts/serve.mjs no lee este fichero, y este proyecto ya se quemo
-    # suponiendo que Netlify se comporta como uno espera (no aplicaba las
-    # cabeceras de aqui a lo que salia de un redirect 200 externo). Se promociona
-    # cuando el preview confirme consola limpia.
+    # CSP en modo bloqueo. Estuvo en Report-Only exactamente un paso: no se puede
+    # validar en local (scripts/serve.mjs no lee este fichero, y este proyecto ya
+    # se quemo suponiendo que Netlify se comporta como uno espera), asi que se
+    # midio contra el deploy preview de la PR #13 antes de promocionarla. Lo
+    # medido alli, con la politica ya puesta: 25 rutas de la SPA mas la home, dos
+    # fichas y 404.html, CERO violaciones del sitio y cero imagenes rotas; Umami
+    # cargando con su SRI; las dos fuentes propias resueltas. Las unicas
+    # violaciones eran de la barra de Netlify del propio preview
+    # (app.netlify.com en un iframe), que no existe en produccion -- en modo
+    # bloqueo esa barra deja de verse en los previews, y es el unico efecto
+    # colateral conocido.
+    #
+    # De paso quedo comprobado que Netlify FUSIONA los bloques [[headers]] en vez
+    # de aplicar solo el mas especifico: el CSS con hash devuelve a la vez su
+    # Cache-Control immutable y estas cabeceras. No hacia falta repetirlas.
     #
     # Sin report-uri ni report-to: las violaciones salen solo por la consola del
     # navegador, no hay panel donde mirarlas.
@@ -84,7 +90,7 @@
     #    404.html y js/ da cero. No se anaden esos origenes "por si acaso".
     #  - form-action: el <form method="GET" action="/"> de 404.html:282.
     #  - base-uri/object-src 'none': no hay <base> ni <object> en el sitio.
-    Content-Security-Policy-Report-Only = "default-src 'self'; script-src 'self' https://analytics.alvarotc.com 'unsafe-inline'; connect-src 'self' https://analytics.alvarotc.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://analytics.alvarotc.com 'unsafe-inline'; connect-src 'self' https://analytics.alvarotc.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
 
 # Generated datasets change once per Pokemon generation. Serve them stale
 # while revalidating so navigation stays instant after the first visit.
