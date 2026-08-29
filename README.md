@@ -1,3 +1,5 @@
+***Español** · [English](README.en.md)*
+
 # PokeUtils
 
 **Tu guía Pokémon retro.** Si juegas competitivo, aquí sabes si tu equipo aguanta
@@ -24,7 +26,7 @@ solo vienes a consultar la dex, está entera, en español, y no te pide una cuen
   sin cuenta y sin anuncios.
 
 En la portada hay un buscador que cruza los cuatro conjuntos a la vez —1351
-Pokémon, 937 movimientos, 313 habilidades y 1849 objetos— y te lleva directo a
+Pokémon, 937 movimientos, 313 habilidades y 1848 objetos — y te lleva directo a
 la página que tiene la respuesta.
 
 ## Las 16 herramientas
@@ -62,7 +64,7 @@ la página que tiene la respuesta.
     está también lo que enseña cada MT.
 - **[Habilidades](https://pokeutils.alvarotc.com/#/abilities)** — Las 313 con su
   descripción y buscador.
-- **[Objetos](https://pokeutils.alvarotc.com/#/items)** — 1849 objetos con su
+- **[Objetos](https://pokeutils.alvarotc.com/#/items)** — 1848 objetos con su
   sprite, filtros por categoría y ficha al abrirlos.
 - **[Naturalezas](https://pokeutils.alvarotc.com/#/natures)** — Las 25 con sus
   modificadores y una rejilla 5x5 para verlas de un vistazo.
@@ -156,6 +158,11 @@ consultar y esto se sirve como ficheros estáticos en un dominio propio:
   ni un texto, ni un set escrito a mano.
 - La atribución se muestra en la propia aplicación, junto a los datos, con el mes
   del que vienen.
+
+Los textos en español que PokeAPI no trae están recopilados del texto oficial de
+los juegos vía WikiDex, Bulbapedia y pkproject.net, con la fuente documentada
+entrada a entrada en el código. Unas pocas descripciones están redactadas por
+PokeUtils y van marcadas como tales.
 
 ## Legal
 

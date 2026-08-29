@@ -11,7 +11,8 @@ import {
   applyMultiHit, multiHitTurn, isSpreadMove, SPREAD_TARGETS,
   koLine, KO_CHANCE_FLOOR,
 } from '../js/damage.js';
-import { terrainById } from '../js/battle-data.js';
+import { STAT_CATEGORY } from '../js/damage.js';
+import { terrainById, DAMAGE_ABILITIES, WEATHER } from '../js/battle-data.js';
 import { toZMove, zGate } from '../js/variable-power.js';
 
 const moves = JSON.parse(await readFile(new URL('../data/moves.json', import.meta.url)));
@@ -381,8 +382,14 @@ checkTrue('Thick Fat halves Fire',
 checkTrue('Fur Coat doubles Defense against physical',
   fight({ move: { category: 'physical' }, defender: { ability: 'fur-coat' } }).min
   < fight({ move: { category: 'physical' } }).min);
-checkTrue('Huge Power doubles Attack',
-  fight({ attacker: { ability: 'huge-power' } }).min > clean.min);
+// `fight` lanza un movimiento ESPECIAL: ni Pelaje Recio ni Potencia tienen
+// nada que hacer contra el, porque suben la Defensa y el Ataque y ninguna de
+// las dos estadisticas entra en un especial. El caso fisico de cada una esta
+// mas abajo, con las cifras.
+check('Fur Coat does nothing against a special one',
+  fight({ defender: { ability: 'fur-coat' } }).rolls, clean.rolls);
+check('Huge Power does nothing to a special move',
+  fight({ attacker: { ability: 'huge-power' } }).rolls, clean.rolls);
 checkTrue('Technician only helps weak moves',
   fight({ move: { power: 50 }, attacker: { ability: 'technician' } }).min
   > fight({ move: { power: 50 } }).min);
@@ -463,6 +470,111 @@ check('Tera replaces the defender types',
   fight({ defender: { teraType: 'water' } }).effectiveness, 0.5);
 checkTrue('Adaptability raises a STAB move',
   fight({ attacker: { ability: 'adaptability' } }).min > clean.min);
+
+console.log('\nUna habilidad que sube una estadistica solo alcanza a lo que la lee\n');
+
+// Potencia, Energia Pura y Agallas suben el ATAQUE; Pelaje Recio sube la
+// DEFENSA. Un movimiento especial no lee ninguna de las dos -- lee el Ataque
+// Especial y lo cobra contra la Defensa Especial -- asi que las cuatro se
+// quedan fuera de la cuenta. Se aplicaban a las dos categorias: Potencia
+// doblaba un Lanzallamas y Pelaje Recio paraba la mitad de uno.
+//
+// Nivel 50, ataque 200, defensa 100, movimiento de 100 y de tipo Normal en las
+// dos categorias, con un atacante y un defensor Normales: el fisico y el
+// especial salen exactamente del mismo numero, asi que lo unico que separa las
+// dos columnas es la categoria.
+const habilidad = (over = {}) => resolveDamage({
+  attacker: {
+    types: ['normal'], level: 50, attack: 200, boost: 0,
+    item: 'none', ability: 'none', ...over.attacker,
+  },
+  defender: { types: ['normal'], defense: 100, boost: 0, ability: 'none', hp: 300, ...over.defender },
+  move: { name: 'body-slam', type: 'normal', category: 'physical', power: 100, ...over.move },
+  field: { ...over.field },
+});
+const especial = { name: 'hyper-voice', type: 'normal', category: 'special', power: 100 };
+const rango = (over) => { const r = habilidad(over); return [r.min, r.max]; };
+
+check('el fisico de partida', rango(), [114, 135]);
+check('  y el especial, que es el mismo numero', rango({ move: especial }), [114, 135]);
+
+// El lado del Ataque. Las cifras «antes» son las que daba el especial cuando la
+// habilidad se aplicaba a todo.
+check('Potencia dobla el fisico', rango({ attacker: { ability: 'huge-power' } }), [226, 267]);
+check('  y es exactamente un Ataque de 400 sin habilidad',
+  habilidad({ attacker: { ability: 'huge-power' } }).rolls,
+  habilidad({ attacker: { attack: 400 } }).rolls);
+check('Potencia no toca un especial (antes: 226 - 267)',
+  rango({ move: especial, attacker: { ability: 'huge-power' } }), [114, 135]);
+check('Energia Pura dobla el fisico', rango({ attacker: { ability: 'pure-power' } }), [226, 267]);
+check('  y tampoco toca un especial (antes: 226 - 267)',
+  rango({ move: especial, attacker: { ability: 'pure-power' } }), [114, 135]);
+// Agallas es la tercera del mismo grupo, y no estaba en el enunciado del fallo:
+// sube el Ataque un x1.5, asi que le pasa lo mismo que a las otras dos.
+check('Agallas sube el fisico un x1.5', rango({ attacker: { ability: 'guts' } }), [169, 201]);
+check('  y es exactamente un Ataque de 300 sin habilidad',
+  habilidad({ attacker: { ability: 'guts' } }).rolls,
+  habilidad({ attacker: { attack: 300 } }).rolls);
+check('Agallas no toca un especial (antes: 169 - 201)',
+  rango({ move: especial, attacker: { ability: 'guts' } }), [114, 135]);
+// La quemadura sigue siendo otra cosa: no recorta un especial de nadie, y
+// Agallas la sigue ignorando en el fisico. Lo que cambia es el x1.5, no eso.
+check('un especial quemado con Agallas es el especial de siempre',
+  habilidad({ move: especial, attacker: { ability: 'guts', burned: true } }).rolls,
+  habilidad({ move: especial }).rolls);
+
+// El lado de la Defensa.
+check('Pelaje Recio dobla la Defensa contra un fisico', rango({ defender: { ability: 'fur-coat' } }), [58, 69]);
+check('  y es exactamente una Defensa de 200 sin habilidad',
+  habilidad({ defender: { ability: 'fur-coat' } }).rolls,
+  habilidad({ defender: { defense: 200 } }).rolls);
+check('Pelaje Recio no para un especial (antes: 58 - 69)',
+  rango({ move: especial, defender: { ability: 'fur-coat' } }), [114, 135]);
+
+// El caso donde mas se movia: la tormenta de arena sube la Defensa ESPECIAL de
+// un Roca (x1.5) y Pelaje Recio doblaba la Defensa. Contra un especial se
+// encadenaban las dos y salia un x3 sobre una estadistica que el movimiento ni
+// siquiera lee. Ahora solo queda el x1.5 de la arena.
+const roca = { types: ['rock'] };
+check('arena, un Roca contra un especial', rango({ move: especial, defender: roca, field: { weather: 'sand' } }), [38, 45]);
+check('  y con Pelaje Recio, el mismo numero (antes: 19 - 23)',
+  rango({ move: especial, defender: { ...roca, ability: 'fur-coat' }, field: { weather: 'sand' } }), [38, 45]);
+// El control por el otro lado: contra un fisico manda Pelaje Recio y la arena
+// es la que no pinta nada, asi que ese numero no se mueve.
+check('arena, un Roca contra un fisico', rango({ defender: roca, field: { weather: 'sand' } }), [57, 67]);
+check('  y con Pelaje Recio, la mitad, como siempre',
+  rango({ defender: { ...roca, ability: 'fur-coat' }, field: { weather: 'sand' } }), [29, 34]);
+
+// La regla sale de una tabla, y una tabla se puede escribir mal. Un `stat` que
+// el mapa no conozca no falla: la habilidad deja de aplicarse y nadie se
+// entera, que es el mismo silencio que tenia el fallo de arriba. Estos dos
+// checks son los que hacen segura la tabla compartida.
+check('el mapa de estadistica a categoria', STAT_CATEGORY,
+  { atk: 'physical', def: 'physical', spa: 'special', spd: 'special' });
+check('toda habilidad con statMult declara un stat que el mapa conoce',
+  DAMAGE_ABILITIES.filter(a => a.statMult && !STAT_CATEGORY[a.stat]).map(a => a.id), []);
+check('  y son las cuatro que suben una estadistica, ni una mas',
+  DAMAGE_ABILITIES.filter(a => a.statMult).map(a => a.id),
+  ['huge-power', 'pure-power', 'guts', 'fur-coat']);
+check('el bono defensivo del clima pasa por el mismo mapa',
+  WEATHER.filter(w => w.defBoost && !STAT_CATEGORY[w.defBoost.stat]).map(w => w.id), []);
+// El mismo silencio por el lado del llamador: la regla lee `move.category`, asi
+// que un movimiento construido sin ella tampoco cobra el modificador. Ninguno
+// de los tres llamadores lo hace -- calc-damage.js la pasa a mano y
+// survival.js reenvia el movimiento entero de moves.json -- y este check fija
+// esa decision en vez de dejarla sin descubrir.
+check('un movimiento sin categoria no cobra ninguna de las cuatro',
+  [habilidad({ move: { category: undefined }, attacker: { ability: 'huge-power' } }).max,
+    habilidad({ move: { category: undefined }, defender: { ability: 'fur-coat' } }).max],
+  [habilidad({ move: { category: undefined } }).max,
+    habilidad({ move: { category: undefined } }).max]);
+
+// La tercera categoria es `status`, que no lee ninguna estadistica y por tanto
+// no cobra ningun modificador. No hay caso que probar porque no hay manera de
+// llegar: ningun movimiento de estado lleva potencia, y sin potencia
+// damageRolls devuelve dieciseis ceros antes de mirar nada.
+check('ningun movimiento de estado lleva potencia',
+  moves.filter(m => m.category === 'status' && m.power).map(m => m.name), []);
 
 console.log('\nEn dobles, repartir cuesta un cuarto\n');
 
