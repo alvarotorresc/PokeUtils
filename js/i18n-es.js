@@ -560,6 +560,52 @@ export default {
     'common.next': 'Sig. ▶',
     'common.total': 'TOTAL',
 
+    // Footer
+    'footer.faq': 'FAQ',
+    'footer.privacy': 'Privacidad',
+    'footer.terms': 'Términos',
+
+    // FAQ
+    'faq.title': 'Preguntas frecuentes',
+    'faq.subtitle': 'Qué es PokeUtils y de dónde sale cada dato',
+    'faq.what.q': '¿Qué es PokeUtils?',
+    'faq.what.a': 'Una guía Pokémon no oficial y gratuita, en español e inglés: la Pokédex completa —1025 especies y 326 formas—, los datos de movimientos, habilidades, objetos, naturalezas y tipos, y un puñado de herramientas competitivas y calculadoras para preparar equipo.',
+    'faq.data.q': '¿De dónde salen los datos?',
+    'faq.data.a': 'De PokeAPI, la API REST pública que reúne los datos de los juegos.',
+    'faq.meta.q': '¿Y los sets competitivos?',
+    'faq.meta.a': 'De las estadísticas de uso de Smogon, para los formatos OU y VGC. Es una instantánea de julio de 2026: no se actualiza sola, se regenera a mano cuando toca.',
+    'faq.spanish.q': 'PokeAPI no trae todo en español. ¿De dónde sale ese texto?',
+    'faq.spanish.a': 'De los textos oficiales de los juegos, recopilados de WikiDex, Bulbapedia y pkproject.net. Cada entrada documenta su fuente en el propio código. Ocho descripciones no tienen ese respaldo —el movimiento torque, dos Poké Balls sin texto oficial y un objeto provisional— y están redactadas por PokeUtils, marcadas como tales.',
+    'faq.megastones.q': '¿Y los nombres en español de las megapiedras de Leyendas Z-A y Pokémon Champions?',
+    'faq.megastones.a': 'Todavía no hay nombre oficial, así que se derivan a mano siguiendo el patrón que usa la saga para el resto de megapiedras, hasta que Nintendo publique el suyo.',
+    'faq.scvi.q': 'Escarlata y Púrpura a veces cuentan cosas distintas de un mismo Pokémon. ¿Cuál se usa?',
+    'faq.scvi.a': 'La de Escarlata, siempre que difieren.',
+    'faq.sprites.q': '¿De dónde vienen los sprites?',
+    'faq.sprites.a': 'Se sirven desde el propio sitio, no de un tercero.',
+    'faq.missing.q': '¿Por qué puede faltar o estar mal un dato?',
+    'faq.missing.a': 'Porque los juegos siguen cambiando. Los datos se regeneran de vez en cuando, y hay comprobaciones automáticas que revisan que sigan cuadrando, pero algo se puede escapar.',
+
+    // Privacy
+    'privacy.title': 'Privacidad',
+    'privacy.subtitle': 'Lo que se guarda, y dónde',
+    'privacy.accounts.title': 'Sin cuentas ni registro',
+    'privacy.accounts.body': 'No hace falta crear una cuenta ni dejar ningún dato para usar PokeUtils. La analítica corre con Umami, autoalojado por el propio autor: sin cookies, sin identificadores personales, solo el recuento agregado de visitas.',
+    'privacy.storage.title': 'Lo que guarda tu navegador',
+    'privacy.storage.body': 'El idioma, el tema y el historial de búsqueda se guardan solo en tu navegador, con localStorage. No salen de ahí: no se envían a ningún servidor.',
+    'privacy.ads.title': 'Sin publicidad ni terceros',
+    'privacy.ads.body': 'No hay anuncios ni nadie rastreándote de un sitio a otro.',
+
+    // Terms
+    'terms.title': 'Términos de uso',
+    'terms.subtitle': 'Lo esencial, sin letra pequeña',
+    'terms.asis.title': 'Uso tal cual',
+    'terms.asis.body': 'PokeUtils se ofrece tal cual, sin garantías. Es una herramienta gratuita hecha por un desarrollador independiente, no por una empresa.',
+    'terms.disclaimer.title': 'Un proyecto de fans',
+    'terms.disclaimer.body': 'PokeUtils no está afiliado a Nintendo, Creatures Inc., GAME FREAK ni The Pokémon Company, ni cuenta con su respaldo. Pokémon y los nombres de los juegos y las criaturas son marcas registradas de sus respectivos titulares; los datos de juego pertenecen a sus dueños y se muestran aquí con fines informativos.',
+    'terms.license.title': 'El código',
+    'terms.license.body': 'El código de la web es MIT: puedes leerlo, copiarlo o adaptarlo. Está en {link}.',
+    'terms.license.link': 'el repositorio',
+
     // Categories
     'cat.physical': 'Físico',
     'cat.special': 'Especial',
