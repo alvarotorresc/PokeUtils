@@ -554,6 +554,76 @@ check('la nieve no ayuda contra un movimiento especial',
   nieve({ move: { name: 'psychic', type: 'psychic', category: 'special' } }).max,
   nieve({ move: { name: 'psychic', type: 'psychic', category: 'special' }, field: { weather: 'none' } }).max);
 
+console.log('\nEl bono defensivo del clima va DETRAS de la etapa\n');
+
+// La otra mitad del arreglo que puso las habilidades de stat detras del boost:
+// la subida de la arena y de la nieve seguia multiplicando el stat crudo, o sea
+// delante de la etapa, y quedaba un orden hibrido. El juego hace la etapa
+// primero y encadena TODOS los modificadores encima, en una sola pasada.
+//
+// Sin etapa no se nota, y por eso los quince checks de aqui arriba (todos con
+// `boost: 0` y sin habilidad) estaban verdes con el orden malo y siguen verdes
+// con el bueno: para un stat entero floor(n*1.5) y pokeRound(n*1.5) valen lo
+// mismo. Lo que se mueve son las etapas cuyo multiplicador NO es 1.5 -- las
+// negativas, que son division, y +2 en adelante -- y cualquier etapa cuando
+// ademas hay un Pelaje Recio que encadenar.
+//
+// Barrido medido viejo-contra-nuevo (35.464 combinaciones de clima x tipo x
+// etapa -6..+6 x defensa 60..400 x critico x Pelaje Recio): 3146 se movieron,
+// 2905 de ellas en etapa negativa. Cero con etapa 0 y sin habilidad.
+
+// El caso de cabecera, sobre el mismo defensor de los checks de arriba: Roca
+// con 100 de Def. Esp. y -1, en tormenta de arena.
+//   antes  floor(100*1.5)=150 -> floor(150*2/3)=100      -> 68-81
+//   ahora  floor(100*2/3)=66  -> pokeRound(66*1.5)=99    -> 69-82
+check('arena, un Roca con -1 de Def. Esp., el lanzamiento bajo',
+  clima({ defender: { boost: -1 } }).min, 69);
+check('  y el alto', clima({ defender: { boost: -1 } }).max, 82);
+// La garantia de verdad, y no un numero copiado: sale lo mismo que entregarle a
+// la formula la Def. Esp. ya calculada a mano (99) sin clima ninguno.
+check('  y es exactamente una Def. Esp. de 99 sin clima',
+  clima({ defender: { boost: -1 } }).rolls,
+  clima({ defender: { defense: 99, boost: 0 }, field: { weather: 'none' } }).rolls);
+
+// Una etapa positiva tambien: +3 multiplica por 2,5, que no es 1,5.
+check('arena, un Roca con 101 de Def. Esp. y +3',
+  clima({ defender: { defense: 101, boost: 3 } }).max, 22);
+check('  y es exactamente una Def. Esp. de 378 sin clima',
+  clima({ defender: { defense: 101, boost: 3 } }).rolls,
+  clima({ defender: { defense: 378, boost: 0 }, field: { weather: 'none' } }).rolls);
+
+// El critico ignora las etapas POSITIVAS del defensor, no las negativas, asi
+// que el bono del clima y una etapa negativa siguen encontrandose.
+check('arena, un critico contra un Roca con -1',
+  clima({ defender: { boost: -1 }, field: { critical: true } }).max, 123);
+
+// La nieve, el mismo caso por el otro lado.
+check('nieve, un Hielo con -1 de Defensa, el lanzamiento bajo',
+  nieve({ defender: { boost: -1 } }).min, 103);
+check('  y el alto', nieve({ defender: { boost: -1 } }).max, 123);
+check('  y es exactamente una Defensa de 99 sin nieve',
+  nieve({ defender: { boost: -1 } }).rolls,
+  nieve({ defender: { defense: 99, boost: 0 }, field: { weather: 'none' } }).rolls);
+
+// Los dos modificadores a la vez sobre la MISMA estadistica: Pelaje Recio (x2)
+// y la nieve (x1,5) sobre la Defensa de un Hielo contra un movimiento fisico.
+// El juego los encadena y los aplica de una: 63 -> pokeRound(63*3) = 189.
+// Antes se aplicaban por separado, floor(63*1.5)=94 y luego x2 = 188, y ese
+// punto perdido se ve en los dieciseis lanzamientos aunque la etapa sea 0.
+check('nieve y Pelaje Recio se encadenan sobre la misma Defensa',
+  nieve({ defender: { defense: 63, ability: 'fur-coat' } }).max, 64);
+check('  y es exactamente una Defensa de 189 sin nieve ni habilidad',
+  nieve({ defender: { defense: 63, ability: 'fur-coat' } }).rolls,
+  nieve({ defender: { defense: 189, boost: 0 }, field: { weather: 'none' } }).rolls);
+
+// Controles: lo que NO puede haberse movido.
+check('sin clima, la etapa sola sigue igual',
+  clima({ defender: { boost: -1 }, field: { weather: 'none' } }).max, 122);
+check('un Normal en la arena tampoco cambia con etapa',
+  clima({ defender: { types: ['normal'], boost: -1 } }).max, 122);
+check('y con la etapa a 0 el numero de siempre sigue siendo el de siempre',
+  clima().max, 54);
+
 console.log('\nUn multigolpe se usa una vez y golpea varias\n');
 
 // El caso de la Semilladora: 25 de potencia, de 2 a 5 golpes, atacante Planta

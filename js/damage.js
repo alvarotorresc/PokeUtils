@@ -366,26 +366,32 @@ export function resolveDamage({ attacker, defender, move, field = {} }) {
   // Stat-doubling abilities act on the stat, not on the damage, and they act on
   // it AFTER the stat stage. They travel as multipliers rather than being
   // applied here, because damageRolls is where the stage is known.
-  let defense = defender.defense;
   const attackMult = atkAbility.statMult ?? 1;
-  const defenseMult = defAbility.statMult ?? 1;
+  let defenseMult = defAbility.statMult ?? 1;
 
   // Sandstorm and snow raise a defensive stat instead of scaling the move. The
   // types that qualify are the post-Tera ones, the same as everywhere else on
   // this side: a Rock type that Teras into something else is no longer a Rock
   // type, and the storm stops helping it.
+  //
+  // It rides with the ability's modifier instead of being applied to the raw
+  // stat for the same reason the ability does: the game runs the stage first
+  // and then chains every modifier on top of it in one go. Multiplying them
+  // together is safe because every statMult in the game data is 1.5 or 2, so
+  // the product is exact in binary (Fur Coat 2 x sandstorm 1.5 = 3) and one
+  // pokeRound closes it, which is what a chained modifier does.
   const defBoost = weather.defBoost;
   if (defBoost && defTypes.some(x => defBoost.types.includes(x))
       && ((defBoost.stat === 'spd' && move.category === 'special')
        || (defBoost.stat === 'def' && move.category === 'physical'))) {
-    defense = Math.floor(defense * defBoost.mult);
+    defenseMult *= defBoost.mult;
   }
 
   const result = calcDamage({
     level: attacker.level,
     power: move.power,
     attack: attacker.attack,
-    defense,
+    defense: defender.defense,
     attackBoost: attacker.boost ?? 0,
     defenseBoost: defender.boost ?? 0,
     attackMult,
