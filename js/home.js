@@ -6,6 +6,7 @@
 import { spriteUrl } from './data.js';
 import { CATEGORIES, TOOLS, toolsIn } from './tools.js';
 import { t, getLang } from './i18n.js';
+import { esc } from './ui.js';
 import { attachGlobalSearch, leerHistorial } from './global-search.js';
 
 // The background is made of real sprites from the app, not an illustration: 100
@@ -63,8 +64,8 @@ function fillSwarm(swarm) {
 }
 
 const chipHTML = (href, name, sprite) =>
-  `<a class="qchip" href="${href}">${sprite
-    ? `<img src="${sprite}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : ''}${name}</a>`;
+  `<a class="qchip" href="${esc(href)}">${sprite
+    ? `<img src="${esc(sprite)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : ''}${esc(name)}</a>`;
 
 // Todos los dominios traen sprite: el suyo los Pokemon y los objetos, la MT de
 // su tipo los movimientos, la Capsula Habilidad las habilidades y el icono de

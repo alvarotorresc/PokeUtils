@@ -7,7 +7,7 @@ import { fetchMeta, fetchPokemonList, fetchMetaNames } from './api.js';
 import { FORMATS, MONTH, defaultFormat, metaSetOf, metaName, metaLink, usageRanking } from './meta.js';
 import { spriteUrl, STAT_KEYS, NATURES } from './data.js';
 import { spriteIdFor } from './forms.js';
-import { loadingHTML, replaceQuery } from './ui.js';
+import { loadingHTML, replaceQuery, esc } from './ui.js';
 import { getLevel } from './level.js';
 import { t, pokeName, typeName, statName, getLang, natureName } from './i18n.js';
 import { toolTabsHTML, wireToolTabs } from './hub.js';
@@ -62,7 +62,7 @@ export async function renderMeta(container, query = new URLSearchParams()) {
     return `
       <div class="card meta-set">
         <div class="meta-set-head">
-          <img src="${spriteUrl(spriteIdFor(mon))}" alt="${pokeName(mon)}">
+          <img src="${spriteUrl(spriteIdFor(mon))}" alt="${esc(pokeName(mon))}">
           <div>
             <h3>${pokeName(mon)}</h3>
             <div class="meta-usage">${t('meta.usage')}: ${pct(set.u)}</div>

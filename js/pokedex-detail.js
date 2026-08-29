@@ -1,7 +1,7 @@
 // ===== POKEMON DETAIL =====
 import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, NATURES } from './data.js';
 import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchDex } from './api.js';
-import { loadingHTML, renderError, hostDeRuta, wireScrollFade } from './ui.js';
+import { loadingHTML, renderError, hostDeRuta, wireScrollFade, esc } from './ui.js';
 import { evolutionText, ramasResueltas, textoDeRama, nodoActual } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
 import { rangeAt100 } from './stats.js';
@@ -26,7 +26,7 @@ function displayName(entry) {
 function evoNodeHTML(species, currentId, nameOf, dex = species) {
   const isCurrent = species === currentId;
   const inner = `
-    <img src="${spriteUrl(species)}" alt="${nameOf(species)}" loading="lazy">
+    <img src="${spriteUrl(species)}" alt="${esc(nameOf(species))}" loading="lazy">
     <span class="evo-dex">#${String(dex).padStart(4, '0')}</span>
     <span class="evo-name">${nameOf(species)}</span>
   `;
@@ -494,7 +494,7 @@ export async function renderPokedexDetail(container, id) {
       <div class="bento">
       <section class="b b-id">
       <div class="poke-detail-header">
-        <img class="poke-detail-sprite" src="${spriteUrl(spriteIdFor(pokemon))}" alt="${displayName}"
+        <img class="poke-detail-sprite" src="${spriteUrl(spriteIdFor(pokemon))}" alt="${esc(displayName)}"
              onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><text x=%2248%22 y=%2260%22 text-anchor=%22middle%22 font-size=%2240%22>?</text></svg>'">
         <div class="poke-detail-info">
           <div class="dex-number">#${String(dexId).padStart(4, '0')}</div>
@@ -588,7 +588,7 @@ export async function renderPokedexDetail(container, id) {
                 <a class="ability-link" href="#/abilities/${encodeURIComponent(a.nameEn)}">${getLang() === 'es' ? a.nameEs : a.displayEn}</a>
                 ${a.isHidden ? `<span class="ability-tag">${t('pokedex.hidden')}</span>` : ''}
               </div>
-              ${desc ? `<p class="ability-desc">${desc}</p>` : ''}
+              ${desc ? `<p class="ability-desc">${esc(desc)}</p>` : ''}
             </div>
           `;
         }).join('')}

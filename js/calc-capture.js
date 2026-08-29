@@ -8,6 +8,7 @@ import { calcHP } from './stats.js';
 import { captureChance, chanceWithin } from './capture.js';
 import { POKEBALLS, CAPTURE_STATUS, ballById } from './battle-data.js';
 import { t, getLang, pokeName } from './i18n.js';
+import { esc } from './ui.js';
 
 // How many throws the summary line reports on.
 const THROW_COUNTS = [1, 5, 10, 25];
@@ -119,7 +120,7 @@ export function renderCapture(container) {
     }
     searchResultsEl.innerHTML = searchResults.map(p => `
       <div class="card card-clickable" style="padding:10px;margin-bottom:4px;display:flex;align-items:center;gap:10px" data-id="${p.id}">
-        <img src="${spriteUrl(p.id)}" style="width:40px;height:40px;image-rendering:pixelated" alt="${pokeName(p)}">
+        <img src="${spriteUrl(p.id)}" style="width:40px;height:40px;image-rendering:pixelated" alt="${esc(pokeName(p))}">
         <div>
           <div style="font-size:0.42rem">${pokeName(p)}</div>
           <div style="font-size:0.42rem;color:var(--ink-3)">${t('capture.rate')}: ${p.captureRate}</div>
@@ -140,7 +141,7 @@ export function renderCapture(container) {
     selectedEl.style.display = '';
     selectedEl.innerHTML = `
       <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
-        <img src="${spriteUrl(poke.id)}" style="width:56px;height:56px;image-rendering:pixelated" alt="${pokeName(poke)}">
+        <img src="${spriteUrl(poke.id)}" style="width:56px;height:56px;image-rendering:pixelated" alt="${esc(pokeName(poke))}">
         <div>
           <div style="font-size:0.5rem;color:var(--accent-text)">${pokeName(poke)}</div>
           <div style="font-size:0.44rem;color:var(--ink-3)">

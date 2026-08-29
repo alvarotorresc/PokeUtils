@@ -8,6 +8,7 @@
 // para leer cuatro campos de cada registro; desde build-search.mjs es un solo
 // fichero de 80,5 KB gz, asi que ya no hace falta pintar a medias y repintar.
 import { searchAll } from './search-index.js';
+import { esc } from './ui.js';
 import { fetchSearchIndex } from './api.js';
 import { getLang, t } from './i18n.js';
 
@@ -98,11 +99,11 @@ export function attachGlobalSearch(input, alGuardar) {
       // vacia (linea de arriba), pero sin esta clase reservaba igual los
       // 108px fijos del resto -- ver la regla de flex-basis en style.css.
       return `${header}
-      <a class="gs-row${esHerramienta ? ' gs-row-tool' : ''}" href="${r.route}" data-i="${i}">
-        <img class="gs-sprite" src="${r.sprite}" alt="" loading="lazy"
+      <a class="gs-row${esHerramienta ? ' gs-row-tool' : ''}" href="${esc(r.route)}" data-i="${i}">
+        <img class="gs-sprite" src="${esc(r.sprite)}" alt="" loading="lazy"
              onerror="this.style.visibility='hidden'">
         <span class="gs-kind">${kind}</span>
-        <span class="gs-name">${r.name}</span>
+        <span class="gs-name">${esc(r.name)}</span>
       </a>`;
     }).join('');
   }

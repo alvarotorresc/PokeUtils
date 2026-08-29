@@ -5,7 +5,7 @@
 import { speedSpread, speedTiers } from './speed-tiers.js';
 import { fetchPokemonList } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { loadingHTML, replaceQuery } from './ui.js';
+import { loadingHTML, replaceQuery, esc } from './ui.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
 import { t, pokeName } from './i18n.js';
@@ -66,7 +66,7 @@ export async function renderSpeed(container, query = new URLSearchParams()) {
       <div class="cmp-results" id="spdResults" hidden></div>
       ${!p ? `<p class="egg-note note-center">${t('speed.pick')}</p>` : `
         <div class="spd-head">
-          <img class="cmp-sprite" src="${spriteUrl(spriteIdFor(p))}" alt="${pokeName(p)}">
+          <img class="cmp-sprite" src="${spriteUrl(spriteIdFor(p))}" alt="${esc(pokeName(p))}">
           <div>
             <h2>${pokeName(p)}</h2>
             <p class="egg-note" style="margin:4px 0 0">${t('speed.atlevel', { level })}</p>

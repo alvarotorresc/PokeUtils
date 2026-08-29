@@ -6,7 +6,7 @@
 import { TYPES, spriteUrl } from './data.js';
 import { fetchPokemonList } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { loadingHTML, renderError, replaceQuery, hostDeRuta } from './ui.js';
+import { loadingHTML, renderError, replaceQuery, hostDeRuta, esc } from './ui.js';
 import { t, typeName, pokeName } from './i18n.js';
 import { defensiveMatrix, threats, unresisted, stabTypes, offensiveCoverage } from './team-analysis.js';
 import { toolTabsHTML, wireToolTabs } from './hub.js';
@@ -105,7 +105,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
       return `
         <div class="team-slot filled">
           <button class="team-remove" data-remove="${id}" aria-label="${t('team.remove')}">×</button>
-          <img src="${spriteUrl(spriteIdFor(p))}" alt="${pokeName(p)}" loading="lazy">
+          <img src="${spriteUrl(spriteIdFor(p))}" alt="${esc(pokeName(p))}" loading="lazy">
           <span class="team-slot-name">${pokeName(p)}</span>
           <span class="team-slot-types">${p.types.map(tp => `<span class="type-badge sm" data-type="${tp}">${typeName(tp)}</span>`).join('')}</span>
         </div>
@@ -139,7 +139,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
 
     resultsEl.innerHTML = found.map(p => `
       <button class="team-result" data-add="${p.id}">
-        <img src="${spriteUrl(spriteIdFor(p))}" alt="${pokeName(p)}" loading="lazy">
+        <img src="${spriteUrl(spriteIdFor(p))}" alt="${esc(pokeName(p))}" loading="lazy">
         <span>${pokeName(p)}</span>
         <span class="team-result-types">${p.types.map(tp => `<span class="type-badge sm" data-type="${tp}">${typeName(tp)}</span>`).join('')}</span>
       </button>
@@ -186,7 +186,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
           <thead>
             <tr>
               <th>${t('team.col.type')}</th>
-              ${team.map(p => `<th><img src="${spriteUrl(spriteIdFor(p))}" alt="${pokeName(p)}" loading="lazy"></th>`).join('')}
+              ${team.map(p => `<th><img src="${spriteUrl(spriteIdFor(p))}" alt="${esc(pokeName(p))}" loading="lazy"></th>`).join('')}
             </tr>
           </thead>
           <tbody>

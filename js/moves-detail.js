@@ -6,7 +6,7 @@
 
 import { spriteUrl } from './data.js';
 import { fetchMoves, fetchLearnsets, fetchPokemonList } from './api.js';
-import { loadingHTML, renderError, hostDeRuta } from './ui.js';
+import { loadingHTML, renderError, hostDeRuta, esc } from './ui.js';
 import { t, typeName, categoryName, pokeName, getLang } from './i18n.js';
 import { priorityLabel, priorityHint, statChangeLabel } from './move-effects.js';
 import { learnersOf } from './learnset-index.js';
@@ -27,7 +27,7 @@ function learnerHTML(entry, pokemon, method) {
     : '';
   return `
     <a class="learner" href="#/pokedex/${entry.id}">
-      <img src="${spriteUrl(entry.id)}" alt="${name}" loading="lazy"
+      <img src="${spriteUrl(entry.id)}" alt="${esc(name)}" loading="lazy"
            onerror="this.style.visibility='hidden'">
       <span class="learner-name">${name}</span>
       ${level ? `<span class="learner-level">${level}</span>` : ''}
