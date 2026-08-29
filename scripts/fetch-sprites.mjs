@@ -30,6 +30,27 @@ const FORCE = process.argv.includes('--force');
 const read = async name => JSON.parse(await readFile(join(DATA, `${name}.json`), 'utf8'));
 const existe = async file => access(file).then(() => true, () => false);
 
+// La mitad de las rutas de abajo se construyen con el `name` de un objeto, que
+// sale de data/items.json y ese de PokeAPI: es un nombre de un tercero que
+// acaba siendo una ruta de ESCRITURA. `join()` normaliza los `..`, asi que un
+// objeto llamado `../../evil` escribiria en la raiz del repo y el
+// `mkdir(dirname(destino), { recursive: true })` de bajar() crearia por el
+// camino los directorios que hicieran falta.
+//
+// Medido hoy sobre los 2186 items: ninguno lleva `..`, `/` ni mayusculas -- el
+// juego de caracteres entero es [a-z0-9-] -- asi que la guarda no rechaza nada
+// de lo que hay. El `-+` en vez de `-` es imprescindible: 106 nombres llevan
+// doble guion (`normalium-z--held`, `contest-costume--jacket`) y un slug
+// estricto los tiraria. Comprobada contra las 3206 rutas que este script pide.
+const RUTA_OK = /^(pokemon|items)\/[a-z0-9]+(-+[a-z0-9]+)*\.png$/;
+
+// Los 8 bytes de cabecera de todo PNG. Un 200 con una pagina de error de un CDN
+// o de un proxy corporativo se escribia igual como .png: el status no dice nada
+// del cuerpo, y el content-type lo pone quien responde, asi que se miran los
+// dos -- un servidor puede mentir en cualquiera de ellos, pero mentir en los
+// dos a la vez ya es servir un PNG.
+const FIRMA_PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
 const TIPOS = ['normal', 'fire', 'water', 'electric', 'grass', 'ice', 'fighting', 'poison',
   'ground', 'flying', 'psychic', 'bug', 'rock', 'ghost', 'dragon', 'dark', 'steel', 'fairy'];
 
@@ -52,6 +73,11 @@ async function mapLimit(items, fn, label) {
 }
 
 async function bajar(rutaRelativa) {
+  // Fuera del try y antes de join() y de mkdir(): una ruta rara no es un fallo
+  // de red que se reintente y se cuente al final, es motivo para parar. Aqui
+  // sube por el `await fn(...)` pelado de mapLimit y aborta la ejecucion sin
+  // haber creado ni un directorio.
+  if (!RUTA_OK.test(rutaRelativa)) throw new Error(`ruta de sprite sospechosa: ${rutaRelativa}`);
   const destino = join(OUT, rutaRelativa);
   if (!FORCE && await existe(destino)) return 'ya estaba';
   await mkdir(dirname(destino), { recursive: true });
@@ -60,7 +86,13 @@ async function bajar(rutaRelativa) {
       const res = await fetch(`${UPSTREAM}/${rutaRelativa}`);
       if (res.status === 404) return 'no existe arriba';
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      await writeFile(destino, Buffer.from(await res.arrayBuffer()));
+      const tipo = res.headers.get('content-type') || '';
+      if (!tipo.startsWith('image/')) throw new Error(`no es imagen: ${tipo || 'sin content-type'}`);
+      const cuerpo = Buffer.from(await res.arrayBuffer());
+      if (!cuerpo.subarray(0, 8).equals(FIRMA_PNG)) {
+        throw new Error(`no empieza por la firma PNG (${cuerpo.length} bytes)`);
+      }
+      await writeFile(destino, cuerpo);
       return 'bajado';
     } catch (err) {
       if (intento === 4) return `error: ${err.message}`;
