@@ -19,6 +19,10 @@
   <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
+  <!-- Una unica canonical, la raiz: las rutas de esta SPA viven en el
+       fragmento (#/pokedex...), invisible para un rastreador -- misma razon
+       por la que sitemap.xml solo lista esta misma URL. -->
+  <link rel="canonical" href="https://pokeutils.alvarotc.com/">
   <meta name="theme-color" content="#1a1a3e">
   <meta name="author" content="Alvaro Torres">
   <meta name="description" content="Your retro Pokemon guide: competitive analysis, breeding tools, complete Pokédex and damage calculators.">
@@ -126,6 +130,13 @@
   <script>
     (function () {
       if ((localStorage.getItem('pkutils_lang') || 'es') !== 'en') return;
+      // El <html lang> tiene que coincidir con lo que se pinta desde el
+      // primer frame, no solo el nav: <html lang="es"> es el valor estatico
+      // de arriba, correcto para quien no ha guardado idioma o guardo 'es'.
+      // js/app.js:onLangChange lo mantiene correcto el resto de la sesion,
+      // en cualquier direccion del toggle -- esta linea solo cubre el hueco
+      // entre "nace en HTML" y "app.js ya corrio" para quien guardo 'en'.
+      document.documentElement.lang = 'en';
       var EN_NAV = {
         "navHome": "HOME", "navPokedex": "POKEDEX", "navData": "DATA",
         "navCompetitive": "COMPETITIVE", "navCalculator": "CALCULATOR",
@@ -210,6 +221,16 @@
   <footer class="footer">
     <p>Datos de <a href="https://pokeapi.co" target="_blank" rel="noopener">PokeAPI</a></p>
     <p style="margin-top:8px;font-size:0.46rem;color:var(--ink-2);line-height:1.6">Made with <span class="pokeball-inline"></span> by <a href="https://github.com/alvarotorresc" target="_blank" rel="noopener">Alvaro Torres</a></p>
+    <!-- Nace en espanol como los nav-link: js/app.js:updateFooterLabels lo
+         traduce tras hidratar, igual que updateNavLabels hace con el nav. Sin
+         swap pre-paint propio -- a diferencia del nav y el hero, el footer
+         esta bajo el pliegue y no es LCP, asi que no hay nada que adelantar
+         antes del primer pintado. -->
+    <p style="margin-top:8px;font-size:0.46rem">
+      <a href="#/faq" id="footerFaq">FAQ</a> &middot;
+      <a href="#/privacy" id="footerPrivacy">Privacidad</a> &middot;
+      <a href="#/terms" id="footerTerms">T&eacute;rminos</a>
+    </p>
     <div class="footer-legal">
       <p class="footer-hint">PokeUtils is an unofficial, free fan made app and is NOT affiliated, endorsed or supported by Nintendo, GAME FREAK or The Pok&eacute;mon company in any way.</p>
       <p class="footer-hint">Pok&eacute;mon, Pok&eacute;mon character and all respective names are trademarks of Nintendo. No copyright infringement intended.</p>

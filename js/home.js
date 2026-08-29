@@ -177,7 +177,25 @@ export function renderHome(container) {
 
   // Al abrir un resultado se repinta la tira: al volver atras, el chip ya esta.
   const chips = container.querySelector('#swarmChips');
-  attachGlobalSearch(container.querySelector('#globalSearch'), () => {
+  const globalSearchInput = container.querySelector('#globalSearch');
+  attachGlobalSearch(globalSearchInput, () => {
     chips.innerHTML = chipsHTML();
   });
+
+  // El buscador de 404.html manda aqui con un GET a "/?q=texto" (ver ese
+  // fichero): si la URL de arranque trae ese parametro, se escribe en el
+  // buscador central y se dispara el mismo evento "input" que ya escucha
+  // attachGlobalSearch, para abrir su desplegable con esos resultados. Se
+  // limpia el parametro con replaceState en cualquier caso -- incluso vacio
+  // -- para que no se quede pegado en la URL tras esta primera pintura.
+  const paramsArranque = new URLSearchParams(location.search);
+  if (paramsArranque.has('q')) {
+    const termino = paramsArranque.get('q').trim();
+    history.replaceState(null, '', location.pathname + location.hash);
+    if (termino) {
+      globalSearchInput.value = termino;
+      globalSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+      globalSearchInput.focus();
+    }
+  }
 }

@@ -24,6 +24,9 @@ const navSearchWrap = document.getElementById('navSearchWrap');
 const navSearchInput = document.getElementById('navSearch');
 const navSearchToggle = document.getElementById('navSearchToggle');
 const navSearchScrim = document.getElementById('navSearchScrim');
+const footerFaq = document.getElementById('footerFaq');
+const footerPrivacy = document.getElementById('footerPrivacy');
+const footerTerms = document.getElementById('footerTerms');
 
 // La ruta actual decide "home o no", tanto para el nav-link activo como para
 // el buscador del nav: la misma condicion que ya usaba updateActiveNav.
@@ -78,18 +81,34 @@ function updateNavLabels() {
   navSearchToggle.setAttribute('aria-label', t('nav.search'));
 }
 
+// The footer is static markup in index.html, born in Spanish like the nav
+// links -- it has no pre-paint EN swap of its own because, unlike the nav and
+// the hero, it sits below the fold: nothing there is LCP, so there is nothing
+// to race the first paint for.
+function updateFooterLabels() {
+  footerFaq.textContent = t('footer.faq');
+  footerPrivacy.textContent = t('footer.privacy');
+  footerTerms.textContent = t('footer.terms');
+}
+
 langToggle.addEventListener('click', () => {
   setLang(getLang() === 'es' ? 'en' : 'es');
 });
 
-onLangChange(() => {
+onLangChange((lang) => {
+  // The pre-paint script in index.html only covers the first paint (and only
+  // for a saved 'en'); this is the one spot that keeps it correct for the
+  // rest of the session, on every toggle either direction.
+  document.documentElement.lang = lang;
   updateLangBtn();
   updateNavLabels();
+  updateFooterLabels();
   route(); // re-render current page
 });
 
 updateLangBtn();
 updateNavLabels();
+updateFooterLabels();
 
 // ===== FORMAT LEVEL =====
 function updateLevelBtn() {
@@ -299,6 +318,15 @@ async function route() {
     destino = [() => import('./hub.js'), m => m.renderHub(app, 'competitive')];
   } else if (path === '/calculator') {
     destino = [() => import('./calculator.js'), m => m.renderCalculator(app, query)];
+  // FAQ, privacy and terms are not tools: no entry in js/tools.js, so they
+  // never show up in the search index, the home grid or a tab strip. Just
+  // three more direct routes, same as /types or /team above.
+  } else if (path === '/faq') {
+    destino = [() => import('./faq.js'), m => m.renderFaq(app)];
+  } else if (path === '/privacy') {
+    destino = [() => import('./legal.js'), m => m.renderPrivacy(app)];
+  } else if (path === '/terms') {
+    destino = [() => import('./legal.js'), m => m.renderTerms(app)];
   }
 
   if (!destino) {

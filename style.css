@@ -1417,6 +1417,30 @@ html.no-hero [data-shell] {
   margin-right: auto;
 }
 
+/* FAQ, privacy and terms: one card per question or topic, stacked -- same
+   grid-as-vertical-stack idiom as .spd-tiers, not a new pattern. Capped at
+   760px and centered, same width .note-center already uses to close a page:
+   .main has no max-width of its own, so above that a card's answer would
+   otherwise run the full window while its question (no <p>, so untouched by
+   the .card > p rule below) stayed pinned to the left -- title and body
+   drifting apart instead of stacking flush. */
+.faq-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  max-width: 760px;
+  margin: 0 auto 24px;
+}
+
+/* .card > p centers prose at 68ch, built for a page-header subtitle under a
+   centered <h1>. Here the question above it is left-aligned, so inheriting
+   that would center only the answer and split every card down the middle. */
+.faq-item p {
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+}
+
 /* La cabecera de categoria se pintaba mas floja que las tarjetas que agrupa
    (ink-3, 0.6rem) cuando la relacion es la contraria: categoria > herramienta.
    Sube al mismo nivel que el logo (0.7rem) y a accent-text con su resplandor,

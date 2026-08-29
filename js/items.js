@@ -1,5 +1,5 @@
 // ===== ITEMS PAGE =====
-import { itemSpriteUrl } from './data.js';
+import { itemSpriteUrl, ITEM_PLACEHOLDER_SPRITE } from './data.js';
 import { fetchItems, fetchItemDescriptions } from './api.js';
 import { loadingHTML, renderPagination } from './ui.js';
 import { t, pokeName, getLang } from './i18n.js';
@@ -111,7 +111,7 @@ export function renderItems(container, query = new URLSearchParams()) {
           <div style="text-align:center;margin-bottom:16px">
             <img src="${itemSpriteUrl(item.name)}" alt="${pokeName(item)}"
                  style="width:64px;height:64px;image-rendering:pixelated;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.4))"
-                 onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><text x=%2220%22 y=%2226%22 text-anchor=%22middle%22 font-size=%2224%22>🎒</text></svg>'">
+                 onerror="this.src='${ITEM_PLACEHOLDER_SPRITE}'">
           </div>
           <h3 style="font-size:0.55rem;color:var(--accent-text);text-align:center;margin-bottom:4px">${titulo}</h3>
           <div style="font-size:0.44rem;color:var(--ink-3);text-align:center;margin-bottom:16px">${subFinal}</div>
@@ -221,7 +221,7 @@ export function renderItems(container, query = new URLSearchParams()) {
       card.className = 'item-card';
       card.innerHTML = `
         <img class="item-sprite" src="${itemSpriteUrl(item.name)}" alt="${pokeName(item)}" loading="lazy"
-             onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><text x=%2220%22 y=%2226%22 text-anchor=%22middle%22 font-size=%2224%22>🎒</text></svg>'">
+             onerror="this.src='${ITEM_PLACEHOLDER_SPRITE}'">
         <div class="item-name">${pokeName(item)}</div>
       `;
       card.onclick = () => showModal(item);
