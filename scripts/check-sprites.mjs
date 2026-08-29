@@ -59,11 +59,13 @@ console.log('\nLos objetos, donde PokeAPI tiene huecos de verdad\n');
 // 1029 de los 1848 que la lista pinta no tienen sprite en el repo de PokeAPI
 // (los Regalos Misteriosos, los bolsillos, las bayas de GO...). No es un fallo
 // de la descarga: alli no existen, y el onerror de items.js pinta la mochila.
-// Uno de ellos, leafy-tablecloth, ni siquiera llega a pedirse: js/data.js lo
-// tiene como excepcion documentada (SIN_SPRITE_UPSTREAM) porque su onerror
-// tapaba la vista pero no evitaba el 404 en consola. Este check sigue
-// contandolo aqui igual -- sigue sin fichero en disco -- la excepcion vive en
-// tiempo de ejecucion, no cambia lo que hay en sprites/.
+// Diecinueve de ellos -- toda la familia de manteles de picnic de
+// Escarlata/Purpura, leafy-tablecloth incluido -- ni siquiera llegan a
+// pedirse: js/data.js los tiene como excepcion documentada
+// (SIN_SPRITE_UPSTREAM) porque su onerror tapaba la vista pero no evitaba el
+// 404 en consola. Este check los sigue contando aqui igual -- siguen sin
+// fichero en disco -- la excepcion vive en tiempo de ejecucion, no cambia lo
+// que hay en sprites/.
 // (Task 7 bajo el total de 1849 a 1848 al quitar el duplicado roseli-berry
 // 2279 -- ese id si tenia sprite, mismo fichero que el 723 real, asi que el
 // hueco lo absorbe el bucket "con sprite": 820 -> 819, no el de "sin".)

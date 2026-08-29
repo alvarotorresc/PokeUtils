@@ -105,23 +105,32 @@ export function spriteUrl(id) {
 export const ITEM_PLACEHOLDER_SPRITE = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><text x=%2220%22 y=%2226%22 text-anchor=%22middle%22 font-size=%2224%22>🎒</text></svg>';
 
 // Objetos que PokeAPI expone por nombre pero sin sprite -- diagnosticado, no
-// supuesto: pokeapi.co/api/v2/item/leafy-tablecloth devuelve sprites.default
-// null, y raw.githubusercontent.com/PokeAPI/sprites no tiene el fichero bajo
-// ninguna ruta (probado items/, items/picnic/, items/tablecloths/). No es un
-// fallo de fetch-sprites.mjs: es uno de los 1029 objetos sin sprite arriba que
-// check-sprites.mjs ya cuenta y acepta (ver su comentario "Los objetos, donde
-// PokeAPI tiene huecos de verdad"), y items.js ya lo tapa con el onerror de
-// mas abajo en cuanto la peticion falla.
+// supuesto: los 19 son los manteles de picnic de Escarlata/Purpura (categoria
+// "picnic" en PokeAPI). pokeapi.co/api/v2/item/<nombre> devuelve
+// sprites.default null para los 19, uno a uno, y
+// raw.githubusercontent.com/PokeAPI/sprites no tiene el fichero de ninguno
+// bajo ninguna ruta (probado items/, items/picnic/, items/tablecloths/). No
+// es un fallo de fetch-sprites.mjs: son 19 de los 1029 objetos sin sprite
+// arriba que check-sprites.mjs ya cuenta y acepta (ver su comentario "Los
+// objetos, donde PokeAPI tiene huecos de verdad"), y items.js ya los tapa con
+// el onerror de mas abajo en cuanto la peticion falla.
 //
-// Esta excepcion no evita el hueco -- lo hace exactamente ninguno de los 1028
-// restantes -- evita la peticion de red en si, que el onerror no puede
-// evitar: por muy bien que se tape a la vista, la consola sigue anotando un
-// 404 por cada intento. Se anadio esta una porque "Mantel Naturaleza" (su
-// nombre en espanol) contiene "natu" y sale al buscar el Pokemon Natu: el
-// camino mas probable de toparse con ella en el lanzamiento. Las otras
-// dieciocho de la misma familia de manteles de picnic comparten el mismo
-// hueco upstream y no llevan la excepcion -- fuera del alcance de este ajuste.
-const SIN_SPRITE_UPSTREAM = new Set(['leafy-tablecloth']);
+// Esta excepcion no evita el hueco -- lo hace exactamente ninguno de los 1010
+// objetos sin sprite que quedan fuera de esta lista -- evita la peticion de
+// red en si, que el onerror no puede evitar: por muy bien que se tape a la
+// vista, la consola sigue anotando un 404 por cada intento. Se descubrio con
+// leafy-tablecloth porque su nombre en espanol, "Mantel Naturaleza", contiene
+// "natu" y sale al buscar el Pokemon Natu -- el camino mas probable de
+// toparse con uno de estos en el lanzamiento -- pero toda la familia comparte
+// el mismo hueco, y una busqueda por "mantel" los encuentra a los 19: se
+// mide, no se completa a ojo, y aqui estan los 19 completos.
+const SIN_SPRITE_UPSTREAM = new Set([
+  'leafy-tablecloth', 'academy-tablecloth', 'whimsical-tablecloth', 'spooky-tablecloth',
+  'plaid-tablecloth-y', 'plaid-tablecloth-b', 'plaid-tablecloth-r', 'bw-grass-tablecloth',
+  'battle-tablecloth', 'monstrous-tablecloth', 'striped-tablecloth', 'diamond-tablecloth',
+  'polka-dot-tablecloth', 'lilac-tablecloth', 'mint-tablecloth', 'peach-tablecloth',
+  'yellow-tablecloth', 'blue-tablecloth', 'pink-tablecloth',
+]);
 
 export function itemSpriteUrl(name) {
   if (SIN_SPRITE_UPSTREAM.has(name)) return ITEM_PLACEHOLDER_SPRITE;
