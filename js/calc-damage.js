@@ -5,7 +5,7 @@
 import { TYPES, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN, spriteUrl } from './data.js';
 import { searchPokemon, fetchMoves, fetchItems, fetchBerries, fetchPokemonList } from './api.js';
 import { calcHP, calcStat } from './stats.js';
-import { resolveDamage, applyMultiHit, multiHitTurn, drainedHP } from './damage.js';
+import { resolveDamage, applyMultiHit, multiHitTurn, drainedHP, koLine } from './damage.js';
 import { resolvePower, toZMove, requiredInputs, isCalculable } from './variable-power.js';
 import {
   WEATHER, TERRAIN, SCREENS, DAMAGE_ITEMS, DAMAGE_ABILITIES,
@@ -716,16 +716,19 @@ export function renderDamage(container, query) {
     const view = multi ? multiHitTurn(multi, hp) : r;
 
     const pct = `${view.pctMin.toFixed(1)}% - ${view.pctMax.toFixed(1)}%`;
-    // Tres ramas y no dos: con cinco golpes o mas la probabilidad no se calcula
-    // (la convolucion cuesta), asi que se dice en cuantos golpes cae en el mejor
-    // de los casos y no se inventa un porcentaje.
-    const koText = view.koIn === null
+    // Cuatro ramas y no dos, y la eleccion vive en damage.js para que un check
+    // pueda verla. Con cinco golpes o mas la probabilidad no se calcula (la
+    // convolucion cuesta) y con menos del 0.05% no cabe en un decimal: en los
+    // dos casos se dice en cuantos golpes cae y no se imprime un «0.0%», que
+    // se leia como «nunca» debajo de una linea que decia que si pasa.
+    const line = koLine(view);
+    const koText = line.kind === 'none'
       ? t('dmg.noko')
-      : view.guaranteed
-        ? t('dmg.ko.guaranteed').replace('{n}', view.koIn)
-        : view.koChance === null
-          ? t('dmg.ko.best').replace('{n}', view.koIn)
-          : t('dmg.ko.chance').replace('{n}', view.koIn).replace('{pct}', (view.koChance * 100).toFixed(1));
+      : line.kind === 'guaranteed'
+        ? t('dmg.ko.guaranteed').replace('{n}', line.koIn)
+        : line.kind === 'best'
+          ? t('dmg.ko.best').replace('{n}', line.koIn)
+          : t('dmg.ko.chance').replace('{n}', line.koIn).replace('{pct}', line.pct.toFixed(1));
 
     // The colour tracks how much of the bar the hit takes, not the raw number.
     const share = Math.min(view.pctMax, 100);

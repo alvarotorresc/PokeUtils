@@ -217,6 +217,31 @@ export function calcDamage(ctx) {
   };
 }
 
+// The card prints the odds with one decimal, so anything under 0.05% comes out
+// as "0.0% of the time" -- a zero that reads as "never" directly under a line
+// that has just said the KO happens. The odds themselves are fine; it is one
+// decimal that cannot hold them.
+export const KO_CHANCE_FLOOR = 0.0005;
+
+/**
+ * Which of the four KO lines the card prints, and with what odds.
+ *
+ * Presentation, not maths: calcDamage keeps the exact probability, because that
+ * is the truth of the model, and the decision about what fits on a card belongs
+ * to the card. Below KO_CHANCE_FLOOR there is already an honest line to fall
+ * back on -- the one used past four hits, where the odds are never computed --
+ * so nothing new had to be invented and no string was added.
+ *
+ * @param {object} result  calcDamage's, or multiHitTurn's
+ * @returns {{kind:'none'|'guaranteed'|'best'|'chance', koIn?:number, pct?:number}}
+ */
+export function koLine({ koIn, guaranteed, koChance }) {
+  if (koIn == null) return { kind: 'none' };
+  if (guaranteed) return { kind: 'guaranteed', koIn };
+  if (koChance === null || koChance < KO_CHANCE_FLOOR) return { kind: 'best', koIn };
+  return { kind: 'chance', koIn, pct: koChance * 100 };
+}
+
 // ===== COMPOSITION =====
 //
 // Turns the choices made in the UI into the multipliers calcDamage() expects.

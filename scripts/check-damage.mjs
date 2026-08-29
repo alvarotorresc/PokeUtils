@@ -9,6 +9,7 @@ import {
   calcDamage, damageRolls, pokeRound, boostMultiplier,
   typeEffectiveness, stabMultiplier, resolveDamage,
   applyMultiHit, multiHitTurn, isSpreadMove, SPREAD_TARGETS,
+  koLine, KO_CHANCE_FLOOR,
 } from '../js/damage.js';
 import { terrainById } from '../js/battle-data.js';
 
@@ -147,6 +148,54 @@ const cinco = calcDamage({ ...base, defenderHP: plain.max * 4 + 1 });
 check('KO en cinco golpes con los mejores rolls', cinco.koIn, 5);
 check('y sin probabilidad, porque no se ha calculado', cinco.koChance, null);
 checkTrue('con cuatro si se calcula', calcDamage({ ...base, defenderHP: plain.max * 4 }).koChance > 0);
+
+console.log('\nUna probabilidad que se imprime como 0.0% no es una probabilidad\n');
+
+// La tarjeta pinta el porcentaje con un decimal, asi que todo lo que baje del
+// 0.05% sale como «KO en 4 el 0.0% de las veces»: un cero que se lee como
+// «nunca» justo debajo de una linea que acaba de decir que si pasa. Pasa con
+// tres golpes y con cuatro; con dos el suelo es 1/256 = 0.4% y nunca llega.
+//
+// koLine decide cual de las tres lineas se imprime. El calculo NO se toca:
+// calcDamage sigue devolviendo la probabilidad exacta, que es la verdad del
+// modelo, y quien decide que no cabe en la tarjeta es la tarjeta.
+const flojo = calcDamage({ ...base, defenderHP: 214 });
+check('el caso: 214 PS, KO en 4', flojo.koIn, 4);
+check('  con una probabilidad de verdad', flojo.koChance, 0.0002899169921875);
+check('  que impresa a un decimal era un cero', (flojo.koChance * 100).toFixed(1), '0.0');
+check('  asi que se dice en cuantos golpes, sin numero',
+  koLine(flojo), { kind: 'best', koIn: 4 });
+
+// Justo al otro lado del suelo, con la misma pareja de numeros, si hay
+// porcentaje: 0.08% se imprime como 0.1% y dice algo.
+const justo = calcDamage({ ...base, defenderHP: 213 });
+check('un PS menos ya da 0.1%', (justo.koChance * 100).toFixed(1), '0.1');
+check('  y ese si se imprime', koLine(justo).kind, 'chance');
+check('  con su porcentaje', Number(koLine(justo).pct.toFixed(1)), 0.1);
+
+// El suelo esta donde el redondeo deja de mentir, no en un numero redondo.
+check('el suelo es el 0.05%', KO_CHANCE_FLOOR, 0.0005);
+check('justo por debajo, sin porcentaje',
+  koLine({ koIn: 4, guaranteed: false, koChance: KO_CHANCE_FLOOR - 1e-9 }).kind, 'best');
+check('justo por encima, con porcentaje',
+  koLine({ koIn: 4, guaranteed: false, koChance: KO_CHANCE_FLOOR }).kind, 'chance');
+
+// Tres golpes es el otro afectado, y dos no lo es.
+check('con tres golpes tambien pasa', koLine(calcDamage({ ...base, defenderHP: 162 })).kind, 'best');
+check('  pero con dos no: el suelo es 1/256',
+  koLine(calcDamage({ ...base, defenderHP: plain.max * 2 })).kind, 'chance');
+
+// Las otras tres ramas siguen donde estaban.
+check('sin KO posible no hay linea de KO', koLine(immune).kind, 'none');
+check('un KO seguro se dice seguro',
+  koLine(calcDamage({ ...base, defenderHP: plain.min })), { kind: 'guaranteed', koIn: 1 });
+// A partir de cinco golpes la probabilidad no se calcula, asi que la linea es
+// la misma que la del suelo: cuantos golpes, sin numero. Salvo que sea segura,
+// y `cinco` lo es (con 217 PS hasta los peores rolls matan en cinco).
+check('un KO en cinco seguro se sigue diciendo seguro',
+  koLine(cinco), { kind: 'guaranteed', koIn: 5 });
+check('y uno no seguro, sin porcentaje porque no se ha calculado',
+  koLine(calcDamage({ ...base, defenderHP: 230 })), { kind: 'best', koIn: 5 });
 
 console.log('\nModifier tables\n');
 
