@@ -174,6 +174,61 @@ checkTrue('grassy terrain boosts Grass',
   fight({ move: { type: 'grass' }, field: { terrain: 'grassy' } }).min
   > fight({ move: { type: 'grass' } }).min);
 
+console.log('\nEl terreno solo alcanza a quien pisa el suelo\n');
+
+// El terreno se sube desde el suelo: quien no lo toca ni cobra el bono ni paga
+// la rebaja. Aqui solo hay dos maneras de no tocarlo, que son las dos que la
+// calculadora modela: ser de tipo Volador o tener una habilidad inmune a
+// Tierra (Levitacion). Teracristalizar sustituye los tipos, asi que decide el
+// asunto en los dos lados.
+//
+// Nivel 50, Ataque 200, Defensa 100, movimiento de 90.
+const suelo = (over = {}) => resolveDamage({
+  attacker: {
+    types: ['electric'], level: 50, attack: 200, boost: 0,
+    item: 'none', ability: 'none', ...over.attacker,
+  },
+  defender: { types: ['normal'], defense: 100, boost: 0, ability: 'none', hp: 200, ...over.defender },
+  move: { name: 'thunderbolt', type: 'electric', category: 'special', power: 90, ...over.move },
+  field: { ...over.field },
+});
+
+const zapdos = { types: ['electric', 'flying'] };
+check('Zapdos con Rayo, sin terreno', suelo({ attacker: zapdos }).max, 121);
+check('Zapdos con Rayo, Campo Electrico: sigue igual porque vuela',
+  suelo({ attacker: zapdos, field: { terrain: 'electric' } }).max, 121);
+check('un atacante Electrico terrestre, sin terreno', suelo().max, 121);
+check('  y con Campo Electrico si sube un x1.3',
+  suelo({ field: { terrain: 'electric' } }).max, 157);
+check('Levitacion en el atacante tampoco cobra el bono',
+  suelo({ attacker: { ability: 'levitate' }, field: { terrain: 'electric' } }).max, 121);
+// El atacante cuenta con los mismos tipos que el defensor: los de despues de
+// teracristalizar. Un Electrico terrestre que teracristaliza a Volador deja de
+// pisar el suelo y pierde el bono; el STAB del Rayo no se mueve (el movimiento
+// sigue siendo de uno de sus tipos originales), asi que el 121 es comparable.
+check('teracristalizar a Volador te saca del suelo',
+  suelo({ attacker: { teraType: 'flying' }, field: { terrain: 'electric' } }).max, 121);
+check('  y sin terreno pega lo mismo, que es con lo que se compara',
+  suelo({ attacker: { teraType: 'flying' } }).max, 121);
+
+const niebla = (over = {}) => suelo({
+  attacker: { types: ['dragon'] },
+  move: { name: 'dragon-pulse', type: 'dragon' },
+  ...over,
+});
+const volador = { types: ['dragon', 'flying'] };
+check('un defensor Dragon/Volador, sin terreno', niebla({ defender: volador }).max, 242);
+check('  y con Campo de Niebla: sigue igual porque vuela',
+  niebla({ defender: volador, field: { terrain: 'misty' } }).max, 242);
+check('Levitacion en el defensor tampoco paga la rebaja',
+  niebla({ defender: { types: ['dragon'], ability: 'levitate' }, field: { terrain: 'misty' } }).max, 242);
+check('un defensor Dragon terrestre si la paga',
+  niebla({ defender: { types: ['dragon'] }, field: { terrain: 'misty' } }).max, 121);
+// El defensor cuenta con los tipos que valen DESPUES de teracristalizar, que es
+// la misma sustitucion que ya hace la efectividad.
+check('un Volador que teracristaliza a Dragon vuelve al suelo',
+  niebla({ defender: { ...volador, teraType: 'dragon' }, field: { terrain: 'misty' } }).max, 121);
+
 checkTrue('Light Screen halves a special move',
   fight({ field: { screen: 'lightscreen' } }).min < clean.min);
 check('Reflect does nothing to a special move',

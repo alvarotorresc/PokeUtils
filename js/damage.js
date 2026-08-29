@@ -203,7 +203,7 @@ export function calcDamage(ctx) {
  * @param {object} input.attacker {types, attack, defenseless stats already
  *   computed, boost, item, ability, teraType, burned}
  * @param {object} input.defender {types, defense, boost, item, ability,
- *   teraType, hp, hpCurrent, grounded}
+ *   teraType, hp, hpCurrent}
  * @param {object} input.move     {type, category, power}
  * @param {object} input.field    {weather, terrain, screen, doubles, critical}
  */
@@ -227,11 +227,21 @@ export function resolveDamage({ attacker, defender, move, field = {} }) {
     };
   }
 
-  const effectiveness = typeEffectiveness(
-    move.type,
-    // Terastallising replaces the defender's types outright.
-    defender.teraType ? [defender.teraType] : defender.types
-  );
+  // Terastallising replaces a Pokemon's types outright, so both the type chart
+  // and the question of who is standing on the ground read these, not the
+  // originals.
+  const atkTypes = attacker.teraType ? [attacker.teraType] : attacker.types;
+  const defTypes = defender.teraType ? [defender.teraType] : defender.types;
+
+  const effectiveness = typeEffectiveness(move.type, defTypes);
+
+  // Terrain is climbed from the ground: a Flying type or a Ground immunity
+  // (Levitate) neither collects the boost nor pays the cut. Derived rather
+  // than asked for, because a caller that has to remember a flag forgets it.
+  const grounded = (types, ability) =>
+    !types.includes('flying') && !ability.immuneTo?.includes('ground');
+  const atkGrounded = grounded(atkTypes, atkAbility);
+  const defGrounded = grounded(defTypes, defAbility);
 
   const stab = stabMultiplier({
     moveType: move.type,
@@ -244,10 +254,10 @@ export function resolveDamage({ attacker, defender, move, field = {} }) {
   let weatherMult = weather.boosts?.[move.type] ?? 1;
   let other = 1;
 
-  if (terrain.boosts?.[move.type] && attacker.grounded !== false) {
+  if (terrain.boosts?.[move.type] && atkGrounded) {
     other *= terrain.boosts[move.type];
   }
-  if (terrain.weakens?.[move.type] && defender.grounded !== false) {
+  if (terrain.weakens?.[move.type] && defGrounded) {
     other *= terrain.weakens[move.type];
   }
 

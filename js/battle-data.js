@@ -111,14 +111,16 @@ export const WEATHER = [
   { id: 'snow', defBoost: { types: ['ice'], stat: 'def', mult: 1.5 } },
 ];
 
-// Terrain only helps a Pokemon standing on the ground.
+// Terrain only helps a Pokemon standing on the ground. There is no `grounded`
+// flag here any more: all four terrains are ground-only, and resolveDamage
+// works out which side is standing on it from the types and the ability.
 export const TERRAIN = [
   { id: 'none' },
-  { id: 'electric', boosts: { electric: 1.3 }, grounded: true },
-  { id: 'grassy', boosts: { grass: 1.3 }, grounded: true, weakens: { ground: 0.5 } },
-  { id: 'psychic', boosts: { psychic: 1.3 }, grounded: true },
+  { id: 'electric', boosts: { electric: 1.3 } },
+  { id: 'grassy', boosts: { grass: 1.3 }, weakens: { ground: 0.5 } },
+  { id: 'psychic', boosts: { psychic: 1.3 } },
   // Misty halves Dragon damage against grounded targets rather than boosting.
-  { id: 'misty', weakens: { dragon: 0.5 }, grounded: true },
+  { id: 'misty', weakens: { dragon: 0.5 } },
 ];
 
 // Screens. Halve damage in singles, x2/3 in doubles; ignored by a critical hit.
