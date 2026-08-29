@@ -23,6 +23,69 @@
   command = "npm run check && npm run build"
   publish = "dist"
 
+# ===== CABECERAS DE SEGURIDAD =====
+#
+# `for = "/*"` y no `for = "/"`: el bloque de Cache-Control del final del
+# fichero usa `for = "/"`, que casa SOLO con la raiz. Puesto ahi, esto habria
+# protegido la portada y nada mas -- y 404.html se sirve bajo cualquier ruta
+# que no exista, que es justo donde hay un <form> y un buscador.
+#
+# Este bloque no fija ningun Cache-Control, asi que no compite con los cinco de
+# mas abajo: las cuatro cabeceras de aqui no las pone ningun otro bloque, y no
+# hay colision que resolver mande quien mande cuando dos patrones casan.
+#
+# X-Frame-Options ADEMAS de frame-ancestors, a proposito: frame-ancestors es el
+# mecanismo mejor (cubre el anidado a cualquier profundidad y no depende de una
+# cabecera obsoleta), pero vive en una CSP que aqui va en Report-Only, o sea que
+# hoy REPORTA y no bloquea nada. Mientras la politica no pase a modo bloqueo,
+# quien de verdad para un clickjacking es X-Frame-Options. Se quita en la PR que
+# promocione la CSP, no antes.
+#
+# interest-cohort en Permissions-Policy es el opt-out de FLoC: el token ya no
+# existe en Chrome y la consola avisa de que no lo reconoce. Es ruido esperado y
+# benigno -- se queda por los navegadores que aun lo miran.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=(), interest-cohort=()"
+
+    # CSP en Report-Only, primer paso de dos. En modo bloqueo, un fallo de la
+    # politica es el sitio roto en produccion, y esto NO se puede validar en
+    # local: scripts/serve.mjs no lee este fichero, y este proyecto ya se quemo
+    # suponiendo que Netlify se comporta como uno espera (no aplicaba las
+    # cabeceras de aqui a lo que salia de un redirect 200 externo). Se promociona
+    # cuando el preview confirme consola limpia.
+    #
+    # Sin report-uri ni report-to: las violaciones salen solo por la consola del
+    # navegador, no hay panel donde mirarlas.
+    #
+    # Cada directiva, derivada de lo que el sitio carga de verdad:
+    #  - script-src: 'unsafe-inline' por los 4 bloques inline de index.html
+    #    (tema, hero, y los dos swaps de idioma), los 2 de 404.html (tema e
+    #    idioma) y, sobre todo, los manejadores en atributo que generan las
+    #    plantillas JS -- 9 onerror= y 2 onclick="history.back()". Con hashes no
+    #    se puede: el hash cubriria el atributo y haria falta 'unsafe-hashes',
+    #    y ademas basta con que haya UN hash o nonce en script-src para que
+    #    'unsafe-inline' deje de valer. Quitarlo es trabajo de codigo, no de
+    #    configuracion. El origen de analytics es el Umami autoalojado.
+    #  - connect-src: los beacons de Umami. La app hace un unico fetch
+    #    (js/api.js:37), siempre a data/ del propio origen.
+    #  - img-src: los sprites son de aqui (/sprites/...), y `data:` cubre los
+    #    placeholders SVG de los onerror (js/pokedex.js, js/data.js).
+    #  - style-src: el <style> entero de 404.html y 155 atributos style= en las
+    #    plantillas de js/, mas los 2 del footer de index.html y el del <svg> de
+    #    404.html.
+    #  - font-src 'self': las fuentes NO son de Google. style.css:1-9 documenta
+    #    la migracion fuera de fonts.googleapis.com, y index.html:9-10 precarga
+    #    los dos woff2 propios. Un grep de googleapis/gstatic sobre index.html,
+    #    404.html y js/ da cero. No se anaden esos origenes "por si acaso".
+    #  - form-action: el <form method="GET" action="/"> de 404.html:282.
+    #  - base-uri/object-src 'none': no hay <base> ni <object> en el sitio.
+    Content-Security-Policy-Report-Only = "default-src 'self'; script-src 'self' https://analytics.alvarotc.com 'unsafe-inline'; connect-src 'self' https://analytics.alvarotc.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
+
 # Generated datasets change once per Pokemon generation. Serve them stale
 # while revalidating so navigation stays instant after the first visit.
 #
