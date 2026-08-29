@@ -17,7 +17,15 @@ import { spriteUrl, itemSpriteUrl } from './data.js';
 import { spriteIdFor } from './forms.js';
 import { TOOLS } from './tools.js';
 
-const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
+// El apostrofo se pliega al ASCII despues de los acentos, y en los dos lados:
+// score() pasa el nombre por norm y searchAll pasa el termino, asi que una sola
+// linea cubre el indice y lo que se teclea. El indice guarda "Farfetch’d" con
+// U+2019, que no esta en ningun teclado normal -- escribir "farfetch'd" daba 0
+// resultados donde escribir menos ("farfetch") daba 3. U+00B4 no tiene
+// descomposicion canonica, asi que sobrevive al NFD de arriba y hay que
+// nombrarlo aqui igual que a las comillas tipograficas.
+const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
+  .replace(/[’‘`´]/g, "'");
 
 // Exact 100, starts-with 60, contains 30. The gap between exact and starts-with
 // has to be wider than any length tie-break, or "fire" is won by "Fire Blast".

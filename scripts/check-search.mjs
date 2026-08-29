@@ -182,6 +182,39 @@ const TODOS = [...new Set([...TERMINOS, ...CONTROL, ...PROBE,
 const desplazados = TODOS.filter(t => exactoDominioDesplazado(searchAll(datasets, t, 8)));
 check('un contains de herramienta nunca desplaza a un exacto de otro dominio', desplazados, []);
 
+console.log('\nEl apostrofo de teclado encuentra lo mismo que el tipografico\n');
+
+// El indice guarda "Farfetch’d" con U+2019, que no esta en ningun teclado
+// normal: quien sabe como se escribe teclea el apostrofo ASCII y recibia cero
+// resultados donde escribir MENOS (sin apostrofo) si funcionaba. La garantia no
+// es el numero, es la equivalencia: las dos formas del apostrofo tienen que
+// devolver exactamente la misma lista.
+const idsDe = t => searchAll(datasets, t, 8).map(r => [r.kind, r.id, r.route]);
+
+check('farfetch\'d devuelve 3, como farfetch', buscar("farfetch'd").length, 3);
+check('y exactamente lo mismo que Farfetch’d', idsDe("farfetch'd"), idsDe('Farfetch’d'));
+check('sirfetch\'d encuentra a Sirfetch’d', first("sirfetch'd").id, 865);
+check('y exactamente lo mismo que Sirfetch’d', idsDe("sirfetch'd"), idsDe('Sirfetch’d'));
+// Al reves tambien: el apostrofo tipografico no puede dejar de funcionar por
+// plegarlo, que es el riesgo de tocar norm.
+check('Farfetch’d sigue encontrando al Pokemon', first('Farfetch’d').id, 83);
+
+console.log('\nLos nombres dificiles siguen encontrandose\n');
+
+// La bateria de control del informe: cada uno de estos lleva un caracter que
+// norm toca (tilde, dieresis, simbolo de sexo, guion, dos puntos, punto), asi
+// que son justo los que se rompen si el plegado se pasa de listo.
+const DIFICILES = {
+  flabebe: 669, 'flabébé': 669,
+  'type: null': 772, 'código cero': 772, 'codigo cero': 772,
+  'nidoran♀': 29, 'nidoran♂': 32,
+  'porygon-z': 474, 'ho-oh': 250, 'jangmo-o': 782, 'mr. mime': 122, 'tapu koko': 785,
+};
+check('los nombres dificiles siguen llevando a su Pokemon',
+  Object.entries(DIFICILES).filter(([t, id]) => first(t).id !== id).map(([t]) => t), []);
+// dano/daño es la herramienta, no un Pokemon: la n con virgulilla se pliega.
+check('dano sigue encontrando la Calculadora de Dano', first('dano').route, '#/calculator?tab=damage');
+
 console.log('\nUn termino sin herramienta se comporta como antes\n');
 
 check('bicicleta no encuentra nada, en ningun dominio', searchAll(datasets, 'bicicleta', 8).length, 0);
