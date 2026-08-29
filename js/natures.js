@@ -3,11 +3,39 @@ import { NATURES } from './data.js';
 import { t, statName, natureName, natureNameAlt, getLang } from './i18n.js';
 import { toolTabsHTML, wireToolTabs } from './hub.js';
 
-export function renderNatures(container) {
-  const stats = ['atk', 'def', 'spa', 'spd', 'spe'];
+const GRID_STATS = ['atk', 'def', 'spa', 'spd', 'spe'];
 
-  // Build natures grouped by increased stat
-  const neutralNatures = NATURES.filter(n => !n.increase);
+// Which neutral nature belongs on each diagonal cell.
+//
+// Written out rather than derived, because the two orders that look like they
+// should match do not: NATURES is declared atk-def-spa-spd-spe, but a nature's
+// internal index orders the stats atk-def-spe-spa-spd, so filtering out the
+// neutrals gives [Hardy, Docile, Serious, Bashful, Quirky] and pairing that by
+// position moves three of the five onto the wrong stat.
+//
+// The pair stays OUT of NATURES on purpose. `increase: null` is what every
+// caller uses to recognise a neutral nature -- `js/stats.js:19`, `:61` here,
+// `js/calc-ivev.js:43` -- and giving Serious `increase: 'spe'` would make
+// getNatureMod return 1.1 for its own stat, so a neutral Mew would read 259
+// instead of 236 across the whole calculator.
+const NEUTRAL_BY_STAT = {
+  atk: 'Hardy', def: 'Docile', spa: 'Bashful', spd: 'Quirky', spe: 'Serious',
+};
+
+/**
+ * The nature that goes in one cell of the cross grid: rowStat is the one it
+ * raises, colStat the one it lowers.
+ * @returns {object|null} the NATURES record, or null if the cell is empty
+ */
+export function natureForCell(rowStat, colStat) {
+  if (rowStat === colStat) {
+    return NATURES.find(n => n.name === NEUTRAL_BY_STAT[rowStat]) ?? null;
+  }
+  return NATURES.find(n => n.increase === rowStat && n.decrease === colStat) ?? null;
+}
+
+export function renderNatures(container) {
+  const stats = GRID_STATS;
 
   container.innerHTML = `
     ${toolTabsHTML('data', 'natures')}
@@ -82,25 +110,15 @@ export function renderNatures(container) {
       td.style.textAlign = 'center';
       td.style.fontSize = '0.36rem';
 
-      if (rowStat === colStat) {
-        // Neutral natures on diagonal
-        const diagonalIndex = stats.indexOf(rowStat);
-        const neutral = neutralNatures[diagonalIndex];
-        if (neutral) {
-          td.className = 'neutral';
-          td.textContent = natureName(neutral);
-        } else {
-          td.className = 'neutral';
-          td.textContent = '—';
-        }
+      const nature = natureForCell(rowStat, colStat);
+      if (!nature) {
+        td.className = 'neutral';
+        td.textContent = '—';
+      } else if (rowStat === colStat) {
+        td.className = 'neutral';
+        td.textContent = natureName(nature);
       } else {
-        const nature = NATURES.find(n => n.increase === rowStat && n.decrease === colStat);
-        if (nature) {
-          td.innerHTML = `<span style="color:var(--ink-1)">${natureName(nature)}</span>`;
-        } else {
-          td.className = 'neutral';
-          td.textContent = '—';
-        }
+        td.innerHTML = `<span style="color:var(--ink-1)">${natureName(nature)}</span>`;
       }
       tr.appendChild(td);
     });
