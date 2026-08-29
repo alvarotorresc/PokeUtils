@@ -107,7 +107,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
           <button class="team-remove" data-remove="${id}" aria-label="${t('team.remove')}">×</button>
           <img src="${spriteUrl(spriteIdFor(p))}" alt="${esc(pokeName(p))}" loading="lazy">
           <span class="team-slot-name">${pokeName(p)}</span>
-          <span class="team-slot-types">${p.types.map(tp => `<span class="type-badge sm" data-type="${tp}">${typeName(tp)}</span>`).join('')}</span>
+          <span class="team-slot-types">${p.types.map(tp => `<span class="type-badge sm" data-type="${esc(tp)}">${typeName(tp)}</span>`).join('')}</span>
         </div>
       `;
     });
@@ -141,7 +141,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
       <button class="team-result" data-add="${p.id}">
         <img src="${spriteUrl(spriteIdFor(p))}" alt="${esc(pokeName(p))}" loading="lazy">
         <span>${pokeName(p)}</span>
-        <span class="team-result-types">${p.types.map(tp => `<span class="type-badge sm" data-type="${tp}">${typeName(tp)}</span>`).join('')}</span>
+        <span class="team-result-types">${p.types.map(tp => `<span class="type-badge sm" data-type="${esc(tp)}">${typeName(tp)}</span>`).join('')}</span>
       </button>
     `).join('');
   }

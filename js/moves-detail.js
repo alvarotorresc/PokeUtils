@@ -134,8 +134,8 @@ export async function renderMoveDetail(container, id) {
         <h2>${displayName}</h2>
         <div class="name-en">${altName}</div>
         <div class="types">
-          <span class="type-badge" data-type="${move.type}" style="cursor:default">${typeName(move.type)}</span>
-          <span class="move-category ${move.category}">${categoryName(move.category)}</span>
+          <span class="type-badge" data-type="${esc(move.type)}" style="cursor:default">${typeName(move.type)}</span>
+          <span class="move-category ${esc(move.category)}">${categoryName(move.category)}</span>
         </div>
       </div>
 

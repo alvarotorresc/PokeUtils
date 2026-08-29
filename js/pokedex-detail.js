@@ -146,8 +146,8 @@ function moveRowHTML(move, level) {
     <div class="mv-row">
       <span class="mv-level">${level === null ? '' : (level === 0 ? t('learn.start') : `${t('learn.col.level')} ${level}`)}</span>
       <a class="mv-name" href="#/moves/${move.id}">${move.nameEs && getLang() === 'es' ? move.nameEs : move.nameEn}</a>
-      <span class="type-badge sm" data-type="${move.type}" style="cursor:default">${typeName(move.type)}</span>
-      <span class="move-category ${move.category}">${t('cat.' + move.category)}</span>
+      <span class="type-badge sm" data-type="${esc(move.type)}" style="cursor:default">${typeName(move.type)}</span>
+      <span class="move-category ${esc(move.category)}">${t('cat.' + move.category)}</span>
       <span class="mv-num">${move.power ?? dash}</span>
       <span class="mv-num">${move.accuracy != null ? move.accuracy + '%' : dash}</span>
       <span class="mv-num">${move.pp ?? dash}</span>
@@ -501,7 +501,7 @@ export async function renderPokedexDetail(container, id) {
           <h2>${displayName}</h2>
           <div class="name-en">${altName}</div>
           <div class="types">
-            ${pokemon.types.map(tp => `<span class="type-badge" data-type="${tp}" style="cursor:default">${typeName(tp)}</span>`).join('')}
+            ${pokemon.types.map(tp => `<span class="type-badge" data-type="${esc(tp)}" style="cursor:default">${typeName(tp)}</span>`).join('')}
           </div>
           <div class="meta">
             <span>📏 ${pokemon.height} m</span>

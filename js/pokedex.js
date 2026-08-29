@@ -19,7 +19,7 @@ export function pokemonCardHTML(p, i = 0) {
       <div class="dex-number">#${String(p.speciesId || p.id).padStart(4, '0')}</div>
       <div class="poke-name">${esc(pokeName(p))}</div>
       <div class="types">
-        ${p.types.map(tp => `<span class="type-badge sm" data-type="${tp}">${typeName(tp)}</span>`).join('')}
+        ${p.types.map(tp => `<span class="type-badge sm" data-type="${esc(tp)}">${typeName(tp)}</span>`).join('')}
       </div>
     </a>
   `;

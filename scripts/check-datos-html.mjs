@@ -12,10 +12,10 @@
 //   - "<" y ">" no valen en NINGUN campo. Una etiqueta nueva es ejecucion, y no
 //     hay ni un solo campo de data/ que tenga por que llevar una.
 //
-//   - la comilla doble se veta SOLO en los campos de nombre, que son los que se
-//     pintan dentro de un atributo (alt=, y en pokedex.js pegado a un onerror=,
+//   - la comilla doble se veta SOLO en los campos que se pintan dentro de un
+//     atributo: los de nombre (alt=, y en pokedex.js pegado a un onerror=,
 //     donde una comilla suelta cierra el atributo e inyecta un manejador sin
-//     necesidad de ningun "<").
+//     necesidad de ningun "<") y los de tipo/categoria (data-type=, class=).
 //
 // Un veto general de la comilla fallaria el dia uno: hay comillas legitimas en
 // las descripciones de 4 Pokemon y de 7 objetos, y esas van a nodos de texto,
@@ -28,7 +28,11 @@ import { readdir, readFile } from 'node:fs/promises';
 
 // Los que se pintan dentro de un atributo: js/search-index.js:labelOf lee
 // nameEs/nameEn/name, y de ahi salen los alt= y el <span class="gs-name">.
-const CAMPOS_ATRIBUTO = ['name', 'nameEs', 'nameEn'];
+// type, types y category son moves.json.type, pokemon.json.types[] y
+// moves.json.category: llegan crudos a data-type= y a class= en 14 sitios
+// de js/ (pokedex, pokedex-detail, moves, moves-detail, calc-damage, team,
+// compare, survive).
+const CAMPOS_ATRIBUTO = ['name', 'nameEs', 'nameEn', 'type', 'types', 'category'];
 
 const DATA = new URL('../data/', import.meta.url);
 
@@ -92,7 +96,9 @@ check('sin angulos en ningun campo', angulos, []);
 
 console.log('\nNingun campo que llegue a un atributo lleva comillas dobles\n');
 
-// Regla 2. Los tres son los que lee labelOf() y los que pinta pokeName().
+// Regla 2. name/nameEs/nameEn son los que lee labelOf() y los que pinta
+// pokeName(); type/types/category son los que llegan crudos a data-type= y
+// a class= en js/.
 check(`sin comillas en ${CAMPOS_ATRIBUTO.join('/')}`, comillasEnAtributo, []);
 
 console.log('\nLa regla es consciente del campo, no un veto general de la comilla\n');

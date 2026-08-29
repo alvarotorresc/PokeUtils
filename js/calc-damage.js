@@ -246,7 +246,7 @@ export function renderDamage(container, query) {
     moveSelected.style.display = '';
     moveSelected.innerHTML = `
       <div class="dmg-chosen">
-        <span class="type-badge sm" data-type="${move.type}">${typeName(move.type)}</span>
+        <span class="type-badge sm" data-type="${esc(move.type)}">${typeName(move.type)}</span>
         <div>
           <div class="dmg-chosen-name">${getLang() === 'es' ? move.nameEs : move.nameEn}</div>
           <div class="dmg-chosen-types">
@@ -277,7 +277,7 @@ export function renderDamage(container, query) {
       moveResults.style.display = '';
       moveResults.innerHTML = hits.length ? hits.map(m => `
         <div class="card card-clickable dmg-hit" data-id="${m.id}">
-          <span class="type-badge sm" data-type="${m.type}">${typeName(m.type)}</span>
+          <span class="type-badge sm" data-type="${esc(m.type)}">${typeName(m.type)}</span>
           <span>${getLang() === 'es' ? m.nameEs : m.nameEn}</span>
           <span style="color:var(--ink-2);margin-left:auto">${m.power ?? '?'}</span>
         </div>

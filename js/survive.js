@@ -166,7 +166,7 @@ export async function renderSurvive(container, query = new URLSearchParams()) {
         results.innerHTML = hits.map(x => `
           <button class="cmp-hit" data-id="${x.id}">
             ${key === 'm'
-              ? `<span class="type-badge sm" data-type="${x.type}">${typeName(x.type)}</span>${nameOf(key, x)} (${x.power})`
+              ? `<span class="type-badge sm" data-type="${esc(x.type)}">${typeName(x.type)}</span>${nameOf(key, x)} (${x.power})`
               : `<img src="${spriteUrl(spriteIdFor(x))}" alt="">${nameOf(key, x)}`}
           </button>
         `).join('');

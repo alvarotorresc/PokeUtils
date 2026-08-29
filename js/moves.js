@@ -243,8 +243,8 @@ export function renderMoves(container, query = new URLSearchParams()) {
           ${(m.statChanges || []).length ? `<div class="mv-chips">${m.statChanges.map(c => `<span class="mv-chip ${c[1] > 0 ? 'up' : 'down'}">${statChangeLabel(c)}</span>`).join('')}</div>` : ''}
           ${desc ? `<div class="mv-desc">${desc}</div>` : ''}
         </td>
-        <td class="col-c"><span class="type-badge sm" data-type="${m.type}">${typeName(m.type)}</span></td>
-        <td class="col-c"><span class="move-category ${m.category}">${categoryName(m.category)}</span></td>
+        <td class="col-c"><span class="type-badge sm" data-type="${esc(m.type)}">${typeName(m.type)}</span></td>
+        <td class="col-c"><span class="move-category ${esc(m.category)}">${categoryName(m.category)}</span></td>
         <!-- El guion de "no tiene" es dato ausente, no adorno: va en la misma
              tinta de datos que el resto y se distingue por ser un guion. -->
         <td class="col-c${m.power ? '' : ' col-empty'}">${m.power || '—'}</td>

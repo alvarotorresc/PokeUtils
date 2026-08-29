@@ -139,7 +139,7 @@ export async function renderCompare(container, query = new URLSearchParams()) {
                       <img class="cmp-sprite" src="${spriteUrl(spriteIdFor(p))}" alt="${esc(pokeName(p))}">
                       <div class="cmp-name">${pokeName(p)}</div>
                     </a>
-                    <div class="cmp-types">${p.types.map(tp => `<span class="type-badge sm" data-type="${tp}">${typeName(tp)}</span>`).join('')}</div>
+                    <div class="cmp-types">${p.types.map(tp => `<span class="type-badge sm" data-type="${esc(tp)}">${typeName(tp)}</span>`).join('')}</div>
                   </th>
                 `).join('')}
               </tr>
