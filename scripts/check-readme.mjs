@@ -75,6 +75,25 @@ if (numSoloEs.length || numSoloEn.length) {
     ' solo aparece en un idioma, reformula para que no dependa de el)');
 }
 
+// Comparar es-contra-en no basta: «1849 objetos» estuvo mal en LOS DOS idiomas
+// (son 1848) y la comparacion cruzada lo daba por bueno porque coincidian. Los
+// numeros que describen el contenido se comprueban contra los DATOS, que es la
+// unica fuente que no puede mentir de acuerdo consigo misma.
+const search = JSON.parse(readFileSync(new URL('../data/search.json', import.meta.url), 'utf8'));
+const REALES = [
+  ['Pokémon en el buscador', search.pokemon.length],
+  ['movimientos', search.moves.length],
+  ['habilidades', search.abilities.length],
+  ['objetos', search.items.length],
+];
+for (const [que, n] of REALES) {
+  for (const [nombre, txt] of [['README.md', ES], ['README.en.md', EN]]) {
+    if (!txt.includes(String(n))) {
+      fallos.push(`${nombre} no menciona ${n} (${que}); si el dataset crecio, actualiza el texto`);
+    }
+  }
+}
+
 if (fallos.length) {
   console.error('check-readme.mjs FALLA\n');
   for (const f of fallos) console.error('- ' + f);

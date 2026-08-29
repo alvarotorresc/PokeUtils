@@ -26,7 +26,7 @@ solo vienes a consultar la dex, está entera, en español, y no te pide una cuen
   sin cuenta y sin anuncios.
 
 En la portada hay un buscador que cruza los cuatro conjuntos a la vez —1351
-Pokémon, 937 movimientos, 313 habilidades y 1849 objetos— y te lleva directo a
+Pokémon, 937 movimientos, 313 habilidades y 1848 objetos — y te lleva directo a
 la página que tiene la respuesta.
 
 ## Las 16 herramientas
@@ -64,7 +64,7 @@ la página que tiene la respuesta.
     está también lo que enseña cada MT.
 - **[Habilidades](https://pokeutils.alvarotc.com/#/abilities)** — Las 313 con su
   descripción y buscador.
-- **[Objetos](https://pokeutils.alvarotc.com/#/items)** — 1849 objetos con su
+- **[Objetos](https://pokeutils.alvarotc.com/#/items)** — 1848 objetos con su
   sprite, filtros por categoría y ficha al abrirlos.
 - **[Naturalezas](https://pokeutils.alvarotc.com/#/natures)** — Las 25 con sus
   modificadores y una rejilla 5x5 para verlas de un vistazo.

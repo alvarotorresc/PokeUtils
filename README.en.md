@@ -28,7 +28,7 @@ it's in English and Spanish, and it doesn't ask you for an account.
   account, no ads.
 
 The home page has a search box that spans all four datasets at once — 1351
-Pokémon, 937 moves, 313 abilities and 1849 items — and takes you straight to the
+Pokémon, 937 moves, 313 abilities and 1848 items — and takes you straight to the
 page with the answer.
 
 ## The 16 tools
@@ -66,7 +66,7 @@ page with the answer.
     TM teaches.
 - **[Abilities](https://pokeutils.alvarotc.com/#/abilities)** — All 313 with
   their descriptions and a search box.
-- **[Items](https://pokeutils.alvarotc.com/#/items)** — 1849 items with their
+- **[Items](https://pokeutils.alvarotc.com/#/items)** — 1848 items with their
   sprites, category filters and a detail page.
 - **[Natures](https://pokeutils.alvarotc.com/#/natures)** — All 25 with their
   modifiers and a 5×5 grid to take them in at a glance.
