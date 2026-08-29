@@ -6,7 +6,7 @@ import { TYPES, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN, spriteUrl } from './data.js
 import { searchPokemon, fetchMoves, fetchItems, fetchBerries, fetchPokemonList } from './api.js';
 import { calcHP, calcStat } from './stats.js';
 import { resolveDamage, applyMultiHit, multiHitTurn, drainedHP, koLine } from './damage.js';
-import { resolvePower, toZMove, requiredInputs, isCalculable } from './variable-power.js';
+import { resolvePower, toZMove, zGate, requiredInputs, isCalculable } from './variable-power.js';
 import {
   WEATHER, TERRAIN, SCREENS, DAMAGE_ITEMS, DAMAGE_ABILITIES,
 } from './battle-data.js';
@@ -578,10 +578,19 @@ export function renderDamage(container, query) {
         hp: defenderHPMax,
       },
       move: {
-        // El slug viaja con el movimiento: Campo de Hierba halva Terremoto,
-        // Bulldozer y Magnitud por nombre, no por tipo, y sin `name` aqui la
-        // rebaja no se aplicaria nunca desde la pagina.
-        name: move.name,
+        // Name and target travel together through `zGate`: Grassy Terrain
+        // weakens Earthquake, Bulldoze and Magnitude by name, and the
+        // "Doubles" checkbox cuts a quarter off whoever spreads, by target.
+        // Without either field here, neither rebate would ever apply from
+        // this page.
+        //
+        // A Z-move is a different move: Earthquake becomes Tectonic Rage,
+        // which is neither on Grassy Terrain's list nor a spread move (it
+        // hits one target even when its base move hit several). `zGate`
+        // gives it its own name instead of inheriting Earthquake's, and
+        // strips the target -- inheriting either one manufactures a rebate
+        // the game does not apply.
+        ...zGate(move, zForm),
         // Sin rama para el movimiento Z: `toZMove` solo sube la potencia, y el
         // Z conserva el tipo del movimiento del que sale -- Z_MOVES se indexa
         // justo por ese tipo. Antes esto era un ternario con las dos ramas
@@ -589,15 +598,6 @@ export function renderDamage(container, query) {
         type: resolved.overrideType || move.type,
         category: move.category,
         power,
-        // El objetivo tambien viaja, y por la misma razon que el slug: la
-        // casilla «Dobles» resta un cuarto a lo que reparte, y sin `target`
-        // aqui no restaba nada a nada.
-        //
-        // Menos si es Z. Un movimiento Z sale de uno que puede repartir pero
-        // pega a uno solo (Ventisca reparte, Aguijon Letal Polar no), asi que
-        // se le quita el objetivo en vez de heredarlo: heredarlo inventaria
-        // una rebaja del 25% que el juego no aplica.
-        target: zForm ? null : move.target,
       },
       field: {
         weather: $('#dmgWeather').value,

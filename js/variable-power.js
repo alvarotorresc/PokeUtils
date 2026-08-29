@@ -258,6 +258,22 @@ export function toZMove(move) {
   return { name: zName, power: zPower(move.power) };
 }
 
+/**
+ * What identity and target a move presents to resolveDamage. A Z-move is a
+ * different move: it has its own name (Tectonic Rage, not Earthquake) and
+ * always hits one target. Grassy Terrain's `weakensMoves` and the doubles
+ * `isSpreadMove` both key off `move.name` / `move.target`, so a caller that
+ * forwards the base move's fields for a Z-move manufactures a rebate the
+ * game never applies -- one gate for both fields, so the next by-name rule
+ * does not need its own ternary to remember.
+ * @returns {{name:string|null, target:string|null}}
+ */
+export function zGate(move, zForm) {
+  return zForm
+    ? { name: zForm.name, target: null }
+    : { name: move.name, target: move.target };
+}
+
 // Which extra inputs a move needs from the user, so the UI can show exactly
 // those fields and nothing else. Empty for the 583 moves with a fixed power.
 const INPUTS = {

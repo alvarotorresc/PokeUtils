@@ -12,6 +12,7 @@ import {
   koLine, KO_CHANCE_FLOOR,
 } from '../js/damage.js';
 import { terrainById } from '../js/battle-data.js';
+import { toZMove, zGate } from '../js/variable-power.js';
 
 const moves = JSON.parse(await readFile(new URL('../data/moves.json', import.meta.url)));
 
@@ -327,6 +328,41 @@ check('  y los tres existen en data/moves.json',
 check('Campo de Niebla sigue siendo por tipo, no por movimiento',
   [terrainById('misty').weakens, terrainById('misty').weakensMoves],
   [{ dragon: 0.5 }, undefined]);
+
+console.log('\nUn movimiento Z no hereda el nombre del que sale\n');
+
+// Fuerza Tectonica no esta en la lista de arriba y Campo de Hierba no la
+// toca -- pero la pagina construye el movimiento Z con `zGate`, que le da su
+// propio nombre y le quita el objetivo, no con Terremoto pegado encima. Sin
+// `zGate` la pagina seguia mandando `name: 'earthquake'` con la potencia del
+// Z, y Campo de Hierba lo halvaba igual que al movimiento base.
+const earthquake = moves.find(m => m.name === 'earthquake');
+const eqZ = toZMove(earthquake);
+check('Fuerza Tectonica no es Terremoto', eqZ.name, 'tectonic-rage');
+check('  y no esta en la lista de Campo de Hierba',
+  terrainById('grassy').weakensMoves.includes(eqZ.name), false);
+check('zGate le da su propio nombre y le quita el objetivo',
+  zGate(earthquake, eqZ), { name: 'tectonic-rage', target: null });
+check('  pero sin Z, el nombre y el objetivo son los del movimiento base',
+  zGate(earthquake, null), { name: 'earthquake', target: 'all-other-pokemon' });
+
+const zTerremoto = (terrain) => {
+  const r = resolveDamage({
+    attacker: { types: ['ground'], level: 50, attack: 200, boost: 0, item: 'none', ability: 'none' },
+    defender: { types: ['normal'], defense: 100, boost: 0, ability: 'none', hp: 300 },
+    move: { ...zGate(earthquake, eqZ), type: 'ground', category: 'physical', power: eqZ.power },
+    field: { terrain },
+  });
+  return `${r.min} - ${r.max}`;
+};
+check('Fuerza Tectonica sin terreno', zTerremoto('none'), '204 - 240');
+check('  y con Campo de Hierba, la misma cifra: no se mueve',
+  zTerremoto('grassy'), zTerremoto('none'));
+// El control: Terremoto sin Z, con la misma pareja de arriba, se sigue
+// partiendo por la mitad -- el arreglo no ha apagado la rebaja para nadie
+// mas. Mismos numeros que "Terremoto (100) con Campo de Hierba" mas arriba.
+check('Terremoto sin Z sigue a la mitad con Campo de Hierba',
+  tierra('earthquake', 100, 'grassy'), '57 - 67');
 
 checkTrue('Light Screen halves a special move',
   fight({ field: { screen: 'lightscreen' } }).min < clean.min);
