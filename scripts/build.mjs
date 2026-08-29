@@ -87,6 +87,59 @@ async function comprobarLiteralesEN(html) {
   });
 }
 
+// 404.html es un fichero suelto: Netlify sirve su CONTENIDO para cualquier
+// URL que no exista (p.ej. /foo/bar/baz), pero el navegador sigue creyendo
+// que esta en esa URL falsa. Una ruta relativa ("fonts/...", "icons/...")
+// resolveria contra ELLA, no contra la raiz, y el recurso no cargaria --
+// tiene que ser absoluta o apuntar a otro origen (http...). Comprueba los
+// href/src/action del marcado y los url() del CSS embebido.
+function comprobarRutasAbsolutas404(html) {
+  const encontradas = [
+    ...[...html.matchAll(/(?:href|src|action)="([^"]*)"/g)].map(m => m[1]),
+    ...[...html.matchAll(/url\((['"]?)([^'")]+)\1\)/g)].map(m => m[2]),
+  ];
+  if (encontradas.length === 0) {
+    throw new Error('404.html ya no tiene ningun href/src/action/url() que comprobar -- '
+      + 'revisa que el fichero siga teniendo su marcado habitual');
+  }
+  for (const ruta of encontradas) {
+    if (!ruta.startsWith('/') && !ruta.startsWith('http')) {
+      throw new Error(`404.html referencia "${ruta}" con una ruta relativa -- Netlify sirve `
+        + 'este fichero en la URL pedida, no en la raiz, asi que tiene que ser absoluta ("/...")');
+    }
+  }
+}
+
+// El boton "Volver al inicio" / "Back to home" de 404.html reutiliza el
+// mismo texto que ya vive como common.backhome en los dos diccionarios (sale
+// en mayusculas por text-transform, el texto en si no lo es) -- a diferencia
+// del resto de la copia de esta pagina (propia, sin diccionario contra el
+// que comprobarse), este SI tiene una fuente de verdad de la que puede
+// divergir sin que nadie se entere. Mismo principio que comprobarLiteralesEN,
+// contra un <a> y un objeto EN_404 en vez de un `var EN_NAV`.
+async function comprobarBackHome404(html) {
+  const { default: es } = await import(pathToFileURL(join(ROOT, 'js', 'i18n-es.js')));
+  const { default: en } = await import(pathToFileURL(join(ROOT, 'js', 'i18n-en.js')));
+
+  const esMatch = html.match(/id="err404Home"[^>]*>([^<]+)</);
+  if (!esMatch) {
+    throw new Error('404.html ya no tiene el enlace #err404Home con el texto de "Volver al inicio"');
+  }
+  if (esMatch[1] !== es['common.backhome']) {
+    throw new Error(`404.html dice "${esMatch[1]}" en el enlace de vuelta al inicio, pero `
+      + `js/i18n-es.js dice "${es['common.backhome']}" en common.backhome -- actualiza esa copia a mano en 404.html`);
+  }
+
+  const enMatch = html.match(/backHome:\s*(['"])((?:(?!\1).)*)\1/);
+  if (!enMatch) {
+    throw new Error('404.html ya no tiene el campo "backHome" en su bloque EN_404 de swap de idioma');
+  }
+  if (enMatch[2] !== en['common.backhome']) {
+    throw new Error(`404.html copia "${enMatch[2]}" para backHome en EN_404, pero `
+      + `js/i18n-en.js dice "${en['common.backhome']}" en common.backhome -- actualiza esa copia a mano en 404.html`);
+  }
+}
+
 async function main() {
   await rm(OUT, { recursive: true, force: true });
   await mkdir(join(OUT, 'js'), { recursive: true });
@@ -164,12 +217,16 @@ async function main() {
     await cp(join(ROOT, carpeta), join(OUT, carpeta), { recursive: true });
   }
 
-  // manifest.webmanifest, robots.txt y sitemap.xml son ficheros sueltos en la
-  // raiz, no una carpeta: el bucle de arriba no los toca. Como index.html, se
-  // sirven directo desde la raiz sin build en local (`scripts/serve.mjs`),
-  // asi que tampoco necesitan la reescritura de rutas que si llevan el CSS y
-  // el JS.
-  for (const suelto of ['manifest.webmanifest', 'robots.txt', 'sitemap.xml']) {
+  // manifest.webmanifest, robots.txt, sitemap.xml y 404.html son ficheros
+  // sueltos en la raiz, no una carpeta: el bucle de arriba no los toca. Como
+  // index.html, se sirven directo desde la raiz sin build en local
+  // (`scripts/serve.mjs`), asi que tampoco necesitan la reescritura de rutas
+  // que si llevan el CSS y el JS -- 404.html en concreto no puede depender de
+  // ningun nombre hasheado (ver el comentario de sus @font-face).
+  const html404 = await readFile(join(ROOT, '404.html'), 'utf8');
+  comprobarRutasAbsolutas404(html404);
+  await comprobarBackHome404(html404);
+  for (const suelto of ['manifest.webmanifest', 'robots.txt', 'sitemap.xml', '404.html']) {
     await cp(join(ROOT, suelto), join(OUT, suelto));
   }
 
