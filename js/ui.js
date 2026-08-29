@@ -71,6 +71,29 @@ export function replaceQuery(path, params) {
   history.replaceState(null, '', `#${path}${query ? '?' + query : ''}`);
 }
 
+// ===== HELPER: escape a value interpolated into HTML =====
+//
+// Every template in js/ writes HTML as a string, and until now not one of the
+// ~130 interpolations escaped anything. Nothing exploitable came out of it, but
+// only by coincidence: the fields that carry a double quote today (item and
+// Pokemon descriptions) happen to be painted in text nodes, and the ones that
+// land in attributes (the names) happen to be clean. Nothing enforced either
+// half.
+//
+// The attribute case is the one that bites. In `<img alt="${name}" onerror="…">`
+// a single quote in the name closes alt= and the rest of the tag is whatever the
+// data says -- an event handler, and no `<` needed for it. So this goes on every
+// data-derived value that reaches an attribute, plus the text nodes that paint
+// free text.
+//
+// The five characters, and not three: `'` because a value could be dropped into
+// a single-quoted attribute later, `&` because without it an escape is not
+// reversible. Escaping `&` is also what keeps this idempotent-safe to reason
+// about -- no field in data/ holds a pre-existing entity, so nothing is
+// double-escaped.
+export const esc = s => String(s ?? '').replace(/[&<>"']/g,
+  c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 // ===== HELPER: loading HTML =====
 export function loadingHTML(text) {
   return `

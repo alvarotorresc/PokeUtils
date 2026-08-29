@@ -7,6 +7,7 @@ import { searchPokemon } from './api.js';
 import { calcHP, calcStat, getNatureMod } from './stats.js';
 import { t, statName, natureName, getLang, pokeName } from './i18n.js';
 import { spriteIdFor } from './forms.js';
+import { esc } from './ui.js';
 
 export function renderIvEv(container) {
   let selectedPokemon = null;
@@ -156,7 +157,7 @@ export function renderIvEv(container) {
     searchResultsEl.style.display = '';
     searchResultsEl.innerHTML = searchResults.map(p => `
       <div class="card card-clickable" style="padding:10px;margin-bottom:4px;display:flex;align-items:center;gap:10px" data-id="${p.id}">
-        <img src="${spriteUrl(spriteIdFor(p))}" style="width:40px;height:40px;image-rendering:pixelated" alt="${pokeName(p)}">
+        <img src="${spriteUrl(spriteIdFor(p))}" style="width:40px;height:40px;image-rendering:pixelated" alt="${esc(pokeName(p))}">
         <div>
           <div style="font-size:0.42rem">${pokeName(p)}</div>
           <div style="font-size:0.42rem;color:var(--ink-3)">#${String(p.speciesId || p.id).padStart(4, '0')} · ${p.name}</div>
@@ -181,7 +182,7 @@ export function renderIvEv(container) {
     selectedEl.style.display = '';
     selectedEl.innerHTML = `
       <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
-        <img src="${spriteUrl(spriteIdFor(poke))}" style="width:56px;height:56px;image-rendering:pixelated" alt="${pokeName(poke)}">
+        <img src="${spriteUrl(spriteIdFor(poke))}" style="width:56px;height:56px;image-rendering:pixelated" alt="${esc(pokeName(poke))}">
         <div>
           <div style="font-size:0.5rem;color:var(--accent-text)">${pokeName(poke)}</div>
           <div style="font-size:0.44rem;color:var(--ink-3)">#${String(poke.speciesId || poke.id).padStart(4, '0')} · ${poke.name}</div>

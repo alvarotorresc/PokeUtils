@@ -11,7 +11,7 @@ import {
   WEATHER, TERRAIN, SCREENS, DAMAGE_ITEMS, DAMAGE_ABILITIES,
 } from './battle-data.js';
 import { FIELDS, VP_FIELDS, encodeDamageState, decodeDamageState } from './damage-url.js';
-import { replaceQuery } from './ui.js';
+import { replaceQuery, esc } from './ui.js';
 import { t, getLang, pokeName, categoryName, typeName } from './i18n.js';
 import { spriteIdFor } from './forms.js';
 
@@ -179,7 +179,7 @@ export function renderDamage(container, query) {
     selected.style.display = '';
     selected.innerHTML = `
       <div class="dmg-chosen">
-        <img src="${spriteUrl(spriteIdFor(poke))}" alt="${pokeName(poke)}">
+        <img src="${spriteUrl(spriteIdFor(poke))}" alt="${esc(pokeName(poke))}">
         <div>
           <div class="dmg-chosen-name">${pokeName(poke)}</div>
           <div class="dmg-chosen-types">${poke.types.map(ty => typeFullName(ty)).join(' / ')}</div>
@@ -206,7 +206,7 @@ export function renderDamage(container, query) {
           results.style.display = '';
           results.innerHTML = found.length ? found.map(p => `
             <div class="card card-clickable dmg-hit" data-id="${p.id}">
-              <img src="${spriteUrl(spriteIdFor(p))}" alt="${pokeName(p)}">
+              <img src="${spriteUrl(spriteIdFor(p))}" alt="${esc(pokeName(p))}">
               <span>${pokeName(p)}</span>
             </div>
           `).join('') : `<div style="font-size:0.46rem;color:var(--ink-2);padding:8px">${t('calc.notfound')}</div>`;
@@ -246,7 +246,7 @@ export function renderDamage(container, query) {
     moveSelected.style.display = '';
     moveSelected.innerHTML = `
       <div class="dmg-chosen">
-        <span class="type-badge sm" data-type="${move.type}">${typeName(move.type)}</span>
+        <span class="type-badge sm" data-type="${esc(move.type)}">${typeName(move.type)}</span>
         <div>
           <div class="dmg-chosen-name">${getLang() === 'es' ? move.nameEs : move.nameEn}</div>
           <div class="dmg-chosen-types">
@@ -277,7 +277,7 @@ export function renderDamage(container, query) {
       moveResults.style.display = '';
       moveResults.innerHTML = hits.length ? hits.map(m => `
         <div class="card card-clickable dmg-hit" data-id="${m.id}">
-          <span class="type-badge sm" data-type="${m.type}">${typeName(m.type)}</span>
+          <span class="type-badge sm" data-type="${esc(m.type)}">${typeName(m.type)}</span>
           <span>${getLang() === 'es' ? m.nameEs : m.nameEn}</span>
           <span style="color:var(--ink-2);margin-left:auto">${m.power ?? '?'}</span>
         </div>
@@ -350,7 +350,7 @@ export function renderDamage(container, query) {
             if (f.type === 'select') {
               const options = key === 'fling-item'
                 ? flingItems.map(i => `<option value="${i.flingPower}">${getLang() === 'es' ? i.nameEs : i.nameEn} (${i.flingPower})</option>`)
-                : berries.map(b => `<option value="${b.type}|${b.power}">${getLang() === 'es' ? b.es : b.en} (${typeName(b.type)} ${b.power})</option>`);
+                : berries.map(b => `<option value="${esc(b.type)}|${b.power}">${getLang() === 'es' ? b.es : b.en} (${typeName(b.type)} ${b.power})</option>`);
               return `<div class="calc-field"><label>${t(f.label)}</label><select data-vp="${key}">${options.join('')}</select></div>`;
             }
             if (f.type === 'range') {

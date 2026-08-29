@@ -5,7 +5,7 @@
 import { survives, minimumSpread, defenseKeyFor } from './survival.js';
 import { fetchPokemonList, fetchMoves } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { loadingHTML, replaceQuery } from './ui.js';
+import { loadingHTML, replaceQuery, esc } from './ui.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
 import { WEATHER, TERRAIN, SCREENS } from './battle-data.js';
@@ -115,7 +115,7 @@ export async function renderSurvive(container, query = new URLSearchParams()) {
               <label class="egg-key">${t(label)}</label>
               <input type="text" class="search-input" data-picker="${key}"
                      placeholder="${t('survive.search')}"
-                     value="${chosen ? nameOf(key, chosen).replace(/"/g, '&quot;') : ''}">
+                     value="${chosen ? esc(nameOf(key, chosen)) : ''}">
               <div class="cmp-results" data-results="${key}" hidden></div>
             </div>
           `;
@@ -166,7 +166,7 @@ export async function renderSurvive(container, query = new URLSearchParams()) {
         results.innerHTML = hits.map(x => `
           <button class="cmp-hit" data-id="${x.id}">
             ${key === 'm'
-              ? `<span class="type-badge sm" data-type="${x.type}">${typeName(x.type)}</span>${nameOf(key, x)} (${x.power})`
+              ? `<span class="type-badge sm" data-type="${esc(x.type)}">${typeName(x.type)}</span>${nameOf(key, x)} (${x.power})`
               : `<img src="${spriteUrl(spriteIdFor(x))}" alt="">${nameOf(key, x)}`}
           </button>
         `).join('');

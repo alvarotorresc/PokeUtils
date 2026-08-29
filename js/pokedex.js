@@ -2,7 +2,7 @@
 import { TYPES, spriteUrl, STAT_KEYS, GENERATIONS, SORT_KEYS } from './data.js';
 import { fetchPokemonList } from './api.js';
 import { isForm, spriteIdFor } from './forms.js';
-import { loadingHTML, renderPagination, replaceQuery } from './ui.js';
+import { loadingHTML, renderPagination, replaceQuery, esc } from './ui.js';
 import { t, typeName, statName, pokeName } from './i18n.js';
 import { toolTabsHTML } from './hub.js';
 
@@ -15,11 +15,11 @@ const PAGE_SIZE = 50;
 export function pokemonCardHTML(p, i = 0) {
   return `
     <a class="pokemon-card" href="#/pokedex/${p.id}" style="--i:${Math.min(i, 11)}">
-      <img class="sprite" src="${spriteUrl(spriteIdFor(p))}" alt="${pokeName(p)}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><text x=%2248%22 y=%2260%22 text-anchor=%22middle%22 font-size=%2240%22>?</text></svg>'">
+      <img class="sprite" src="${spriteUrl(spriteIdFor(p))}" alt="${esc(pokeName(p))}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><text x=%2248%22 y=%2260%22 text-anchor=%22middle%22 font-size=%2240%22>?</text></svg>'">
       <div class="dex-number">#${String(p.speciesId || p.id).padStart(4, '0')}</div>
-      <div class="poke-name">${pokeName(p)}</div>
+      <div class="poke-name">${esc(pokeName(p))}</div>
       <div class="types">
-        ${p.types.map(tp => `<span class="type-badge sm" data-type="${tp}">${typeName(tp)}</span>`).join('')}
+        ${p.types.map(tp => `<span class="type-badge sm" data-type="${esc(tp)}">${typeName(tp)}</span>`).join('')}
       </div>
     </a>
   `;
@@ -94,7 +94,7 @@ export function renderPokedex(container, query = new URLSearchParams()) {
       <aside class="dex-side">
         <div class="search-bar">
           <span class="search-icon">🔍</span>
-          <input type="text" class="search-input" id="pdxSearch" placeholder="${t('pokedex.search')}" value="${state.q.replace(/"/g, '&quot;')}">
+          <input type="text" class="search-input" id="pdxSearch" placeholder="${t('pokedex.search')}" value="${esc(state.q)}">
         </div>
         <div class="pdx-count" id="pdxCount"></div>
         <h4 class="dex-side-title">${t('pokedex.type')}</h4>

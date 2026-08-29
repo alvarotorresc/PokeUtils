@@ -8,9 +8,89 @@
 #
 # Si el build falla, Netlify aborta el deploy y deja el anterior sirviendo: el
 # modo de fallo es "el sitio no se actualiza", no "el sitio se rompe".
+#
+# Los checks van DELANTE del build, y no solo en GitHub Actions: Actions corre
+# en otro sistema y no bloquea a Netlify, que dispara su propio build en cada
+# push a main pase lo que pase con CI. Sin esta linea, una PR que rompa un dato
+# (una forma nueva sin sprite, una traduccion que falta) se publicaba con CI en
+# rojo -- build.mjs no mira data/ para nada de eso.
+#
+# `&&` y no `;`: el script `check` de package.json acumula el fallo en $f y sale
+# con ese codigo, asi que un check en rojo corta la cadena y el build ni empieza.
+# Cae en el mismo modo de fallo de arriba: el sitio no se actualiza. Medido: los
+# 20 checks tardan ~2,3 s, encadenado ~3 s.
 [build]
-  command = "npm run build"
+  command = "npm run check && npm run build"
   publish = "dist"
+
+# ===== CABECERAS DE SEGURIDAD =====
+#
+# `for = "/*"` y no `for = "/"`: el bloque de Cache-Control del final del
+# fichero usa `for = "/"`, que casa SOLO con la raiz. Puesto ahi, esto habria
+# protegido la portada y nada mas -- y 404.html se sirve bajo cualquier ruta
+# que no exista, que es justo donde hay un <form> y un buscador.
+#
+# Este bloque no fija ningun Cache-Control, asi que no compite con los cinco de
+# mas abajo: las cuatro cabeceras de aqui no las pone ningun otro bloque, y no
+# hay colision que resolver mande quien mande cuando dos patrones casan.
+#
+# Ya no hay X-Frame-Options: frame-ancestors 'none' lo sustituye ahora que la
+# CSP bloquea de verdad. Es el mecanismo mejor (cubre el anidado a cualquier
+# profundidad y no depende de una cabecera obsoleta), y mantener las dos solo
+# invitaria a que alguien cambiara una y se olvidara de la otra.
+#
+# interest-cohort en Permissions-Policy es el opt-out de FLoC: el token ya no
+# existe en Chrome y la consola avisa de que no lo reconoce. Es ruido esperado y
+# benigno -- se queda por los navegadores que aun lo miran.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=(), interest-cohort=()"
+
+    # CSP en modo bloqueo. Estuvo en Report-Only exactamente un paso: no se puede
+    # validar en local (scripts/serve.mjs no lee este fichero, y este proyecto ya
+    # se quemo suponiendo que Netlify se comporta como uno espera), asi que se
+    # midio contra el deploy preview de la PR #13 antes de promocionarla. Lo
+    # medido alli, con la politica ya puesta: 25 rutas de la SPA mas la home, dos
+    # fichas y 404.html, CERO violaciones del sitio y cero imagenes rotas; Umami
+    # cargando con su SRI; las dos fuentes propias resueltas. Las unicas
+    # violaciones eran de la barra de Netlify del propio preview
+    # (app.netlify.com en un iframe), que no existe en produccion -- en modo
+    # bloqueo esa barra deja de verse en los previews, y es el unico efecto
+    # colateral conocido.
+    #
+    # De paso quedo comprobado que Netlify FUSIONA los bloques [[headers]] en vez
+    # de aplicar solo el mas especifico: el CSS con hash devuelve a la vez su
+    # Cache-Control immutable y estas cabeceras. No hacia falta repetirlas.
+    #
+    # Sin report-uri ni report-to: las violaciones salen solo por la consola del
+    # navegador, no hay panel donde mirarlas.
+    #
+    # Cada directiva, derivada de lo que el sitio carga de verdad:
+    #  - script-src: 'unsafe-inline' por los 4 bloques inline de index.html
+    #    (tema, hero, y los dos swaps de idioma), los 2 de 404.html (tema e
+    #    idioma) y, sobre todo, los manejadores en atributo que generan las
+    #    plantillas JS -- 9 onerror= y 2 onclick="history.back()". Con hashes no
+    #    se puede: el hash cubriria el atributo y haria falta 'unsafe-hashes',
+    #    y ademas basta con que haya UN hash o nonce en script-src para que
+    #    'unsafe-inline' deje de valer. Quitarlo es trabajo de codigo, no de
+    #    configuracion. El origen de analytics es el Umami autoalojado.
+    #  - connect-src: los beacons de Umami. La app hace un unico fetch
+    #    (js/api.js:37), siempre a data/ del propio origen.
+    #  - img-src: los sprites son de aqui (/sprites/...), y `data:` cubre los
+    #    placeholders SVG de los onerror (js/pokedex.js, js/data.js).
+    #  - style-src: el <style> entero de 404.html y 155 atributos style= en las
+    #    plantillas de js/, mas los 2 del footer de index.html y el del <svg> de
+    #    404.html.
+    #  - font-src 'self': las fuentes NO son de Google. style.css:1-9 documenta
+    #    la migracion fuera de fonts.googleapis.com, y index.html:9-10 precarga
+    #    los dos woff2 propios. Un grep de googleapis/gstatic sobre index.html,
+    #    404.html y js/ da cero. No se anaden esos origenes "por si acaso".
+    #  - form-action: el <form method="GET" action="/"> de 404.html:282.
+    #  - base-uri/object-src 'none': no hay <base> ni <object> en el sitio.
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://analytics.alvarotc.com 'unsafe-inline'; connect-src 'self' https://analytics.alvarotc.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'"
 
 # Generated datasets change once per Pokemon generation. Serve them stale
 # while revalidating so navigation stays instant after the first visit.

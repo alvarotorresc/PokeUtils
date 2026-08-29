@@ -7,7 +7,7 @@ import { STAT_KEYS, spriteUrl } from './data.js';
 import { fetchPokemonList, fetchAbilities } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
 import { defensiveMatrix } from './team-analysis.js';
-import { loadingHTML, replaceQuery } from './ui.js';
+import { loadingHTML, replaceQuery, esc } from './ui.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
 import { toolTabsHTML } from './hub.js';
 import { attachTooltip } from './tooltip.js';
@@ -47,7 +47,7 @@ export async function renderCompare(container, query = new URLSearchParams()) {
   };
 
   const abilityLinkHTML = slug => `
-    <a class="ability-link" href="#/abilities/${encodeURIComponent(slug)}" data-ability="${slug}">${abilityLabel(slug)}</a>
+    <a class="ability-link" href="#/abilities/${encodeURIComponent(slug)}" data-ability="${esc(slug)}">${abilityLabel(slug)}</a>
   `;
 
   // A typo in a shared link must not blank the page: unknown ids drop out and
@@ -136,10 +136,10 @@ export async function renderCompare(container, query = new URLSearchParams()) {
                 ${picks.map(p => `
                   <th>
                     <a href="#/pokedex/${p.id}">
-                      <img class="cmp-sprite" src="${spriteUrl(spriteIdFor(p))}" alt="${pokeName(p)}">
+                      <img class="cmp-sprite" src="${spriteUrl(spriteIdFor(p))}" alt="${esc(pokeName(p))}">
                       <div class="cmp-name">${pokeName(p)}</div>
                     </a>
-                    <div class="cmp-types">${p.types.map(tp => `<span class="type-badge sm" data-type="${tp}">${typeName(tp)}</span>`).join('')}</div>
+                    <div class="cmp-types">${p.types.map(tp => `<span class="type-badge sm" data-type="${esc(tp)}">${typeName(tp)}</span>`).join('')}</div>
                   </th>
                 `).join('')}
               </tr>
