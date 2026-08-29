@@ -350,7 +350,7 @@ export function renderDamage(container, query) {
             if (f.type === 'select') {
               const options = key === 'fling-item'
                 ? flingItems.map(i => `<option value="${i.flingPower}">${getLang() === 'es' ? i.nameEs : i.nameEn} (${i.flingPower})</option>`)
-                : berries.map(b => `<option value="${b.type}|${b.power}">${getLang() === 'es' ? b.es : b.en} (${typeName(b.type)} ${b.power})</option>`);
+                : berries.map(b => `<option value="${esc(b.type)}|${b.power}">${getLang() === 'es' ? b.es : b.en} (${typeName(b.type)} ${b.power})</option>`);
               return `<div class="calc-field"><label>${t(f.label)}</label><select data-vp="${key}">${options.join('')}</select></div>`;
             }
             if (f.type === 'range') {
