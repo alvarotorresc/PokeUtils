@@ -431,6 +431,51 @@ check('Rayo en dobles no se mueve: pega a uno',
 // aunque el movimiento reparta.
 check('sin la casilla de dobles, repartir no cuesta nada', dobles().rolls, dobles({ field: {} }).rolls);
 
+console.log('\nLa tormenta y la nieve miran los tipos de despues de teracristalizar\n');
+
+// La tormenta de arena sube la Defensa Especial de los Roca y la nieve la
+// Defensa de los Hielo. Teracristalizar sustituye los tipos, y esta subida es
+// la unica cuenta de resolveDamage que seguia leyendo los originales: un Roca
+// que teracristalizaba a otra cosa se quedaba con el bono, y un Roca de
+// mentira no lo cobraba. Todo lo que tiene alrededor -- la tabla de tipos y
+// quien pisa el suelo -- ya usaba los de despues.
+//
+// Nivel 50, Ataque 200, Defensa 100, movimiento de 90.
+const clima = (over = {}) => resolveDamage({
+  attacker: { types: ['normal'], level: 50, attack: 200, boost: 0, item: 'none', ability: 'none' },
+  defender: { types: ['rock'], defense: 100, boost: 0, ability: 'none', hp: 300, ...over.defender },
+  move: { name: 'psychic', type: 'psychic', category: 'special', power: 90, ...over.move },
+  field: { weather: 'sand', ...over.field },
+});
+
+check('un Roca sin clima', clima({ field: { weather: 'none' } }).max, 81);
+check('  y con tormenta de arena, mas duro', clima().max, 54);
+check('un Roca que teracristaliza a Normal deja de serlo',
+  clima({ defender: { teraType: 'normal' } }).max, 81);
+check('un Normal con tormenta no gana nada',
+  clima({ defender: { types: ['normal'] } }).max, 81);
+check('  pero si teracristaliza a Roca, si',
+  clima({ defender: { types: ['normal'], teraType: 'rock' } }).max, 54);
+// La subida es de un stat concreto: la arena no toca la Defensa fisica.
+check('la arena no ayuda contra un movimiento fisico',
+  clima({ move: { name: 'body-slam', type: 'normal', category: 'physical' } }).max,
+  clima({ move: { name: 'body-slam', type: 'normal', category: 'physical' }, field: { weather: 'none' } }).max);
+
+const nieve = (over = {}) => clima({
+  defender: { types: ['ice'], ...over.defender },
+  move: { name: 'body-slam', type: 'normal', category: 'physical', ...over.move },
+  field: { weather: 'snow', ...over.field },
+});
+check('un Hielo sin clima', nieve({ field: { weather: 'none' } }).max, 121);
+check('  y con nieve, mas duro', nieve().max, 81);
+check('un Hielo que teracristaliza a Normal deja de serlo',
+  nieve({ defender: { teraType: 'normal' } }).max, 121);
+check('un Normal que teracristaliza a Hielo lo gana',
+  nieve({ defender: { types: ['normal'], teraType: 'ice' } }).max, 81);
+check('la nieve no ayuda contra un movimiento especial',
+  nieve({ move: { name: 'psychic', type: 'psychic', category: 'special' } }).max,
+  nieve({ move: { name: 'psychic', type: 'psychic', category: 'special' }, field: { weather: 'none' } }).max);
+
 console.log('\nUn multigolpe se usa una vez y golpea varias\n');
 
 // El caso de la Semilladora: 25 de potencia, de 2 a 5 golpes, atacante Planta

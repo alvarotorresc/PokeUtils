@@ -359,9 +359,12 @@ export function resolveDamage({ attacker, defender, move, field = {} }) {
   if (atkAbility.statMult) attack = Math.floor(attack * atkAbility.statMult);
   if (defAbility.statMult) defense = Math.floor(defense * defAbility.statMult);
 
-  // Sandstorm and snow raise a defensive stat instead of scaling the move.
+  // Sandstorm and snow raise a defensive stat instead of scaling the move. The
+  // types that qualify are the post-Tera ones, the same as everywhere else on
+  // this side: a Rock type that Teras into something else is no longer a Rock
+  // type, and the storm stops helping it.
   const defBoost = weather.defBoost;
-  if (defBoost && defender.types.some(x => defBoost.types.includes(x))
+  if (defBoost && defTypes.some(x => defBoost.types.includes(x))
       && ((defBoost.stat === 'spd' && move.category === 'special')
        || (defBoost.stat === 'def' && move.category === 'physical'))) {
     defense = Math.floor(defense * defBoost.mult);
