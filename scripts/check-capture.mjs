@@ -107,5 +107,19 @@ check('54 combinations all land in [0,1]', outOfRange, 0);
 // Cumulative odds over several throws.
 check('4 throws at 25% each', chanceWithin(0.25, 4), 0.6836);
 
+// Un ratio ausente no es un ratio bajo. Antes, `?? 0` seguido de
+// `Math.max(rate, 1)` convertia el "no lo se" en un ratio 1 y de ahi en un
+// 0,69% que nadie ha medido: creible, y por eso peor que un error. Hoy los 1351
+// de data/pokemon.json traen captureRate, asi que esto es mantenimiento.
+console.log('\nUn ratio ausente\n');
+
+const sinRatio = { hpMax: 100, hpCurrent: 100, ball: 'poke-ball', status: 'none', level: 20 };
+check('captureRate null no devuelve un numero', captureChance({ ...sinRatio, captureRate: null }), null);
+check('captureRate ausente tampoco', captureChance(sinRatio), null);
+check('captureRate 0 sigue siendo un dato', captureChance({ ...sinRatio, captureRate: 0 }) === null ? 1 : 0, 0);
+// La Master Ball no consulta el ratio para nada, asi que sin ratio sigue
+// sabiendo la respuesta.
+check('la Master Ball no necesita el ratio', captureChance({ ...sinRatio, captureRate: null, ball: 'master-ball' })?.chance, 1);
+
 console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);

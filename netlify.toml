@@ -162,3 +162,74 @@
   for = "/"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+
+# ===== LOS CUATRO FICHEROS SUELTOS =====
+#
+# build.mjs:229-231 copia cuatro ficheros de la raiz tal cual -- 404.html,
+# manifest.webmanifest, robots.txt y sitemap.xml -- y hasta aqui eran los unicos
+# del sitio sin politica escrita ni motivo escrito para no tenerla. Ninguno
+# lleva hash en el nombre, asi que `immutable` esta descartado para los cuatro:
+# la unica decision es cuanto se tolera que uno se quede viejo.
+#
+# Cada bloque anade SOLO Cache-Control. Esta medido contra un deploy preview que
+# Netlify FUSIONA los bloques que casan en vez de quedarse con el mas especifico
+# (ver el comentario de la CSP arriba), asi que estos cuatro siguen llevando las
+# cuatro cabeceras de seguridad del `for = "/*"`.
+#
+# Lo que NO se hace: poner Cache-Control en el propio `for = "/*"`. Casaria
+# tambien con el JS y el CSS hasheados, que ya tienen el suyo `immutable`, y
+# dos bloques fijando la MISMA cabecera es justo la colision que el `for = "/*"`
+# evito a proposito no fijando ninguna.
+
+# 404.html: es HTML, y la regla del HTML es la de `/` de aqui arriba. No depende
+# de ningun nombre hasheado -- solo enlaza /icons, /fonts y `/` -- pero es la
+# pagina con el buscador y el <form> de vuelta, y una version vieja de eso
+# viviendo en la cache no la corrige ningun deploy. Revalidar cuesta un 304 en
+# una peticion que ya iba a ser un viaje al servidor: solo se sirve cuando
+# alguien pide una URL que no existe.
+#
+# OJO, y esto lo tiene que confirmar el deploy preview: las reglas de Netlify
+# casan contra la RUTA PEDIDA, no contra el fichero servido. Este bloque cubre
+# seguro una peticion directa a /404.html; que cubra tambien /ruta-que-no-existe
+# (donde el fichero se sirve con status 404) es exactamente la clase de supuesto
+# con la que este proyecto ya se quemo, asi que no se afirma: se mira con
+# `curl -I` sobre las dos.
+[[headers]]
+  for = "/404.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# manifest.webmanifest: hace para los iconos lo que index.html hace para el JS
+# hasheado -- es la lista de NOMBRES de otros cuatro ficheros. Si un rediseno
+# renombra los iconos, un manifest viejo en cache apunta a ficheros que ya no
+# estan y el icono de instalacion se queda vacio sin que nada falle. Misma
+# politica que el HTML por la misma razon, y cuesta lo mismo: son 700 bytes que
+# el navegador solo pide al instalar o al arrancar la app instalada.
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# robots.txt y sitemap.xml no los pide ningun navegador: los leen rastreadores,
+# en su propio horario y con su propia cache por encima de esta. Nada de la
+# pagina se rompe si uno va una hora atrasado, asi que no necesitan la
+# revalidacion en cada peticion del HTML.
+#
+# Una hora y no un dia porque el modo de fallo que importa es el urgente y va en
+# la direccion contraria: si algun dia hay que anadir un Disallow, con
+# max-age=86400 seguiria rastreandose lo que se acaba de prohibir durante todo
+# un dia. Una hora acota eso y sigue ahorrando practicamente todas las
+# peticiones -- estos dos ficheros cambian una vez al ano, no una vez a la hora.
+#
+# El sitemap solo lista la raiz a proposito (ver su comentario: las rutas de la
+# SPA van por fragmento y un sitemap no los admite), asi que su contenido no
+# cambia ni cuando se anade una herramienta.
+[[headers]]
+  for = "/robots.txt"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"

@@ -11,6 +11,7 @@ import { spriteUrl } from './data.js';
 import { WEATHER, TERRAIN, SCREENS } from './battle-data.js';
 import { t, pokeName, typeName, statName, getLang } from './i18n.js';
 import { toolTabsHTML, wireToolTabs } from './hub.js';
+import { norm } from './normalize.js';
 
 const PICKERS = [
   { key: 'a', label: 'survive.attacker' },
@@ -159,8 +160,9 @@ export async function renderSurvive(container, query = new URLSearchParams()) {
           results.hidden = true;
           return;
         }
+        const nq = norm(q);
         const hits = listFor(key).filter(x =>
-          (x.nameEs || '').toLowerCase().includes(q) || (x.nameEn || '').toLowerCase().includes(q)
+          norm(x.nameEs).includes(nq) || norm(x.nameEn).includes(nq)
         ).slice(0, 8);
         results.hidden = hits.length === 0;
         results.innerHTML = hits.map(x => `

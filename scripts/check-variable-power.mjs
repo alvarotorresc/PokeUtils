@@ -77,6 +77,23 @@ check('Electro Ball, 4x faster, is 150',
 check('Electro Ball when slower is 40',
   resolvePower(move('electro-ball'), { ...ctx, attackerSpeed: 50, defenderSpeed: 100 }).power, 40);
 
+// Bola Voltio es la division ENTERA de las dos velocidades, y el juego mapea
+// 0 -> 40, 1 -> 60, 2 -> 80, 3 -> 120, 4 o mas -> 150. El empate da cociente
+// entero 1, luego 60: es el espejo, el mismo Pokemon a los dos lados, y es de
+// los calculos que mas se hacen. Se piden los cinco bordes y el escalon de
+// abajo de cada uno, porque un umbral desplazado uno solo se ve desde el par.
+const electroBall = (attackerSpeed, defenderSpeed) =>
+  resolvePower(move('electro-ball'), { ...ctx, attackerSpeed, defenderSpeed }).power;
+for (const [vel, esperado] of [
+  [99, 40], [100, 60],    // ultimo de 40  / el empate, primero de 60
+  [199, 60], [200, 80],   // ultimo de 60  / primero de 80
+  [299, 80], [300, 120],  // ultimo de 80  / primero de 120
+  [399, 120], [400, 150], // ultimo de 120 / primero de 150
+]) {
+  check(`  Bola Voltio a ${vel} contra 100 vale ${esperado}`, electroBall(vel, 100), esperado);
+}
+check('  Bola Voltio con dos velocidades de 1 tambien empata', electroBall(1, 1), 60);
+
 console.log('\nHP families\n');
 
 check('Flail at 1 HP of 200 is 200',

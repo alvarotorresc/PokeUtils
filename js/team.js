@@ -10,6 +10,7 @@ import { loadingHTML, renderError, replaceQuery, hostDeRuta, esc } from './ui.js
 import { t, typeName, pokeName } from './i18n.js';
 import { defensiveMatrix, threats, unresisted, stabTypes, offensiveCoverage } from './team-analysis.js';
 import { toolTabsHTML, wireToolTabs } from './hub.js';
+import { norm } from './normalize.js';
 
 const TEAM_SIZE = 6;
 const MAX_RESULTS = 10;
@@ -48,14 +49,18 @@ export async function renderTeam(container, query = new URLSearchParams()) {
 
   const byId = new Map(pokemon.map(p => [p.id, p]));
 
-  // Validated on the way in: a hand-edited URL must not put unknown ids or a
-  // seventh member into the team.
+  // Validated on the way in: a hand-edited URL must not put unknown ids, a
+  // repeated member or a seventh one into the team. The picker below already
+  // refuses a duplicate (`!state.ids.includes(p.id)`), and the coverage of six
+  // copies of one Pokemon is the coverage of one -- the extra slots add nothing
+  // and only make the analysis read as if it were about a real team.
   const state = {
-    ids: (query.get('ids') || '')
-      .split(',')
-      .map(n => parseInt(n, 10))
-      .filter(id => byId.has(id))
-      .slice(0, TEAM_SIZE),
+    ids: [...new Set(
+      (query.get('ids') || '')
+        .split(',')
+        .map(n => parseInt(n, 10))
+        .filter(id => byId.has(id))
+    )].slice(0, TEAM_SIZE),
     atk: (query.get('atk') || '')
       .split(',')
       .filter(type => TYPES.includes(type)),
@@ -123,12 +128,13 @@ export async function renderTeam(container, query = new URLSearchParams()) {
       resultsEl.innerHTML = '';
       return;
     }
+    const q = norm(term);
     const found = pokemon
       .filter(p => !state.ids.includes(p.id))
       .filter(p =>
-        p.nameEs.toLowerCase().includes(term) ||
-        p.nameEn.toLowerCase().includes(term) ||
-        p.name.toLowerCase().includes(term)
+        norm(p.nameEs).includes(q) ||
+        norm(p.nameEn).includes(q) ||
+        norm(p.name).includes(q)
       )
       .slice(0, MAX_RESULTS);
 

@@ -43,7 +43,7 @@ globalThis.history = {
   replaceState: (_estado, _titulo, url) => { escrituras.push(String(url)); },
 };
 
-const { replaceQuery } = await import('../js/ui.js');
+const { replaceQuery, parseHash } = await import('../js/ui.js');
 
 // Devuelve lo que replaceQuery escribio, o null si no escribio nada.
 function escribeDesde(hash, path, params) {
@@ -71,6 +71,66 @@ check('parametros vacios fuera de la URL',
 // cuentan como otra ruta.
 check('#//pokedex/ sigue siendo /pokedex',
   escribeDesde('#//pokedex/', '/pokedex', { p: 2 }), '#/pokedex?p=2');
+
+console.log('\nLas dos mitades de la aplicacion escriben el espacio igual\n');
+
+// replaceQuery escribia la query con URLSearchParams.toString(), que pone "+"
+// donde hay un espacio, mientras el buscador global monta sus destinos con
+// encodeURIComponent, que pone "%20". Un enlace compartido como
+// #/pokedex?q=mr%20mime se reescribia solo a #/pokedex?q=mr+mime en el primer
+// render de la pagina: el mismo estado con dos direcciones, y la que se ve en
+// la barra no era la que se habia compartido.
+//
+// Gana %20 porque "+" solo significa espacio en un cuerpo de formulario
+// (application/x-www-form-urlencoded) y esto es un fragmento -- quien lo lea
+// con decodeURIComponent se encuentra un "+" literal -- y porque es la
+// ortografia que la otra mitad ya escribia.
+check('un espacio se escribe %20, no +',
+  escribeDesde('#/pokedex', '/pokedex', { q: 'mr mime' }), '#/pokedex?q=mr%20mime');
+check('y varios espacios tambien',
+  escribeDesde('#/items', '/items', { q: 'gran cana de pescar' }),
+  '#/items?q=gran%20cana%20de%20pescar');
+// El destino que monta el buscador global para la misma fila, letra a letra:
+// es la comparacion que da sentido al arreglo, y ademas es TEXTUAL en
+// global-search.js (mismoHash), que compara el hash crudo.
+check('replaceQuery escribe lo mismo que el buscador global',
+  escribeDesde('#/items', '/items', { q: 'Master Ball' }),
+  `#/items?q=${encodeURIComponent('Master Ball')}`);
+
+// Un "+" literal escrito por el usuario tiene que sobrevivir, y con las dos
+// ortografias lo hace: se escapa como %2B en las dos.
+check('un + literal no se confunde con un espacio',
+  escribeDesde('#/moves', '/moves', { q: 'a+b' }), '#/moves?q=a%2Bb');
+// La enye, que es el caso normal en este buscador: no cambia, porque los dos
+// codificadores escapan el UTF-8 igual. Con los bytes puestos, no con la
+// palabra "enye" en la etiqueta y una cadena ASCII en el valor.
+check('una enye sigue viajando en UTF-8 escapado',
+  escribeDesde('#/pokedex', '/pokedex', { q: 'ñu añejo' }),
+  '#/pokedex?q=%C3%B1u%20a%C3%B1ejo');
+// El separador y el signo igual dentro de un valor no pueden partir la query.
+check('un & dentro del valor no abre otro parametro',
+  escribeDesde('#/moves', '/moves', { q: 'a&p=9' }), '#/moves?q=a%26p%3D9');
+
+// El espacio no es lo unico que cambia de ortografia: URLSearchParams escapa
+// !'()~ y encodeURIComponent los deja literales. Los cinco son legales en un
+// fragmento y vuelven tal cual, pero el apostrofo sale de verdad -- Farfetch'd
+// es un Pokemon que se busca -- y el enlace compartido cambia de aspecto, asi
+// que se fija en vez de descubrirse.
+check('el apostrofo de Farfetchd viaja literal',
+  escribeDesde('#/pokedex', '/pokedex', { q: "farfetch'd" }), "#/pokedex?q=farfetch'd");
+globalThis.location.hash = "#/pokedex?q=farfetch'd";
+check('  y se vuelve a leer entero', parseHash().query.get('q'), "farfetch'd");
+globalThis.location.hash = '#/pokedex?q=farfetch%27d';
+check('  y el enlace viejo, con %27, tambien', parseHash().query.get('q'), "farfetch'd");
+
+// Los enlaces viejos, con "+", siguen leyendose: parseHash usa URLSearchParams,
+// que decodifica las dos ortografias como espacio. Sin esto, el arreglo seria
+// un cambio que rompe cada enlace ya compartido.
+globalThis.location.hash = '#/pokedex?q=mr+mime';
+check('un enlace viejo con + se sigue leyendo como espacio',
+  parseHash().query.get('q'), 'mr mime');
+globalThis.location.hash = '#/pokedex?q=mr%20mime';
+check('y el nuevo con %20 se lee igual', parseHash().query.get('q'), 'mr mime');
 
 console.log('\nUna ruta que ya no esta en pantalla no escribe nada\n');
 

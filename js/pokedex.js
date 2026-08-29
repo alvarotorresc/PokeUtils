@@ -5,6 +5,7 @@ import { isForm, spriteIdFor } from './forms.js';
 import { loadingHTML, renderPagination, replaceQuery, esc } from './ui.js';
 import { t, typeName, statName, pokeName } from './i18n.js';
 import { toolTabsHTML } from './hub.js';
+import { norm } from './normalize.js';
 
 const PAGE_SIZE = 50;
 
@@ -256,11 +257,15 @@ export function renderPokedex(container, query = new URLSearchParams()) {
     // scrolling to every query that was not looking for one.
     let filtered = state.q ? allPokemon : allPokemon.filter(p => !isForm(p));
     if (state.q) {
+      // state.q se queda como se tecleo porque viaja a la URL y al value del
+      // input; el plegado de tildes es solo para comparar. Los digitos no los
+      // toca norm, asi que buscar por numero sigue igual.
+      const q = norm(state.q);
       filtered = filtered.filter(p =>
-        p.nameEs.toLowerCase().includes(state.q) ||
-        p.name.toLowerCase().includes(state.q) ||
-        (p.nameEn && p.nameEn.toLowerCase().includes(state.q)) ||
-        String(p.id) === state.q
+        norm(p.nameEs).includes(q) ||
+        norm(p.name).includes(q) ||
+        (p.nameEn && norm(p.nameEn).includes(q)) ||
+        String(p.id) === q
       );
     }
     if (state.type) {

@@ -71,6 +71,8 @@ export function stabMultiplier({ moveType, attackerTypes, teraType, adaptability
  * @param {number} ctx.defense        defender's Def or SpD, before stages
  * @param {number} [ctx.attackBoost]  -6..+6
  * @param {number} [ctx.defenseBoost] -6..+6
+ * @param {number} [ctx.attackMult]   ability modifier on the Attack stat
+ * @param {number} [ctx.defenseMult]  ability modifier on the Defense stat
  * @param {boolean} [ctx.critical]
  * @param {number} [ctx.stab]         multiplier from stabMultiplier()
  * @param {number} [ctx.effectiveness] multiplier from typeEffectiveness()
@@ -84,6 +86,7 @@ export function damageRolls(ctx) {
   const {
     level = 50, power = 0, attack = 1, defense = 1,
     attackBoost = 0, defenseBoost = 0,
+    attackMult = 1, defenseMult = 1,
     critical = false,
     stab = 1, effectiveness = 1,
     burned = false,
@@ -97,8 +100,15 @@ export function damageRolls(ctx) {
   const atkStage = critical ? Math.max(attackBoost, 0) : attackBoost;
   const defStage = critical ? Math.min(defenseBoost, 0) : defenseBoost;
 
-  const atk = Math.floor(attack * boostMultiplier(atkStage));
-  const def = Math.floor(defense * boostMultiplier(defStage));
+  // The stage comes first and the ability's modifier on top of it, chained with
+  // pokeRound -- that is the order the game uses, and the two are not
+  // interchangeable. Huge Power on a 101 Attack at +1 is
+  // pokeRound(floor(101 x 1.5) x 2) = 302, where doubling first gives
+  // floor(floor(101 x 2) x 1.5) = 303, and the extra point survives all the way
+  // to the sixteen rolls. With no stage the two orders agree, which is what
+  // kept this quiet.
+  const atk = pokeRound(Math.floor(attack * boostMultiplier(atkStage)) * attackMult);
+  const def = pokeRound(Math.floor(defense * boostMultiplier(defStage)) * defenseMult);
 
   const base = Math.floor(
     Math.floor(Math.floor(2 * level / 5 + 2) * power * atk / def) / 50
@@ -353,30 +363,39 @@ export function resolveDamage({ attacker, defender, move, field = {} }) {
     if (defAbility.note) notes.push(defAbility.note);
   }
 
-  // Stat-doubling abilities act on the stat, not on the damage.
-  let attack = attacker.attack;
-  let defense = defender.defense;
-  if (atkAbility.statMult) attack = Math.floor(attack * atkAbility.statMult);
-  if (defAbility.statMult) defense = Math.floor(defense * defAbility.statMult);
+  // Stat-doubling abilities act on the stat, not on the damage, and they act on
+  // it AFTER the stat stage. They travel as multipliers rather than being
+  // applied here, because damageRolls is where the stage is known.
+  const attackMult = atkAbility.statMult ?? 1;
+  let defenseMult = defAbility.statMult ?? 1;
 
   // Sandstorm and snow raise a defensive stat instead of scaling the move. The
   // types that qualify are the post-Tera ones, the same as everywhere else on
   // this side: a Rock type that Teras into something else is no longer a Rock
   // type, and the storm stops helping it.
+  //
+  // It rides with the ability's modifier instead of being applied to the raw
+  // stat for the same reason the ability does: the game runs the stage first
+  // and then chains every modifier on top of it in one go. Multiplying them
+  // together is safe because every statMult in the game data is 1.5 or 2, so
+  // the product is exact in binary (Fur Coat 2 x sandstorm 1.5 = 3) and one
+  // pokeRound closes it, which is what a chained modifier does.
   const defBoost = weather.defBoost;
   if (defBoost && defTypes.some(x => defBoost.types.includes(x))
       && ((defBoost.stat === 'spd' && move.category === 'special')
        || (defBoost.stat === 'def' && move.category === 'physical'))) {
-    defense = Math.floor(defense * defBoost.mult);
+    defenseMult *= defBoost.mult;
   }
 
   const result = calcDamage({
     level: attacker.level,
     power: move.power,
-    attack,
-    defense,
+    attack: attacker.attack,
+    defense: defender.defense,
     attackBoost: attacker.boost ?? 0,
     defenseBoost: defender.boost ?? 0,
+    attackMult,
+    defenseMult,
     critical: Boolean(field.critical),
     stab,
     effectiveness,

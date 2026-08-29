@@ -123,7 +123,7 @@ export function renderCapture(container) {
         <img src="${spriteUrl(p.id)}" style="width:40px;height:40px;image-rendering:pixelated" alt="${esc(pokeName(p))}">
         <div>
           <div style="font-size:0.42rem">${pokeName(p)}</div>
-          <div style="font-size:0.42rem;color:var(--ink-3)">${t('capture.rate')}: ${p.captureRate}</div>
+          <div style="font-size:0.42rem;color:var(--ink-3)">${t('capture.rate')}: ${p.captureRate ?? t('capture.rate.unknown')}</div>
         </div>
       </div>
     `).join('');
@@ -145,7 +145,7 @@ export function renderCapture(container) {
         <div>
           <div style="font-size:0.5rem;color:var(--accent-text)">${pokeName(poke)}</div>
           <div style="font-size:0.44rem;color:var(--ink-3)">
-            ${t('capture.rate')}: ${poke.captureRate} · ${poke.weight} kg
+            ${t('capture.rate')}: ${poke.captureRate ?? t('capture.rate.unknown')} · ${poke.weight} kg
           </div>
         </div>
       </div>
@@ -209,6 +209,17 @@ export function renderCapture(container) {
   }
 
   function renderResult(result, ball) {
+    // captureChance devuelve null cuando la especie no trae ratio: la respuesta
+    // es decir que no se sabe, no un porcentaje bajo que parece medido.
+    if (!result) {
+      resultEl.innerHTML = `
+        <div class="card">
+          <p class="egg-note note-center">${t('capture.unknown')}</p>
+        </div>
+      `;
+      return;
+    }
+
     const pct = (result.chance * 100);
     const shown = pct >= 10 ? pct.toFixed(1) : pct.toFixed(2);
     // --stat-up/--stat-down rather than --success/--danger: those two are tuned

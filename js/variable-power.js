@@ -70,12 +70,17 @@ function gyroBallPower(attackerSpeed, defenderSpeed) {
   return clamp(Math.floor(25 * defenderSpeed / Math.max(attackerSpeed, 1)) + 1, 1, 150);
 }
 
+// Electro Ball reads the INTEGER quotient of the two Speeds and maps it:
+// 0 -> 40, 1 -> 60, 2 -> 80, 3 -> 120, 4 or more -> 150. Each `>=` below is one
+// step of that quotient, so a tie (quotient 1) is 60 and not 40 -- the mirror
+// match, the same Pokemon on both sides, is one of the commonest things anyone
+// asks this panel.
 function electroBallPower(attackerSpeed, defenderSpeed) {
   const ratio = attackerSpeed / Math.max(defenderSpeed, 1);
   if (ratio >= 4) return 150;
   if (ratio >= 3) return 120;
   if (ratio >= 2) return 80;
-  if (ratio > 1) return 60;
+  if (ratio >= 1) return 60;
   return 40;
 }
 

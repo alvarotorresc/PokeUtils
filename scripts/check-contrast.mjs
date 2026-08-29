@@ -90,8 +90,19 @@ function ratio(fg, bg) {
 // lookbehind es imprescindible: sin el, "border-color" y "accent-color"
 // contienen "color:" y cuentan como texto, que es un falso positivo por cada
 // borde de acento de la app.
+//
+// El segundo grupo, opcional, es el valor por defecto de var(). Sin el, una
+// declaracion `color: var(--token, #fff)` no entraba en `used` y su contraste
+// no se medía nunca: el token se pinta igual y el check lo daba por no usado.
+// Hoy no hay ninguna (medido: cero coincidencias en style.css, js/*.js,
+// index.html y 404.html), asi que esto no cambia ningun resultado -- cierra el
+// hueco antes de que alguien escriba la primera.
+//
+// `[^)]*` a proposito: en un `var(--a, var(--b))` anidado captura solo --a, que
+// es el que se pinta cuando el token existe. El anidado no aparece en el
+// fichero y no merece un parser de parentesis.
 const used = new Set();
-for (const [, token] of all.matchAll(/(?<![-\w])color\s*:\s*var\((--[\w-]+)\)/g)) {
+for (const [, token] of all.matchAll(/(?<![-\w])color\s*:\s*var\((--[\w-]+)(?:\s*,[^)]*)?\)/g)) {
   if (!NOT_TEXT.has(token)) used.add(token);
 }
 

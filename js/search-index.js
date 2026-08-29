@@ -8,24 +8,19 @@
 // Ranking decides the order, not the domain: searching "surf" has to return the
 // move even though Pokemon come first in the object.
 
-// \p{M} rather than a range of combining marks typed by hand: with the literal
-// characters in the source, any trip through an editor that normalises the file
-// stops matching without raising a single error.
 // El sprite viene de aqui y no del componente porque cada dominio lo saca de un
 // sitio distinto, y es la fuente la que sabe de donde.
-import { spriteUrl, itemSpriteUrl } from './data.js';
+import { spriteUrl, itemSpriteUrl, itemSprite } from './data.js';
 import { spriteIdFor } from './forms.js';
 import { TOOLS } from './tools.js';
 
-// El apostrofo se pliega al ASCII despues de los acentos, y en los dos lados:
-// score() pasa el nombre por norm y searchAll pasa el termino, asi que una sola
-// linea cubre el indice y lo que se teclea. El indice guarda "Farfetch’d" con
-// U+2019, que no esta en ningun teclado normal -- escribir "farfetch'd" daba 0
-// resultados donde escribir menos ("farfetch") daba 3. U+00B4 no tiene
-// descomposicion canonica, asi que sobrevive al NFD de arriba y hay que
-// nombrarlo aqui igual que a las comillas tipograficas.
-const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
-  .replace(/[’‘`´]/g, "'");
+// Lo que antes vivia aqui dentro. Se mudo a su propio modulo cuando los filtros
+// de cada pagina tuvieron que plegar las tildes igual que este indice: son la
+// misma pregunta, y tenian que ser la misma funcion. Se reexporta para que
+// quien ya importaba `norm` de aqui no se entere del cambio.
+import { norm } from './normalize.js';
+
+export { norm };
 
 // Exact 100, starts-with 60, contains 30. The gap between exact and starts-with
 // has to be wider than any length tie-break, or "fire" is won by "Fire Blast".
@@ -78,7 +73,11 @@ const SOURCES = [
     skip: i => i.category === 'machines',
     names: i => [i.nameEs, i.nameEn, i.name],
     route: i => `#/items?q=${encodeURIComponent(i.nameEs || i.name)}`,
-    sprite: i => itemSpriteUrl(i.name),
+    // Por itemSprite y no por el nombre: 1029 de los 1848 objetos no tienen
+    // sprite arriba, y una fila de objeto que salga en el panel pedia un
+    // fichero que no existe. El `noSprite` viaja en el indice (build-search.mjs
+    // lo copia de items.json) por la misma razon que ya viajaba el de Pokemon.
+    sprite: itemSprite,
   },
 ];
 

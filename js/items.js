@@ -1,9 +1,10 @@
 // ===== ITEMS PAGE =====
-import { itemSpriteUrl, ITEM_PLACEHOLDER_SPRITE } from './data.js';
+import { itemSprite, ITEM_PLACEHOLDER_SPRITE } from './data.js';
 import { fetchItems, fetchItemDescriptions } from './api.js';
 import { loadingHTML, renderPagination, esc } from './ui.js';
 import { t, pokeName, getLang } from './i18n.js';
 import { toolTabsHTML, wireToolTabs } from './hub.js';
+import { norm } from './normalize.js';
 
 const PAGE_SIZE = 48;
 
@@ -109,7 +110,7 @@ export function renderItems(container, query = new URLSearchParams()) {
         <div class="modal-content">
           <button class="modal-close" id="itModalClose">✕</button>
           <div style="text-align:center;margin-bottom:16px">
-            <img src="${itemSpriteUrl(item.name)}" alt="${esc(pokeName(item))}"
+            <img src="${itemSprite(item)}" alt="${esc(pokeName(item))}"
                  style="width:64px;height:64px;image-rendering:pixelated;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.4))"
                  onerror="this.src='${ITEM_PLACEHOLDER_SPRITE}'">
           </div>
@@ -185,10 +186,14 @@ export function renderItems(container, query = new URLSearchParams()) {
 
     let filtered = allItems;
     if (searchTerm) {
+      // searchTerm se queda como se tecleo porque se pinta en el value del
+      // input al abrir la pagina desde el buscador global; el plegado de tildes
+      // es solo para comparar.
+      const q = norm(searchTerm);
       filtered = filtered.filter(i =>
-        i.nameEs.toLowerCase().includes(searchTerm) ||
-        i.nameEn.toLowerCase().includes(searchTerm) ||
-        i.name.toLowerCase().includes(searchTerm)
+        norm(i.nameEs).includes(q) ||
+        norm(i.nameEn).includes(q) ||
+        norm(i.name).includes(q)
       );
     }
     if (catFilter) {
@@ -220,7 +225,7 @@ export function renderItems(container, query = new URLSearchParams()) {
       const card = document.createElement('div');
       card.className = 'item-card';
       card.innerHTML = `
-        <img class="item-sprite" src="${itemSpriteUrl(item.name)}" alt="${esc(pokeName(item))}" loading="lazy"
+        <img class="item-sprite" src="${itemSprite(item)}" alt="${esc(pokeName(item))}" loading="lazy"
              onerror="this.src='${ITEM_PLACEHOLDER_SPRITE}'">
         <div class="item-name">${pokeName(item)}</div>
       `;

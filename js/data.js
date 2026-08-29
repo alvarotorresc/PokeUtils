@@ -100,41 +100,37 @@ export function spriteUrl(id) {
 }
 
 // El backpack que items.js ya pintaba por onerror en sus dos <img> (la tarjeta
-// y el modal), ahora compartido: itemSpriteUrl() lo entrega directo para los
-// nombres de SIN_SPRITE_UPSTREAM, asi que ese <img> nunca llega a pedir la red.
+// y el modal), ahora compartido: itemSprite() lo entrega directo para los
+// objetos marcados sin sprite, asi que ese <img> nunca llega a pedir la red.
 export const ITEM_PLACEHOLDER_SPRITE = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><text x=%2220%22 y=%2226%22 text-anchor=%22middle%22 font-size=%2224%22>🎒</text></svg>';
 
-// Objetos que PokeAPI expone por nombre pero sin sprite -- diagnosticado, no
-// supuesto: los 19 son los manteles de picnic de Escarlata/Purpura (categoria
-// "picnic" en PokeAPI). pokeapi.co/api/v2/item/<nombre> devuelve
-// sprites.default null para los 19, uno a uno, y
-// raw.githubusercontent.com/PokeAPI/sprites no tiene el fichero de ninguno
-// bajo ninguna ruta (probado items/, items/picnic/, items/tablecloths/). No
-// es un fallo de fetch-sprites.mjs: son 19 de los 1029 objetos sin sprite
-// arriba que check-sprites.mjs ya cuenta y acepta (ver su comentario "Los
-// objetos, donde PokeAPI tiene huecos de verdad"), y items.js ya los tapa con
-// el onerror de mas abajo en cuanto la peticion falla.
-//
-// Esta excepcion no evita el hueco -- lo hace exactamente ninguno de los 1010
-// objetos sin sprite que quedan fuera de esta lista -- evita la peticion de
-// red en si, que el onerror no puede evitar: por muy bien que se tape a la
-// vista, la consola sigue anotando un 404 por cada intento. Se descubrio con
-// leafy-tablecloth porque su nombre en espanol, "Mantel Naturaleza", contiene
-// "natu" y sale al buscar el Pokemon Natu -- el camino mas probable de
-// toparse con uno de estos en el lanzamiento -- pero toda la familia comparte
-// el mismo hueco, y una busqueda por "mantel" los encuentra a los 19: se
-// mide, no se completa a ojo, y aqui estan los 19 completos.
-const SIN_SPRITE_UPSTREAM = new Set([
-  'leafy-tablecloth', 'academy-tablecloth', 'whimsical-tablecloth', 'spooky-tablecloth',
-  'plaid-tablecloth-y', 'plaid-tablecloth-b', 'plaid-tablecloth-r', 'bw-grass-tablecloth',
-  'battle-tablecloth', 'monstrous-tablecloth', 'striped-tablecloth', 'diamond-tablecloth',
-  'polka-dot-tablecloth', 'lilac-tablecloth', 'mint-tablecloth', 'peach-tablecloth',
-  'yellow-tablecloth', 'blue-tablecloth', 'pink-tablecloth',
-]);
-
+// La URL de un sprite de objeto por su nombre. Para los nombres literales que
+// el codigo conoce y que existen seguro -- las MT por tipo (tm-<tipo>), la
+// Capsula Habilidad, las Poke Ball de la calculadora de captura --, que
+// check-sprites.mjs comprueba uno a uno.
 export function itemSpriteUrl(name) {
-  if (SIN_SPRITE_UPSTREAM.has(name)) return ITEM_PLACEHOLDER_SPRITE;
   return `/sprites/items/${name}.png`;
+}
+
+// El sprite de una FILA de la base de datos, que es otra pregunta: de los 1848
+// objetos que la lista pinta, PokeAPI solo tiene sprite de 819. Los otros 1029
+// pedian un fichero que no existe -- un 404 por objeto en consola, tapado a la
+// vista por el onerror pero pedido igual.
+//
+// `noSprite` lo pone scripts/build-item-sprites.mjs leyendo lo que hay en
+// sprites/items/, y build-search.mjs lo copia al indice del buscador. La marca
+// viene del directorio, nunca de una lista escrita a mano: antes de esto habia
+// una de 19 nombres (los manteles de picnic de Escarlata/Purpura) que tapaba a
+// esos 19 y dejaba pidiendo la red a los otros 1010.
+//
+// Lo que se sabe de esos 19 y no hay que volver a averiguar:
+// pokeapi.co/api/v2/item/<nombre> devuelve sprites.default null para los
+// diecinueve, uno a uno, y raw.githubusercontent.com/PokeAPI/sprites no tiene
+// el fichero de ninguno bajo ninguna ruta (probado items/, items/picnic/,
+// items/tablecloths/). No es un fallo de fetch-sprites.mjs: alli no estan. Los
+// diecinueve son ahora diecinueve `noSprite` como los demas, sin nada especial.
+export function itemSprite(item) {
+  return item?.noSprite ? ITEM_PLACEHOLDER_SPRITE : itemSpriteUrl(item.name);
 }
 
 // PokeAPI exposes no localized names at the version group level, so they live

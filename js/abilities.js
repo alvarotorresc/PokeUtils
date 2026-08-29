@@ -3,6 +3,7 @@ import { fetchAbilities } from './api.js';
 import { loadingHTML, renderPagination } from './ui.js';
 import { t, pokeName, getLang } from './i18n.js';
 import { toolTabsHTML, wireToolTabs } from './hub.js';
+import { norm } from './normalize.js';
 
 const PAGE_SIZE = 30;
 
@@ -74,10 +75,11 @@ export function renderAbilities(container, highlightName = null) {
     }
 
     if (searchTerm) {
+      const q = norm(searchTerm);
       filtered = filtered.filter(a =>
-        a.nameEs.toLowerCase().includes(searchTerm) ||
-        a.nameEn.toLowerCase().includes(searchTerm) ||
-        a.name.toLowerCase().includes(searchTerm)
+        norm(a.nameEs).includes(q) ||
+        norm(a.nameEn).includes(q) ||
+        norm(a.name).includes(q)
       );
     }
 

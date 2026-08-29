@@ -185,6 +185,9 @@ export default {
     'capture.turns': 'Turno',
     'capture.hp': 'PS restantes',
     'capture.rate': 'Ratio',
+    // Un dato que falta se dice, no se pinta como un cero ni como un hueco.
+    'capture.rate.unknown': 'no se sabe',
+    'capture.unknown': 'No se conoce el ratio de captura de este Pokémon, así que no se puede calcular la probabilidad.',
     'capture.expected': 'Balls necesarias de media',
     'capture.guaranteed': 'Captura segura',
     'capture.guaranteed.sub': 'No puede fallar',
@@ -224,6 +227,10 @@ export default {
     'dmg.burn': 'Atacante quemado',
     'dmg.doubles': 'Combate doble',
     'dmg.evs': 'EVs',
+    // El defensor los lleva partidos: un solo campo alimentaba a la vez los PS
+    // y la defensa.
+    'dmg.evs.hp': 'EVs PS',
+    'dmg.evs.def': 'EVs Defensa',
     'dmg.nature': 'Naturaleza',
     'dmg.nature.neutral': 'Neutra',
     'dmg.nature.plus': 'Favorable (+10%)',

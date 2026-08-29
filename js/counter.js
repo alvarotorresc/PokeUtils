@@ -12,6 +12,7 @@ import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
 import { t, pokeName } from './i18n.js';
 import { toolTabsHTML, wireToolTabs } from './hub.js';
+import { norm } from './normalize.js';
 
 const TEAM_SIZE = 6;
 
@@ -33,11 +34,18 @@ export async function renderCounter(container, query = new URLSearchParams()) {
     fetchMeta(format).catch(() => null),
   ]);
 
-  let ids = (query.get('ids') || '')
-    .split(',')
-    .map(n => parseInt(n, 10))
-    .filter(n => all.some(p => p.id === n))
-    .slice(0, TEAM_SIZE);
+  // Dedupe before the cut. ids=6,6,6,6,6,6 is not a team of six: every attacker
+  // that threatens one Charizard threatens all six, so the "half the team"
+  // cutoff (threats.js) degenerates and the list came out at 344 counters where
+  // the honest answer is the one for a lone Charizard. The page's own picker
+  // already refuses a duplicate; a hand-edited link was the only way in. A Set
+  // keeps first-occurrence order, so 6,9,3 stays 6,9,3.
+  let ids = [...new Set(
+    (query.get('ids') || '')
+      .split(',')
+      .map(n => parseInt(n, 10))
+      .filter(n => all.some(p => p.id === n))
+  )].slice(0, TEAM_SIZE);
 
   function render() {
     replaceQuery('/counter', { ids: ids.join(',') });
@@ -97,9 +105,11 @@ export async function renderCounter(container, query = new URLSearchParams()) {
         results.hidden = true;
         return;
       }
+      // El termino se pliega una vez, no una por Pokemon.
+      const nq = norm(q);
       const hits = all
         .filter(p => !ids.includes(p.id))
-        .filter(p => p.nameEs.toLowerCase().includes(q) || p.nameEn.toLowerCase().includes(q) || String(p.id) === q)
+        .filter(p => norm(p.nameEs).includes(nq) || norm(p.nameEn).includes(nq) || String(p.id) === q)
         .slice(0, 8);
       results.hidden = hits.length === 0;
       results.innerHTML = hits.map(p => `

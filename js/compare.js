@@ -11,6 +11,7 @@ import { loadingHTML, replaceQuery, esc } from './ui.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
 import { toolTabsHTML } from './hub.js';
 import { attachTooltip } from './tooltip.js';
+import { norm } from './normalize.js';
 
 const MAX = 4;
 
@@ -51,12 +52,15 @@ export async function renderCompare(container, query = new URLSearchParams()) {
   `;
 
   // A typo in a shared link must not blank the page: unknown ids drop out and
-  // the rest still compare.
-  let ids = (query.get('ids') || '')
-    .split(',')
-    .map(n => parseInt(n, 10))
-    .filter(n => all.some(p => p.id === n))
-    .slice(0, MAX);
+  // the rest still compare. Repeated ones drop out too -- comparing a Pokemon
+  // with itself painted the same column three times with every cell marked as
+  // the best value, which is not a comparison.
+  let ids = [...new Set(
+    (query.get('ids') || '')
+      .split(',')
+      .map(n => parseInt(n, 10))
+      .filter(n => all.some(p => p.id === n))
+  )].slice(0, MAX);
 
   const chosen = () => ids.map(id => all.find(p => p.id === id));
 
@@ -180,9 +184,10 @@ export async function renderCompare(container, query = new URLSearchParams()) {
         results.hidden = true;
         return;
       }
+      const nq = norm(q);
       const hits = all
         .filter(p => !ids.includes(p.id))
-        .filter(p => p.nameEs.toLowerCase().includes(q) || p.nameEn.toLowerCase().includes(q) || String(p.id) === q)
+        .filter(p => norm(p.nameEs).includes(nq) || norm(p.nameEn).includes(nq) || String(p.id) === q)
         .slice(0, 8);
       results.hidden = hits.length === 0;
       results.innerHTML = hits.map(p => `
