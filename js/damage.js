@@ -152,6 +152,31 @@ function koChanceIn(rolls, hp, hits) {
 }
 
 /**
+ * PokeAPI's target vocabulary for the two ways a move hits more than one
+ * Pokemon, and the only two that earn the 0.75x cut of a double battle:
+ *
+ *   all-opponents      both foes (Blizzard, Rock Slide, Discharge)
+ *   all-other-pokemon  both foes and the ally (Earthquake, Surf, Explosion)
+ *
+ * `random-opponent` (Outrage, Thrash) is deliberately not here: it picks one
+ * target at random, and one target is one target. The 560 ordinary moves are
+ * `selected-pokemon`, which build-data.mjs stores as no target at all.
+ */
+export const SPREAD_TARGETS = ['all-opponents', 'all-other-pokemon'];
+
+/**
+ * Whether a move splits its damage between several targets.
+ *
+ * Read off the move rather than asked of the caller. There used to be a
+ * `move.spread` flag here and not one caller set it, so the doubles toggle
+ * quietly did nothing; `target` already travels in data/moves.json, so nobody
+ * has to remember anything.
+ */
+export function isSpreadMove(move) {
+  return SPREAD_TARGETS.includes(move?.target);
+}
+
+/**
  * Full result for one move against one target.
  * @returns {{rolls:number[], min:number, max:number, pctMin:number,
  *            pctMax:number, koIn:number|null, guaranteed:boolean,
@@ -204,9 +229,11 @@ export function calcDamage(ctx) {
  *   computed, boost, item, ability, teraType, burned}
  * @param {object} input.defender {types, defense, boost, item, ability,
  *   teraType, hp, hpCurrent}
- * @param {object} input.move     {name, type, category, power} -- `name` is the
- *   moves.json slug, and Grassy Terrain needs it: it weakens three moves by
- *   name, so a caller that builds a move object without one loses that cut.
+ * @param {object} input.move     {name, type, category, power, target} -- the
+ *   last two come straight from moves.json and both change the number. `name`
+ *   is the slug, and Grassy Terrain weakens three moves by name; `target` says
+ *   whether the move reparte, which is the whole of the doubles cut. A caller
+ *   that builds a move object without them loses both, silently.
  * @param {object} input.field    {weather, terrain, screen, doubles, critical}
  */
 export function resolveDamage({ attacker, defender, move, field = {} }) {
@@ -329,7 +356,7 @@ export function resolveDamage({ attacker, defender, move, field = {} }) {
     // burn's cut. Applying the cut on top of the 1.5x left a burned Guts user
     // hitting for less than one without the ability, which is backwards.
     burned: Boolean(attacker.burned) && move.category === 'physical' && atkAbility.id !== 'guts',
-    targets: field.doubles && move.spread ? 0.75 : 1,
+    targets: field.doubles && isSpreadMove(move) ? 0.75 : 1,
     weather: weatherMult,
     other,
     defenderHP: defender.hp,

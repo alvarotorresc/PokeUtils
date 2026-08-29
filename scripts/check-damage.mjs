@@ -8,7 +8,7 @@ import { readFile } from 'node:fs/promises';
 import {
   calcDamage, damageRolls, pokeRound, boostMultiplier,
   typeEffectiveness, stabMultiplier, resolveDamage,
-  applyMultiHit, multiHitTurn,
+  applyMultiHit, multiHitTurn, isSpreadMove, SPREAD_TARGETS,
 } from '../js/damage.js';
 import { terrainById } from '../js/battle-data.js';
 
@@ -336,6 +336,51 @@ check('Tera replaces the defender types',
   fight({ defender: { teraType: 'water' } }).effectiveness, 0.5);
 checkTrue('Adaptability raises a STAB move',
   fight({ attacker: { ability: 'adaptability' } }).min > clean.min);
+
+console.log('\nEn dobles, repartir cuesta un cuarto\n');
+
+// Quien reparte pega menos a cada uno: x0.75. Quien lo reparte y quien no sale
+// del `target` que ya viaja en data/moves.json, no de una bandera que la pagina
+// tenga que acordarse de poner -- habia una (`move.spread`) y no la ponia
+// nadie, asi que la casilla «Dobles» no movia el numero de los 66 movimientos
+// que reparten.
+check('los dos objetivos que reparten', SPREAD_TARGETS, ['all-opponents', 'all-other-pokemon']);
+// Dos nombres mal escritos aqui no fallan: simplemente dejan de repartir.
+check('  y los dos existen en data/moves.json',
+  SPREAD_TARGETS.filter(tg => !moves.some(m => m.target === tg)), []);
+
+const porNombre = name => isSpreadMove(moves.find(m => m.name === name));
+check('Ventisca reparte entre los dos rivales', porNombre('blizzard'), true);
+check('Terremoto reparte, y ademas alcanza al companero', porNombre('earthquake'), true);
+check('Rayo no reparte: elige un objetivo', porNombre('thunderbolt'), false);
+// Uno al azar sigue siendo uno: Enfado no cobra la rebaja.
+check('Enfado no reparte, aunque no elija a quien pega', porNombre('outrage'), false);
+check('un movimiento sin target no reparte', isSpreadMove({ name: 'x' }), false);
+// El movimiento Z sale de uno que reparte pero pega a uno solo, asi que la
+// pagina le quita el target. Sin este caso, el ternario que lo hace no esta
+// cubierto por nada.
+check('  ni uno al que le han quitado el target', isSpreadMove({ target: null }), false);
+
+// Nivel 50, Ataque 200, Defensa 100, Ventisca (110) contra un Normal.
+const dobles = (over = {}) => resolveDamage({
+  attacker: { types: ['ice'], level: 50, attack: 200, boost: 0, item: 'none', ability: 'none' },
+  defender: { types: ['normal'], defense: 100, boost: 0, ability: 'none', hp: 300 },
+  move: {
+    name: 'blizzard', type: 'ice', category: 'special', power: 110,
+    target: 'all-opponents', ...over.move,
+  },
+  field: { ...over.field },
+});
+
+check('Ventisca en individuales', [dobles().min, dobles().max], [124, 147]);
+check('  y en dobles, un cuarto menos',
+  [dobles({ field: { doubles: true } }).min, dobles({ field: { doubles: true } }).max], [93, 109]);
+check('Rayo en dobles no se mueve: pega a uno',
+  dobles({ move: { name: 'thunderbolt', type: 'electric', power: 90, target: null }, field: { doubles: true } }).rolls,
+  dobles({ move: { name: 'thunderbolt', type: 'electric', power: 90, target: null } }).rolls);
+// #/survive no tiene casilla de dobles: sin `doubles` no hay rebaja que aplicar
+// aunque el movimiento reparta.
+check('sin la casilla de dobles, repartir no cuesta nada', dobles().rolls, dobles({ field: {} }).rolls);
 
 console.log('\nUn multigolpe se usa una vez y golpea varias\n');
 

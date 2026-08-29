@@ -589,6 +589,15 @@ export function renderDamage(container, query) {
         type: resolved.overrideType || move.type,
         category: move.category,
         power,
+        // El objetivo tambien viaja, y por la misma razon que el slug: la
+        // casilla «Dobles» resta un cuarto a lo que reparte, y sin `target`
+        // aqui no restaba nada a nada.
+        //
+        // Menos si es Z. Un movimiento Z sale de uno que puede repartir pero
+        // pega a uno solo (Ventisca reparte, Aguijon Letal Polar no), asi que
+        // se le quita el objetivo en vez de heredarlo: heredarlo inventaria
+        // una rebaja del 25% que el juego no aplica.
+        target: zForm ? null : move.target,
       },
       field: {
         weather: $('#dmgWeather').value,
