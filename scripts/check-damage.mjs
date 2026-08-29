@@ -199,6 +199,34 @@ checkTrue('Technician only helps weak moves',
 check('Technician does nothing at 90 power',
   fight({ attacker: { ability: 'technician' } }).rolls, clean.rolls);
 
+// Agallas sube el Ataque un x1.5 Y ademas ignora el recorte de la quemadura:
+// las dos cosas, no una. Aplicar tambien el x0.5 dejaba el numero por debajo
+// del de no tener la habilidad (134 contra 180), justo al reves.
+//
+// Nivel 50, Ataque 200, Defensa 100, movimiento Lucha de 100, ambos Normal.
+const guts = (over = {}) => resolveDamage({
+  attacker: {
+    types: ['normal'], level: 50, attack: 200, boost: 0,
+    item: 'none', ability: 'none', burned: true, ...over.attacker,
+  },
+  defender: { types: ['normal'], defense: 100, boost: 0, ability: 'none', hp: 200 },
+  move: { name: 'close-combat', type: 'fighting', category: 'physical', power: 100, ...over.move },
+  field: {},
+});
+
+check('quemado sin Agallas', guts().max, 90);
+check('quemado CON Agallas', guts({ attacker: { ability: 'guts' } }).max, 268);
+check('sano sin Agallas', guts({ attacker: { burned: false } }).max, 180);
+check('sano CON Agallas, que es el mismo numero',
+  guts({ attacker: { ability: 'guts', burned: false } }).max, 268);
+// La quemadura sigue recortando a quien no tiene Agallas, y sigue sin tocar
+// los movimientos especiales de nadie.
+check('la quemadura no toca un movimiento especial',
+  guts({ move: { category: 'special' } }).rolls,
+  guts({ move: { category: 'special' }, attacker: { burned: false } }).rolls);
+checkTrue('otra habilidad quemada sigue perdiendo la mitad',
+  guts({ attacker: { ability: 'huge-power' } }).max < guts({ attacker: { ability: 'huge-power', burned: false } }).max);
+
 check('Tera replaces the defender types',
   fight({ defender: { teraType: 'water' } }).effectiveness, 0.5);
 checkTrue('Adaptability raises a STAB move',

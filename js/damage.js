@@ -308,7 +308,10 @@ export function resolveDamage({ attacker, defender, move, field = {} }) {
     critical: Boolean(field.critical),
     stab,
     effectiveness,
-    burned: Boolean(attacker.burned) && move.category === 'physical',
+    // Guts is the one ability here that both raises the Attack and ignores the
+    // burn's cut. Applying the cut on top of the 1.5x left a burned Guts user
+    // hitting for less than one without the ability, which is backwards.
+    burned: Boolean(attacker.burned) && move.category === 'physical' && atkAbility.id !== 'guts',
     targets: field.doubles && move.spread ? 0.75 : 1,
     weather: weatherMult,
     other,
