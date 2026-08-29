@@ -129,30 +129,35 @@
        cada build -- ver comprobarLiteralesEN. -->
   <script>
     (function () {
-      if ((localStorage.getItem('pkutils_lang') || 'es') !== 'en') return;
-      // El <html lang> tiene que coincidir con lo que se pinta desde el
-      // primer frame, no solo el nav: <html lang="es"> es el valor estatico
-      // de arriba, correcto para quien no ha guardado idioma o guardo 'es'.
-      // js/app.js:onLangChange lo mantiene correcto el resto de la sesion,
-      // en cualquier direccion del toggle -- esta linea solo cubre el hueco
-      // entre "nace en HTML" y "app.js ya corrio" para quien guardo 'en'.
-      document.documentElement.lang = 'en';
-      var EN_NAV = {
-        "navHome": "HOME", "navPokedex": "POKEDEX", "navData": "DATA",
-        "navCompetitive": "COMPETITIVE", "navCalculator": "CALCULATOR",
-        "navSearch": "Search..."
-      };
-      var LABELS = { home: EN_NAV.navHome, pokedex: EN_NAV.navPokedex, data: EN_NAV.navData,
-        competitive: EN_NAV.navCompetitive, calculator: EN_NAV.navCalculator };
-      document.querySelectorAll('.nav-link').forEach(function (a) {
-        var label = LABELS[a.dataset.page];
-        if (label) a.textContent = label;
-      });
-      var navSearch = document.getElementById('navSearch');
-      if (navSearch) {
-        navSearch.placeholder = EN_NAV.navSearch;
-        navSearch.setAttribute('aria-label', EN_NAV.navSearch);
-      }
+      // try/catch como los dos de 404.html y el del head: con los datos de
+      // sitio bloqueados este getItem lanza, y sin envolver se quedaba sin
+      // capturar. Ver js/storage.js.
+      try {
+        if ((localStorage.getItem('pkutils_lang') || 'es') !== 'en') return;
+        // El <html lang> tiene que coincidir con lo que se pinta desde el
+        // primer frame, no solo el nav: <html lang="es"> es el valor estatico
+        // de arriba, correcto para quien no ha guardado idioma o guardo 'es'.
+        // js/app.js:onLangChange lo mantiene correcto el resto de la sesion,
+        // en cualquier direccion del toggle -- esta linea solo cubre el hueco
+        // entre "nace en HTML" y "app.js ya corrio" para quien guardo 'en'.
+        document.documentElement.lang = 'en';
+        var EN_NAV = {
+          "navHome": "HOME", "navPokedex": "POKEDEX", "navData": "DATA",
+          "navCompetitive": "COMPETITIVE", "navCalculator": "CALCULATOR",
+          "navSearch": "Search..."
+        };
+        var LABELS = { home: EN_NAV.navHome, pokedex: EN_NAV.navPokedex, data: EN_NAV.navData,
+          competitive: EN_NAV.navCompetitive, calculator: EN_NAV.navCalculator };
+        document.querySelectorAll('.nav-link').forEach(function (a) {
+          var label = LABELS[a.dataset.page];
+          if (label) a.textContent = label;
+        });
+        var navSearch = document.getElementById('navSearch');
+        if (navSearch) {
+          navSearch.placeholder = EN_NAV.navSearch;
+          navSearch.setAttribute('aria-label', EN_NAV.navSearch);
+        }
+      } catch (e) {}
     })();
   </script>
 
@@ -203,18 +208,22 @@
        con EN_NAV en cada build -- ver comprobarLiteralesEN en build.mjs. -->
   <script>
     (function () {
-      if ((localStorage.getItem('pkutils_lang') || 'es') !== 'en') return;
-      var EN_HERO = {
-        "heroA": "1351 Pokemon.", "heroB": "16 tools.",
-        "heroSearch": "Search a Pokemon, a move, an item..."
-      };
-      var h1 = document.querySelector('.swarm-fg h1');
-      if (h1) h1.innerHTML = EN_HERO.heroA + '<br><span class="hl">' + EN_HERO.heroB + '</span>';
-      var heroSearch = document.getElementById('globalSearch');
-      if (heroSearch) {
-        heroSearch.placeholder = EN_HERO.heroSearch;
-        heroSearch.setAttribute('aria-label', EN_HERO.heroSearch);
-      }
+      // Mismo motivo que el bloque del nav: getItem puede lanzar. Ver
+      // js/storage.js.
+      try {
+        if ((localStorage.getItem('pkutils_lang') || 'es') !== 'en') return;
+        var EN_HERO = {
+          "heroA": "1351 Pokemon.", "heroB": "16 tools.",
+          "heroSearch": "Search a Pokemon, a move, an item..."
+        };
+        var h1 = document.querySelector('.swarm-fg h1');
+        if (h1) h1.innerHTML = EN_HERO.heroA + '<br><span class="hl">' + EN_HERO.heroB + '</span>';
+        var heroSearch = document.getElementById('globalSearch');
+        if (heroSearch) {
+          heroSearch.placeholder = EN_HERO.heroSearch;
+          heroSearch.setAttribute('aria-label', EN_HERO.heroSearch);
+        }
+      } catch (e) {}
     })();
   </script>
 
