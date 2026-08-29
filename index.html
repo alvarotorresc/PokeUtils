@@ -37,7 +37,16 @@
   <meta property="og:image:height" content="630">
   <meta property="og:url" content="https://pokeutils.alvarotc.com/">
   <meta name="twitter:card" content="summary_large_image">
-  <script defer src="https://analytics.alvarotc.com/script.js" data-website-id="55e0f212-eb38-4998-882b-cf73e5bb906c"></script>
+  <!-- SRI: hash del script.js de Umami autoalojado, tomado el 2026-08-29.
+       Si se actualiza Umami en el servidor, el hash cambia y la analitica
+       deja de cargar en SILENCIO (sin error visible salvo en la consola del
+       navegador). Al actualizar Umami: recalcular con
+       `curl -s https://analytics.alvarotc.com/script.js | openssl dgst -sha384 -binary | openssl base64 -A`
+       y sustituir el hash de abajo en el mismo commit que la actualizacion. -->
+  <script defer src="https://analytics.alvarotc.com/script.js"
+          integrity="sha384-6PHtXKae10+dZuA/fcmjkSTDco+NPBE5fZ4eS/Em2lVIsS6FdDZIgs06MBJLEcSW"
+          crossorigin="anonymous"
+          data-website-id="55e0f212-eb38-4998-882b-cf73e5bb906c"></script>
   <!-- El tema, antes de pintar. Lo ponia app.js, que es un modulo diferido: con
        la portada ya en el HTML, quien tenga el tema claro veria el fondo oscuro
        hasta que bajara el JS. Sincrono y en el head, no hay parpadeo. -->
