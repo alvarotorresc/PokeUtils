@@ -220,11 +220,17 @@ check('y los dos que antes no cabian ya salen',
 check('meteorito sigue llenando los 8 huecos', searchAll(datasets, 'meteorito', 8).length, 8);
 check('pika tambien', searchAll(datasets, 'pika', 8).length, 8);
 
-// El primer resultado no puede moverse: la dedupe se queda con la primera de
-// cada ruta sobre la lista YA ordenada, y la cabeza siempre sobrevive.
-check('el primer resultado no cambia en ningun termino',
-  [...TERMINOS, ...CONTROL, ...PROBE, 'bici', 'meteorito', 'natu']
-    .filter(t => first(t).id !== searchAll(datasets, t, 60)[0]?.id), []);
+// La dedupe se queda con la primera de cada ruta sobre la lista YA ordenada, asi
+// que la cabeza sobrevive siempre. Eso hace que compararla contra otra llamada a
+// searchAll no compruebe nada (las dos pasan por la misma dedupe): van fijados a
+// mano los cuatro terminos que nombra el criterio de aceptacion, mas los dos que
+// cambian de contenido.
+check('pika sigue siendo Pikachu', first('pika').id, 25);
+check('fire sigue siendo la Gema Fuego', first('fire').id, 591);
+check('growl sigue siendo el movimiento Gruñido', first('growl').id, 45);
+check('natu sigue siendo el Pokemon Natu', first('natu').id, 177);
+check('bici sigue siendo la Bici', first('bici').id, 427);
+check('meteorito sigue siendo el Meteorito', first('meteorito').id, 537);
 
 console.log('\nEl apostrofo de teclado encuentra lo mismo que el tipografico\n');
 

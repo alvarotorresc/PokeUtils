@@ -182,8 +182,11 @@ check('compara sobre location.hash, no por ruta',
   /location\.hash\.slice\(1\) === destino/.test(gs), true);
 check('y cuando coincide emite el evento que el router escucha',
   /dispatchEvent\(new HashChangeEvent\('hashchange'\)\)/.test(gs), true);
+// [^=] para no contar un "location.hash === x", que es una comparacion y no una
+// asignacion: sin eso, cualquiera que anada una comparacion futura rompe un
+// check que no tiene nada que ver con lo suyo.
 check('no queda ninguna asignacion a location.hash fuera de esa decision',
-  [...gs.matchAll(/location\.hash\s*=/g)].length, 1);
+  [...gs.matchAll(/location\.hash\s*=[^=]/g)].length, 1);
 // Sobre los imports y no sobre el fichero entero: "parseHash" aparece en el
 // comentario que explica por que NO se usa, y un check que lee comentarios
 // comprueba la prosa en vez del codigo.
