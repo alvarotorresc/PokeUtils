@@ -14,6 +14,32 @@ import {
   weatherById, terrainById, screenById, itemById, abilityById,
 } from './battle-data.js';
 
+/**
+ * Which move category reads each stat.
+ *
+ * A modifier on a stat only reaches the damage of the moves that use that
+ * stat: Atk and Def are the physical pair, SpA and SpD the special one. Both
+ * the stat-raising abilities and the defensive weather bonus go through this
+ * one table, because they are the same rule and were drifting apart.
+ *
+ * A `stat` this table does not know means the modifier never applies, which is
+ * silent -- check-damage.mjs asserts that every `statMult` ability and every
+ * `defBoost` names one that is here.
+ */
+export const STAT_CATEGORY = {
+  atk: 'physical', def: 'physical', spa: 'special', spd: 'special',
+};
+
+/**
+ * An ability's modifier on a stat, or 1 when the move does not read that stat.
+ * @param {object} ability  an entry of DAMAGE_ABILITIES
+ * @param {string} category the move's, 'physical' | 'special' | 'status'
+ */
+export function statMultFor(ability, category) {
+  if (!ability?.statMult) return 1;
+  return STAT_CATEGORY[ability.stat] === category ? ability.statMult : 1;
+}
+
 // Round half down, the rounding the games use after each modifier.
 export function pokeRound(n) {
   return Math.floor(n) + (n % 1 > 0.5 ? 1 : 0);
@@ -366,8 +392,14 @@ export function resolveDamage({ attacker, defender, move, field = {} }) {
   // Stat-doubling abilities act on the stat, not on the damage, and they act on
   // it AFTER the stat stage. They travel as multipliers rather than being
   // applied here, because damageRolls is where the stage is known.
-  const attackMult = atkAbility.statMult ?? 1;
-  let defenseMult = defAbility.statMult ?? 1;
+  //
+  // And they only reach the moves that read the stat they raise. Huge Power,
+  // Pure Power and Guts raise Attack, which only a physical move reads; Fur
+  // Coat raises Defence, which only a physical move is paid against. Without
+  // the category condition Huge Power doubled a Flamethrower and Fur Coat
+  // halved one, which is half an ability given away on each side.
+  const attackMult = statMultFor(atkAbility, move.category);
+  let defenseMult = statMultFor(defAbility, move.category);
 
   // Sandstorm and snow raise a defensive stat instead of scaling the move. The
   // types that qualify are the post-Tera ones, the same as everywhere else on
@@ -378,12 +410,21 @@ export function resolveDamage({ attacker, defender, move, field = {} }) {
   // stat for the same reason the ability does: the game runs the stage first
   // and then chains every modifier on top of it in one go. Multiplying them
   // together is safe because every statMult in the game data is 1.5 or 2, so
-  // the product is exact in binary (Fur Coat 2 x sandstorm 1.5 = 3) and one
+  // the product is exact in binary (Fur Coat 2 x snow 1.5 = 3) and one
   // pokeRound closes it, which is what a chained modifier does.
+  //
+  // Snow is the example and not sandstorm because it is now the only pair that
+  // can meet: both Fur Coat and snow are on the Defence, so both count against
+  // a physical move, while sandstorm is on the Sp. Def and never shares one
+  // with Fur Coat again.
+  //
+  // The category condition is the ability's condition and comes from the same
+  // table: sandstorm raises Sp. Def and only counts against a special move,
+  // snow raises Defence and only against a physical one. It used to be spelled
+  // out by hand here, and this was the only one of the two that had it.
   const defBoost = weather.defBoost;
   if (defBoost && defTypes.some(x => defBoost.types.includes(x))
-      && ((defBoost.stat === 'spd' && move.category === 'special')
-       || (defBoost.stat === 'def' && move.category === 'physical'))) {
+      && STAT_CATEGORY[defBoost.stat] === move.category) {
     defenseMult *= defBoost.mult;
   }
 
