@@ -6,6 +6,15 @@ import { toolTabsHTML, wireToolTabs } from './hub.js';
 
 const PAGE_SIZE = 30;
 
+// Los enlaces nuevos llevan el slug (`clear-body`); los viejos ya compartidos
+// pueden llevar el nombre de pantalla en ingles (`Clear Body`) -- eso es lo que
+// construia js/meta.js antes de este fix. nameEn es la red de seguridad para
+// que esos enlaces sigan resolviendo.
+const matchesTarget = (a, targetName) =>
+  a.name.toLowerCase() === targetName.toLowerCase() ||
+  a.nameEs.toLowerCase() === targetName.toLowerCase() ||
+  a.nameEn.toLowerCase() === targetName.toLowerCase();
+
 export function renderAbilities(container, highlightName = null) {
   let currentPage = 1;
   let searchTerm = '';
@@ -58,10 +67,7 @@ export function renderAbilities(container, highlightName = null) {
 
     // If navigating to a specific ability, find it and jump to its page
     if (targetName) {
-      const targetIndex = allAbilities.findIndex(a =>
-        a.name.toLowerCase() === targetName.toLowerCase() ||
-        a.nameEs.toLowerCase() === targetName.toLowerCase()
-      );
+      const targetIndex = allAbilities.findIndex(a => matchesTarget(a, targetName));
       if (targetIndex !== -1) {
         currentPage = Math.floor(targetIndex / PAGE_SIZE) + 1;
       }
@@ -103,10 +109,7 @@ export function renderAbilities(container, highlightName = null) {
       card.className = 'ability-card';
       card.id = `ability-${a.name}`;
 
-      const isTarget = targetName && (
-        a.name.toLowerCase() === targetName.toLowerCase() ||
-        a.nameEs.toLowerCase() === targetName.toLowerCase()
-      );
+      const isTarget = targetName && matchesTarget(a, targetName);
 
       if (isTarget) {
         card.style.borderColor = 'var(--accent)';

@@ -54,7 +54,7 @@ export function metaLink(kind, slug, names) {
   const entrada = names?.[kind]?.[slug];
   if (!entrada) return null;
   if (kind === 'moves') return entrada.id ? `#/moves/${entrada.id}` : null;
-  if (kind === 'abilities') return `#/abilities/${encodeURIComponent(entrada.en)}`;
+  if (kind === 'abilities') return `#/abilities/${encodeURIComponent(slug)}`;
   if (kind === 'items') return `#/items?q=${encodeURIComponent(entrada.es || entrada.en)}`;
   return null;
 }
