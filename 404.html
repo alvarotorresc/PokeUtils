@@ -78,17 +78,18 @@
          del tipo ":root:not(.dark) .scanlines" -- ese selector atenuaria
          TAMBIEN el oscuro por defecto (sin .light ni .dark, ninguna clase),
          que tambien cumple ":not(.dark)". Con la variable, la textura sigue
-         la MISMA cascada de arriba (:root / @media / .light / .dark) sin
-         reinventar la logica de "quien gana" una segunda vez. */
+         la MISMA cascada de arriba (:root / .light) sin reinventar la logica
+         de "quien gana" una segunda vez. */
       --scanline-opacity: 1;
     }
     /* El tema de la app se guarda en localStorage (pkutils_theme) con la
        misma clase .light que ya usa index.html -- este bloque cubre a quien
-       lo trae elegido, sin importar lo que prefiera el sistema. Le gana al
-       @media de mas abajo (aunque esta ANTES en el fichero) por especificidad:
-       ":root.light" cuenta dos clases (0,2,0), el ":root" a secas de dentro
-       del @media solo una (0,1,0) -- la eleccion explicita gana sin depender
-       del orden. */
+       lo trae elegido. Sin nada guardado, la pagina nace oscura igual que la
+       app (initTheme en js/app.js hace `|| 'dark'` y nunca mira el sistema):
+       si esta pagina mirara prefers-color-scheme, quien llegue con el SO en
+       claro veria la 404 clara y un salto a oscuro al pulsar "volver al
+       inicio". La clase .dark que pone el script del head no necesita regla
+       propia: los valores oscuros ya son el :root base. */
     :root.light {
       --bg: #eeeef5;
       --bg-surface: #ffffff;
@@ -100,27 +101,6 @@
       --border-accent: rgba(184, 136, 0, 0.3);
       --scanline-opacity: 0.02;
     }
-    /* Quien nunca eligio tema en la app (nada en localStorage) SI ve el que
-       prefiera el sistema -- a diferencia de la app misma, que por defecto
-       nace oscura pase lo que pase (ver initTheme en js/app.js). Esta pagina
-       la puede visitar alguien que jamas paso por la app, asi que aqui si
-       merece la pena mirar el sistema; si luego entra a la app y la deja en
-       oscuro, .light no se pondra y esta regla tampoco, sin conflicto. */
-    @media (prefers-color-scheme: light) {
-      :root { --bg: #eeeef5; --bg-surface: #ffffff; --accent: #b88800;
-        --accent-text: #6f4f00; --ink-1: #181822; --ink-2: #3e3e6e; --ink-3: #62628c;
-        --border-accent: rgba(184, 136, 0, 0.3); --scanline-opacity: 0.02; }
-    }
-    /* Y quien SI eligio oscuro a mano (localStorage === 'dark') tiene que
-       ganarle al media query de arriba si el sistema prefiere claro -- por
-       eso este bloque repite los valores oscuros de :root con la misma
-       especificidad que .light, para que gane por ser la eleccion explicita. */
-    :root.dark {
-      --bg: #0f0f23; --bg-surface: #1a1a3e; --accent: #ffcc00;
-      --accent-text: #ffcc00; --ink-1: #fcfcff; --ink-2: #bebedc; --ink-3: #8c8cb8;
-      --border-accent: rgba(255, 204, 0, 0.3); --scanline-opacity: 1;
-    }
-
     html, body { min-height: 100%; }
     html { font-size: 18px; -webkit-text-size-adjust: 100%; }
     body {
@@ -277,8 +257,8 @@
         var saved = localStorage.getItem('pkutils_theme');
         if (saved === 'light') document.documentElement.classList.add('light');
         else if (saved === 'dark') document.documentElement.classList.add('dark');
-        // Sin valor guardado: se queda como esta (nada de clase), y el
-        // @media (prefers-color-scheme) del CSS de arriba decide.
+        // Sin valor guardado: se queda como esta (nada de clase) y pinta
+        // el :root base oscuro -- el mismo defecto que la app.
       } catch (e) {}
     })();
   </script>
@@ -328,7 +308,7 @@
         var EN_404 = {
           title: 'THE WILD POKÉMON FLED!',
           help: 'This address does not exist. If you were after a Pokémon, a move or an item — some have genuinely odd names — try the search:',
-          searchPlaceholder: 'Search a Pokemon, move, item…',
+          searchPlaceholder: 'Search a Pokémon, move, item…',
           submit: 'Search',
           backHome: 'Back to home'
         };
