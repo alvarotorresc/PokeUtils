@@ -19,7 +19,12 @@ export const FIELDS = [
   { param: 'al', el: '#dmgatkLevel', kind: 'int', min: 1, max: 100, def: 50 },
   { param: 'dl', el: '#dmgdefLevel', kind: 'int', min: 1, max: 100, def: 50 },
   { param: 'ae', el: '#dmgatkEv', kind: 'int', min: 0, max: 252, def: 0 },
+  // `de` sigue siendo la defensa, que es lo que ya significaba en statFor: los
+  // PS del defensor estrenan parametro propio en vez de reciclar este, para que
+  // un enlace compartido de antes no cambie de significado sin avisar. Ese
+  // enlace viejo trae solo `de` y los PS se quedan en 0.
   { param: 'de', el: '#dmgdefEv', kind: 'int', min: 0, max: 252, def: 0 },
+  { param: 'dh', el: '#dmgdefHpEv', kind: 'int', min: 0, max: 252, def: 0 },
   { param: 'an', el: '#dmgatkNature', kind: 'enum', values: ['1', '1.1', '0.9'], def: '1' },
   { param: 'dn', el: '#dmgdefNature', kind: 'enum', values: ['1', '1.1', '0.9'], def: '1' },
   { param: 'ab', el: '#dmgatkBoost', kind: 'int', min: -6, max: 6, def: 0 },

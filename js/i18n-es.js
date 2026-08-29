@@ -224,6 +224,10 @@ export default {
     'dmg.burn': 'Atacante quemado',
     'dmg.doubles': 'Combate doble',
     'dmg.evs': 'EVs',
+    // El defensor los lleva partidos: un solo campo alimentaba a la vez los PS
+    // y la defensa.
+    'dmg.evs.hp': 'EVs PS',
+    'dmg.evs.def': 'EVs Defensa',
     'dmg.nature': 'Naturaleza',
     'dmg.nature.neutral': 'Neutra',
     'dmg.nature.plus': 'Favorable (+10%)',

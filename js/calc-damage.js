@@ -93,8 +93,38 @@ export function renderDamage(container, query) {
   `;
 
   // ===== one side of the fight =====
+  //
+  // El defensor lleva DOS campos de EVs, PS y Defensa, como ya hace
+  // minimumSpread en #/survive. Con uno solo los dos se leian del mismo sitio:
+  // poner 252 daba un defensor con 252 en PS Y 252 en la defensa -- legal (504
+  // <= 510) pero no lo que dice la etiqueta, y el reparto mas comun de todos
+  // (252 PS / 0 Def) no se podia ni pedir. El atacante se queda con uno porque
+  // sus PS no entran en el calculo, solo su ataque.
+  //
+  // Eso le da al defensor una fila mas, asi que la naturaleza baja a la segunda
+  // y la habilidad se queda sola en la tercera -- la misma forma que ya tenia
+  // el atacante, que termina con el teratipo solo en su tercera fila.
   function sideCard(side, title) {
     const isAtk = side === 'atk';
+    const natureField = `
+      <div class="calc-field">
+        <label>${t('dmg.nature')}</label>
+        <select id="dmg${side}Nature">
+          <option value="1">${t('dmg.nature.neutral')}</option>
+          <option value="1.1">${t('dmg.nature.plus')}</option>
+          <option value="0.9">${t('dmg.nature.minus')}</option>
+        </select>
+      </div>
+    `;
+    const abilityField = `
+      <div class="calc-field">
+        <label>${t('dmg.ability')}</label>
+        <select id="dmg${side}Ability">
+          ${DAMAGE_ABILITIES.filter(a => a.id === 'none' || a.side === (isAtk ? 'attacker' : 'defender'))
+            .map(a => `<option value="${a.id}">${a.id === 'none' ? t('dmg.none') : (getLang() === 'es' ? a.es : a.en)}</option>`).join('')}
+        </select>
+      </div>
+    `;
     return `
       <div class="card">
         <h3 class="section-title" style="margin-bottom:12px">${title}</h3>
@@ -110,20 +140,25 @@ export function renderDamage(container, query) {
               <label>${t('capture.level')}</label>
               <input type="number" id="dmg${side}Level" min="1" max="100" value="${DEFAULT_LEVEL}">
             </div>
-            <div class="calc-field">
-              <label>${t('dmg.evs')}</label>
-              <input type="number" id="dmg${side}Ev" min="0" max="252" step="4" value="0">
-            </div>
-            <div class="calc-field">
-              <label>${t('dmg.nature')}</label>
-              <select id="dmg${side}Nature">
-                <option value="1">${t('dmg.nature.neutral')}</option>
-                <option value="1.1">${t('dmg.nature.plus')}</option>
-                <option value="0.9">${t('dmg.nature.minus')}</option>
-              </select>
-            </div>
+            ${isAtk ? `
+              <div class="calc-field">
+                <label>${t('dmg.evs')}</label>
+                <input type="number" id="dmgatkEv" min="0" max="252" step="4" value="0">
+              </div>
+              ${natureField}
+            ` : `
+              <div class="calc-field">
+                <label>${t('dmg.evs.hp')}</label>
+                <input type="number" id="dmgdefHpEv" min="0" max="252" step="4" value="0">
+              </div>
+              <div class="calc-field">
+                <label>${t('dmg.evs.def')}</label>
+                <input type="number" id="dmgdefEv" min="0" max="252" step="4" value="0">
+              </div>
+            `}
           </div>
           <div class="calc-row">
+            ${isAtk ? '' : natureField}
             <div class="calc-field">
               <label>${t('dmg.boost')}</label>
               <select id="dmg${side}Boost">
@@ -144,16 +179,10 @@ export function renderDamage(container, query) {
                 </select>
               `}
             </div>
-            <div class="calc-field">
-              <label>${t('dmg.ability')}</label>
-              <select id="dmg${side}Ability">
-                ${DAMAGE_ABILITIES.filter(a => a.id === 'none' || a.side === (isAtk ? 'attacker' : 'defender'))
-                  .map(a => `<option value="${a.id}">${a.id === 'none' ? t('dmg.none') : (getLang() === 'es' ? a.es : a.en)}</option>`).join('')}
-              </select>
-            </div>
+            ${isAtk ? abilityField : ''}
           </div>
-          ${isAtk ? `
-            <div class="calc-row">
+          <div class="calc-row">
+            ${isAtk ? `
               <div class="calc-field">
                 <label>${t('dmg.tera')}</label>
                 <select id="dmgatkTera">
@@ -161,8 +190,8 @@ export function renderDamage(container, query) {
                   ${TYPES.map(ty => `<option value="${ty}">${typeFullName(ty)}</option>`).join('')}
                 </select>
               </div>
-            </div>
-          ` : ''}
+            ` : abilityField}
+          </div>
         </div>
       </div>
     `;
@@ -519,7 +548,10 @@ export function renderDamage(container, query) {
     const physical = move.category === 'physical';
 
     const attackerHPMax = calcHP(attacker.stats.hp, 31, 0, atkLevel);
-    const defenderHPMax = calcHP(defender.stats.hp, 31, Number($('#dmgdefEv').value) || 0, defLevel);
+    // Su propio campo. Antes eran los mismos EVs que ya leia statFor para la
+    // defensa, asi que el porcentaje de PS salia sistematicamente mas bajo de
+    // lo que la persona creia haber pedido.
+    const defenderHPMax = calcHP(defender.stats.hp, 31, Number($('#dmgdefHpEv').value) || 0, defLevel);
     const pct = (key, fallback) => {
       const raw = vpValue(key);
       return raw == null ? fallback : Math.max(1, Math.round(fallback * Number(raw) / 100));

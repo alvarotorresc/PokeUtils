@@ -31,7 +31,7 @@ const full = {
   defender: 3,
   move: 53,
   fields: {
-    al: 100, dl: 100, ae: 252, de: 4, an: '1.1', dn: '0.9', ab: 2, db: -1,
+    al: 100, dl: 100, ae: 252, de: 4, dh: 252, an: '1.1', dn: '0.9', ab: 2, db: -1,
     ai: 'choice-band', aa: 'blaze', da: 'thick-fat', at: 'fire', dt: 'water',
     w: 'sun', tr: 'grassy', sc: 'reflect', crit: true, burn: false, dbl: true, z: true,
   },
@@ -51,10 +51,25 @@ check('the tab travels with it', params.tab, 'damage');
 // Defaults are dropped: a bare calc is three ids and the tab.
 const bare = encodeDamageState({
   attacker: 6, defender: 3, move: 53,
-  fields: { al: 50, dl: 50, ae: 0, de: 0, an: '1', ab: 0, ai: 'none', w: 'none', crit: false },
+  fields: { al: 50, dl: 50, ae: 0, de: 0, dh: 0, an: '1', ab: 0, ai: 'none', w: 'none', crit: false },
   vp: {},
 });
 check('a default calc stays short', bare, { tab: 'damage', a: '6', d: '3', m: '53' });
+
+console.log('\nEnlaces viejos: el campo de EVs del defensor partido en dos\n');
+
+// `de` alimentaba a la vez los PS y la defensa. Al partirlo, `de` se queda con
+// la defensa -- que es lo que ya significaba en statFor -- y los PS estrenan
+// `dh`. Un enlace de antes trae solo `de`, y la migracion es no inventarse los
+// PS: quedan a 0, que es el reparto mas comun (252 Def / 0 PS o al reves) y el
+// que menos miente.
+const viejo = decode('a=6&d=3&m=53&de=252');
+check('un enlace viejo sigue leyendo la defensa', viejo.fields.de, 252);
+check('y no se inventa los EVs de PS', viejo.fields.dh, undefined);
+check('un enlace nuevo trae los dos', decode('de=4&dh=252').fields, { de: 4, dh: 252 });
+check('los EVs de PS se recortan a 252', decode('dh=999').fields.dh, 252);
+check('unos EVs de PS negativos se recortan a 0', decode('dh=-5').fields.dh, 0);
+check('unos EVs de PS sin numero se caen', decode('dh=abc').fields.dh, undefined);
 
 console.log('\nHand-edited URLs\n');
 

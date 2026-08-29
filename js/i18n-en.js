@@ -219,6 +219,8 @@ export default {
     'dmg.burn': 'Attacker burned',
     'dmg.doubles': 'Double battle',
     'dmg.evs': 'EVs',
+    'dmg.evs.hp': 'HP EVs',
+    'dmg.evs.def': 'Defense EVs',
     'dmg.nature': 'Nature',
     'dmg.nature.neutral': 'Neutral',
     'dmg.nature.plus': 'Boosting (+10%)',
