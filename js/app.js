@@ -9,7 +9,7 @@ import { getLevel, setLevel, onLevelChange } from './level.js';
 import { t, getLang, setLang, onLangChange } from './i18n.js';
 import { purgeLegacyCache } from './api.js';
 import { leer, escribir } from './storage.js';
-import { renderError } from './ui.js';
+import { renderError, parseHash } from './ui.js';
 import { attachGlobalSearch } from './global-search.js';
 
 purgeLegacyCache();
@@ -220,15 +220,11 @@ document.addEventListener('keydown', e => {
 });
 
 // ===== ROUTER =====
-// The hash carries page state as a query string: #/pokedex?gen=1&sort=spe
-function parseHash() {
-  const raw = location.hash.slice(1) || '/';
-  const qIndex = raw.indexOf('?');
-  const pathPart = qIndex === -1 ? raw : raw.slice(0, qIndex);
-  const queryPart = qIndex === -1 ? '' : raw.slice(qIndex + 1);
-  const parts = pathPart.split('/').filter(Boolean);
-  return { path: '/' + parts.join('/'), parts, query: new URLSearchParams(queryPart) };
-}
+//
+// parseHash vive en ui.js, junto a replaceQuery, que es quien escribe lo que
+// esto lee: la guarda de replaceQuery compara la ruta que le pasan con la
+// vigente, y esa comparacion solo vale si las dos mitades normalizan igual. Una
+// sola implementacion, importada desde los dos lados.
 
 // The tab that lights up is the tool's category, which the path does not carry:
 // #/moves has to light up Datos. tools.js holds that map.
