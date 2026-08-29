@@ -49,14 +49,18 @@ export async function renderTeam(container, query = new URLSearchParams()) {
 
   const byId = new Map(pokemon.map(p => [p.id, p]));
 
-  // Validated on the way in: a hand-edited URL must not put unknown ids or a
-  // seventh member into the team.
+  // Validated on the way in: a hand-edited URL must not put unknown ids, a
+  // repeated member or a seventh one into the team. The picker below already
+  // refuses a duplicate (`!state.ids.includes(p.id)`), and the coverage of six
+  // copies of one Pokemon is the coverage of one -- the extra slots add nothing
+  // and only make the analysis read as if it were about a real team.
   const state = {
-    ids: (query.get('ids') || '')
-      .split(',')
-      .map(n => parseInt(n, 10))
-      .filter(id => byId.has(id))
-      .slice(0, TEAM_SIZE),
+    ids: [...new Set(
+      (query.get('ids') || '')
+        .split(',')
+        .map(n => parseInt(n, 10))
+        .filter(id => byId.has(id))
+    )].slice(0, TEAM_SIZE),
     atk: (query.get('atk') || '')
       .split(',')
       .filter(type => TYPES.includes(type)),

@@ -34,11 +34,18 @@ export async function renderCounter(container, query = new URLSearchParams()) {
     fetchMeta(format).catch(() => null),
   ]);
 
-  let ids = (query.get('ids') || '')
-    .split(',')
-    .map(n => parseInt(n, 10))
-    .filter(n => all.some(p => p.id === n))
-    .slice(0, TEAM_SIZE);
+  // Dedupe before the cut. ids=6,6,6,6,6,6 is not a team of six: every attacker
+  // that threatens one Charizard threatens all six, so the "half the team"
+  // cutoff (threats.js) degenerates and the list came out at 344 counters where
+  // the honest answer is the one for a lone Charizard. The page's own picker
+  // already refuses a duplicate; a hand-edited link was the only way in. A Set
+  // keeps first-occurrence order, so 6,9,3 stays 6,9,3.
+  let ids = [...new Set(
+    (query.get('ids') || '')
+      .split(',')
+      .map(n => parseInt(n, 10))
+      .filter(n => all.some(p => p.id === n))
+  )].slice(0, TEAM_SIZE);
 
   function render() {
     replaceQuery('/counter', { ids: ids.join(',') });

@@ -52,12 +52,15 @@ export async function renderCompare(container, query = new URLSearchParams()) {
   `;
 
   // A typo in a shared link must not blank the page: unknown ids drop out and
-  // the rest still compare.
-  let ids = (query.get('ids') || '')
-    .split(',')
-    .map(n => parseInt(n, 10))
-    .filter(n => all.some(p => p.id === n))
-    .slice(0, MAX);
+  // the rest still compare. Repeated ones drop out too -- comparing a Pokemon
+  // with itself painted the same column three times with every cell marked as
+  // the best value, which is not a comparison.
+  let ids = [...new Set(
+    (query.get('ids') || '')
+      .split(',')
+      .map(n => parseInt(n, 10))
+      .filter(n => all.some(p => p.id === n))
+  )].slice(0, MAX);
 
   const chosen = () => ids.map(id => all.find(p => p.id === id));
 
