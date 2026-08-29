@@ -35,7 +35,23 @@ const ERROR_MESSAGES = {
   [ErrorKind.NOT_FOUND]: 'common.error.notfound',
 };
 
-export function renderError(container, err, onRetry) {
+// backHome: la salida del callejon, y la regla de cuando ponerla es una sola --
+// el enlace va donde el error ES la pagina.
+//
+// Cuando este estado sustituye a la ruta entera, reintentar era la unica accion
+// posible, y con un hash invalido el reintento repetia el mismo fallo: no habia
+// forma de salir sin editar la barra de direcciones. Ahi el enlace es la unica
+// salida y va por defecto.
+//
+// Cuando lo que falla es una TARJETA dentro de una pagina que por lo demas esta
+// entera (la linea evolutiva de una ficha, quien aprende un movimiento) no hay
+// ningun callejon: la pagina y el nav siguen ahi, el usuario esta donde queria
+// estar, y lo unico que tiene sentido ofrecer es reintentar esa seccion. El
+// enlace ahi es un anuncio de irse en medio de la pagina, compitiendo con el
+// REINTENTAR que si es la accion correcta. Esos llamantes pasan backHome: false,
+// igual que el desplegable del buscador, que ademas se abre desde la home y se
+// cierra solo al perder el foco.
+export function renderError(container, err, onRetry, { backHome = true } = {}) {
   const messageKey = ERROR_MESSAGES[err?.kind] || 'common.error';
 
   container.innerHTML = '';
@@ -54,7 +70,39 @@ export function renderError(container, err, onRetry) {
     box.appendChild(btn);
   }
 
+  // Con boton o sin el, y DEBAJO del boton a proposito: por encima invitaria a
+  // irse antes de haber probado a reintentar. Mismo marcado que el "no
+  // encontrado" del router, para que los dos estados sean el mismo gesto.
+  if (backHome) {
+    const back = document.createElement('p');
+    back.style.marginTop = '12px';
+    back.innerHTML = `<a href="#/">${t('common.backhome')}</a>`;
+    box.appendChild(back);
+  }
+
   container.appendChild(box);
+}
+
+// ===== HELPER: hash parsing =====
+//
+// The hash carries page state as a query string: #/pokedex?gen=1&sort=spe
+//
+// This lived in app.js, next to the router that reads it. It is here now
+// because replaceQuery, right below, is the half that *writes* it, and the two
+// have to agree on what "the current route" means down to the last slash --
+// with two copies of the normalization, a guard comparing them is only as good
+// as the last person who remembered to edit both. app.js imports it from here
+// (it already imports renderError), which keeps the arrow pointing the same way
+// as before: nothing in js/ imports app.js.
+const normalizePath = path => '/' + String(path).split('/').filter(Boolean).join('/');
+
+export function parseHash() {
+  const raw = location.hash.slice(1) || '/';
+  const qIndex = raw.indexOf('?');
+  const pathPart = qIndex === -1 ? raw : raw.slice(0, qIndex);
+  const queryPart = qIndex === -1 ? '' : raw.slice(qIndex + 1);
+  const parts = pathPart.split('/').filter(Boolean);
+  return { path: normalizePath(pathPart), parts, query: new URLSearchParams(queryPart) };
 }
 
 // ===== HELPER: hash query =====
@@ -63,6 +111,22 @@ export function renderError(container, err, onRetry) {
 // route() calls app.innerHTML = '' the moment it fires, which would wipe the
 // search input along with its focus and caret mid-typing.
 export function replaceQuery(path, params) {
+  // A route the user already left does not get to write the address bar.
+  //
+  // The router cancels a navigation whose import() came back late (app.js, the
+  // token) and hostDeRuta neutralises a render that paints late, but neither
+  // covers this: the URL is not the DOM and it is not the import. So a route
+  // whose data was still in flight would sync its own query string on top of
+  // whatever page the user had moved on to -- measured with the dataset delayed
+  // 1500 ms: click POKEDEX, click FAQ 700 ms later, and the FAQ is on screen
+  // with the bar reading #/pokedex. Deep-linkable, wrong, and shareable.
+  //
+  // The guard goes here and not in the eleven callers on purpose: a caller that
+  // has to remember something is a caller that eventually forgets, and the
+  // twelfth one gets this for free. Both sides go through the same
+  // normalization, so a caller writing '/pokedex/' is not a different route.
+  if (parseHash().path !== normalizePath(path)) return;
+
   const qs = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value !== '' && value != null) qs.set(key, String(value));

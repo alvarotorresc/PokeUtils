@@ -730,6 +730,28 @@ a:hover {
   color: var(--accent-dim);
 }
 
+/* Los tres enlaces legales son lo unico del footer que se toca con el dedo, y
+   nacieron como texto corrido: medidos a 360x740 daban 26x8, 88x8 y 70x8 px,
+   con la fila entera en 11,6 px. Muy por debajo de los 24x24 px CSS de la
+   WCAG 2.5.8, y con un "·" como unico separador entre objetivos.
+
+   El padding sube el objetivo sin tocar el tamano de letra. El margen de 8 px
+   que llevaba la fila se va al padding superior en vez de sumarse: asi el texto
+   se queda donde estaba y lo unico que crece es la caja.
+
+   Va en .footer-links y no en .footer a, que es donde caeria por instinto: ese
+   selector coge tambien el enlace de PokeAPI y el de la firma, que son prosa
+   dentro de una frase -- acolcharlos separaria "Made with ... by ..." en dos
+   alturas distintas. */
+.footer-links {
+  margin-top: 0;
+}
+
+.footer-links a {
+  display: inline-block;
+  padding: 8px 6px;
+}
+
 .footer-legal {
   margin-top: 16px;
   padding-top: 12px;

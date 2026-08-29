@@ -182,9 +182,149 @@ const TODOS = [...new Set([...TERMINOS, ...CONTROL, ...PROBE,
 const desplazados = TODOS.filter(t => exactoDominioDesplazado(searchAll(datasets, t, 8)));
 check('un contains de herramienta nunca desplaza a un exacto de otro dominio', desplazados, []);
 
+console.log('\nNi un hueco del panel se gasta en una fila que lleva al mismo sitio que otra\n');
+
+// La ruta de un objeto es #/items?q=<nombre> (no tiene ficha propia: la lista se
+// abre filtrada), asi que tres filas de la BD que comparten nombre visible dan
+// la MISMA etiqueta y el MISMO destino. "bici" son bicycle/bike--green/
+// bike--yellow: entradas distintas, pagina identica. De 8 resultados, seis
+// podian ser el mismo texto repetido.
+const rutasDe = t => searchAll(datasets, t, 8).map(r => r.route);
+const repetidas = t => {
+  const rutas = rutasDe(t);
+  return rutas.filter((r, i) => rutas.indexOf(r) !== i);
+};
+
+check('bici no repite ninguna ruta', repetidas('bici'), []);
+check('meteorito tampoco', repetidas('meteorito'), []);
+// La garantia general, no termino a termino.
+check('ningun termino de la bateria repite ruta',
+  [...TERMINOS, ...CONTROL, ...PROBE, 'bici', 'meteorito', 'de', 'meta'].filter(t => repetidas(t).length), []);
+
+// El control que impide pasarse: mismo NOMBRE, rutas distintas. Zygarde Forma
+// 10% son dos Pokemon reales (ids 10118 y 10181) con ficha propia cada uno;
+// deduplicar por etiqueta escondería uno detras del otro. La ruta es la clave,
+// no el texto.
+check('zygarde 10 sigue dando los dos Pokemon', searchAll(datasets, 'zygarde 10', 8).length, 2);
+check('con sus dos fichas distintas',
+  searchAll(datasets, 'zygarde 10', 8).map(r => r.id), [10118, 10181]);
+
+// Quitar duplicados ANTES del corte deja sitio a resultados reales que antes ni
+// se veian, no huecos vacios: "bici" daba 8 filas con solo 3 destinos, y "Bici
+// de Carreras" y "Bono Bici" no llegaban a salir. Ahora salen los 5 que existen.
+check('bici ensena los 5 destinos que hay, no 3 repetidos', searchAll(datasets, 'bici', 8).length, 5);
+check('y los dos que antes no cabian ya salen',
+  searchAll(datasets, 'bici', 8).map(r => r.id).includes(527)
+  && searchAll(datasets, 'bici', 8).map(r => r.id).includes(545), true);
+// Un termino con destinos de sobra sigue llenando el panel entero.
+check('meteorito sigue llenando los 8 huecos', searchAll(datasets, 'meteorito', 8).length, 8);
+check('pika tambien', searchAll(datasets, 'pika', 8).length, 8);
+
+// La dedupe se queda con la primera de cada ruta sobre la lista YA ordenada, asi
+// que la cabeza sobrevive siempre. Eso hace que compararla contra otra llamada a
+// searchAll no compruebe nada (las dos pasan por la misma dedupe): van fijados a
+// mano los cuatro terminos que nombra el criterio de aceptacion, mas los dos que
+// cambian de contenido.
+check('pika sigue siendo Pikachu', first('pika').id, 25);
+check('fire sigue siendo la Gema Fuego', first('fire').id, 591);
+check('growl sigue siendo el movimiento Gruñido', first('growl').id, 45);
+check('natu sigue siendo el Pokemon Natu', first('natu').id, 177);
+check('bici sigue siendo la Bici', first('bici').id, 427);
+check('meteorito sigue siendo el Meteorito', first('meteorito').id, 537);
+
+console.log('\nEl apostrofo de teclado encuentra lo mismo que el tipografico\n');
+
+// El indice guarda "Farfetch’d" con U+2019, que no esta en ningun teclado
+// normal: quien sabe como se escribe teclea el apostrofo ASCII y recibia cero
+// resultados donde escribir MENOS (sin apostrofo) si funcionaba. La garantia no
+// es el numero, es la equivalencia: las dos formas del apostrofo tienen que
+// devolver exactamente la misma lista.
+const idsDe = t => searchAll(datasets, t, 8).map(r => [r.kind, r.id, r.route]);
+
+check('farfetch\'d devuelve 3, como farfetch', buscar("farfetch'd").length, 3);
+check('y exactamente lo mismo que Farfetch’d', idsDe("farfetch'd"), idsDe('Farfetch’d'));
+check('sirfetch\'d encuentra a Sirfetch’d', first("sirfetch'd").id, 865);
+check('y exactamente lo mismo que Sirfetch’d', idsDe("sirfetch'd"), idsDe('Sirfetch’d'));
+// Al reves tambien: el apostrofo tipografico no puede dejar de funcionar por
+// plegarlo, que es el riesgo de tocar norm.
+check('Farfetch’d sigue encontrando al Pokemon', first('Farfetch’d').id, 83);
+
+console.log('\nLos nombres dificiles siguen encontrandose\n');
+
+// La bateria de control del informe: cada uno de estos lleva un caracter que
+// norm toca (tilde, dieresis, simbolo de sexo, guion, dos puntos, punto), asi
+// que son justo los que se rompen si el plegado se pasa de listo.
+const DIFICILES = {
+  flabebe: 669, 'flabébé': 669,
+  'type: null': 772, 'código cero': 772, 'codigo cero': 772,
+  'nidoran♀': 29, 'nidoran♂': 32,
+  'porygon-z': 474, 'ho-oh': 250, 'jangmo-o': 782, 'mr. mime': 122, 'tapu koko': 785,
+};
+check('los nombres dificiles siguen llevando a su Pokemon',
+  Object.entries(DIFICILES).filter(([t, id]) => first(t).id !== id).map(([t]) => t), []);
+// dano/daño es la herramienta, no un Pokemon: la n con virgulilla se pliega.
+check('dano sigue encontrando la Calculadora de Dano', first('dano').route, '#/calculator?tab=damage');
+
 console.log('\nUn termino sin herramienta se comporta como antes\n');
 
 check('bicicleta no encuentra nada, en ningun dominio', searchAll(datasets, 'bicicleta', 8).length, 0);
+
+// ===== El historial que la home convierte en chips =====
+//
+// Lo que se abre desde el buscador se guarda en pkutils_search_history y
+// sustituye a los chips fijos de la home. leerHistorial protegia el JSON.parse
+// y comprobaba Array.isArray, pero no miraba la FORMA de los elementos, y
+// home.js los interpola uno a uno.
+//
+// Medido en el navegador con el valor puesto a mano: [1,2,3] pintaba tres chips
+// vacios con href="" (tres enlaces que recargan la pagina), el esquema viejo
+// {nombre,url} pintaba uno, y [null,null] tumbaba el render entero de la home
+// -- TypeError leyendo .route de null, recogido por route(), asi que la portada
+// se cambiaba por la pantalla de error. El esquema ya cambio una vez (las
+// claves pkutils_* legacy), asi que el caso no es hipotetico: le pasa a quien
+// ya tenia datos guardados el dia que la forma cambie.
+//
+// La garantia vive aqui y no en la plantilla porque leerHistorial tiene DOS
+// consumidores: los chips de home.js y el apuntar() del propio buscador, que
+// filtra por e.route antes de guardar y tambien reventaba con [null,null].
+//
+// Nombre y ruta se exigen NO VACIOS: "" pasa el typeof y deja exactamente el
+// chip en blanco que el filtro viene a quitar -- un enlace invisible a ninguna
+// parte es peor que uno roto, porque no se ve.
+console.log('\nUn historial corrupto no llega a la home\n');
+
+let almacenado = null;
+globalThis.localStorage = { getItem: () => almacenado, setItem: () => {} };
+const { leerHistorial } = await import('../js/global-search.js');
+const historialDe = valor => { almacenado = valor; return leerHistorial(); };
+
+check('numeros sueltos', historialDe('[1,2,3]'), []);
+check('el esquema viejo, con nombre/url', historialDe('[{"nombre":"Pikachu","url":"#/pokedex/25"}]'), []);
+check('un objeto que no es lista', historialDe('{"a":1}'), []);
+check('un JSON truncado', historialDe('[{"name":"Pikachu","route":"#/pokedex/25"'), []);
+check('nulos', historialDe('[null,null]'), []);
+check('cadenas en vez de entradas', historialDe('["Pikachu"]'), []);
+check('sin nada guardado', historialDe(null), []);
+check('con el nombre vacio', historialDe('[{"name":"","route":"#/x"}]'), []);
+check('con la ruta vacia', historialDe('[{"name":"Pikachu","route":""}]'), []);
+check('con la ruta de otro tipo', historialDe('[{"name":"Pikachu","route":25}]'), []);
+
+console.log('\nY lo que si tiene forma pasa entero\n');
+
+check('una entrada valida', historialDe('[{"name":"Pikachu","route":"#/pokedex/25","id":25}]'),
+  [{ name: 'Pikachu', route: '#/pokedex/25', id: 25 }]);
+// El caso real de un cambio de esquema: lo bueno se queda, lo viejo cae.
+check('de una lista mezclada sobrevive solo lo que tiene forma',
+  historialDe('[1,null,{"nombre":"viejo"},{"name":"Surf","route":"#/moves/57"}]'),
+  [{ name: 'Surf', route: '#/moves/57' }]);
+check('y nunca mas de seis',
+  historialDe(JSON.stringify(Array.from({ length: 9 }, (_, i) => ({ name: `P${i}`, route: `#/p/${i}` })))).length, 6);
+// El marcado guardado a mano SI pasa el filtro: tiene nombre y ruta, que es lo
+// que este comprueba. Quien lo neutraliza es el esc() de chipHTML, y son dos
+// capas distintas -- si el filtro se comiera esta fila, el check estaria
+// midiendo la capa equivocada y el escapado podria caerse sin que nadie lo note.
+check('el marcado guardado a mano sigue siendo una entrada valida',
+  historialDe('[{"name":"<img src=x onerror=window.__xss=1>","route":"#/x"}]').length, 1);
 
 console.log(`\n${failed ? `${failed} fallos` : 'All checks passed'}\n`);
 process.exit(failed ? 1 : 0);

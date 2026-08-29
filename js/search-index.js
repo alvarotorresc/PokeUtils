@@ -17,7 +17,15 @@ import { spriteUrl, itemSpriteUrl } from './data.js';
 import { spriteIdFor } from './forms.js';
 import { TOOLS } from './tools.js';
 
-const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
+// El apostrofo se pliega al ASCII despues de los acentos, y en los dos lados:
+// score() pasa el nombre por norm y searchAll pasa el termino, asi que una sola
+// linea cubre el indice y lo que se teclea. El indice guarda "Farfetch’d" con
+// U+2019, que no esta en ningun teclado normal -- escribir "farfetch'd" daba 0
+// resultados donde escribir menos ("farfetch") daba 3. U+00B4 no tiene
+// descomposicion canonica, asi que sobrevive al NFD de arriba y hay que
+// nombrarlo aqui igual que a las comillas tipograficas.
+const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
+  .replace(/[’‘`´]/g, "'");
 
 // Exact 100, starts-with 60, contains 30. The gap between exact and starts-with
 // has to be wider than any length tie-break, or "fire" is won by "Fire Blast".
@@ -260,7 +268,25 @@ export function searchAll(datasets, term, limit = 8, lang = 'es') {
   // DireccionB mockup that got approved, and TOOL_MAX above keeps it from ever
   // costing the four domains their slots.
   const rank = h => (h.score === 100 ? 2 : 0) + (h.kind === 'tool' ? 1 : 0);
-  return [...toolHits, ...hits]
-    .sort((a, b) => rank(b) - rank(a) || b.score - a.score || a.id - b.id)
-    .slice(0, limit);
+  const ordenados = [...toolHits, ...hits]
+    .sort((a, b) => rank(b) - rank(a) || b.score - a.score || a.id - b.id);
+
+  // Una fila por destino, y la dedupe va AQUI: entre el sort y el corte. Detras
+  // del corte solo vaciaria huecos; delante del sort se quedaria con una
+  // cualquiera en vez de con la de mas puntuacion.
+  //
+  // Por ruta y no por etiqueta. Un objeto no tiene ficha propia -- su ruta es
+  // #/items?q=<nombre>, la lista abierta filtrada (ver SOURCES) -- asi que
+  // bicycle, bike--green y bike--yellow son tres registros distintos de la BD
+  // que llevan a una pagina byte a byte identica: buscar "bici" gastaba tres de
+  // los ocho huecos en la misma fila, y otros cuatro en "Bici Rotom". No se
+  // esconde informacion al quitarlas, porque no habia ninguna que ver.
+  //
+  // Deduplicar por NOMBRE si escondería algo: "Zygarde Forma 10%" son dos
+  // Pokemon con ficha propia (#/pokedex/10118 y #/pokedex/10181) que se llaman
+  // igual. Ahi el arreglo seria que labelOf desambiguara, no tapar uno.
+  const vistas = new Set();
+  const unicos = ordenados.filter(h => !vistas.has(h.route) && vistas.add(h.route));
+
+  return unicos.slice(0, limit);
 }

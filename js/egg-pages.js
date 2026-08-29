@@ -94,9 +94,11 @@ export async function renderEggGroup(container, group, query = new URLSearchPara
   countEl.textContent = `${members.length} ${t('pokedex.count')}`;
 
   function render() {
-    replaceQuery(`/egg/${group}`, { p: page === 1 ? '' : page });
     const totalPages = Math.ceil(members.length / PAGE_SIZE) || 1;
     if (page > totalPages) page = totalPages;
+    // The URL is written after the clamp: written first, #/egg/ground?p=999
+    // painted page 6 and left 999 in the bar.
+    replaceQuery(`/egg/${group}`, { p: page === 1 ? '' : page });
     const slice = members.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
     content.innerHTML = `<div class="pokemon-grid">${slice.map(pokemonCardHTML).join('')}</div>`;
     renderPagination(content, page, totalPages, p => {
