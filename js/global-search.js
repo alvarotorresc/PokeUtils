@@ -68,9 +68,45 @@ export function attachGlobalSearch(input, alGuardar) {
     alGuardar?.(apuntar({ kind: r.kind, id: r.id, name: r.name, route: r.route, sprite: r.sprite }));
   };
 
+  // ===== Ir a un destino que puede ser el que ya esta en la barra =====
+  //
+  // Asignar a location.hash el valor que ya tiene NO dispara hashchange, asi que
+  // route() no corre. El usuario hacia clic en un resultado y la aplicacion no
+  // reaccionaba: como el blur cierra el panel 150 ms despues, la unica senal que
+  // recibia era que su clic hizo desaparecer los resultados sin llevarle a
+  // ningun sitio. La navegacion de fragmento del <a href> de la fila tampoco
+  // emite el evento cuando el fragmento es el mismo.
+  //
+  // La comparacion es TEXTUAL y sobre el hash crudo, deliberadamente. La
+  // pregunta no es "es la misma ruta" sino "va a emitir hashchange el
+  // navegador", y eso solo depende de que la cadena sea identica. Con parseHash
+  // (que tira la query) #/items?q=Bici y #/items?q=Pluma saldrian iguales y se
+  // repintaria la pagina sin mover la barra de direcciones.
+  const mismoHash = destino => location.hash.slice(1) === destino;
+
+  // route() no esta exportado, asi que se emite el evento que el router ya
+  // escucha. Su listener no mira e.newURL ni e.oldURL, solo location.hash.
+  const irA = destino => {
+    if (mismoHash(destino)) window.dispatchEvent(new HashChangeEvent('hashchange'));
+    else location.hash = destino;
+    panel.hidden = true;
+  };
+
   panel.addEventListener('click', e => {
     const fila = e.target.closest('.gs-row');
-    if (fila) recordar(+fila.dataset.i);
+    if (!fila) return;
+    recordar(+fila.dataset.i);
+    // Un clic con modificador (o con otro boton) es "abrir en otra pestana": de
+    // eso se encarga el navegador con el href, no nosotros.
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    // Y solo se intercepta el caso que el navegador NO resuelve. Cualquier otro
+    // href sigue siendo una navegacion de fragmento normal, que ya emite
+    // hashchange sola: preventDefault en todos seria quitarle trabajo al
+    // navegador para volver a hacerlo peor.
+    const destino = fila.getAttribute('href').slice(1);
+    if (!mismoHash(destino)) return;
+    e.preventDefault();
+    irA(destino);
   });
 
   async function loadIndex() {
@@ -141,9 +177,8 @@ export function attachGlobalSearch(input, alGuardar) {
       const term = input.value.trim();
       const marked = rows[cursor]?.getAttribute('href');
       if (marked) recordar(cursor);
-      location.hash = marked ? marked.slice(1)
-        : (term ? `/pokedex?q=${encodeURIComponent(term)}` : '/pokedex');
-      panel.hidden = true;
+      irA(marked ? marked.slice(1)
+        : (term ? `/pokedex?q=${encodeURIComponent(term)}` : '/pokedex'));
     } else if (e.key === 'Escape') {
       panel.hidden = true;
     }

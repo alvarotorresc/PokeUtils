@@ -160,5 +160,36 @@ for (const { fichero, recorte, sync } of PAGINADAS) {
     + (ok ? '' : ' -- mueve la llamada que sincroniza la URL por debajo del recorte de pagina, y por encima del return de "sin resultados"'));
 }
 
+// ===== El buscador compara el hash CRUDO antes de asignarlo =====
+//
+// El otro lado de la misma moneda que replaceQuery: alli el problema era
+// escribir la URL de mas, aqui es no escribirla y no repintar. Asignar a
+// location.hash el valor que ya tiene no dispara hashchange, asi que un clic en
+// el resultado que apunta a la ruta vigente no hacia absolutamente nada.
+//
+// El cable trampa protege la parte que es facil "simplificar" mal: la
+// comparacion tiene que ser textual sobre location.hash, NO por ruta con
+// parseHash. parseHash tira la query, con lo que #/items?q=Bici y #/items?q=Pluma
+// saldrian iguales y el buscador repintaria la pagina sin mover la barra. Esto
+// es DOM y eventos, que no se ejecutan en node; la verificacion de verdad es el
+// navegador (tres casos medidos: clic en la fila desde #/items?q=Bici, Enter
+// sobre Pikachu desde #/pokedex/25, y Enter dos veces desde #/pokedex?q=pika).
+console.log('\nEl buscador global compara el hash crudo antes de asignarlo\n');
+
+const gs = readFileSync(join(RAIZ, 'js', 'global-search.js'), 'utf8');
+
+check('compara sobre location.hash, no por ruta',
+  /location\.hash\.slice\(1\) === destino/.test(gs), true);
+check('y cuando coincide emite el evento que el router escucha',
+  /dispatchEvent\(new HashChangeEvent\('hashchange'\)\)/.test(gs), true);
+check('no queda ninguna asignacion a location.hash fuera de esa decision',
+  [...gs.matchAll(/location\.hash\s*=/g)].length, 1);
+// Sobre los imports y no sobre el fichero entero: "parseHash" aparece en el
+// comentario que explica por que NO se usa, y un check que lee comentarios
+// comprueba la prosa en vez del codigo.
+const importaParseHash = [...gs.matchAll(/import\s*\{([^}]*)\}\s*from/g)]
+  .some(m => /\bparseHash\b/.test(m[1]));
+check('no se importa parseHash para decidir si repintar', importaParseHash, false);
+
 console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);
