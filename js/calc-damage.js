@@ -578,6 +578,10 @@ export function renderDamage(container, query) {
         hp: defenderHPMax,
       },
       move: {
+        // El slug viaja con el movimiento: Campo de Hierba halva Terremoto,
+        // Bulldozer y Magnitud por nombre, no por tipo, y sin `name` aqui la
+        // rebaja no se aplicaria nunca desde la pagina.
+        name: move.name,
         // Sin rama para el movimiento Z: `toZMove` solo sube la potencia, y el
         // Z conserva el tipo del movimiento del que sale -- Z_MOVES se indexa
         // justo por ese tipo. Antes esto era un ternario con las dos ramas

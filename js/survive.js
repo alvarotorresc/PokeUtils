@@ -66,7 +66,10 @@ export async function renderSurvive(container, query = new URLSearchParams()) {
     const ctx = {
       attacker,
       defender,
-      move: { type: move.type, category: move.category, power: move.power },
+      // El slug viaja con el movimiento: Campo de Hierba halva Terremoto,
+      // Bulldozer y Magnitud por nombre, no por tipo, y aqui el terreno se
+      // elige. Sin `name` la rebaja no se aplicaria nunca.
+      move: { name: move.name, type: move.type, category: move.category, power: move.power },
       level,
       field: fieldState(),
     };

@@ -117,7 +117,11 @@ export const WEATHER = [
 export const TERRAIN = [
   { id: 'none' },
   { id: 'electric', boosts: { electric: 1.3 } },
-  { id: 'grassy', boosts: { grass: 1.3 }, weakens: { ground: 0.5 } },
+  // Grassy Terrain does NOT halve the Ground type: the game names the moves
+  // one by one, and in gen 9 they are these three. Earth Power, High
+  // Horsepower and Precipice Blades are Ground moves it never touches, so this
+  // is by move name (`weakensMoves`) and not by type (`weakens`).
+  { id: 'grassy', boosts: { grass: 1.3 }, weakensMoves: ['earthquake', 'bulldoze', 'magnitude'], weakensMovesMult: 0.5 },
   { id: 'psychic', boosts: { psychic: 1.3 } },
   // Misty halves Dragon damage against grounded targets rather than boosting.
   { id: 'misty', weakens: { dragon: 0.5 } },

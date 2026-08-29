@@ -204,7 +204,9 @@ export function calcDamage(ctx) {
  *   computed, boost, item, ability, teraType, burned}
  * @param {object} input.defender {types, defense, boost, item, ability,
  *   teraType, hp, hpCurrent}
- * @param {object} input.move     {type, category, power}
+ * @param {object} input.move     {name, type, category, power} -- `name` is the
+ *   moves.json slug, and Grassy Terrain needs it: it weakens three moves by
+ *   name, so a caller that builds a move object without one loses that cut.
  * @param {object} input.field    {weather, terrain, screen, doubles, critical}
  */
 export function resolveDamage({ attacker, defender, move, field = {} }) {
@@ -257,8 +259,13 @@ export function resolveDamage({ attacker, defender, move, field = {} }) {
   if (terrain.boosts?.[move.type] && atkGrounded) {
     other *= terrain.boosts[move.type];
   }
+  // Two different rules, so two different fields: Misty halves a whole type
+  // (every Dragon move), Grassy halves three moves it names one by one.
   if (terrain.weakens?.[move.type] && defGrounded) {
     other *= terrain.weakens[move.type];
+  }
+  if (terrain.weakensMoves?.includes(move.name) && defGrounded) {
+    other *= terrain.weakensMovesMult;
   }
 
   // Screens are ignored by a critical hit, which is the point of them.

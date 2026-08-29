@@ -4,10 +4,14 @@
 // level 75 Glaceon with 123 Attack using Ice Fang (65 power) on a Garchomp with
 // 163 Defense deals 168 to 196. It exercises the whole chain at once, since it
 // carries STAB and a x4 type multiplier.
+import { readFile } from 'node:fs/promises';
 import {
   calcDamage, damageRolls, pokeRound, boostMultiplier,
   typeEffectiveness, stabMultiplier, resolveDamage,
 } from '../js/damage.js';
+import { terrainById } from '../js/battle-data.js';
+
+const moves = JSON.parse(await readFile(new URL('../data/moves.json', import.meta.url)));
 
 let failed = 0;
 
@@ -145,10 +149,12 @@ checkTrue('con cuatro si se calcula', calcDamage({ ...base, defenderHP: plain.ma
 
 console.log('\nModifier tables\n');
 
+// El `name` va puesto a proposito: Campo de Hierba mira el nombre del
+// movimiento, no su tipo, asi que un caso sin nombre no probaria nada.
 const fight = (over = {}) => resolveDamage({
   attacker: { types: ['fire'], level: 50, attack: 200, boost: 0, ...over.attacker },
   defender: { types: ['grass'], defense: 150, boost: 0, hp: 300, ...over.defender },
-  move: { type: 'fire', category: 'special', power: 90, ...over.move },
+  move: { name: 'flamethrower', type: 'fire', category: 'special', power: 90, ...over.move },
   field: { ...over.field },
 });
 
@@ -228,6 +234,49 @@ check('un defensor Dragon terrestre si la paga',
 // la misma sustitucion que ya hace la efectividad.
 check('un Volador que teracristaliza a Dragon vuelve al suelo',
   niebla({ defender: { ...volador, teraType: 'dragon' }, field: { terrain: 'misty' } }).max, 121);
+
+console.log('\nCampo de Hierba nombra tres movimientos, no un tipo\n');
+
+// El juego no halva la familia Tierra entera: nombra Terremoto, Bulldozer y
+// Magnitud uno a uno. Tierra Viva, Fuerza Equina y Filo del Abismo son de tipo
+// Tierra y no los toca. Campo de Niebla si es por tipo (halva todos los
+// Dragon) y se queda como esta.
+//
+// Nivel 50, Ataque 200, Defensa 100, atacante Tierra (STAB), defensor Normal.
+const tierra = (name, power, terrain) => {
+  const r = resolveDamage({
+    attacker: { types: ['ground'], level: 50, attack: 200, boost: 0, item: 'none', ability: 'none' },
+    defender: { types: ['normal'], defense: 100, boost: 0, ability: 'none', hp: 300 },
+    move: { name, type: 'ground', category: 'physical', power },
+    field: { terrain },
+  });
+  return `${r.min} - ${r.max}`;
+};
+
+check('Tierra Viva (90) sin terreno', tierra('earth-power', 90, 'none'), '102 - 121');
+check('Tierra Viva (90) con Campo de Hierba: no se mueve',
+  tierra('earth-power', 90, 'grassy'), '102 - 121');
+check('Terremoto (100) sin terreno', tierra('earthquake', 100, 'none'), '114 - 135');
+check('Terremoto (100) con Campo de Hierba: a la mitad',
+  tierra('earthquake', 100, 'grassy'), '57 - 67');
+check('Bulldozer (60) sin terreno', tierra('bulldoze', 60, 'none'), '67 - 81');
+check('Bulldozer (60) con Campo de Hierba: a la mitad',
+  tierra('bulldoze', 60, 'grassy'), '33 - 40');
+check('Magnitud (100) con Campo de Hierba: a la mitad',
+  tierra('magnitude', 100, 'grassy'), '57 - 67');
+check('Fuerza Equina (95) con Campo de Hierba: no se mueve',
+  tierra('high-horsepower', 95, 'grassy'), tierra('high-horsepower', 95, 'none'));
+check('Filo del Abismo (120) con Campo de Hierba: no se mueve',
+  tierra('precipice-blades', 120, 'grassy'), tierra('precipice-blades', 120, 'none'));
+// La lista son tres slugs, y tienen que existir tal cual en data/moves.json:
+// un slug mal escrito no falla, simplemente deja de halvar y nadie se entera.
+check('los tres slugs que nombra la tabla',
+  terrainById('grassy').weakensMoves, ['earthquake', 'bulldoze', 'magnitude']);
+check('  y los tres existen en data/moves.json',
+  (terrainById('grassy').weakensMoves ?? []).filter(n => !moves.some(m => m.name === n)), []);
+check('Campo de Niebla sigue siendo por tipo, no por movimiento',
+  [terrainById('misty').weakens, terrainById('misty').weakensMoves],
+  [{ dragon: 0.5 }, undefined]);
 
 checkTrue('Light Screen halves a special move',
   fight({ field: { screen: 'lightscreen' } }).min < clean.min);
