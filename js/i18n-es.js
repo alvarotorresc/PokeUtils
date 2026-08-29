@@ -575,7 +575,7 @@ export default {
     'faq.meta.q': '¿Y los sets competitivos?',
     'faq.meta.a': 'De las estadísticas de uso de Smogon, para los formatos OU y VGC. Es una instantánea de julio de 2026: no se actualiza sola, se regenera a mano cuando toca.',
     'faq.spanish.q': 'PokeAPI no trae todo en español. ¿De dónde sale ese texto?',
-    'faq.spanish.a': 'De los textos oficiales de los juegos, recopilados de WikiDex, Bulbapedia y pkproject.net. Cada entrada documenta su fuente en el propio código. Ocho descripciones no tienen ese respaldo —el movimiento torque, dos Poké Balls sin texto oficial y un objeto provisional— y están redactadas por PokeUtils, marcadas como tales.',
+    'faq.spanish.a': 'De los textos oficiales de los juegos, recopilados de WikiDex, Bulbapedia y pkproject.net. Cada entrada documenta su fuente en el propio código. Ocho descripciones no tienen ese respaldo —los cinco movimientos "torque" de Revavroom (Pirochoque, Ominochoque, Ponzochoque, Pugnachoque y Feerichoque), dos Poké Balls sin texto oficial y un objeto con descripción provisional— y están redactadas por PokeUtils, marcadas como tales.',
     'faq.megastones.q': '¿Y los nombres en español de las megapiedras de Leyendas Z-A y Pokémon Champions?',
     'faq.megastones.a': 'Todavía no hay nombre oficial, así que se derivan a mano siguiendo el patrón que usa la saga para el resto de megapiedras, hasta que Nintendo publique el suyo.',
     'faq.scvi.q': 'Escarlata y Púrpura a veces cuentan cosas distintas de un mismo Pokémon. ¿Cuál se usa?',
