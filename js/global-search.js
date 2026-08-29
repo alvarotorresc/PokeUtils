@@ -8,7 +8,7 @@
 // para leer cuatro campos de cada registro; desde build-search.mjs es un solo
 // fichero de 80,5 KB gz, asi que ya no hace falta pintar a medias y repintar.
 import { searchAll } from './search-index.js';
-import { esc } from './ui.js';
+import { esc, renderError } from './ui.js';
 import { fetchSearchIndex } from './api.js';
 import { getLang, t } from './i18n.js';
 
@@ -113,6 +113,45 @@ export function attachGlobalSearch(input, alGuardar) {
     if (!datasets.pokemon) Object.assign(datasets, await fetchSearchIndex());
   }
 
+  // ===== Cuando el indice no baja =====
+  //
+  // Este era el unico punto de la app que pide datos y no acababa en
+  // renderError: ni loadIndex ni run() tenian catch, y a los dos se les llama
+  // desde sitios que no pueden recoger su promesa (un listener de focus y un
+  // setTimeout). Con la red caida el panel se quedaba oculto y vacio, asi que el
+  // usuario escribia y no pasaba absolutamente nada, para siempre, sin poder
+  // distinguir "no hay resultados" de "esto esta roto".
+  //
+  // Y de paso se reintentaba sin limite ni backoff: loadDataset borra su entrada
+  // de cache al fallar (deliberado, para que REINTENTAR funcione en las otras
+  // rutas), asi que cada rafaga de tecleo lanzaba una peticion nueva cada 160 ms.
+  // Medido con fetch rechazando: 2 peticiones y 2 rechazos al escribir "pika",
+  // 3 y 3 al seguir escribiendo.
+  //
+  // El recuerdo del fallo es un INSTANTE, no un booleano ni el termino. Con el
+  // termino no sirve de nada ("pika" -> "pikachu" ya es un cambio, y vuelve a
+  // pedir en la siguiente tecla); con un booleano no habria vuelta atras sin
+  // recargar la pagina. Con la marca de tiempo se corta la rafaga y, con la red
+  // restaurada, el buscador vuelve solo pasada la espera.
+  const ESPERA_TRAS_FALLO = 5000;
+  let falloEn = 0;
+  let ultimoError = null;
+
+  function pintarFallo(err) {
+    // El mismo estado de error que las ~20 rutas que fetchean, y en el sitio
+    // donde el usuario ya esta mirando. Sin boton de reintentar: el panel se
+    // cierra solo al perder el foco (el blur del final del fichero), asi que un
+    // boton ahi dentro duraria 150 ms. Aqui reintentar es seguir escribiendo.
+    //
+    // Y sin pasar por draw(), que oculta el panel cuando no hay resultados --
+    // que es justo lo que hay. Las filas viejas se olvidan a mano: sin esto,
+    // Enter navegaria a un resultado que ya no esta en pantalla.
+    cursor = -1;
+    ultimos = [];
+    renderError(panel, err);
+    panel.hidden = false;
+  }
+
   function draw(results) {
     cursor = -1;
     panel.hidden = results.length === 0;
@@ -150,15 +189,36 @@ export function attachGlobalSearch(input, alGuardar) {
       draw([]);
       return;
     }
+    // Ya sabemos que no baja: se ensena el fallo sin volver a pedirlo.
+    if (Date.now() - falloEn < ESPERA_TRAS_FALLO) {
+      pintarFallo(ultimoError);
+      return;
+    }
     // De una sola vez: con los cuatro datasets habia que pintar con Pokemon y
     // repintar al llegar el resto, porque esperar a 1,5 MB dejaba el panel en
     // blanco unos cientos de milisegundos. Un fichero de 80,5 KB gz no.
-    await loadIndex();
+    try {
+      await loadIndex();
+      falloEn = 0;
+    } catch (err) {
+      // Se anota siempre, aunque este render llegue tarde: lo que hay que cortar
+      // es la siguiente peticion, la haga quien la haga.
+      falloEn = Date.now();
+      ultimoError = err;
+      if (input.value.trim() === term) pintarFallo(err);
+      return;
+    }
     if (input.value.trim() !== term) return;
     draw(searchAll(datasets, term, 8, getLang()));
   }
 
-  input.addEventListener('focus', loadIndex, { once: true });
+  // El catch va aqui y no dentro de loadIndex: la precarga al enfocar no tiene a
+  // quien devolverle el fallo, y sin esto dejaba una promesa rechazada suelta
+  // antes de que se escribiera una sola letra. Se anota igual que en run(), asi
+  // que la primera tecla ya sabe que la red esta caida y ni lo intenta.
+  input.addEventListener('focus', () => {
+    loadIndex().catch(err => { falloEn = Date.now(); ultimoError = err; });
+  }, { once: true });
 
   input.addEventListener('input', () => {
     clearTimeout(timer);
