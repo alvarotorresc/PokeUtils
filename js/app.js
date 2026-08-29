@@ -240,6 +240,23 @@ function updateActiveNav(path) {
 // comprobacion de si la navegacion sigue siendo la vigente.
 let navegacion = 0;
 
+// Las dos rutas que llevan un nombre en la direccion (#/abilities/<nombre> y
+// #/egg/<grupo>) tienen que deshacer el escapado del hash. decodeURIComponent
+// lanza URIError con cualquier "%" que no vaya seguido de dos digitos hex, y a
+// eso se llega de verdad: un enlace copiado y truncado a mitad de un %XX, o un
+// "%" literal escrito a mano en la direccion.
+//
+// Devolver null en vez de lanzar convierte ese caso en lo que de verdad es --
+// una direccion que no existe -- en vez de en un "error al cargar" con un
+// REINTENTAR que repetia la misma decodificacion y volvia a fallar siempre.
+const decodificarSlug = slug => {
+  try {
+    return decodeURIComponent(slug);
+  } catch {
+    return null;
+  }
+};
+
 async function route() {
   const token = ++navegacion;
   const { path, parts, query } = parseHash();
@@ -288,7 +305,10 @@ async function route() {
   } else if (path === '/moves') {
     destino = [() => import('./moves.js'), m => m.renderMoves(app, query)];
   } else if (parts[0] === 'abilities' && parts[1]) {
-    destino = [() => import('./abilities.js'), m => m.renderAbilities(app, decodeURIComponent(parts[1]))];
+    // Sin destino asignado se cae en el "no encontrado" de mas abajo, que es el
+    // unico estado de la app con enlace de vuelta. Ver decodificarSlug.
+    const nombre = decodificarSlug(parts[1]);
+    if (nombre !== null) destino = [() => import('./abilities.js'), m => m.renderAbilities(app, nombre)];
   } else if (path === '/abilities') {
     destino = [() => import('./abilities.js'), m => m.renderAbilities(app)];
   } else if (path === '/items') {
@@ -306,7 +326,8 @@ async function route() {
   } else if (path === '/meta') {
     destino = [() => import('./meta-page.js'), m => m.renderMeta(app, query)];
   } else if (parts[0] === 'egg' && parts[1]) {
-    destino = [() => import('./egg-pages.js'), m => m.renderEggGroup(app, decodeURIComponent(parts[1]), query)];
+    const grupo = decodificarSlug(parts[1]);
+    if (grupo !== null) destino = [() => import('./egg-pages.js'), m => m.renderEggGroup(app, grupo, query)];
   } else if (path === '/egg') {
     destino = [() => import('./egg-pages.js'), m => m.renderEggIndex(app)];
   } else if (path === '/data') {

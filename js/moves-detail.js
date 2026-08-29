@@ -89,7 +89,9 @@ async function loadLearners(host, moveId) {
     const [learnsets, pokemon] = await Promise.all([fetchLearnsets(), fetchPokemonList()]);
     renderLearners(host, learnersOf(learnsets, moveId), new Map(pokemon.map(p => [p.id, p])));
   } catch (err) {
-    renderError(host, err, () => loadLearners(host, moveId));
+    // Sin enlace de vuelta: la ficha del movimiento sigue entera encima, esto
+    // es una tarjeta suya. Ver renderError.
+    renderError(host, err, () => loadLearners(host, moveId), { backHome: false });
   }
 }
 

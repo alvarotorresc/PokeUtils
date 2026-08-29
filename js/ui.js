@@ -35,7 +35,23 @@ const ERROR_MESSAGES = {
   [ErrorKind.NOT_FOUND]: 'common.error.notfound',
 };
 
-export function renderError(container, err, onRetry) {
+// backHome: la salida del callejon, y la regla de cuando ponerla es una sola --
+// el enlace va donde el error ES la pagina.
+//
+// Cuando este estado sustituye a la ruta entera, reintentar era la unica accion
+// posible, y con un hash invalido el reintento repetia el mismo fallo: no habia
+// forma de salir sin editar la barra de direcciones. Ahi el enlace es la unica
+// salida y va por defecto.
+//
+// Cuando lo que falla es una TARJETA dentro de una pagina que por lo demas esta
+// entera (la linea evolutiva de una ficha, quien aprende un movimiento) no hay
+// ningun callejon: la pagina y el nav siguen ahi, el usuario esta donde queria
+// estar, y lo unico que tiene sentido ofrecer es reintentar esa seccion. El
+// enlace ahi es un anuncio de irse en medio de la pagina, compitiendo con el
+// REINTENTAR que si es la accion correcta. Esos llamantes pasan backHome: false,
+// igual que el desplegable del buscador, que ademas se abre desde la home y se
+// cierra solo al perder el foco.
+export function renderError(container, err, onRetry, { backHome = true } = {}) {
   const messageKey = ERROR_MESSAGES[err?.kind] || 'common.error';
 
   container.innerHTML = '';
@@ -52,6 +68,16 @@ export function renderError(container, err, onRetry) {
     btn.textContent = t('common.retry');
     btn.onclick = () => onRetry();
     box.appendChild(btn);
+  }
+
+  // Con boton o sin el, y DEBAJO del boton a proposito: por encima invitaria a
+  // irse antes de haber probado a reintentar. Mismo marcado que el "no
+  // encontrado" del router, para que los dos estados sean el mismo gesto.
+  if (backHome) {
+    const back = document.createElement('p');
+    back.style.marginTop = '12px';
+    back.innerHTML = `<a href="#/">${t('common.backhome')}</a>`;
+    box.appendChild(back);
   }
 
   container.appendChild(box);

@@ -194,5 +194,118 @@ const importaParseHash = [...gs.matchAll(/import\s*\{([^}]*)\}\s*from/g)]
   .some(m => /\bparseHash\b/.test(m[1]));
 check('no se importa parseHash para decidir si repintar', importaParseHash, false);
 
+// ===== Una direccion malformada cae en "no encontrado", no en un bucle =====
+//
+// El tercer modo de fallo de la misma barra de direcciones. decodeURIComponent
+// lanza URIError con cualquier "%" invalido (#/abilities/%E0%A4%A, un enlace
+// copiado y truncado a mitad de un %XX). Como la llamada vivia dentro de la
+// funcion que pinta, el URIError saltaba durante el render, lo recogia el catch
+// de route() y renderError ofrecia REINTENTAR pasandole... route: la misma
+// decodificacion, el mismo URIError, para siempre. Medido: tres pulsaciones,
+// tres veces la misma pantalla.
+//
+// Se comprueban las dos mitades del arreglo. La de app.js es un cable trampa de
+// texto -- app.js llama a getElementById en el cuerpo del modulo y no se puede
+// importar en node -- y la de renderError si se ejecuta de verdad, con un
+// document de mentira, porque es la que protege a las otras dieciseis rutas:
+// las que fallan por red siguen ofreciendo REINTENTAR y ahora ademas la salida.
+console.log('\nLos dos segmentos con slug se decodifican protegidos\n');
+
+// Ni uno solo sin proteger: el que quede lanza dentro del render.
+check('ningun decodeURIComponent crudo sobre parts[]',
+  [...app.matchAll(/decodeURIComponent\(parts\[/g)].length, 0);
+// Toda la decodificacion pasa por un unico helper, y ese helper atrapa.
+check('un solo decodeURIComponent en todo el router',
+  [...app.matchAll(/decodeURIComponent\(/g)].length, 1);
+check('y esta dentro de un try',
+  /try\s*\{[^{}]*decodeURIComponent\(/.test(app), true);
+// Las dos ramas con slug (#/abilities/<nombre> y #/egg/<grupo>) tienen que
+// mirar el resultado antes de construir destino: dejarlo sin asignar es lo que
+// las hace caer en el bloque de "no encontrado", que si tiene enlace de vuelta.
+check('las dos ramas con slug no asignan destino si la decodificacion fallo',
+  [...app.matchAll(/!== null\) destino =/g)].length, 2);
+
+console.log('\nEl estado de error siempre ofrece una salida\n');
+
+// Un document de mentira, igual que el location y el history de arriba:
+// renderError lo lee en el momento de la llamada, no al importar el modulo.
+const nodoFalso = tag => ({
+  tag,
+  className: '',
+  textContent: '',
+  style: {},
+  hijos: [],
+  _html: '',
+  set innerHTML(v) { this._html = v; this.hijos.length = 0; },
+  get innerHTML() { return this._html; },
+  appendChild(hijo) { this.hijos.push(hijo); },
+});
+globalThis.document = { createElement: nodoFalso };
+
+const { renderError } = await import('../js/ui.js');
+const { t } = await import('../js/i18n.js');
+
+// Devuelve la caja que renderError cuelga del contenedor.
+function pintarError(onRetry) {
+  const contenedor = nodoFalso('main');
+  renderError(contenedor, {}, onRetry);
+  return contenedor.hijos[0];
+}
+
+const conBoton = pintarError(() => {});
+const sinBoton = pintarError(null);
+const htmlDe = caja => caja.hijos.map(n => n.innerHTML).join('');
+
+// El orden importa: mensaje, REINTENTAR y despues la salida. El enlace por
+// encima del boton invita a irse antes de reintentar, que es justo al reves.
+check('con reintento: primero el boton y despues el enlace',
+  conBoton.hijos.map(n => n.tag), ['button', 'p']);
+check('sin reintento: queda el enlace igual',
+  sinBoton.hijos.map(n => n.tag), ['p']);
+check('el enlace apunta a la home', /<a href="#\/">/.test(htmlDe(conBoton)), true);
+// Con la clave traducida y no con el texto a pelo: si alguien la borra de un
+// idioma, t() devuelve la clave y esto lo caza.
+check('y lleva el texto traducido de volver al inicio',
+  htmlDe(conBoton).includes(t('common.backhome')), true);
+check('el texto del boton sigue siendo el de reintentar',
+  conBoton.hijos[0].textContent, t('common.retry'));
+
+const contenedorSuelto = nodoFalso('div');
+renderError(contenedorSuelto, {}, null, { backHome: false });
+check('se puede desactivar la salida donde no hay callejon',
+  contenedorSuelto.hijos[0].hijos.length, 0);
+
+// ===== Censo de llamantes de renderError =====
+//
+// La regla es que el enlace va donde el error ES la pagina, y eso no se puede
+// deducir del texto: hay que mirar cada llamante. Lo que si se puede vigilar es
+// que nadie anada uno sin decidirlo. Si este check falla porque el censo cambio,
+// la pregunta que hay que contestar es: cuando falla eso, ¿se queda el usuario
+// sin nada mas que un boton que a lo mejor no arregla nada (entonces el enlace
+// va), o sigue teniendo la pagina entera alrededor (entonces no)?
+//
+// Los cuatro sin salida, medidos en navegador uno a uno: el desplegable del
+// buscador, la linea evolutiva y los movimientos de una ficha, y quien aprende
+// un movimiento. Los tres con salida: la ruta entera del router, la ficha de un
+// movimiento cuando no baja moves.json, y el equipo.
+const llamantesError = [];
+for (const fichero of readdirSync(join(RAIZ, 'js')).filter(f => f.endsWith('.js') && f !== 'ui.js')) {
+  const src = readFileSync(join(RAIZ, 'js', fichero), 'utf8');
+  for (const [linea] of src.matchAll(/renderError\([^;]*\);/g)) {
+    llamantesError.push({ fichero, sinSalida: /backHome:\s*false/.test(linea) });
+  }
+}
+
+console.log(`\nLlamantes de renderError (${llamantesError.length}), `
+  + `${llamantesError.filter(l => l.sinSalida).length} sin enlace de vuelta\n`);
+for (const { fichero, sinSalida } of llamantesError) {
+  console.log(`       js/${fichero}${sinSalida ? '  (seccion: sin salida)' : '  (pagina: con salida)'}`);
+}
+
+check('el censo de llamantes no ha cambiado sin revisarse', llamantesError.length, 7);
+check('y los cuatro de seccion siguen sin enlace de vuelta',
+  llamantesError.filter(l => l.sinSalida).map(l => l.fichero).sort(),
+  ['global-search.js', 'moves-detail.js', 'pokedex-detail.js', 'pokedex-detail.js']);
+
 console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);

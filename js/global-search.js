@@ -142,13 +142,16 @@ export function attachGlobalSearch(input, alGuardar) {
     // donde el usuario ya esta mirando. Sin boton de reintentar: el panel se
     // cierra solo al perder el foco (el blur del final del fichero), asi que un
     // boton ahi dentro duraria 150 ms. Aqui reintentar es seguir escribiendo.
+    // Por lo mismo se le quita el enlace de vuelta al inicio que renderError
+    // pone por defecto: no es una pagina de la que haya que salir, y encima
+    // este panel se abre desde la home.
     //
     // Y sin pasar por draw(), que oculta el panel cuando no hay resultados --
     // que es justo lo que hay. Las filas viejas se olvidan a mano: sin esto,
     // Enter navegaria a un resultado que ya no esta en pantalla.
     cursor = -1;
     ultimos = [];
-    renderError(panel, err);
+    renderError(panel, err, null, { backHome: false });
     panel.hidden = false;
   }
 

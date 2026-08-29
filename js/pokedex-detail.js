@@ -124,7 +124,9 @@ async function renderEvolutionSection(host, dexId, formId = dexId) {
     const currentId = nodoActual(root, dexId, formId, formaDe);
     host.innerHTML = `<div class="evo-line">${evoTreeHTML(root, currentId, nameOf, getLang(), lookups, formaDe)}</div>`;
   } catch (err) {
-    renderError(host, err, () => renderEvolutionSection(host, dexId, formId));
+    // Sin enlace de vuelta: la ficha sigue entera encima, esto es una seccion
+    // suya. Ver renderError.
+    renderError(host, err, () => renderEvolutionSection(host, dexId, formId), { backHome: false });
   }
 }
 
@@ -207,7 +209,7 @@ async function loadMovesSection(host, currentId) {
     }
     renderMovesPanel(host, entry, new Map(ficha.moves.map(m => [m.id, m])), ficha.versionGroups);
   } catch (err) {
-    renderError(host, err, () => loadMovesSection(host, currentId));
+    renderError(host, err, () => loadMovesSection(host, currentId), { backHome: false });
   }
 }
 
