@@ -8,6 +8,7 @@ import { readFile } from 'node:fs/promises';
 import {
   calcDamage, damageRolls, pokeRound, boostMultiplier,
   typeEffectiveness, stabMultiplier, resolveDamage,
+  applyMultiHit, multiHitTurn,
 } from '../js/damage.js';
 import { terrainById } from '../js/battle-data.js';
 
@@ -335,6 +336,54 @@ check('Tera replaces the defender types',
   fight({ defender: { teraType: 'water' } }).effectiveness, 0.5);
 checkTrue('Adaptability raises a STAB move',
   fight({ attacker: { ability: 'adaptability' } }).min > clean.min);
+
+console.log('\nUn multigolpe se usa una vez y golpea varias\n');
+
+// El caso de la Semilladora: 25 de potencia, de 2 a 5 golpes, atacante Planta
+// nivel 50 con 140 de Ataque, defensor Normal con 80 de Defensa y 155 PS.
+//
+// Un golpe hace 25-31 y «KO en 5», pero el turno entero hace 50-155 sobre 155
+// PS, o sea que puede matar en UNO. La tarjeta ensenaba las dos cifras a la
+// vez y la grande era la que respondia a la otra pregunta.
+const semillaHP = 155;
+const semilla = resolveDamage({
+  attacker: { types: ['grass'], level: 50, attack: 140, boost: 0, item: 'none', ability: 'none' },
+  defender: { types: ['normal'], defense: 80, boost: 0, ability: 'none', hp: semillaHP },
+  move: { name: 'bullet-seed', type: 'grass', category: 'physical', power: 25 },
+  field: {},
+});
+check('un golpe suelto', [semilla.min, semilla.max], [25, 31]);
+check('  y su KO, que es en golpes', semilla.koIn, 5);
+
+const semillaMulti = applyMultiHit(semilla, 2, 5);
+check('los totales del turno', [semillaMulti.totalMin, semillaMulti.totalMax], [50, 155]);
+check('  con 3.1 golpes de media', Number(semillaMulti.averageHits.toFixed(1)), 3.1);
+
+const turno = multiHitTurn(semillaMulti, semillaHP);
+check('el titular es el total del turno', [turno.min, turno.max], [50, 155]);
+check('  que llega al 100% de sus PS', Number(turno.pctMax.toFixed(1)), 100);
+check('  y mata en un solo uso del movimiento', turno.koIn, 1);
+checkTrue('  pero no seguro: con dos golpes flojos no llega', !turno.guaranteed);
+// Sin porcentaje inventado: el reparto de 2 a 5 golpes no es uniforme, asi que
+// lo unico honesto es el rango.
+check('  y sin porcentaje de KO', turno.koChance, null);
+
+// Un multigolpe de numero fijo va por el mismo camino.
+const doble = resolveDamage({
+  attacker: { types: ['fighting'], level: 50, attack: 140, boost: 0, item: 'none', ability: 'none' },
+  defender: { types: ['normal'], defense: 80, boost: 0, ability: 'none', hp: 200 },
+  move: { name: 'double-kick', type: 'fighting', category: 'physical', power: 30 },
+  field: {},
+});
+const dobleMulti = applyMultiHit(doble, 2, 2);
+const dobleTurno = multiHitTurn(dobleMulti, 200);
+checkTrue('Doble Patada golpea siempre dos veces', dobleMulti.fixed);
+check('  y el titular los suma', [dobleTurno.min, dobleTurno.max], [doble.min * 2, doble.max * 2]);
+
+// Un golpe unico no pasa por aqui: applyMultiHit devuelve null y la tarjeta
+// sigue leyendo el resultado tal cual.
+check('un movimiento de un solo golpe no es multigolpe', applyMultiHit(clean, 1, 1), null);
+check('  ni uno sin meta', applyMultiHit(clean, undefined, undefined), null);
 
 console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);

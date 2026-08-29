@@ -5,7 +5,7 @@
 import { TYPES, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN, spriteUrl } from './data.js';
 import { searchPokemon, fetchMoves, fetchItems, fetchBerries, fetchPokemonList } from './api.js';
 import { calcHP, calcStat } from './stats.js';
-import { resolveDamage, applyMultiHit, drainedHP } from './damage.js';
+import { resolveDamage, applyMultiHit, multiHitTurn, drainedHP } from './damage.js';
 import { resolvePower, toZMove, requiredInputs, isCalculable } from './variable-power.js';
 import {
   WEATHER, TERRAIN, SCREENS, DAMAGE_ITEMS, DAMAGE_ABILITIES,
@@ -609,7 +609,7 @@ export function renderDamage(container, query) {
       const fuerte = runDamage(resolved.powerRange[1]);
       // Con inmunidad no hay rango que ensenar, y un «0 - 0» aqui seria
       // exactamente el fallo que esta rama viene a quitar.
-      if (fuerte.effectiveness === 0) return renderResult(fuerte, move);
+      if (fuerte.effectiveness === 0) return renderResult(fuerte, move, defenderHPMax);
       return renderSpecial({
         kind: 'range',
         range: [flojo.min, fuerte.max],
@@ -619,7 +619,7 @@ export function renderDamage(container, query) {
       });
     }
 
-    renderResult(runDamage(resolved.power), move);
+    renderResult(runDamage(resolved.power), move, defenderHPMax);
   }
 
   function renderSpecial({ kind, key, damage, hp, range, note, effectiveness }) {
@@ -683,7 +683,7 @@ export function renderDamage(container, query) {
       </div>`;
   }
 
-  function renderResult(r, m) {
+  function renderResult(r, m, hp) {
     const resultEl = $('#dmgResult');
 
     if (r.effectiveness === 0) {
@@ -696,31 +696,41 @@ export function renderDamage(container, query) {
       return;
     }
 
-    const pct = `${r.pctMin.toFixed(1)}% - ${r.pctMax.toFixed(1)}%`;
+    // Un multigolpe se usa UNA vez y golpea varias. El titular, el «KO en n»,
+    // el porcentaje y el color responden a cuanto hace el turno entero, no un
+    // golpe suelto: antes la cifra grande decia «25 - 31, KO en 5» en verde
+    // mientras la linea de abajo decia «50 - 155» sobre 155 PS, que es matar
+    // en uno. Dos respuestas a preguntas distintas en la misma tarjeta, y la
+    // grande era la equivocada.
+    const meta = m.meta || {};
+    const multi = applyMultiHit(r, meta.minHits, meta.maxHits);
+    const view = multi ? multiHitTurn(multi, hp) : r;
+
+    const pct = `${view.pctMin.toFixed(1)}% - ${view.pctMax.toFixed(1)}%`;
     // Tres ramas y no dos: con cinco golpes o mas la probabilidad no se calcula
     // (la convolucion cuesta), asi que se dice en cuantos golpes cae en el mejor
     // de los casos y no se inventa un porcentaje.
-    const koText = r.koIn === null
+    const koText = view.koIn === null
       ? t('dmg.noko')
-      : r.guaranteed
-        ? t('dmg.ko.guaranteed').replace('{n}', r.koIn)
-        : r.koChance === null
-          ? t('dmg.ko.best').replace('{n}', r.koIn)
-          : t('dmg.ko.chance').replace('{n}', r.koIn).replace('{pct}', (r.koChance * 100).toFixed(1));
+      : view.guaranteed
+        ? t('dmg.ko.guaranteed').replace('{n}', view.koIn)
+        : view.koChance === null
+          ? t('dmg.ko.best').replace('{n}', view.koIn)
+          : t('dmg.ko.chance').replace('{n}', view.koIn).replace('{pct}', (view.koChance * 100).toFixed(1));
 
     // The colour tracks how much of the bar the hit takes, not the raw number.
-    const share = Math.min(r.pctMax, 100);
+    const share = Math.min(view.pctMax, 100);
     const colour = share >= 100 ? 'var(--stat-down)' : share >= 50 ? 'var(--accent)' : 'var(--stat-up)';
     const ink = share >= 100 ? 'var(--stat-down)' : share >= 50 ? 'var(--accent-text)' : 'var(--stat-up)';
 
     resultEl.innerHTML = `
       <div class="card dmg-result">
-        <div class="dmg-headline" style="color:${ink}">${r.min} - ${r.max}</div>
+        <div class="dmg-headline" style="color:${ink}">${view.min} - ${view.max}</div>
         <div class="dmg-sub">${pct} ${t('dmg.ofhp')}</div>
 
         <div class="dmg-bar">
-          <div class="dmg-bar-min" style="width:${Math.min(r.pctMin, 100)}%;background:${colour}"></div>
-          <div class="dmg-bar-max" style="width:${Math.min(r.pctMax - r.pctMin, 100 - Math.min(r.pctMin, 100))}%;background:${colour}"></div>
+          <div class="dmg-bar-min" style="width:${Math.min(view.pctMin, 100)}%;background:${colour}"></div>
+          <div class="dmg-bar-max" style="width:${Math.min(view.pctMax - view.pctMin, 100 - Math.min(view.pctMin, 100))}%;background:${colour}"></div>
         </div>
 
         <div class="dmg-ko">${koText}</div>
@@ -729,7 +739,7 @@ export function renderDamage(container, query) {
           <div class="dmg-eff">${t('dmg.effectiveness')}: x${r.effectiveness}</div>
         ` : ''}
 
-        ${extraLines(r, m)}
+        ${extraLines(r, m, multi)}
 
         ${r.notes.length ? `
           <div class="dmg-notes">
@@ -742,11 +752,13 @@ export function renderDamage(container, query) {
 
   // Multi-hit totals, drain and recoil: the three things that make the single
   // roll an incomplete answer.
-  function extraLines(r, m) {
+  //
+  // `multi` llega ya calculado desde renderResult: el titular y esta linea
+  // tienen que salir del mismo objeto o vuelven a poder contradecirse.
+  function extraLines(r, m, multi) {
     const lines = [];
     const meta = m.meta || {};
 
-    const multi = applyMultiHit(r, meta.minHits, meta.maxHits);
     if (multi) {
       const hits = multi.fixed
         ? t('dmg.hits.fixed').replace('{n}', multi.minHits)

@@ -370,6 +370,39 @@ export function applyMultiHit(result, minHits, maxHits) {
   };
 }
 
+/**
+ * What a multi-hit move does in ONE turn, from what one of its hits does.
+ *
+ * A multi-hit move is used once and connects several times, so "how much does
+ * it do" and "how many uses to KO" are questions about the whole turn. Reading
+ * them off a single hit answers a different question and answers it wrong: a
+ * 25-31 hit that lands five times on a 155 HP target is not a KO in five, it
+ * is a possible KO in one.
+ *
+ * No KO odds on purpose. The 2-5 spread is not uniform (35/35/15/15, the
+ * HIT_WEIGHTS above), so any percentage here would be invented. The honest
+ * answer is the range, plus `guaranteed` when even the worst turn gets there.
+ *
+ * @param {object} multi  what applyMultiHit returned
+ * @param {number} hp     the defender's HP
+ */
+export function multiHitTurn(multi, hp) {
+  const total = Math.max(hp || 1, 1);
+
+  let koIn = multi.totalMax > 0 ? Math.ceil(total / multi.totalMax) : null;
+  if (koIn > 9) koIn = null;
+
+  return {
+    min: multi.totalMin,
+    max: multi.totalMax,
+    pctMin: (multi.totalMin / total) * 100,
+    pctMax: (multi.totalMax / total) * 100,
+    koIn,
+    guaranteed: multi.totalMin > 0 && koIn !== null && Math.ceil(total / multi.totalMin) === koIn,
+    koChance: null,
+  };
+}
+
 // Drain is a percentage of the damage dealt; a negative one is recoil.
 export function drainedHP(damage, drain) {
   if (!drain) return 0;
