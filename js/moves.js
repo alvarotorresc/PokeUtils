@@ -1,9 +1,8 @@
 // ===== MOVES PAGE =====
 import { TYPES } from './data.js';
 import { fetchMoves } from './api.js';
-import { skeletonHTML, renderPagination, replaceQuery, esc } from './ui.js';
+import { skeletonHTML, renderPagination, replaceQuery, esc, toolTabsHTML, wireToolTabs } from './ui.js';
 import { t, typeName, categoryName, pokeName, getLang, statName } from './i18n.js';
-import { toolTabsHTML, wireToolTabs } from './hub.js';
 import { norm } from './normalize.js';
 import {
   priorityLabel, statChangeLabel, hasBattleFields,

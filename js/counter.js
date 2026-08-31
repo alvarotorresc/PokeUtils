@@ -7,11 +7,10 @@ import { counters } from './threats.js';
 import { fetchPokemonList, fetchMeta } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
 import { defaultFormat } from './meta.js';
-import { skeletonHTML, replaceQuery } from './ui.js';
+import { skeletonHTML, replaceQuery, toolTabsHTML, wireToolTabs } from './ui.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
 import { t, pokeName } from './i18n.js';
-import { toolTabsHTML, wireToolTabs } from './hub.js';
 import { norm } from './normalize.js';
 
 const TEAM_SIZE = 6;

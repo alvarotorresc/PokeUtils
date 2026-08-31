@@ -1,9 +1,8 @@
 // ===== ITEMS PAGE =====
 import { itemSprite, ITEM_PLACEHOLDER_SPRITE } from './data.js';
 import { fetchItems, fetchItemDescriptions } from './api.js';
-import { skeletonHTML, renderPagination, esc } from './ui.js';
+import { skeletonHTML, renderPagination, esc, toolTabsHTML, wireToolTabs } from './ui.js';
 import { t, pokeName, getLang } from './i18n.js';
-import { toolTabsHTML, wireToolTabs } from './hub.js';
 import { norm } from './normalize.js';
 
 const PAGE_SIZE = 48;

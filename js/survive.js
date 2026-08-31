@@ -5,12 +5,11 @@
 import { survives, minimumSpread, defenseKeyFor } from './survival.js';
 import { fetchPokemonList, fetchMoves } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { skeletonHTML, replaceQuery, esc } from './ui.js';
+import { skeletonHTML, replaceQuery, esc, toolTabsHTML, wireToolTabs } from './ui.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
 import { WEATHER, TERRAIN, SCREENS } from './battle-data.js';
 import { t, pokeName, typeName, statName, getLang } from './i18n.js';
-import { toolTabsHTML, wireToolTabs } from './hub.js';
 import { norm } from './normalize.js';
 
 const PICKERS = [

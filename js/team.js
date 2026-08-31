@@ -6,10 +6,9 @@
 import { TYPES, spriteUrl } from './data.js';
 import { fetchPokemonList } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { skeletonHTML, renderError, replaceQuery, hostDeRuta, esc } from './ui.js';
+import { skeletonHTML, renderError, replaceQuery, hostDeRuta, esc, toolTabsHTML, wireToolTabs } from './ui.js';
 import { t, typeName, pokeName } from './i18n.js';
 import { defensiveMatrix, threats, unresisted, stabTypes, offensiveCoverage } from './team-analysis.js';
-import { toolTabsHTML, wireToolTabs } from './hub.js';
 import { norm } from './normalize.js';
 
 const TEAM_SIZE = 6;

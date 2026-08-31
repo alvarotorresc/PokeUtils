@@ -1,7 +1,7 @@
 // ===== NATURES PAGE =====
 import { NATURES } from './data.js';
 import { t, statName, natureName, natureNameAlt, getLang } from './i18n.js';
-import { toolTabsHTML, wireToolTabs } from './hub.js';
+import { toolTabsHTML, wireToolTabs } from './ui.js';
 
 const GRID_STATS = ['atk', 'def', 'spa', 'spd', 'spe'];
 

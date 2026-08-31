@@ -6,9 +6,8 @@
 import { EGG_GROUPS, membersOf, groupCounts, hasEggData } from './egg-groups.js';
 import { fetchPokemonList } from './api.js';
 import { pokemonCardHTML } from './pokedex.js';
-import { skeletonHTML, renderPagination, replaceQuery } from './ui.js';
+import { skeletonHTML, renderPagination, replaceQuery, toolTabsHTML } from './ui.js';
 import { t } from './i18n.js';
-import { toolTabsHTML } from './hub.js';
 
 const PAGE_SIZE = 50;
 

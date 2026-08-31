@@ -1,8 +1,7 @@
 // ===== ABILITIES PAGE =====
 import { fetchAbilities } from './api.js';
-import { skeletonHTML, renderPagination } from './ui.js';
+import { skeletonHTML, renderPagination, toolTabsHTML, wireToolTabs } from './ui.js';
 import { t, pokeName, getLang } from './i18n.js';
-import { toolTabsHTML, wireToolTabs } from './hub.js';
 import { norm } from './normalize.js';
 
 const PAGE_SIZE = 30;
