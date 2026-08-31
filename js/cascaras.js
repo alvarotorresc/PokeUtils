@@ -18,7 +18,7 @@
 // a quien ya estuviera escribiendo. En su sitio va un hueco de la altura que
 // ocupan, medida en el navegador.
 import { t } from './i18n.js';
-import { TOOLS } from './tools.js';
+import { TOOLS, CATEGORIES, toolsIn } from './tools.js';
 import { toolTabsHTML, skeletonHTML } from './ui.js';
 
 // El tamano de pagina de una lista lo necesitan dos: el modulo, para cortarla,
@@ -64,10 +64,17 @@ const FICHAS = {
   moves: { shape: 'blocks', rows: 4 },
 };
 
+// Las que no esperan datos: solo esperan a su modulo, que es un chunk de uno o
+// dos KB. Aun asi el hueco existe, y su cabecera se puede pintar igual que la
+// de una herramienta.
+const ESTATICAS = { '/faq': 'faq', '/privacy': 'privacy', '/terms': 'terms' };
+
 export const esqueletoDe = (toolId) => PANTALLAS[toolId]?.sk;
 
 // El de una ficha, para que la lea tambien el modulo que la pinta.
 export const esqueletoDeFicha = (tipo) => FICHAS[tipo];
+
+const rep = (n, html) => new Array(Math.max(0, n)).fill(html).join('');
 
 const bandaGris = (alto) => `<div class="sk sk-banda sk-box" style="height:${alto}px"></div>`;
 
@@ -95,14 +102,59 @@ function cuerpoPokedex(def) {
   `;
 }
 
+// La cabecera suelta, para las pantallas que no son una herramienta.
+const cabeceraSuelta = (base) => `
+  <div class="page-header">
+    <h1>${t(`${base}.title`)}</h1>
+    <p>${t(`${base}.subtitle`)}</p>
+  </div>
+`;
+
+// El hub de una categoria: su titulo y una tarjeta gris por herramienta. El
+// numero no se escribe aqui, sale de toolsIn() -- si manana la categoria gana
+// una herramienta, el hueco la trae puesta.
+function cascaraHub(categoryId) {
+  const n = toolsIn(categoryId).length;
+  return `
+    ${cabeceraSuelta(`hub.${categoryId}`)}
+    <div class="sk">
+      <div class="home-grid">
+        ${rep(n, '<div class="home-card sk-card"><div class="sk-box sk-hub"></div></div>')}
+      </div>
+    </div>
+  `;
+}
+
+// La home: el marco del enjambre --365px medidos, y dentro no va nada gris
+// porque lo que llega ahi son sprites animados, no texto-- y una rejilla por
+// categoria con sus herramientas. El reparto sale de CATEGORIES y toolsIn(),
+// asi que una herramienta nueva aparece tambien en el hueco.
+function cascaraHome() {
+  const grupos = CATEGORIES
+    .map(cat => toolsIn(cat.id).length)
+    .filter(n => n > 0)
+    .map(n => `<div class="home-grid">${rep(n, '<div class="home-card sk-card"><div class="sk-box sk-hub"></div></div>')}</div>`)
+    .join('');
+  return `
+    <div class="sk">
+      <div class="sk-box sk-enjambre"></div>
+      ${grupos}
+    </div>
+  `;
+}
+
 // null y no una cascara vacia: significa "esta ruta no tiene nada que adelantar
-// y el router hace lo de siempre". Lo devuelven la home, que ya viene pintada
-// en el HTML, los hubs de categoria y las paginas legales, que no esperan datos.
+// y el router hace lo de siempre". Hoy no lo devuelve ninguna ruta viva: queda
+// para la que no se reconozca, que es la que acaba en el "no encontrado".
 export function cascaraDeRuta(path, parts) {
+  if (path === '/' || path === '/home') return cascaraHome();
   if (parts[0] === 'pokedex' && parts[1]) return skeletonHTML(FICHAS.pokedex);
   if (parts[0] === 'moves' && parts[1]) return skeletonHTML(FICHAS.moves);
   // Una habilidad no tiene pagina propia: abre su lista, resaltada.
   const base = parts[0] === 'abilities' ? '/abilities' : parts[0] === 'egg' ? '/egg' : path;
+
+  if (ESTATICAS[path]) return cabeceraSuelta(ESTATICAS[path]) + skeletonHTML({ shape: 'blocks', rows: 3 });
+  if (CATEGORIES.some(x => x.id === parts[0] && !x.direct)) return cascaraHub(parts[0]);
 
   const tool = TOOLS.find(x => x.route === `#${base}`);
   const def = tool && PANTALLAS[tool.id];

@@ -3742,6 +3742,20 @@ a.evo-node:hover img {
   margin-bottom: 12px;
 }
 
+/* El marco del enjambre de la home. 365px medidos. */
+.sk-enjambre {
+  height: 365px;
+  border-radius: 14px;
+  margin-bottom: 24px;
+}
+
+/* La tarjeta gris de un hub: el alto de una .home-card con su icono, su titulo
+   y su descripcion dentro. */
+.sk-hub {
+  height: 104px;
+  border-radius: 10px;
+}
+
 /* Con un esqueleto ya en pantalla, el que pinte el modulo encima no vuelve a
    esperar los 200ms invisibles de .sk: esconder el gris que ya se ve para
    traerlo de vuelta es justo el parpadeo que esto venia a quitar. */
