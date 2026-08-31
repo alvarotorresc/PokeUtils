@@ -3591,6 +3591,146 @@ a.evo-node:hover img {
   letter-spacing: 0.5px;
 }
 
+/* ===== SKELETON ===== */
+/*
+ * El hueco que espera con la forma de lo que va a llegar. El JS esta en
+ * skeletonHTML() (js/ui.js) y explica alli por que reutiliza las clases del
+ * contenido real; esto es solo la tinta y el compas.
+ *
+ * La variable va aqui y no con el resto: nada mas la usa este bloque, y
+ * tenerla al lado de quien la usa es lo que hace que cambiar el gris del
+ * esqueleto sea tocar una linea en un sitio.
+ */
+:root {
+  --sk: rgba(255, 255, 255, 0.07);
+}
+
+.light {
+  --sk: rgba(0, 0, 0, 0.07);
+}
+
+/* Los primeros 200ms el esqueleto esta puesto pero invisible: con los datos en
+   cache el contenido lo sustituye antes de que llegue a verse, asi que una
+   espera corta ya no parpadea en gris. El hueco lo reserva igual desde el
+   primer frame -- es opacity, no display -- y eso es lo que quita el salto.
+   `backwards` es la mitad que importa del `both`: sin el, los 200ms de espera
+   se pintarian opacos. */
+.sk {
+  animation: sk-aparecer 0.2s linear 0.2s both;
+}
+
+@keyframes sk-aparecer {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* El texto que decia la pokebola, ahora solo para lectores de pantalla. */
+.sk-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* La caja gris. Hereda de la clase real el tamano y el sitio, y anula lo que
+   esa clase trae para pintar contenido que aqui no hay. */
+.sk-box {
+  background: var(--sk);
+  border-radius: 5px;
+  color: transparent;
+  filter: none;
+  border-color: transparent;
+  animation: sk-pulso 1.6s ease-in-out infinite;
+}
+
+/* opacity y nada mas: 50 tarjetas son ~250 cajas latiendo a la vez, y es la
+   unica propiedad de las tres candidatas que el compositor resuelve sin
+   repintar. El barrido de brillo que se estila (background-position sobre un
+   gradiente) repinta las 250 en cada frame, y el enjambre de la home ya ensena
+   lo que cuesta animar de mas en esta pagina. */
+@keyframes sk-pulso {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* Las tarjetas del esqueleto no son enlaces: ni cursor, ni hover, ni foco. */
+.sk-card {
+  pointer-events: none;
+}
+
+.sk-w40 { width: 40%; margin-left: auto; margin-right: auto; }
+.sk-w70 { width: 70%; margin-left: auto; margin-right: auto; }
+.sk-w90 { width: 90%; }
+
+/* Un ancho fijo para el badge: con `&nbsp;` solo, los dos de una tarjeta salian
+   de 20px y no se leian como tipos. */
+.sk-badge {
+  width: 46px;
+}
+
+/* La fila de la tabla de movimientos. El padding es el de .data-table td y el
+   de su th, que es de donde sale que el alto coincida. */
+.sk-thead {
+  padding: 12px 10px;
+  font-size: 0.46rem;
+  border-radius: 0;
+  border-bottom: 2px solid var(--border);
+}
+
+.sk-tr {
+  padding: 10px;
+  font-size: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+/* La ficha: sprite y titulo arriba, bloques debajo. */
+.sk-detail-head {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.sk-detail-sprite {
+  width: 180px;
+  height: 180px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.sk-detail-lines {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sk-line {
+  font-size: 0.5rem;
+}
+
+.sk-line.lg {
+  font-size: 0.8rem;
+}
+
+.sk-block {
+  height: 90px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk { animation: none; }
+  .sk-box { animation: none; }
+}
+
 /* ===== PAGINATION ===== */
 .pagination {
   display: flex;

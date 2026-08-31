@@ -185,6 +185,102 @@ export function loadingHTML(text) {
   `;
 }
 
+// ===== HELPER: skeleton screens =====
+//
+// Toda espera era la misma pokebola centrada dentro de 60px de padding, y de
+// ahi salian las dos cosas que se ven mal. Una, el salto: medida a Fast 3G la
+// Pokedex esperaba en 1199px de alto y aterrizaba en 4257, 3058px que se abren
+// de golpe bajo el cursor (movimientos +3025, habilidades +2699). Y dos, que
+// como el hueco era identico en las dieciocho rutas, una rejilla, una tabla y
+// una ficha esperaban las tres con la misma forma y aparecian con tres
+// distintas.
+//
+// El esqueleto reutiliza las clases reales del contenido que va a sustituir
+// --.pokemon-grid con .pokemon-card, .items-grid, .data-table--, asi que el
+// hueco mide lo que va a medir el contenido sin repetir aqui ni un tamano. Es
+// la propiedad que importa a un ano vista: cambiar el alto de una tarjeta
+// mueve su esqueleto solo, y no hay dos numeros que puedan separarse.
+//
+// No lleva temporizador en JS. Con los datos ya en cache el contenido lo
+// sustituye en menos de 60ms, y pintar gris para quitarlo al frame siguiente
+// es mas ruido, no menos; quien lo esconde en ese caso es la animacion de .sk
+// (CSS), que arranca a los 200ms con fill backwards. El hueco, en cambio, se
+// reserva desde el primer frame pase lo que pase, que es justo lo que quita el
+// salto.
+const rep = (n, html) => new Array(Math.max(0, n)).fill(html).join('');
+
+// Un `&nbsp;` y no una altura inventada: dentro de la clase real (.dex-number,
+// .item-name, .ability-desc) una linea de texto invisible mide exactamente lo
+// que medira la de verdad, con su font-size y su line-height.
+const SK_FORMAS = {
+  // La rejilla de la Pokedex y la de los grupos huevo.
+  grid: (n) => `
+    <div class="pokemon-grid">
+      ${rep(n, `
+        <div class="pokemon-card sk-card">
+          <div class="sprite sk-box"></div>
+          <div class="dex-number sk-box sk-w40">&nbsp;</div>
+          <div class="poke-name sk-box sk-w70">&nbsp;</div>
+          <div class="types">
+            <span class="type-badge sm sk-box sk-badge">&nbsp;</span>
+            <span class="type-badge sm sk-box sk-badge">&nbsp;</span>
+          </div>
+        </div>`)}
+    </div>`,
+
+  // Los objetos: misma rejilla, ficha mas baja.
+  tiles: (n) => `
+    <div class="items-grid">
+      ${rep(n, `
+        <div class="item-card sk-card">
+          <div class="item-sprite sk-box"></div>
+          <div class="item-name sk-box sk-w70">&nbsp;</div>
+        </div>`)}
+    </div>`,
+
+  // Las habilidades: titulo, slug y dos lineas de descripcion.
+  cards: (n) => rep(n, `
+    <div class="ability-card sk-card">
+      <h3 class="sk-box sk-w40">&nbsp;</h3>
+      <div class="ability-desc sk-box sk-w90">&nbsp;</div>
+      <div class="ability-desc sk-box sk-w70">&nbsp;</div>
+    </div>`),
+
+  // Los movimientos. La tabla de verdad lleva siete columnas; replicarlas aqui
+  // solo repetiria markup que nadie va a leer, asi que van barras dentro del
+  // marco real, con el padding de .data-table td dandoles el alto de fila.
+  table: (n) => `
+    <div class="data-table-wrap">
+      <div class="sk-thead sk-box">&nbsp;</div>
+      ${rep(n, '<div class="sk-tr"><div class="sk-box sk-w90">&nbsp;</div></div>')}
+    </div>`,
+
+  // Fichas y paneles de resultado: cabecera con sprite y unos bloques debajo.
+  detail: (n) => `
+    <div class="sk-detail-head">
+      <div class="sk-box sk-detail-sprite"></div>
+      <div class="sk-detail-lines">
+        <div class="sk-box sk-line lg sk-w70">&nbsp;</div>
+        <div class="sk-box sk-line sk-w40">&nbsp;</div>
+        <div class="sk-box sk-line sk-w90">&nbsp;</div>
+      </div>
+    </div>
+    ${rep(n, '<div class="sk-block sk-box"></div>')}`,
+};
+
+// `label` es el mismo texto que decia la pokebola. Ya no se pinta, pero sigue
+// anunciandose: un lector de pantalla se queda sin nada que decir si el estado
+// de carga es solo geometria gris.
+export function skeletonHTML({ shape = 'detail', rows = 6, label } = {}) {
+  const forma = SK_FORMAS[shape] || SK_FORMAS.detail;
+  return `
+    <div class="sk" role="status" aria-busy="true" aria-live="polite">
+      <span class="sk-sr">${esc(label || t('common.loading'))}</span>
+      ${forma(rows)}
+    </div>
+  `;
+}
+
 // ===== HELPER: edge fade on a horizontally-scrolling tab strip =====
 //
 // Lifted out of the Pikachu form strip, which wired this inline for itself
