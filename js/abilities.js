@@ -1,6 +1,6 @@
 // ===== ABILITIES PAGE =====
 import { fetchAbilities } from './api.js';
-import { loadingHTML, renderPagination } from './ui.js';
+import { skeletonHTML, renderPagination } from './ui.js';
 import { t, pokeName, getLang } from './i18n.js';
 import { toolTabsHTML, wireToolTabs } from './hub.js';
 import { norm } from './normalize.js';
@@ -57,7 +57,7 @@ export function renderAbilities(container, highlightName = null) {
 
   async function loadAll() {
     if (allAbilities) return;
-    content.innerHTML = loadingHTML(t('abilities.loading'));
+    content.innerHTML = skeletonHTML({ shape: 'cards', rows: PAGE_SIZE, label: t('abilities.loading') });
     allAbilities = await fetchAbilities();
   }
 

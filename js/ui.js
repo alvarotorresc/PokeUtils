@@ -175,12 +175,112 @@ export function replaceQuery(path, params) {
 export const esc = s => String(s ?? '').replace(/[&<>"']/g,
   c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-// ===== HELPER: loading HTML =====
-export function loadingHTML(text) {
+// ===== HELPER: skeleton screens =====
+//
+// Toda espera era la misma pokebola centrada dentro de 60px de padding, y de
+// ahi salian las dos cosas que se ven mal. Una, el salto: medida a Fast 3G la
+// Pokedex esperaba en 1199px de alto y aterrizaba en 4257, 3058px que se abren
+// de golpe bajo el cursor (movimientos +3025, habilidades +2699). Y dos, que
+// como el hueco era identico en las dieciocho rutas, una rejilla, una tabla y
+// una ficha esperaban las tres con la misma forma y aparecian con tres
+// distintas.
+//
+// El esqueleto reutiliza las clases reales del contenido que va a sustituir
+// --.pokemon-grid con .pokemon-card, .items-grid, .data-table--, asi que el
+// hueco mide lo que va a medir el contenido sin repetir aqui ni un tamano. Es
+// la propiedad que importa a un ano vista: cambiar el alto de una tarjeta
+// mueve su esqueleto solo, y no hay dos numeros que puedan separarse.
+//
+// No lleva temporizador en JS. Con los datos ya en cache el contenido lo
+// sustituye en menos de 60ms, y pintar gris para quitarlo al frame siguiente
+// es mas ruido, no menos; quien lo esconde en ese caso es la animacion de .sk
+// (CSS), que arranca a los 200ms con fill backwards. El hueco, en cambio, se
+// reserva desde el primer frame pase lo que pase, que es justo lo que quita el
+// salto.
+const rep = (n, html) => new Array(Math.max(0, n)).fill(html).join('');
+
+// Un `&nbsp;` y no una altura inventada: dentro de la clase real (.dex-number,
+// .item-name, .ability-desc) una linea de texto invisible mide exactamente lo
+// que medira la de verdad, con su font-size y su line-height.
+const SK_FORMAS = {
+  // La rejilla de la Pokedex y la de los grupos huevo.
+  grid: (n) => `
+    <div class="pokemon-grid">
+      ${rep(n, `
+        <div class="pokemon-card sk-card">
+          <div class="sprite sk-box"></div>
+          <div class="dex-number sk-box sk-w40">&nbsp;</div>
+          <div class="poke-name sk-box sk-w70">&nbsp;</div>
+          <div class="types">
+            <span class="type-badge sm sk-box sk-badge">&nbsp;</span>
+            <span class="type-badge sm sk-box sk-badge">&nbsp;</span>
+          </div>
+        </div>`)}
+    </div>`,
+
+  // Los objetos: misma rejilla, ficha mas baja.
+  tiles: (n) => `
+    <div class="items-grid">
+      ${rep(n, `
+        <div class="item-card sk-card">
+          <div class="item-sprite sk-box"></div>
+          <div class="item-name sk-box sk-w70">&nbsp;</div>
+        </div>`)}
+    </div>`,
+
+  // Las habilidades: titulo, slug y dos lineas de descripcion.
+  cards: (n) => rep(n, `
+    <div class="ability-card sk-card">
+      <h3 class="sk-box sk-w40">&nbsp;</h3>
+      <div class="ability-desc sk-box sk-w90">&nbsp;</div>
+      <div class="ability-desc sk-box sk-w70">&nbsp;</div>
+    </div>`),
+
+  // Los movimientos. La tabla de verdad lleva siete columnas; replicarlas aqui
+  // solo repetiria markup que nadie va a leer, asi que van barras dentro del
+  // marco real, con el padding de .data-table td dandoles el alto de fila.
+  table: (n) => `
+    <div class="data-table-wrap">
+      <div class="sk-thead sk-box">&nbsp;</div>
+      ${rep(n, '<div class="sk-tr"><div class="sk-box sk-w90">&nbsp;</div></div>')}
+    </div>`,
+
+  // Lo que se rellena dentro de una ficha ya pintada -- evoluciones, la tabla
+  // de movimientos aprendidos, quien aprende este movimiento -- y el panel de
+  // resultado de una calculadora. Sin cabecera: la que hay encima es la de
+  // verdad y ya se esta viendo.
+  blocks: (n) => rep(n, '<div class="sk-block sk-box"></div>'),
+
+  // La ficha de un Pokemon, que no es una columna: es el bento de .b, repartido
+  // por column-count. Reutilizarlo entero y no imitarlo es lo que hace que el
+  // esqueleto tenga las mismas columnas que la ficha en cada ancho, sin repetir
+  // aqui un solo breakpoint. La primera tarjeta lleva la cabecera con el sprite,
+  // igual que la b-id de verdad.
+  detail: (n) => `
+    <div class="bento">
+      <section class="b sk-card">
+        <div class="sk-detail-head">
+          <div class="sk-box sk-detail-sprite"></div>
+          <div class="sk-detail-lines">
+            <div class="sk-box sk-line lg sk-w70">&nbsp;</div>
+            <div class="sk-box sk-line sk-w40">&nbsp;</div>
+            <div class="sk-box sk-line sk-w90">&nbsp;</div>
+          </div>
+        </div>
+      </section>
+      ${rep(n, '<section class="b sk-card"><div class="sk-block grande sk-box"></div></section>')}
+    </div>`,
+};
+
+// `label` es el mismo texto que decia la pokebola. Ya no se pinta, pero sigue
+// anunciandose: un lector de pantalla se queda sin nada que decir si el estado
+// de carga es solo geometria gris.
+export function skeletonHTML({ shape = 'detail', rows = 6, label } = {}) {
+  const forma = SK_FORMAS[shape] || SK_FORMAS.detail;
   return `
-    <div class="loading">
-      <div class="pokeball-spinner"></div>
-      <div class="loading-text">${text || t('common.loading')}</div>
+    <div class="sk" role="status" aria-busy="true" aria-live="polite">
+      <span class="sk-sr">${esc(label || t('common.loading'))}</span>
+      ${forma(rows)}
     </div>
   `;
 }
@@ -282,4 +382,31 @@ export function renderPagination(container, currentPage, totalPages, onPageChang
   div.appendChild(nextBtn);
 
   container.appendChild(div);
+}
+
+// ===== HELPER: la entrada de un sprite =====
+//
+// El esqueleto arregla el hueco, no lo que lo rellena. Medido a Fast 3G, la
+// rejilla de la Pokedex se pinta con sus doce sprites visibles a cero
+// cargados, y tardan 364ms mas en llegar: doce cuadros que aparecen de golpe
+// sobre un hueco vacio. El sitio ya estaba reservado -- .sprite es 96 o 128px
+// fijos en CSS, y ninguno empuja nada al cargar -- asi que esto no es layout,
+// es solo el golpe.
+//
+// Un unico listener en captura, y no un onload por <img>: `load` no burbujea,
+// y los sprites se pintan desde ocho plantillas distintas que tendrian que
+// acordarse cada una. El filtro es la ruta, que es lo que los define de
+// verdad: todos salen de spriteUrl() o itemSprite() y viven bajo /sprites/.
+//
+// Si por lo que sea no llega a dispararse -- una imagen que ya estaba completa
+// antes de que esto corra --, la clase no se pone y el sprite se ve sin
+// animacion. Que el estado por defecto sea "visible" y no "transparente" es lo
+// que hace que un fallo aqui no pueda dejar la Pokedex en blanco.
+export function wireSpriteFade() {
+  document.addEventListener('load', (e) => {
+    const img = e.target;
+    if (img.tagName === 'IMG' && img.src.includes('/sprites/')) {
+      img.classList.add('sprite-entra');
+    }
+  }, true);
 }

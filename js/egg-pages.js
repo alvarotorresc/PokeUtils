@@ -6,7 +6,7 @@
 import { EGG_GROUPS, membersOf, groupCounts, hasEggData } from './egg-groups.js';
 import { fetchPokemonList } from './api.js';
 import { pokemonCardHTML } from './pokedex.js';
-import { loadingHTML, renderPagination, replaceQuery } from './ui.js';
+import { skeletonHTML, renderPagination, replaceQuery } from './ui.js';
 import { t } from './i18n.js';
 import { toolTabsHTML } from './hub.js';
 
@@ -35,7 +35,7 @@ export async function renderEggIndex(container) {
       <h1>${t('egg.title')}</h1>
       <p>${t('egg.subtitle')}</p>
     </div>
-    <div id="eggContent">${loadingHTML()}</div>
+    <div id="eggContent">${skeletonHTML({ shape: 'tiles', rows: 15 })}</div>
   `;
   const content = container.querySelector('#eggContent');
   const all = await fetchPokemonList();
@@ -79,7 +79,7 @@ export async function renderEggGroup(container, group, query = new URLSearchPara
       <h1>${eggGroupName(group)}</h1>
       <p id="eggCount"></p>
     </div>
-    <div id="eggContent">${loadingHTML()}</div>
+    <div id="eggContent">${skeletonHTML({ shape: 'grid', rows: PAGE_SIZE })}</div>
   `;
   const content = container.querySelector('#eggContent');
   const countEl = container.querySelector('#eggCount');

@@ -6,7 +6,7 @@
 
 import { spriteUrl } from './data.js';
 import { fetchMoves, fetchLearnsets, fetchPokemonList } from './api.js';
-import { loadingHTML, renderError, hostDeRuta, esc } from './ui.js';
+import { skeletonHTML, renderError, hostDeRuta, esc } from './ui.js';
 import { t, typeName, categoryName, pokeName, getLang } from './i18n.js';
 import { priorityLabel, priorityHint, statChangeLabel } from './move-effects.js';
 import { learnersOf } from './learnset-index.js';
@@ -82,7 +82,7 @@ function renderLearners(host, byMethod, pokemonById) {
 }
 
 async function loadLearners(host, moveId) {
-  host.innerHTML = loadingHTML();
+  host.innerHTML = skeletonHTML({ shape: 'blocks', rows: 3 });
   try {
     // Neither dataset is fetched by the list page: they cost 366 KB and 353 KB
     // and only a detail page needs them. loadDataset() caches per session.
@@ -100,7 +100,7 @@ export async function renderMoveDetail(container, id) {
   // visita se espera de verdad, asi que un render que llegue tarde escribe en un
   // nodo que el router ya ha desconectado en vez de pisar la ruta nueva.
   const host = hostDeRuta(container);
-  host.innerHTML = loadingHTML();
+  host.innerHTML = skeletonHTML({ shape: 'blocks', rows: 4 });
 
   let moves;
   try {

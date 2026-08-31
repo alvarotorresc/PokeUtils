@@ -1,7 +1,7 @@
 // ===== POKEMON DETAIL =====
 import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, NATURES } from './data.js';
 import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchDex } from './api.js';
-import { loadingHTML, renderError, hostDeRuta, wireScrollFade, esc } from './ui.js';
+import { skeletonHTML, renderError, hostDeRuta, wireScrollFade, esc } from './ui.js';
 import { evolutionText, ramasResueltas, textoDeRama, nodoActual } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
 import { rangeAt100 } from './stats.js';
@@ -86,7 +86,7 @@ function evoTreeHTML(node, currentId, nameOf, lang, lookups, formaDe) {
 // A failure loading evolutions must not take down the whole detail page: this
 // section shows its own error with a retry and the rest stays up.
 async function renderEvolutionSection(host, dexId, formId = dexId) {
-  host.innerHTML = loadingHTML();
+  host.innerHTML = skeletonHTML({ shape: 'blocks', rows: 3 });
   try {
     // Only two datasets: item and move names are already resolved inside
     // evolutions.json, so the page never pulls items.json (595 KB) or
@@ -194,7 +194,7 @@ function renderMovesPanel(host, entry, byId, versionGroups) {
 }
 
 async function loadMovesSection(host, currentId) {
-  host.innerHTML = loadingHTML();
+  host.innerHTML = skeletonHTML({ shape: 'blocks', rows: 4 });
   try {
     // Un solo fichero con el learnset de esta especie y los movimientos que
     // aparecen en el, ya con nombre y numeros. Antes eran learnsets.json y
@@ -414,7 +414,7 @@ export async function renderPokedexDetail(container, id) {
   // ya ha desconectado. Cubre tambien el cambio de pestana de forma, que
   // repinta sin pasar por el router.
   const host = hostDeRuta(container);
-  host.innerHTML = loadingHTML();
+  host.innerHTML = skeletonHTML({ shape: 'detail', rows: 7 });
 
   // In parallel: fetchPokemonList is already memoised by api.js, so the full
   // list the breeding section needs costs no extra request.

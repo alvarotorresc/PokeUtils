@@ -6,7 +6,7 @@
 import { TYPES, spriteUrl } from './data.js';
 import { fetchPokemonList } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { loadingHTML, renderError, replaceQuery, hostDeRuta, esc } from './ui.js';
+import { skeletonHTML, renderError, replaceQuery, hostDeRuta, esc } from './ui.js';
 import { t, typeName, pokeName } from './i18n.js';
 import { defensiveMatrix, threats, unresisted, stabTypes, offensiveCoverage } from './team-analysis.js';
 import { toolTabsHTML, wireToolTabs } from './hub.js';
@@ -35,7 +35,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
   // en un nodo que el router ya ha desconectado si el usuario navego mientras
   // bajaba pokemon.json, en vez de aparecer encima de la ruta nueva.
   const host = hostDeRuta(container);
-  host.innerHTML = loadingHTML();
+  host.innerHTML = skeletonHTML({ shape: 'blocks', rows: 3 });
 
   let pokemon;
   try {

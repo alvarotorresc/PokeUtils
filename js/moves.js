@@ -1,7 +1,7 @@
 // ===== MOVES PAGE =====
 import { TYPES } from './data.js';
 import { fetchMoves } from './api.js';
-import { loadingHTML, renderPagination, replaceQuery, esc } from './ui.js';
+import { skeletonHTML, renderPagination, replaceQuery, esc } from './ui.js';
 import { t, typeName, categoryName, pokeName, getLang, statName } from './i18n.js';
 import { toolTabsHTML, wireToolTabs } from './hub.js';
 import { norm } from './normalize.js';
@@ -157,7 +157,7 @@ export function renderMoves(container, query = new URLSearchParams()) {
 
   async function loadAll() {
     if (allMoves) return;
-    content.innerHTML = loadingHTML(t('moves.loading'));
+    content.innerHTML = skeletonHTML({ shape: 'table', rows: PAGE_SIZE, label: t('moves.loading') });
     allMoves = await fetchMoves();
   }
 

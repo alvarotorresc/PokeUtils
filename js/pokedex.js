@@ -2,7 +2,7 @@
 import { TYPES, spriteUrl, STAT_KEYS, GENERATIONS, SORT_KEYS } from './data.js';
 import { fetchPokemonList } from './api.js';
 import { isForm, spriteIdFor } from './forms.js';
-import { loadingHTML, renderPagination, replaceQuery, esc } from './ui.js';
+import { skeletonHTML, renderPagination, replaceQuery, esc } from './ui.js';
 import { t, typeName, statName, pokeName } from './i18n.js';
 import { toolTabsHTML } from './hub.js';
 import { norm } from './normalize.js';
@@ -243,7 +243,7 @@ export function renderPokedex(container, query = new URLSearchParams()) {
 
   async function loadAll() {
     if (allPokemon) return;
-    content.innerHTML = loadingHTML(t('pokedex.loading'));
+    content.innerHTML = skeletonHTML({ shape: 'grid', rows: PAGE_SIZE, label: t('pokedex.loading') });
     allPokemon = await fetchPokemonList();
     rarityAvailable = allPokemon.some(p => p.isLegendary !== undefined);
     rareSelect.hidden = !rarityAvailable;
