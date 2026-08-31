@@ -3703,6 +3703,32 @@ a.evo-node:hover img {
   .sk-box { animation: none; }
 }
 
+/* ===== LA ENTRADA DE UN SPRITE ===== */
+/*
+ * El esqueleto arregla el hueco, no lo que lo rellena: medida a Fast 3G, la
+ * rejilla de la Pokedex se pinta con sus doce sprites visibles a cero cargados
+ * y tardan 364ms mas en llegar. El sitio ya estaba reservado --.sprite es 96 o
+ * 128px fijos-- asi que no habia salto, pero si doce cuadros apareciendo de
+ * golpe sobre un hueco vacio, que es la otra mitad de lo que se lee como ruido.
+ *
+ * La clase la pone wireSpriteFade() (js/ui.js) al cargar cada imagen. Sin ella
+ * el sprite se ve igual, solo que sin animacion: el estado por defecto es
+ * visible a proposito, para que un fallo aqui no pueda dejar la rejilla en
+ * blanco.
+ */
+.sprite-entra {
+  animation: sprite-entrar 0.18s ease-out;
+}
+
+@keyframes sprite-entrar {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sprite-entra { animation: none; }
+}
+
 /* ===== PAGINATION ===== */
 .pagination {
   display: flex;

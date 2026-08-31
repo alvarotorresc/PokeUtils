@@ -375,3 +375,30 @@ export function renderPagination(container, currentPage, totalPages, onPageChang
 
   container.appendChild(div);
 }
+
+// ===== HELPER: la entrada de un sprite =====
+//
+// El esqueleto arregla el hueco, no lo que lo rellena. Medido a Fast 3G, la
+// rejilla de la Pokedex se pinta con sus doce sprites visibles a cero
+// cargados, y tardan 364ms mas en llegar: doce cuadros que aparecen de golpe
+// sobre un hueco vacio. El sitio ya estaba reservado -- .sprite es 96 o 128px
+// fijos en CSS, y ninguno empuja nada al cargar -- asi que esto no es layout,
+// es solo el golpe.
+//
+// Un unico listener en captura, y no un onload por <img>: `load` no burbujea,
+// y los sprites se pintan desde ocho plantillas distintas que tendrian que
+// acordarse cada una. El filtro es la ruta, que es lo que los define de
+// verdad: todos salen de spriteUrl() o itemSprite() y viven bajo /sprites/.
+//
+// Si por lo que sea no llega a dispararse -- una imagen que ya estaba completa
+// antes de que esto corra --, la clase no se pone y el sprite se ve sin
+// animacion. Que el estado por defecto sea "visible" y no "transparente" es lo
+// que hace que un fallo aqui no pueda dejar la Pokedex en blanco.
+export function wireSpriteFade() {
+  document.addEventListener('load', (e) => {
+    const img = e.target;
+    if (img.tagName === 'IMG' && img.src.includes('/sprites/')) {
+      img.classList.add('sprite-entra');
+    }
+  }, true);
+}
