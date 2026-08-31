@@ -404,6 +404,40 @@ async function route() {
   }
 }
 
+// ===== ADELANTAR EL MODULO DE UNA RUTA =====
+//
+// La cascara quita el hueco en blanco, pero el contenido sigue esperando a que
+// baje el modulo: 409ms medidos en produccion, y son latencia, no peso -- la
+// navegacion encadena dos o tres peticiones para 7,8 KB. Pedirlo al pasar el
+// raton por encima del enlace gasta esa espera ANTES de que haya un clic, asi
+// que al pulsar el chunk ya esta en la cache del navegador.
+//
+// Solo import(), sin pintar nada: el modulo se evalua y se queda, y route()
+// lo encuentra resuelto. Si no llega a haber clic, lo unico gastado son unos
+// kilobytes de un fichero con hash y cache de un ano.
+//
+// `pointerenter` cubre raton y lapiz. En un movil no hay hover: ahi el que
+// vale es `touchstart`, que llega unos 100ms antes que el click y da para
+// adelantar la peticion. Los dos en captura, porque ninguno burbujea.
+const adelantados = new Set();
+
+function adelantar(a) {
+  const href = a?.getAttribute('href');
+  if (!href || !href.startsWith('#/') || adelantados.has(href)) return;
+  adelantados.add(href);
+  const { path, parts, query } = parseHash(href);
+  const destino = destinoDe(path, parts, query);
+  // Un fallo aqui no puede romper una navegacion que ni siquiera ha ocurrido.
+  destino?.[0]().catch(() => adelantados.delete(href));
+}
+
+for (const evento of ['pointerenter', 'touchstart']) {
+  document.addEventListener(evento, (e) => {
+    const a = e.target instanceof Element ? e.target.closest('a[href^="#/"]') : null;
+    if (a) adelantar(a);
+  }, { capture: true, passive: true });
+}
+
 wireSpriteFade();
 
 window.addEventListener('hashchange', () => {

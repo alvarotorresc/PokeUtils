@@ -97,8 +97,12 @@ export function renderError(container, err, onRetry, { backHome = true } = {}) {
 // as before: nothing in js/ imports app.js.
 const normalizePath = path => '/' + String(path).split('/').filter(Boolean).join('/');
 
-export function parseHash() {
-  const raw = location.hash.slice(1) || '/';
+// El argumento es para adelantar el modulo de una ruta a la que todavia no se
+// ha ido: el prefetch de app.js necesita resolver el destino del enlace bajo el
+// raton, no el de la pagina que se esta viendo. Sin el, por defecto, es la
+// direccion actual, que es lo que necesitan los otros llamantes.
+export function parseHash(hash = location.hash) {
+  const raw = hash.replace(/^#/, '') || '/';
   const qIndex = raw.indexOf('?');
   const pathPart = qIndex === -1 ? raw : raw.slice(0, qIndex);
   const queryPart = qIndex === -1 ? '' : raw.slice(qIndex + 1);
