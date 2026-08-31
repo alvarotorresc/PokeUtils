@@ -9,7 +9,7 @@ import { getLevel, setLevel, onLevelChange } from './level.js';
 import { t, getLang, setLang, onLangChange } from './i18n.js';
 import { purgeLegacyCache } from './api.js';
 import { leer, escribir } from './storage.js';
-import { renderError, parseHash , wireSpriteFade } from './ui.js';
+import { renderError, parseHash, wireSpriteFade } from './ui.js';
 import { attachGlobalSearch } from './global-search.js';
 
 purgeLegacyCache();

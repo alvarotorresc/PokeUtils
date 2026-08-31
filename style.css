@@ -3707,6 +3707,16 @@ a.evo-node:hover img {
   height: 346px;
 }
 
+/* Con el bento en una columna --column-count vuelve a 1 por debajo de 1000--
+   las ocho secciones se apilan en vez de repartirse, y la ficha entera pasa a
+   medir 4751px. Con los 346 del escritorio el hueco se quedaba en 3486; con
+   425 sube a 4039, medidos los dos a 380 de ancho. */
+@media (max-width: 999px) {
+  .sk-block.grande {
+    height: 425px;
+  }
+}
+
 .sk-block {
   /* 120 y no 90: la ficha de un Pokemon mide 2073px medidos, y con bloques
      bajos igualarla pedia 18 barras grises seguidas -- mas ruido del que
