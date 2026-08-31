@@ -21,7 +21,7 @@ export async function renderMeta(container, query = new URLSearchParams()) {
       <h1>${t('meta.title')}</h1>
       <p>${t('meta.subtitle')}</p>
     </div>
-    <div id="metaBody">${skeletonHTML({ shape: 'blocks', rows: 4 })}</div>
+    <div id="metaBody">${skeletonHTML({ shape: 'blocks', rows: 13 })}</div>
   `;
   wireToolTabs(container);
   const body = container.querySelector('#metaBody');
@@ -138,7 +138,7 @@ export async function renderMeta(container, query = new URLSearchParams()) {
       btn.addEventListener('click', async () => {
         if (btn.dataset.format === state.format) return;
         state.format = btn.dataset.format;
-        body.innerHTML = skeletonHTML({ shape: 'blocks', rows: 4 });
+        body.innerHTML = skeletonHTML({ shape: 'blocks', rows: 13 });
         data = await fetchMeta(state.format);
         // El Pokemon elegido puede no estar en el otro formato: Charizard esta
         // en OU al 0,130% y fuera de VGC al 0,080%.

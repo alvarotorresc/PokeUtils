@@ -414,7 +414,7 @@ export async function renderPokedexDetail(container, id) {
   // ya ha desconectado. Cubre tambien el cambio de pestana de forma, que
   // repinta sin pasar por el router.
   const host = hostDeRuta(container);
-  host.innerHTML = skeletonHTML({ shape: 'detail', rows: 4 });
+  host.innerHTML = skeletonHTML({ shape: 'detail', rows: 14 });
 
   // In parallel: fetchPokemonList is already memoised by api.js, so the full
   // list the breeding section needs costs no extra request.

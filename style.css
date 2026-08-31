@@ -3630,19 +3630,30 @@ a.evo-node:hover img {
   width: 46px;
 }
 
-/* La fila de la tabla de movimientos. El padding es el de .data-table td y el
-   de su th, que es de donde sale que el alto coincida. */
+/* La fila de la tabla de movimientos, y el unico sitio donde el hueco no puede
+   salir exacto: la fila real no tiene alto fijo. Medidas las 50 de la primera
+   pagina van de 58,2 a 85,5 segun cuantas lineas ocupe el nombre, y en la
+   pagina 12 la media sube a 83,2. No hay un numero que valga para todas.
+   Vale el de la primera, que es la unica que llega a ver un esqueleto: el
+   hueco se pinta en loadAll(), que corre una vez, y paginar despues ya no
+   espera a nadie. De ahi los 67 -- la media de esa pagina, no la moda ni el
+   padding, que daban 28px por fila y 1613 de salto. */
 .sk-thead {
-  padding: 12px 10px;
-  font-size: 0.46rem;
+  height: 39px;
   border-radius: 0;
   border-bottom: 2px solid var(--border);
 }
 
 .sk-tr {
-  padding: 10px;
-  font-size: 0.5rem;
+  height: 67px;
   border-bottom: 1px solid var(--border);
+}
+
+.sk-thead,
+.sk-tr {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
 }
 
 /* La ficha: sprite y titulo arriba, bloques debajo. */
@@ -3678,7 +3689,11 @@ a.evo-node:hover img {
 }
 
 .sk-block {
-  height: 90px;
+  /* 120 y no 90: la ficha de un Pokemon mide 2073px medidos, y con bloques
+     bajos igualarla pedia 18 barras grises seguidas -- mas ruido del que
+     quitan. A 120 son 14, y ademas se parecen a lo que va a haber ahi, que son
+     tarjetas de seccion y no renglones. */
+  height: 120px;
   border-radius: 10px;
   margin-bottom: 12px;
 }
