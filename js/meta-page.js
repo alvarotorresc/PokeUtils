@@ -7,7 +7,7 @@ import { fetchMeta, fetchPokemonList, fetchMetaNames } from './api.js';
 import { FORMATS, MONTH, defaultFormat, metaSetOf, metaName, metaLink, usageRanking } from './meta.js';
 import { spriteUrl, STAT_KEYS, NATURES } from './data.js';
 import { spriteIdFor } from './forms.js';
-import { loadingHTML, replaceQuery, esc } from './ui.js';
+import { skeletonHTML, replaceQuery, esc } from './ui.js';
 import { getLevel } from './level.js';
 import { t, pokeName, typeName, statName, getLang, natureName } from './i18n.js';
 import { toolTabsHTML, wireToolTabs } from './hub.js';
@@ -21,7 +21,7 @@ export async function renderMeta(container, query = new URLSearchParams()) {
       <h1>${t('meta.title')}</h1>
       <p>${t('meta.subtitle')}</p>
     </div>
-    <div id="metaBody">${loadingHTML()}</div>
+    <div id="metaBody">${skeletonHTML({ shape: 'blocks', rows: 4 })}</div>
   `;
   wireToolTabs(container);
   const body = container.querySelector('#metaBody');
@@ -138,7 +138,7 @@ export async function renderMeta(container, query = new URLSearchParams()) {
       btn.addEventListener('click', async () => {
         if (btn.dataset.format === state.format) return;
         state.format = btn.dataset.format;
-        body.innerHTML = loadingHTML();
+        body.innerHTML = skeletonHTML({ shape: 'blocks', rows: 4 });
         data = await fetchMeta(state.format);
         // El Pokemon elegido puede no estar en el otro formato: Charizard esta
         // en OU al 0,130% y fuera de VGC al 0,080%.

@@ -7,7 +7,7 @@ import { counters } from './threats.js';
 import { fetchPokemonList, fetchMeta } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
 import { defaultFormat } from './meta.js';
-import { loadingHTML, replaceQuery } from './ui.js';
+import { skeletonHTML, replaceQuery } from './ui.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
 import { t, pokeName } from './i18n.js';
@@ -23,7 +23,7 @@ export async function renderCounter(container, query = new URLSearchParams()) {
       <h1>${t('counter.title')}</h1>
       <p>${t('counter.subtitle')}</p>
     </div>
-    <div id="ctBody">${loadingHTML()}</div>
+    <div id="ctBody">${skeletonHTML({ shape: 'blocks', rows: 2 })}</div>
   `;
   wireToolTabs(container);
   const body = container.querySelector('#ctBody');

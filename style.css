@@ -3548,49 +3548,6 @@ a.evo-node:hover img {
   margin-top: 20px;
 }
 
-/* ===== LOADING ===== */
-.loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 0;
-  gap: 20px;
-}
-
-.pokeball-spinner {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(180deg, #ff1a1a 50%, #fff 50%);
-  border: 3px solid #555;
-  position: relative;
-  animation: spin 1s linear infinite;
-}
-
-.pokeball-spinner::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #fff;
-  border: 3px solid #555;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.loading-text {
-  font-size: 0.45rem;
-  color: var(--ink-2);
-  letter-spacing: 0.5px;
-}
-
 /* ===== SKELETON ===== */
 /*
  * El hueco que espera con la forma de lo que va a llegar. El JS esta en

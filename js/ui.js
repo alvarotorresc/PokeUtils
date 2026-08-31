@@ -175,16 +175,6 @@ export function replaceQuery(path, params) {
 export const esc = s => String(s ?? '').replace(/[&<>"']/g,
   c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-// ===== HELPER: loading HTML =====
-export function loadingHTML(text) {
-  return `
-    <div class="loading">
-      <div class="pokeball-spinner"></div>
-      <div class="loading-text">${text || t('common.loading')}</div>
-    </div>
-  `;
-}
-
 // ===== HELPER: skeleton screens =====
 //
 // Toda espera era la misma pokebola centrada dentro de 60px de padding, y de
@@ -255,7 +245,13 @@ const SK_FORMAS = {
       ${rep(n, '<div class="sk-tr"><div class="sk-box sk-w90">&nbsp;</div></div>')}
     </div>`,
 
-  // Fichas y paneles de resultado: cabecera con sprite y unos bloques debajo.
+  // Lo que se rellena dentro de una ficha ya pintada -- evoluciones, la tabla
+  // de movimientos aprendidos, quien aprende este movimiento -- y el panel de
+  // resultado de una calculadora. Sin cabecera: la que hay encima es la de
+  // verdad y ya se esta viendo.
+  blocks: (n) => rep(n, '<div class="sk-block sk-box"></div>'),
+
+  // La ficha entera: cabecera con sprite y los bloques debajo.
   detail: (n) => `
     <div class="sk-detail-head">
       <div class="sk-box sk-detail-sprite"></div>
@@ -265,7 +261,7 @@ const SK_FORMAS = {
         <div class="sk-box sk-line sk-w90">&nbsp;</div>
       </div>
     </div>
-    ${rep(n, '<div class="sk-block sk-box"></div>')}`,
+    ${SK_FORMAS.blocks(n)}`,
 };
 
 // `label` es el mismo texto que decia la pokebola. Ya no se pinta, pero sigue
