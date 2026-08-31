@@ -1,12 +1,12 @@
 // ===== ITEMS PAGE =====
 import { itemSprite, ITEM_PLACEHOLDER_SPRITE } from './data.js';
 import { fetchItems, fetchItemDescriptions } from './api.js';
-import { skeletonHTML, renderPagination, esc } from './ui.js';
+import { skeletonHTML, renderPagination, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { PAGINA, esqueletoDe } from './cascaras.js';
 import { t, pokeName, getLang } from './i18n.js';
-import { toolTabsHTML, wireToolTabs } from './hub.js';
 import { norm } from './normalize.js';
 
-const PAGE_SIZE = 48;
+const PAGE_SIZE = PAGINA.items;
 
 // Keyed by PokeAPI pocket name; anything unmapped falls back to raw uppercase.
 const CATEGORY_MAP = {
@@ -159,7 +159,7 @@ export function renderItems(container, query = new URLSearchParams()) {
 
   async function loadAll() {
     if (allItems) return;
-    content.innerHTML = skeletonHTML({ shape: 'tiles', rows: PAGE_SIZE, label: t('items.loading') });
+    content.innerHTML = skeletonHTML({ ...esqueletoDe('items'), label: t('items.loading') });
     // Fuera las 338 MT. Aqui una se llama "MT01" y debajo lleva la descripcion
     // del movimiento que ensena, sin decir cual es: una lista de numeros con
     // texto suelto. Lo que se querria saber de ellas -- que ensena cada una --

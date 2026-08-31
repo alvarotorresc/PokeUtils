@@ -2,6 +2,7 @@
 import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, NATURES } from './data.js';
 import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchDex } from './api.js';
 import { skeletonHTML, renderError, hostDeRuta, wireScrollFade, esc } from './ui.js';
+import { esqueletoDeFicha } from './cascaras.js';
 import { evolutionText, ramasResueltas, textoDeRama, nodoActual } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
 import { rangeAt100 } from './stats.js';
@@ -414,7 +415,7 @@ export async function renderPokedexDetail(container, id) {
   // ya ha desconectado. Cubre tambien el cambio de pestana de forma, que
   // repinta sin pasar por el router.
   const host = hostDeRuta(container);
-  host.innerHTML = skeletonHTML({ shape: 'detail', rows: 7 });
+  host.innerHTML = skeletonHTML(esqueletoDeFicha('pokedex'));
 
   // In parallel: fetchPokemonList is already memoised by api.js, so the full
   // list the breeding section needs costs no extra request.

@@ -3732,6 +3732,37 @@ a.evo-node:hover img {
   .sk-box { animation: none; }
 }
 
+/* La banda que guarda el sitio de la busqueda y los filtros mientras baja el
+   modulo. No los dibuja: pintarlos de verdad aqui obligaria al modulo a
+   repintarlos al llegar, y eso le quita el foco a quien ya estuviera
+   escribiendo. El alto de cada una esta medido en el navegador (js/cascaras.js). */
+.sk-banda {
+  width: 100%;
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
+/* El marco del enjambre de la home. 365px medidos. */
+.sk-enjambre {
+  height: 365px;
+  border-radius: 14px;
+  margin-bottom: 24px;
+}
+
+/* La tarjeta gris de un hub: el alto de una .home-card con su icono, su titulo
+   y su descripcion dentro. */
+.sk-hub {
+  height: 104px;
+  border-radius: 10px;
+}
+
+/* Con un esqueleto ya en pantalla, el que pinte el modulo encima no vuelve a
+   esperar los 200ms invisibles de .sk: esconder el gris que ya se ve para
+   traerlo de vuelta es justo el parpadeo que esto venia a quitar. */
+[data-esqueleto] .sk {
+  animation: none;
+}
+
 /* ===== LA ENTRADA DE UN SPRITE ===== */
 /*
  * El esqueleto arregla el hueco, no lo que lo rellena: medida a Fast 3G, la

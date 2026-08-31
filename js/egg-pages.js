@@ -6,11 +6,11 @@
 import { EGG_GROUPS, membersOf, groupCounts, hasEggData } from './egg-groups.js';
 import { fetchPokemonList } from './api.js';
 import { pokemonCardHTML } from './pokedex.js';
-import { skeletonHTML, renderPagination, replaceQuery } from './ui.js';
+import { skeletonHTML, renderPagination, replaceQuery, toolTabsHTML } from './ui.js';
+import { PAGINA, esqueletoDe } from './cascaras.js';
 import { t } from './i18n.js';
-import { toolTabsHTML } from './hub.js';
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = PAGINA.egg;
 
 export const eggGroupName = group => t(`egg.group.${group}`);
 
@@ -35,7 +35,7 @@ export async function renderEggIndex(container) {
       <h1>${t('egg.title')}</h1>
       <p>${t('egg.subtitle')}</p>
     </div>
-    <div id="eggContent">${skeletonHTML({ shape: 'tiles', rows: 15 })}</div>
+    <div id="eggContent">${skeletonHTML(esqueletoDe('egg'))}</div>
   `;
   const content = container.querySelector('#eggContent');
   const all = await fetchPokemonList();

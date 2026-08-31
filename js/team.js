@@ -6,10 +6,10 @@
 import { TYPES, spriteUrl } from './data.js';
 import { fetchPokemonList } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { skeletonHTML, renderError, replaceQuery, hostDeRuta, esc } from './ui.js';
+import { skeletonHTML, renderError, replaceQuery, hostDeRuta, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { esqueletoDe } from './cascaras.js';
 import { t, typeName, pokeName } from './i18n.js';
 import { defensiveMatrix, threats, unresisted, stabTypes, offensiveCoverage } from './team-analysis.js';
-import { toolTabsHTML, wireToolTabs } from './hub.js';
 import { norm } from './normalize.js';
 
 const TEAM_SIZE = 6;
@@ -35,7 +35,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
   // en un nodo que el router ya ha desconectado si el usuario navego mientras
   // bajaba pokemon.json, en vez de aparecer encima de la ruta nueva.
   const host = hostDeRuta(container);
-  host.innerHTML = skeletonHTML({ shape: 'blocks', rows: 3 });
+  host.innerHTML = skeletonHTML(esqueletoDe('team'));
 
   let pokemon;
   try {

@@ -7,11 +7,11 @@ import { counters } from './threats.js';
 import { fetchPokemonList, fetchMeta } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
 import { defaultFormat } from './meta.js';
-import { skeletonHTML, replaceQuery } from './ui.js';
+import { skeletonHTML, replaceQuery, toolTabsHTML, wireToolTabs } from './ui.js';
+import { esqueletoDe } from './cascaras.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
 import { t, pokeName } from './i18n.js';
-import { toolTabsHTML, wireToolTabs } from './hub.js';
 import { norm } from './normalize.js';
 
 const TEAM_SIZE = 6;
@@ -23,7 +23,7 @@ export async function renderCounter(container, query = new URLSearchParams()) {
       <h1>${t('counter.title')}</h1>
       <p>${t('counter.subtitle')}</p>
     </div>
-    <div id="ctBody">${skeletonHTML({ shape: 'blocks', rows: 2 })}</div>
+    <div id="ctBody">${skeletonHTML(esqueletoDe('counter'))}</div>
   `;
   wireToolTabs(container);
   const body = container.querySelector('#ctBody');

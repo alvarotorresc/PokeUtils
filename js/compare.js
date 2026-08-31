@@ -7,9 +7,9 @@ import { STAT_KEYS, spriteUrl } from './data.js';
 import { fetchPokemonList, fetchAbilities } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
 import { defensiveMatrix } from './team-analysis.js';
-import { skeletonHTML, replaceQuery, esc } from './ui.js';
+import { skeletonHTML, replaceQuery, esc, toolTabsHTML } from './ui.js';
+import { esqueletoDe } from './cascaras.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
-import { toolTabsHTML } from './hub.js';
 import { attachTooltip } from './tooltip.js';
 import { norm } from './normalize.js';
 
@@ -22,7 +22,7 @@ export async function renderCompare(container, query = new URLSearchParams()) {
       <h1>${t('compare.title')}</h1>
       <p>${t('compare.subtitle')}</p>
     </div>
-    <div id="cmpBody">${skeletonHTML({ shape: 'blocks', rows: 2 })}</div>
+    <div id="cmpBody">${skeletonHTML(esqueletoDe('compare'))}</div>
   `;
   const body = container.querySelector('#cmpBody');
   // pokemon.json carries ability slugs only, so the names come from

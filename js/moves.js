@@ -1,16 +1,16 @@
 // ===== MOVES PAGE =====
 import { TYPES } from './data.js';
 import { fetchMoves } from './api.js';
-import { skeletonHTML, renderPagination, replaceQuery, esc } from './ui.js';
+import { skeletonHTML, renderPagination, replaceQuery, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { PAGINA, esqueletoDe } from './cascaras.js';
 import { t, typeName, categoryName, pokeName, getLang, statName } from './i18n.js';
-import { toolTabsHTML, wireToolTabs } from './hub.js';
 import { norm } from './normalize.js';
 import {
   priorityLabel, statChangeLabel, hasBattleFields,
   matchesPriorityFilter, matchesStatFilter,
 } from './move-effects.js';
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = PAGINA.moves;
 
 // The six battle stats plus the two that only exist as modifiers.
 const STAT_FILTER_KEYS = ['atk', 'def', 'spa', 'spd', 'spe', 'acc', 'eva'];
@@ -157,7 +157,7 @@ export function renderMoves(container, query = new URLSearchParams()) {
 
   async function loadAll() {
     if (allMoves) return;
-    content.innerHTML = skeletonHTML({ shape: 'table', rows: PAGE_SIZE, label: t('moves.loading') });
+    content.innerHTML = skeletonHTML({ ...esqueletoDe('moves'), label: t('moves.loading') });
     allMoves = await fetchMoves();
   }
 

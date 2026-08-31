@@ -1,7 +1,7 @@
 // ===== TYPE CHART PAGE =====
 import { TYPES, CHART } from './data.js';
 import { t, typeName } from './i18n.js';
-import { toolTabsHTML, wireToolTabs } from './hub.js';
+import { toolTabsHTML, wireToolTabs } from './ui.js';
 
 let selectedTypes = [];
 let activeTab = 'defense';

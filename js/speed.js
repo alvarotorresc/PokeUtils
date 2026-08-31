@@ -5,11 +5,11 @@
 import { speedSpread, speedTiers } from './speed-tiers.js';
 import { fetchPokemonList } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { skeletonHTML, replaceQuery, esc } from './ui.js';
+import { skeletonHTML, replaceQuery, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { esqueletoDe } from './cascaras.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
 import { t, pokeName } from './i18n.js';
-import { toolTabsHTML, wireToolTabs } from './hub.js';
 import { norm } from './normalize.js';
 
 export async function renderSpeed(container, query = new URLSearchParams()) {
@@ -19,7 +19,7 @@ export async function renderSpeed(container, query = new URLSearchParams()) {
       <h1>${t('speed.title')}</h1>
       <p>${t('speed.subtitle')}</p>
     </div>
-    <div id="spdBody">${skeletonHTML({ shape: 'blocks', rows: 2 })}</div>
+    <div id="spdBody">${skeletonHTML(esqueletoDe('speed'))}</div>
   `;
   wireToolTabs(container);
   const body = container.querySelector('#spdBody');

@@ -2,12 +2,12 @@
 import { TYPES, spriteUrl, STAT_KEYS, GENERATIONS, SORT_KEYS } from './data.js';
 import { fetchPokemonList } from './api.js';
 import { isForm, spriteIdFor } from './forms.js';
-import { skeletonHTML, renderPagination, replaceQuery, esc } from './ui.js';
+import { skeletonHTML, renderPagination, replaceQuery, esc, toolTabsHTML } from './ui.js';
+import { PAGINA, esqueletoDe } from './cascaras.js';
 import { t, typeName, statName, pokeName } from './i18n.js';
-import { toolTabsHTML } from './hub.js';
 import { norm } from './normalize.js';
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = PAGINA.pokedex;
 
 // The dex card, shared with the egg group pages so the two grids cannot drift.
 // `i` is the card's place in the page, and comes free from `list.map(...)`.
@@ -243,7 +243,7 @@ export function renderPokedex(container, query = new URLSearchParams()) {
 
   async function loadAll() {
     if (allPokemon) return;
-    content.innerHTML = skeletonHTML({ shape: 'grid', rows: PAGE_SIZE, label: t('pokedex.loading') });
+    content.innerHTML = skeletonHTML({ ...esqueletoDe('pokedex'), label: t('pokedex.loading') });
     allPokemon = await fetchPokemonList();
     rarityAvailable = allPokemon.some(p => p.isLegendary !== undefined);
     rareSelect.hidden = !rarityAvailable;

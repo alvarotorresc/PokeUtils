@@ -6,6 +6,7 @@
 // siempre las cuarenta y seis. Aqui no dependen de nadie mas que de i18n.
 import { t } from './i18n.js';
 import { ErrorKind } from './api.js';
+import { toolsIn } from './tools.js';
 
 // ===== HELPER: un nodo propio para lo que pinta la ruta =====
 //
@@ -96,8 +97,12 @@ export function renderError(container, err, onRetry, { backHome = true } = {}) {
 // as before: nothing in js/ imports app.js.
 const normalizePath = path => '/' + String(path).split('/').filter(Boolean).join('/');
 
-export function parseHash() {
-  const raw = location.hash.slice(1) || '/';
+// El argumento es para adelantar el modulo de una ruta a la que todavia no se
+// ha ido: el prefetch de app.js necesita resolver el destino del enlace bajo el
+// raton, no el de la pagina que se esta viendo. Sin el, por defecto, es la
+// direccion actual, que es lo que necesitan los otros llamantes.
+export function parseHash(hash = location.hash) {
+  const raw = hash.replace(/^#/, '') || '/';
   const qIndex = raw.indexOf('?');
   const pathPart = qIndex === -1 ? raw : raw.slice(0, qIndex);
   const queryPart = qIndex === -1 ? '' : raw.slice(qIndex + 1);
@@ -174,6 +179,43 @@ export function replaceQuery(path, params) {
 // double-escaped.
 export const esc = s => String(s ?? '').replace(/[&<>"']/g,
   c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// ===== HELPER: las pestanas de una herramienta =====
+//
+// Vivian en hub.js, que ademas pinta el hub de una categoria y por eso importa
+// data.js entero. Estas dos no necesitan nada de eso --toolsIn, i18n y el
+// wireScrollFade de aqui al lado-- y en cambio si las necesita el router, que
+// pinta la cascara de la ruta antes de bajar su modulo. Dejarlas en hub.js
+// habria metido data.js en el arranque para usar veinte lineas.
+
+// The strip every tool page shows above its title, so a sibling tool is one
+// click away instead of a trip back through the hub. At every width it is the
+// calculator's equal-fill tabs; at 360 px four tools or more do not fit one
+// row (three do), so below that width it switches to the Pikachu form strip's
+// own answer to that same overflow -- .form-tabs-wrap's fade, wired by
+// wireToolTabs() below, plus natural-width tabs that scroll (style.css,
+// `.tool-tabs-scroll` under its max-width: 639px query). Above that width the
+// wrapper and its fade sit there unused: nothing overflows, so JS never sets
+// `.more-left`/`.more-right` and the pseudo-elements stay at opacity 0.
+export function toolTabsHTML(categoryId, activeToolId) {
+  const tools = toolsIn(categoryId);
+  const scrolls = tools.length > 3;
+  const tabs = tools.map(tool => `
+    <a href="${tool.route}" class="tab${tool.id === activeToolId ? ' active' : ''}">${t(tool.tab || tool.label)}</a>
+  `).join('');
+  if (!scrolls) return `<div class="tabs tool-tabs">${tabs}</div>`;
+  return `
+    <div class="form-tabs-wrap" id="toolTabsWrap">
+      <div class="tabs tool-tabs tool-tabs-scroll" id="toolTabsStrip">${tabs}</div>
+    </div>
+  `;
+}
+
+// Called once after a tool page paints its strip. Finds nothing -- and does
+// nothing -- on the pages whose strip fits without scrolling.
+export function wireToolTabs(container) {
+  wireScrollFade(container.querySelector('#toolTabsWrap'), container.querySelector('#toolTabsStrip'));
+}
 
 // ===== HELPER: skeleton screens =====
 //

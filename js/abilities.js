@@ -1,11 +1,11 @@
 // ===== ABILITIES PAGE =====
 import { fetchAbilities } from './api.js';
-import { skeletonHTML, renderPagination } from './ui.js';
+import { skeletonHTML, renderPagination, toolTabsHTML, wireToolTabs } from './ui.js';
+import { PAGINA, esqueletoDe } from './cascaras.js';
 import { t, pokeName, getLang } from './i18n.js';
-import { toolTabsHTML, wireToolTabs } from './hub.js';
 import { norm } from './normalize.js';
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = PAGINA.abilities;
 
 // Los enlaces nuevos llevan el slug (`clear-body`); los viejos ya compartidos
 // pueden llevar el nombre de pantalla en ingles (`Clear Body`) -- eso es lo que
@@ -57,7 +57,7 @@ export function renderAbilities(container, highlightName = null) {
 
   async function loadAll() {
     if (allAbilities) return;
-    content.innerHTML = skeletonHTML({ shape: 'cards', rows: PAGE_SIZE, label: t('abilities.loading') });
+    content.innerHTML = skeletonHTML({ ...esqueletoDe('abilities'), label: t('abilities.loading') });
     allAbilities = await fetchAbilities();
   }
 
