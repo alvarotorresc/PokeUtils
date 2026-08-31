@@ -100,7 +100,7 @@ export async function renderMoveDetail(container, id) {
   // visita se espera de verdad, asi que un render que llegue tarde escribe en un
   // nodo que el router ya ha desconectado en vez de pisar la ruta nueva.
   const host = hostDeRuta(container);
-  host.innerHTML = skeletonHTML({ shape: 'detail', rows: 3 });
+  host.innerHTML = skeletonHTML({ shape: 'blocks', rows: 4 });
 
   let moves;
   try {

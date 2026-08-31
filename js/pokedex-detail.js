@@ -86,7 +86,7 @@ function evoTreeHTML(node, currentId, nameOf, lang, lookups, formaDe) {
 // A failure loading evolutions must not take down the whole detail page: this
 // section shows its own error with a retry and the rest stays up.
 async function renderEvolutionSection(host, dexId, formId = dexId) {
-  host.innerHTML = skeletonHTML({ shape: 'blocks', rows: 2 });
+  host.innerHTML = skeletonHTML({ shape: 'blocks', rows: 3 });
   try {
     // Only two datasets: item and move names are already resolved inside
     // evolutions.json, so the page never pulls items.json (595 KB) or
@@ -414,7 +414,7 @@ export async function renderPokedexDetail(container, id) {
   // ya ha desconectado. Cubre tambien el cambio de pestana de forma, que
   // repinta sin pasar por el router.
   const host = hostDeRuta(container);
-  host.innerHTML = skeletonHTML({ shape: 'detail', rows: 14 });
+  host.innerHTML = skeletonHTML({ shape: 'detail', rows: 7 });
 
   // In parallel: fetchPokemonList is already memoised by api.js, so the full
   // list the breeding section needs costs no extra request.

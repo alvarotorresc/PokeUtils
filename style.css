@@ -3665,9 +3665,11 @@ a.evo-node:hover img {
   flex-wrap: wrap;
 }
 
+/* 300 y no un tamano de esqueleto: es lo que mide .poke-detail-sprite. */
 .sk-detail-sprite {
-  width: 180px;
-  height: 180px;
+  width: 300px;
+  height: 300px;
+  max-width: 100%;
   border-radius: 12px;
   flex-shrink: 0;
 }
@@ -3680,12 +3682,29 @@ a.evo-node:hover img {
   gap: 10px;
 }
 
+/* Los anchos traen el centrado que necesitan en una tarjeta de la Pokedex, que
+   pinta su nombre centrado. Aqui al lado del sprite el texto va a la
+   izquierda, y centrado se leia como tres barras sueltas en medio. */
+.sk-detail-lines .sk-box {
+  margin-left: 0;
+  margin-right: 0;
+}
+
 .sk-line {
   font-size: 0.5rem;
 }
 
 .sk-line.lg {
   font-size: 0.8rem;
+}
+
+/* Una seccion entera de la ficha, no un renglon: las ocho reales miden de 192
+   a 603px. Clase propia y no `.b .sk-block`, que era lo primero que escribi:
+   las secciones que se rellenan solas dentro de la ficha pintan su esqueleto
+   DENTRO de un .b, asi que esa regla les subia el bloque a 346px sin que nadie
+   se lo pidiera. */
+.sk-block.grande {
+  height: 346px;
 }
 
 .sk-block {

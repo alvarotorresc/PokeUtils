@@ -251,17 +251,25 @@ const SK_FORMAS = {
   // verdad y ya se esta viendo.
   blocks: (n) => rep(n, '<div class="sk-block sk-box"></div>'),
 
-  // La ficha entera: cabecera con sprite y los bloques debajo.
+  // La ficha de un Pokemon, que no es una columna: es el bento de .b, repartido
+  // por column-count. Reutilizarlo entero y no imitarlo es lo que hace que el
+  // esqueleto tenga las mismas columnas que la ficha en cada ancho, sin repetir
+  // aqui un solo breakpoint. La primera tarjeta lleva la cabecera con el sprite,
+  // igual que la b-id de verdad.
   detail: (n) => `
-    <div class="sk-detail-head">
-      <div class="sk-box sk-detail-sprite"></div>
-      <div class="sk-detail-lines">
-        <div class="sk-box sk-line lg sk-w70">&nbsp;</div>
-        <div class="sk-box sk-line sk-w40">&nbsp;</div>
-        <div class="sk-box sk-line sk-w90">&nbsp;</div>
-      </div>
-    </div>
-    ${SK_FORMAS.blocks(n)}`,
+    <div class="bento">
+      <section class="b sk-card">
+        <div class="sk-detail-head">
+          <div class="sk-box sk-detail-sprite"></div>
+          <div class="sk-detail-lines">
+            <div class="sk-box sk-line lg sk-w70">&nbsp;</div>
+            <div class="sk-box sk-line sk-w40">&nbsp;</div>
+            <div class="sk-box sk-line sk-w90">&nbsp;</div>
+          </div>
+        </div>
+      </section>
+      ${rep(n, '<section class="b sk-card"><div class="sk-block grande sk-box"></div></section>')}
+    </div>`,
 };
 
 // `label` es el mismo texto que decia la pokebola. Ya no se pinta, pero sigue
