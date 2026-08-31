@@ -8,6 +8,7 @@ import { FORMATS, MONTH, defaultFormat, metaSetOf, metaName, metaLink, usageRank
 import { spriteUrl, STAT_KEYS, NATURES } from './data.js';
 import { spriteIdFor } from './forms.js';
 import { skeletonHTML, replaceQuery, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { esqueletoDe } from './cascaras.js';
 import { getLevel } from './level.js';
 import { t, pokeName, typeName, statName, getLang, natureName } from './i18n.js';
 
@@ -20,7 +21,7 @@ export async function renderMeta(container, query = new URLSearchParams()) {
       <h1>${t('meta.title')}</h1>
       <p>${t('meta.subtitle')}</p>
     </div>
-    <div id="metaBody">${skeletonHTML({ shape: 'blocks', rows: 13 })}</div>
+    <div id="metaBody">${skeletonHTML(esqueletoDe('meta'))}</div>
   `;
   wireToolTabs(container);
   const body = container.querySelector('#metaBody');
@@ -137,7 +138,7 @@ export async function renderMeta(container, query = new URLSearchParams()) {
       btn.addEventListener('click', async () => {
         if (btn.dataset.format === state.format) return;
         state.format = btn.dataset.format;
-        body.innerHTML = skeletonHTML({ shape: 'blocks', rows: 13 });
+        body.innerHTML = skeletonHTML(esqueletoDe('meta'));
         data = await fetchMeta(state.format);
         // El Pokemon elegido puede no estar en el otro formato: Charizard esta
         // en OU al 0,130% y fuera de VGC al 0,080%.

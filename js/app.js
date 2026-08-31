@@ -10,6 +10,7 @@ import { t, getLang, setLang, onLangChange } from './i18n.js';
 import { purgeLegacyCache } from './api.js';
 import { leer, escribir } from './storage.js';
 import { renderError, parseHash, wireSpriteFade } from './ui.js';
+import { cascaraDeRuta } from './cascaras.js';
 import { attachGlobalSearch } from './global-search.js';
 
 purgeLegacyCache();
@@ -257,40 +258,15 @@ const decodificarSlug = slug => {
   }
 };
 
-async function route() {
-  const token = ++navegacion;
-  const { path, parts, query } = parseHash();
-  updateActiveNav(path);
-  const esHome = esRutaHome(path);
-  // El buscador del nav no existe en la home -- el central del enjambre
-  // sigue siendo el unico. classList.toggle, no un remontaje: attachGlobalSearch
-  // ya se llamo una vez al arrancar. Y cualquier navegacion colapsa la fila
-  // movil si se habia quedado abierta, vaya o no a la home.
-  navSearchWrap.classList.toggle('nav-search--hidden', esHome);
-  navSearchToggle.classList.toggle('nav-search-toggle--hidden', esHome);
-  cerrarBusquedaMovil();
-  // .nav-inner centra [logo+buscador+enlaces] como bloque, y Nv50/EN/tema
-  // flotan aparte (position:absolute) confiando en que ese bloque no llegue
-  // tan lejos. El buscador (flex:1 1 auto, hasta 300px) rompe ese margen a
-  // 900-1100px: los enlaces acababan debajo de los toggles, alcanzables solo
-  // con el scroll horizontal oculto que ya tenian de fallback. Con el
-  // buscador visible se reserva ese hueco explicitamente; en la home, sin
-  // buscador, el margen que ya habia de sobra sigue intacto.
-  nav.classList.toggle('nav-has-search', !esHome);
-  // La portada de la home ya viene pintada en el HTML. Si la primera ruta es la
-  // home, se queda donde esta: vaciarla aqui devolveria el salto que vino a
-  // quitar. Cualquier otra ruta la borra como siempre.
-  const conservarShell = app.querySelector('[data-shell]') && esHome;
-  if (!conservarShell) app.innerHTML = '';
-  // El fade-in es para el contenido que se acaba de pintar de golpe. La
-  // portada estatica ya esta visible desde el primer frame -- ponerselo aqui
-  // la habria hecho parpadear (opacidad 0 otra vez) sin necesidad, ademas de
-  // ser justo la animacion que retrasaba el LCP (ver index.html).
-  app.className = conservarShell ? 'main' : 'main fade-in';
-  window.scrollTo(0, 0);
-
+// ===== A que ruta lleva un hash =====
+//
+// Salio del cuerpo de route() para que el prefetch pueda pedir el modulo de
+// una ruta sin navegar a ella: pasar el raton por un enlace resuelve su
+// destino aqui y llama solo a bajar(), dejando el chunk en la cache del
+// navegador para cuando se pulse de verdad.
+function destinoDe(path, parts, query) {
   let destino;
-  if (esHome) {
+  if (esRutaHome(path)) {
     destino = [() => import('./home.js'), m => m.renderHome(app)];
   } else if (path === '/types') {
     destino = [() => import('./type-chart.js'), m => m.renderTypeChart(app)];
@@ -346,6 +322,56 @@ async function route() {
   } else if (path === '/terms') {
     destino = [() => import('./legal.js'), m => m.renderTerms(app)];
   }
+  return destino;
+}
+
+async function route() {
+  const token = ++navegacion;
+  const { path, parts, query } = parseHash();
+  updateActiveNav(path);
+  const esHome = esRutaHome(path);
+  // El buscador del nav no existe en la home -- el central del enjambre
+  // sigue siendo el unico. classList.toggle, no un remontaje: attachGlobalSearch
+  // ya se llamo una vez al arrancar. Y cualquier navegacion colapsa la fila
+  // movil si se habia quedado abierta, vaya o no a la home.
+  navSearchWrap.classList.toggle('nav-search--hidden', esHome);
+  navSearchToggle.classList.toggle('nav-search-toggle--hidden', esHome);
+  cerrarBusquedaMovil();
+  // .nav-inner centra [logo+buscador+enlaces] como bloque, y Nv50/EN/tema
+  // flotan aparte (position:absolute) confiando en que ese bloque no llegue
+  // tan lejos. El buscador (flex:1 1 auto, hasta 300px) rompe ese margen a
+  // 900-1100px: los enlaces acababan debajo de los toggles, alcanzables solo
+  // con el scroll horizontal oculto que ya tenian de fallback. Con el
+  // buscador visible se reserva ese hueco explicitamente; en la home, sin
+  // buscador, el margen que ya habia de sobra sigue intacto.
+  nav.classList.toggle('nav-has-search', !esHome);
+  // La portada de la home ya viene pintada en el HTML. Si la primera ruta es la
+  // home, se queda donde esta: vaciarla aqui devolveria el salto que vino a
+  // quitar. Cualquier otra ruta la borra como siempre.
+  const conservarShell = app.querySelector('[data-shell]') && esHome;
+  if (!conservarShell) app.innerHTML = '';
+  // El fade-in es para el contenido que se acaba de pintar de golpe. La
+  // portada estatica ya esta visible desde el primer frame -- ponerselo aqui
+  // la habria hecho parpadear (opacidad 0 otra vez) sin necesidad, ademas de
+  // ser justo la animacion que retrasaba el LCP (ver index.html).
+  app.className = conservarShell ? 'main' : 'main fade-in';
+  window.scrollTo(0, 0);
+
+  // La pantalla, antes de ir a por su modulo. Bajarlo cuesta 409ms medidos en
+  // produccion, y hasta ahora ese hueco era el <main> vacio: sin contenido y
+  // sin el min-height de la primera pintura, el footer subia hasta el header.
+  // Ahora lo que se ve es la pantalla de destino con su titulo de verdad y el
+  // esqueleto de lo que falta. Ver js/cascaras.js.
+  const cascara = conservarShell ? null : cascaraDeRuta(path, parts);
+  if (cascara) {
+    app.innerHTML = cascara;
+    // Mientras este puesto, un esqueleto que se pinte encima no vuelve a
+    // esperar sus 200ms invisibles: ya hay gris en pantalla, y esconderlo para
+    // traerlo de vuelta es un parpadeo.
+    app.dataset.esqueleto = '';
+  }
+
+  const destino = destinoDe(path, parts, query);
 
   if (!destino) {
     app.innerHTML = `
@@ -369,6 +395,12 @@ async function route() {
     if (token !== navegacion) return;
     console.error('Route error:', err);
     renderError(app, err, route);
+  } finally {
+    // Solo la navegacion vigente limpia la marca. Con dos clics seguidos, la
+    // primera llega aqui cuando la segunda ya esta pintando su cascara: si la
+    // quitara, el esqueleto de la segunda parpadearia -- y peor, la marca se
+    // quedaria sin dueno y el delay se perderia para el resto de la sesion.
+    if (token === navegacion) delete app.dataset.esqueleto;
   }
 }
 

@@ -7,6 +7,7 @@
 import { spriteUrl } from './data.js';
 import { fetchMoves, fetchLearnsets, fetchPokemonList } from './api.js';
 import { skeletonHTML, renderError, hostDeRuta, esc } from './ui.js';
+import { esqueletoDeFicha } from './cascaras.js';
 import { t, typeName, categoryName, pokeName, getLang } from './i18n.js';
 import { priorityLabel, priorityHint, statChangeLabel } from './move-effects.js';
 import { learnersOf } from './learnset-index.js';
@@ -100,7 +101,7 @@ export async function renderMoveDetail(container, id) {
   // visita se espera de verdad, asi que un render que llegue tarde escribe en un
   // nodo que el router ya ha desconectado en vez de pisar la ruta nueva.
   const host = hostDeRuta(container);
-  host.innerHTML = skeletonHTML({ shape: 'blocks', rows: 4 });
+  host.innerHTML = skeletonHTML(esqueletoDeFicha('moves'));
 
   let moves;
   try {
