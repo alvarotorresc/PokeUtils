@@ -100,6 +100,15 @@ const FREEZE_CSS = `
   transition-delay: 0s !important;
   scroll-behavior: auto !important;
 }
+
+/* El .nav lleva backdrop-filter, y su render alterna entre dos resultados de
+   un screenshot al siguiente (visto con capturas consecutivas: mismo hash 5/5
+   sin blur, distinto con el). capture() hace justo eso -- dos capturas
+   seguidas para la guarda de hash-estable -- asi que sin esto tres escenas de
+   cada seis fallaban esa guarda siempre. A scroll 0 (donde settle() deja la
+   pagina) el nav no tiene nada detras que emborronar, asi que apagarlo aqui
+   no cambia lo que se ve. */
+.nav { backdrop-filter: none !important; }
 `;
 
 // Crea el contexto y una pagina en blanco -- quien llama hace el page.goto().
@@ -130,9 +139,20 @@ export async function openPage(browser, { lang = 'es', theme = 'dark', mobile = 
   );
 
   await context.addInitScript((css) => {
-    const estilo = document.createElement('style');
-    estilo.textContent = css;
-    (document.head || document.documentElement).appendChild(estilo);
+    // A esta altura (document_start) document.head y documentElement todavia
+    // son null -- el parser no ha llegado ahi. DOMContentLoaded ya es sobrado
+    // de pronto para el proposito de esta hoja (settle() espera bastante mas:
+    // red, esqueletos, fuentes, sprites).
+    const inserta = () => {
+      const estilo = document.createElement('style');
+      estilo.textContent = css;
+      document.head.appendChild(estilo);
+    };
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', inserta, { once: true });
+    } else {
+      inserta();
+    }
   }, FREEZE_CSS);
 
   return context.newPage();
@@ -140,7 +160,7 @@ export async function openPage(browser, { lang = 'es', theme = 'dark', mobile = 
 
 // Con la pagina ya navegada: espera a que todo lo que puede mover un pixel
 // haya terminado, y deja el punto de partida (scroll y raton) limpio.
-export async function settle(page) {
+export async function settle(page, { keepScroll = false } = {}) {
   await page.waitForLoadState('networkidle');
 
   await page.waitForFunction(() => document.querySelectorAll('.sk').length === 0);
@@ -159,7 +179,9 @@ export async function settle(page) {
       .every((img) => img.complete && img.naturalWidth > 0);
   });
 
-  await page.evaluate(() => window.scrollTo(0, 0));
+  // keepScroll: true evita este reset -- lo usa una escena cuyo prep ya dejo
+  // el scroll donde lo necesita (ver shots.mjs).
+  if (!keepScroll) await page.evaluate(() => window.scrollTo(0, 0));
   await page.mouse.move(0, 0);
 }
 

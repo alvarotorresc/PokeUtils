@@ -54,17 +54,8 @@ async function main() {
           await settle(page);
           if (escena.prep) {
             await escena.prep(page);
-            await settle(page);
+            await settle(page, { keepScroll: escena.keepScroll === true });
           }
-          // El .nav lleva backdrop-filter, y su render alterna entre dos
-          // resultados de un screenshot al siguiente (visto con capturas
-          // consecutivas: mismo hash 5/5 sin blur, distinto con el). capture()
-          // hace justo eso -- dos capturas seguidas para la guarda de
-          // hash-estable -- asi que sin esto tres escenas de cada seis
-          // fallaban esa guarda siempre. A scroll 0 (donde settle() deja la
-          // pagina) el nav no tiene nada detras que emborronar, asi que
-          // apagarlo aqui no cambia lo que se ve.
-          await page.addStyleTag({ content: '.nav { backdrop-filter: none !important; }' });
           const tamano = escena.mobile ? TAMANOS.mobile : TAMANOS.desktop;
           await capture(page, join(OUT, `${nombre}.png`), {
             width: tamano.width,
