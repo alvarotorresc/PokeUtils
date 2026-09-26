@@ -146,13 +146,13 @@ const TEXTS = {
   'tool-10-equipo': {
     es: {
       name: 'Equipo',
-      alt: 'Equipo de Garchomp, Gengar, Corviknight, Rotom-Lavado, Amoonguss y Dragapult con sus amenazas.',
+      alt: 'Equipo de Garchomp, Gengar, Corviknight, Rotom Lavado, Amoonguss y Dragapult con sus amenazas.',
       caption: 'Un equipo de seis, con sus amenazas',
       text: 'Arma un equipo de hasta seis Pokémon y revisa sus debilidades comunes.',
     },
     en: {
       name: 'Team',
-      alt: 'Team of Garchomp, Gengar, Corviknight, Rotom-Wash, Amoonguss and Dragapult with their threats.',
+      alt: 'Team of Garchomp, Gengar, Corviknight, Wash Rotom, Amoonguss and Dragapult with their threats.',
       caption: 'A team of six, with its threats',
       text: 'Builds a team of up to six Pokémon and reviews their shared weaknesses.',
     },
@@ -230,14 +230,14 @@ const TEXTS = {
   'tool-16-calc-dano': {
     es: {
       name: 'Calculadora de daño',
-      alt: 'Daño del Terremoto de Garchomp contra Rotom-Lavado.',
-      caption: 'Terremoto contra Rotom-Lavado',
+      alt: 'Daño del Terremoto de Garchomp contra Rotom Lavado.',
+      caption: 'Terremoto contra Rotom Lavado',
       text: 'Calcula el rango de daño de un movimiento entre dos Pokémon.',
     },
     en: {
       name: 'Damage calculator',
-      alt: "Damage from Garchomp's Earthquake against Rotom-Wash.",
-      caption: 'Earthquake vs. Rotom-Wash',
+      alt: "Damage from Garchomp's Earthquake against Wash Rotom.",
+      caption: 'Earthquake vs. Wash Rotom',
       text: 'Calculates the damage range of a move between two Pokémon.',
     },
   },
