@@ -16,3 +16,7 @@ skills-lock.json
 # Backlog y config de sesión: material de trabajo, local
 /BACKLOG.md
 /CLAUDE.md
+
+# Capturas de media/shots: solo se sube el codigo del paquete.
+media/out/
+media/shots/node_modules/

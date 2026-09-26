@@ -1,0 +1,14 @@
+{
+  "name": "pokeutils-media-shots",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Capturas deterministas de PokeUtils para la ficha de portfolio. Paquete aparte: no toca las dependencias de la app.",
+  "scripts": {
+    "shots": "node shots.mjs",
+    "promo": "node promo.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.63.0"
+  }
+}
