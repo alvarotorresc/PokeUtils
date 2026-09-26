@@ -59,4 +59,9 @@ export const SCENES = [
       await page.click('button.type-badge[data-type="dragon"]');
     },
   },
+  { file: 'tool-10-equipo', route: '#/team?ids=445,94,823,10009,591,887', theme: 'light' },
+  { file: 'tool-11-contrarrestar', route: '#/counter?ids=445,94,823,10009,591,887', theme: 'dark' },
+  { file: 'tool-12-velocidad', route: '#/speed?id=887', theme: 'light' },
+  { file: 'tool-13-sobrevive', route: '#/survive?a=445&m=89&d=591', theme: 'dark' },
+  { file: 'tool-14-meta', route: '#/meta?f=ou&id=445', theme: 'light' },
 ];
