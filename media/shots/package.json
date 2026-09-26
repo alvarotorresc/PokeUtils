@@ -6,7 +6,8 @@
   "description": "Capturas deterministas de PokeUtils para la ficha de portfolio. Paquete aparte: no toca las dependencias de la app.",
   "scripts": {
     "shots": "node shots.mjs",
-    "promo": "node promo.mjs"
+    "promo": "node promo.mjs",
+    "labels": "node labels.mjs"
   },
   "dependencies": {
     "playwright": "^1.63.0"
