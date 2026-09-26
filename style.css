@@ -1083,12 +1083,17 @@ html.no-hero [data-shell] {
 
 .mw-grid {
   display: grid;
-  /* 200 y no 240: a 1280 las cinco tarjetas caian a cuatro mas una suelta. */
-  /* El maximo es 340 y no 360: a 1920 las cinco tarjetas sumaban 1856 sobre los
-     1832 utiles y la quinta caia sola a la fila de abajo. */
-  grid-template-columns: repeat(auto-fit, minmax(200px, 340px));
+  /* auto-fit cuenta las columnas con el maximo de la pista (340px), no con el
+     hueco real: entre ~1430 y ~1780px de ventana caben 4 columnas de 340 pero
+     no una quinta, y la tarjeta 5 cae sola a otra fila aunque sobre sitio.
+     Con 1fr como maximo esa cuenta no se hace de menos: se reparte el ancho
+     disponible entre las que caben a 200px o mas. El max-width de abajo evita
+     que esas tarjetas pasen de 340px en vez de dejarlas crecer sin limite. */
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   justify-content: center;
   gap: 14px;
+  max-width: calc(5 * 340px + 4 * 14px);
+  margin-inline: auto;
 }
 
 .mw {
