@@ -64,4 +64,38 @@ export const SCENES = [
   { file: 'tool-12-velocidad', route: '#/speed?id=887', theme: 'light' },
   { file: 'tool-13-sobrevive', route: '#/survive?a=445&m=89&d=591', theme: 'dark' },
   { file: 'tool-14-meta', route: '#/meta?f=ou&id=445', theme: 'light' },
+  {
+    file: 'tool-15-calc-ivev',
+    route: '#/calculator',
+    theme: 'dark',
+    prep: async (page) => {
+      await page.fill('#calcSearch', 'garchomp');
+      await page.waitForSelector('#calcSearchResults .card');
+      await page.click('#calcSearchResults .card:first-child');
+      await page.fill('#calcLevel', '50');
+      await page.click('#calcCalcBtn');
+      await page.waitForSelector('#calcResultsBar .card');
+    },
+  },
+  {
+    file: 'tool-16-calc-dano',
+    route: '#/calculator?tab=damage&a=445&d=10009&m=89',
+    theme: 'light',
+    prep: async (page) => {
+      await page.waitForSelector('#dmgResult .dmg-result');
+    },
+  },
+  {
+    file: 'tool-17-calc-captura',
+    route: '#/calculator?tab=catch',
+    theme: 'dark',
+    prep: async (page) => {
+      await page.fill('#capSearch', 'dragapult');
+      await page.waitForSelector('#capSearchResults .card');
+      await page.click('#capSearchResults .card:first-child');
+      await page.selectOption('#capBall', 'ultra-ball');
+      await page.selectOption('#capStatus', 'sleep');
+      await page.waitForSelector('#capResult .card');
+    },
+  },
 ];
