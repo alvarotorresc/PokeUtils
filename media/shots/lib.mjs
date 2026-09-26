@@ -109,6 +109,9 @@ const FREEZE_CSS = `
    pagina) el nav no tiene nada detras que emborronar, asi que apagarlo aqui
    no cambia lo que se ve. */
 .nav { backdrop-filter: none !important; }
+
+/* El sticky le da al .dex-side una capa propia en posicion subpixel, y Chromium en headless rasteriza una esquina redondeada de dos formas distintas, rompiendo el hash estable. */
+.dex-side { position: relative !important; }
 `;
 
 // Crea el contexto y una pagina en blanco -- quien llama hace el page.goto().
