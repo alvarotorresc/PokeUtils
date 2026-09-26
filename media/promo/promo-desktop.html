@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Promo desktop</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    background: #0f0f23;
+  }
+
+  body {
+    position: relative;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 42%),
+      radial-gradient(circle at 85% 75%, rgba(130, 130, 255, 0.06) 0%, transparent 46%),
+      repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.02) 0px, rgba(255, 255, 255, 0.02) 1px, transparent 1px, transparent 42px);
+  }
+
+  .pokeball {
+    position: absolute;
+    top: -210px;
+    right: -190px;
+    width: 640px;
+    height: 640px;
+    transform: rotate(28deg);
+    opacity: 0.92;
+    filter: drop-shadow(0 30px 70px rgba(0, 0, 0, 0.55));
+  }
+
+  .browser {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 1560px;
+    border-radius: 16px;
+    background: #1c1c30;
+    box-shadow: 0 50px 120px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.07);
+    overflow: hidden;
+  }
+
+  .browser-bar {
+    height: 46px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 20px;
+    background: linear-gradient(#28283f, #1c1c30);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+  }
+
+  .dot.red { background: #ff5f57; }
+  .dot.yellow { background: #febc2e; }
+  .dot.green { background: #28c840; }
+
+  .browser-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #08080f;
+    padding: 30px 0;
+  }
+
+  .browser-content img {
+    display: block;
+    width: 1500px;
+    height: auto;
+  }
+</style>
+</head>
+<body>
+  <img class="pokeball" src="/icons/favicon.svg" alt="" />
+  <div class="browser">
+    <div class="browser-bar">
+      <span class="dot red"></span>
+      <span class="dot yellow"></span>
+      <span class="dot green"></span>
+    </div>
+    <div class="browser-content">
+      <img id="shot" alt="" />
+    </div>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const img = params.get('img');
+    if (img) document.getElementById('shot').src = img;
+  </script>
+</body>
+</html>
