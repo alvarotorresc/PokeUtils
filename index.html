@@ -26,20 +26,27 @@
   <!-- La canonical de la portada. Este fichero es tambien el esqueleto de
        las demas paginas: scripts/pages.mjs lo copia por cada ruta publica
        (dist/pokedex/pikachu.html...) y cambia esta canonical por la de esa
-       ruta, el <title>, la descripcion y los og:, y le anade un noindex. Los
-       patrones de alli casan con estas lineas tal cual estan: si cambian, el
-       build se para en vez de sacar paginas con la canonical de la portada. -->
+       ruta, el <title>, la descripcion, los og: y los hreflang, y le anade un
+       noindex. Los patrones de alli casan con estas lineas tal cual estan: si
+       cambian, el build se para en vez de sacar paginas con la canonical de la
+       portada.
+       Los tres hreflang emparejan esta portada con /en, y x-default es el
+       espanol. /en lleva estos mismos tres, byte a byte (lo comprueba el build:
+       bloqueHreflang de pages.mjs los escribe con este formato). -->
   <link rel="canonical" href="https://pokeutils.alvarotc.com/">
+  <link rel="alternate" hreflang="es" href="https://pokeutils.alvarotc.com/">
+  <link rel="alternate" hreflang="en" href="https://pokeutils.alvarotc.com/en">
+  <link rel="alternate" hreflang="x-default" href="https://pokeutils.alvarotc.com/">
   <meta name="theme-color" content="#1a1a3e">
   <meta name="author" content="Alvaro Torres">
-  <meta name="description" content="Your retro Pokemon guide: competitive analysis, breeding tools, complete Pokédex and damage calculators.">
+  <meta name="description" content="Tu guía Pokémon retro: análisis competitivo, herramientas de cría, Pokédex completa y calculadoras de daño.">
   <!-- Enlace compartido (WhatsApp, redes): las previsualizaciones no ejecutan
        JS, asi que leen esto tal cual. Cada pagina generada lleva aqui su propio
        og:title, og:description y og:url (ver scripts/pages.mjs); la imagen es
        la misma para todas. -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="PokeUtils">
-  <meta property="og:description" content="Your retro Pokemon guide: competitive analysis, breeding tools, complete Pokédex and damage calculators.">
+  <meta property="og:description" content="Tu guía Pokémon retro: análisis competitivo, herramientas de cría, Pokédex completa y calculadoras de daño.">
   <meta property="og:image" content="https://pokeutils.alvarotc.com/icons/og-image.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">

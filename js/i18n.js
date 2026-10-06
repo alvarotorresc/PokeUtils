@@ -89,8 +89,11 @@ export function statName(stat) {
 // "verdadero" y lo ensena tal cual; comparar contra el slug (el mismo
 // patron que ya usan pokedex-detail.js y evolution.js) cae al ingles bien
 // formado en su lugar.
-export function pokeName(entry) {
-  if (currentLang === 'en') return entry.nameEn || entry.name;
+//
+// El idioma es opcional: sin el, el activo. El build lo pasa para sacar los
+// nombres de las paginas en ingles sin tocar el estado de este modulo.
+export function pokeName(entry, lang = currentLang) {
+  if (lang === 'en') return entry.nameEn || entry.name;
   return entry.nameEs && entry.nameEs !== entry.name ? entry.nameEs : (entry.nameEn || entry.name);
 }
 
