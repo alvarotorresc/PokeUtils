@@ -292,6 +292,15 @@ check('mezclar idiomas, o salirse de la forma, da null', [
   '/en/abilities/unidad-ecuestre-glastrier', '/en/abilities/As%20One', '/en/egg-groups/water1',
   '/en/moves/9', '/en/moves/breakneck-blitz--physical', '/en/pokedex/noexiste', '/enx', '/en/pokedex/pikachu/mas',
 ].filter(p => logicaDe(p) !== null), []);
+// Una barra codificada no es una barra: /en%2Fpokedex no es /en/pokedex, ni
+// /pokedex%2Fpikachu una ficha. Si se decodificara antes de partir la ruta,
+// cada pagina tendria una segunda direccion que no es la canonica.
+check('las barras codificadas dan null', [
+  '/en%2Fpokedex', '/en%2fpokedex', '/en%2Fpokedex/pikachu', '/en/pokedex%2Fpikachu', '/pokedex%2Fpikachu',
+  '%2Fpokedex', '/en%2F', '/movimientos%2Fpuno-trueno', '/en/moves%2Fthunder-punch',
+].filter(p => logicaDe(p) !== null), []);
+check('y el idioma sale de la ruta tal cual llega', [idiomaDe('/en%2Fpokedex'), idiomaDe('/en/pokedex')], ['es', 'en']);
+check('otros %XX siguen valiendo', comoTexto(logicaDe('/pokedex/pik%61chu')), '/pokedex/25');
 check('el id numerico se admite tambien en ingles (lo redirige quien sirve)',
   comoTexto(logicaDe('/en/pokedex/25')), '/pokedex/25');
 

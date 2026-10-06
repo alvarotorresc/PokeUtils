@@ -530,9 +530,13 @@ export function urlDe(logica, idiomaDestino = idioma) {
 // una seccion de un idioma con el prefijo del otro (/en/movimientos/...). Una
 // pagina, una direccion.
 export function logicaDe(pathname, search = '', hash = '') {
+  // Una barra codificada (%2F) no es una barra: decodificada antes de partir la
+  // ruta, /en%2Fpokedex seria /en/pokedex, una segunda direccion para la misma
+  // pagina. Fuera, y el idioma se lee de la ruta tal cual llega.
+  if (/%2f/i.test(pathname)) return null;
   const ruta = decodificar(pathname);
   if (ruta === null) return null;
-  const l = idiomaDe(ruta);
+  const l = idiomaDe(pathname);
   const params = new URLSearchParams(search);
 
   const resultado = logica => {
