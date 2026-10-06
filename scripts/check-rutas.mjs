@@ -13,6 +13,7 @@
 // Run with: node scripts/check-rutas.mjs
 import { readFile } from 'node:fs/promises';
 import { gzipSync } from 'node:zlib';
+import { runInNewContext } from 'node:vm';
 import {
   slugEs, TABLA_ESTATICA, GRUPOS_HUEVO_ES, construirIndice, fijarIndice,
   urlDe, logicaDe, legadoALogica, TITULOS, tituloDe,
@@ -262,6 +263,59 @@ check('las 17 del README llegan a su URL publica',
 const enReadme = [...(await leerTexto('README.md')).matchAll(/#\/[^\s)`]*/g)].map(m => m[0]);
 check('el README no enlaza ningun #/ que no este en la lista',
   enReadme.filter(h => !(h in README)), []);
+
+console.log('\nLa migracion inline de index.html\n');
+
+// index.html lleva en el <head> una copia a mano de TABLA_ESTATICA y de
+// GRUPOS_HUEVO_ES: tiene que redirigir antes de pintar nada, y ahi aun no hay
+// ningun modulo. Comparar solo las tablas no bastaria -- lo que puede fallar es
+// el codigo que las usa (plegar el tab, reescribir la query con %20) -- asi que
+// el script se ejecuta de verdad con un `location` de mentira y su destino se
+// compara con el de urlDe(legadoALogica(...)), que es lo que haria app.js.
+const indexHtml = await leerTexto('index.html');
+const enLinea = [...indexHtml.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
+const migracion = enLinea.find(s => s.includes('var RUTAS_ESTATICAS'));
+const noHero = enLinea.find(s => s.includes("classList.add('no-hero')"));
+check('index.html tiene el script de migracion', Boolean(migracion), true);
+check('y el de no-hero', Boolean(noHero), true);
+
+const literal = nombre => {
+  const m = migracion?.match(new RegExp(`var ${nombre} = (\\{[\\s\\S]*?\\});`));
+  return m ? JSON.parse(m[1]) : null;
+};
+check('su copia de TABLA_ESTATICA es la de rutas.js', literal('RUTAS_ESTATICAS'), TABLA_ESTATICA);
+check('su copia de GRUPOS_HUEVO_ES es la de rutas.js', literal('GRUPOS_HUEVO'), GRUPOS_HUEVO_ES);
+
+// Lo que hace el <head> con un hash: a donde manda (o null) y si oculta el hero.
+const enHead = (hash, pathname = '/') => {
+  let destino = null;
+  const clases = new Set();
+  const location = { hash, pathname, replace: url => { destino ??= url; } };
+  const document = { documentElement: { classList: { add: c => clases.add(c) } } };
+  for (const codigo of [migracion, noHero]) {
+    runInNewContext(codigo, { location, document, URLSearchParams });
+  }
+  return { destino, noHero: clases.has('no-hero') };
+};
+const deIndex = [
+  ...Object.keys(README),
+  '#/', '#/home?q=x', '#/home', '#/pokedex?q=mr+mime',
+  '#/calculator?tab=ivev&a=6', '#/calculator?tab=damage&a=6&m=53', '#/calculator?tab=foo',
+  '#/calculator?a=6&tab=catch', '#/egg/water1', '#/egg/no-eggs',
+];
+// #/pokedex/6 va por /pokedex/6 y la 301: su caso tiene su propio aserto abajo.
+check('cada ruta sin indice llega a donde la mandaria app.js',
+  deIndex.filter(h => !/^#\/pokedex\/\d/.test(h) && enHead(h).destino !== urlDe(legadoALogica(h))).map(h => [h, enHead(h).destino]), []);
+check('la portada no oculta el hero', ['#/', '#/home?q=x'].filter(h => enHead(h).noHero), []);
+check('el resto si', deIndex.filter(h => !['#/', '#/home?q=x', '#/home'].includes(h) && !enHead(h).noHero), []);
+check('un Pokemon por id va a su /pokedex/<id>, y la 301 hace el resto',
+  enHead('#/pokedex/25'), { destino: '/pokedex/25', noHero: true });
+check('un movimiento o una habilidad se quedan para app.js, sin hero',
+  [enHead('#/moves/53'), enHead('#/abilities/As%20One')],
+  [{ destino: null, noHero: true }, { destino: null, noHero: true }]);
+check('sin hash no hace nada', enHead(''), { destino: null, noHero: false });
+check('un grupo que no existe tampoco', enHead('#/egg/nada').destino, null);
+check('fuera de la raiz un #/ no es un enlace de antes', enHead('#/pokedex', '/faq').destino, null);
 
 console.log(failed ? `\n${failed} FAILED\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);

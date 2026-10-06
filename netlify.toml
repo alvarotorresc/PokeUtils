@@ -69,8 +69,8 @@
     # navegador, no hay panel donde mirarlas.
     #
     # Cada directiva, derivada de lo que el sitio carga de verdad:
-    #  - script-src: 'unsafe-inline' por los 4 bloques inline de index.html
-    #    (tema, hero, y los dos swaps de idioma), los 2 de 404.html (tema e
+    #  - script-src: 'unsafe-inline' por los 5 bloques inline de index.html
+    #    (migracion de los enlaces #/, tema, hero, y los dos swaps de idioma), los 2 de 404.html (tema e
     #    idioma) y, sobre todo, los manejadores en atributo que generan las
     #    plantillas JS -- 9 onerror= y 2 onclick="history.back()". Con hashes no
     #    se puede: el hash cubriria el atributo y haria falta 'unsafe-hashes',

@@ -10,7 +10,7 @@ import { t, getLang, setLang, onLangChange } from './i18n.js';
 import { purgeLegacyCache } from './api.js';
 import { leer, escribir } from './storage.js';
 import { renderError, parseRuta, navegar, fijarRouter, wireSpriteFade } from './ui.js';
-import { urlDe, cargarIndice, tituloDe } from './rutas.js';
+import { urlDe, cargarIndice, tituloDe, legadoALogica } from './rutas.js';
 import { cascaraDeRuta } from './cascaras.js';
 import { attachGlobalSearch } from './global-search.js';
 
@@ -529,4 +529,35 @@ document.addEventListener('click', (e) => {
   navegar(url.href);
 });
 
-route();
+// ===== LOS ENLACES #/ DE ANTES =====
+//
+// Las rutas fijas, los grupos huevo y los Pokemon por id ya los ha redirigido
+// el script del <head> de index.html. Lo que llega aqui con un #/ es lo que
+// necesita el indice de rutas para saber su slug -- #/moves/53,
+// #/abilities/As%20One -- o algo que no existe. replaceState y no
+// location.replace: la app ya esta cargada y basta con pintar la ruta buena, sin
+// volver a pedir la pagina.
+//
+// Si no lleva a ninguna parte se quita el hash y se queda en la portada. El
+// no-hero que puso el <head> por si acaso se quita tambien: con el puesto, la
+// portada adoptaria su hero oculto y se veria en blanco.
+async function arrancar() {
+  if (location.pathname === '/' && location.hash.startsWith('#/')) {
+    await cargarIndice().catch(() => {});
+    let logica = null;
+    try {
+      logica = legadoALogica(location.hash);
+    } catch {
+      // Sin indice no se sabe que slug lleva; mejor la portada que un error.
+    }
+    if (logica) {
+      history.replaceState(null, '', urlDe(logica));
+    } else {
+      history.replaceState(null, '', location.pathname + location.search);
+      document.documentElement.classList.remove('no-hero');
+    }
+  }
+  route();
+}
+
+arrancar();

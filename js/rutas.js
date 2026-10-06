@@ -449,8 +449,8 @@ export function logicaDe(pathname, search = '', hash = '') {
 // Los enlaces que ya hay compartidos son '#/pokedex/25', '#/abilities/As%20One'
 // o '#/calculator?tab=damage&a=6'. Esto los traduce a la ruta logica de hoy
 // ('/pokedex/25', '/abilities/as-one-glastrier'), con la query tal cual, para
-// que quien arranca haga location.replace(urlDe(...)). null si no es un enlace
-// de la app o lleva a algo que no existe.
+// que app.js, al arrancar, haga history.replaceState(urlDe(...)). null si no es
+// un enlace de la app o lleva a algo que no existe.
 export function legadoALogica(hash) {
   const texto = String(hash);
   if (!texto.startsWith('#/')) return null;

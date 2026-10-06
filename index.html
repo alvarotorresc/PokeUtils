@@ -51,6 +51,68 @@
           integrity="sha384-6PHtXKae10+dZuA/fcmjkSTDco+NPBE5fZ4eS/Em2lVIsS6FdDZIgs06MBJLEcSW"
           crossorigin="anonymous"
           data-website-id="55e0f212-eb38-4998-882b-cf73e5bb906c"></script>
+  <!-- Los enlaces de antes (#/pokedex, #/calculator?tab=damage&a=6) siguen
+       compartidos por ahi. Las rutas fijas y los grupos huevo se redirigen aqui,
+       antes de pintar nada y sin esperar a ningun modulo, con location.replace
+       para no dejar la direccion vieja en el historial. Un Pokemon por id va a
+       /pokedex/<id>, y la 301 del servidor lo lleva a su nombre. Los
+       movimientos y las habilidades necesitan el indice de rutas: de esos se
+       encarga app.js al arrancar (legadoALogica).
+       RUTAS_ESTATICAS y GRUPOS_HUEVO son copia a mano de TABLA_ESTATICA y
+       GRUPOS_HUEVO_ES de js/rutas.js, que aqui no se puede importar.
+       check-rutas.mjs ejecuta este script y compara cada destino con el de
+       urlDe(legadoALogica(...)). -->
+  <script>
+    (function () {
+      // Solo en la raiz, que es donde vivian: en cualquier otra pagina un #/
+      // no es un enlace de antes, y esta cabecera la llevan todas.
+      var h = location.hash;
+      if (location.pathname !== '/' || h.indexOf('#/') !== 0) return;
+      var RUTAS_ESTATICAS = {
+        "/": "/", "/home": "/", "/pokedex": "/pokedex", "/types": "/tipos",
+        "/egg": "/grupos-huevo", "/moves": "/movimientos", "/abilities": "/habilidades",
+        "/items": "/objetos", "/natures": "/naturalezas", "/compare": "/comparador",
+        "/data": "/datos", "/competitive": "/competitivo", "/team": "/equipo",
+        "/counter": "/contrarrestar", "/speed": "/velocidad", "/survive": "/sobrevive",
+        "/meta": "/sets-del-meta", "/faq": "/faq", "/privacy": "/privacidad",
+        "/terms": "/terminos", "/calculator": "/calculadora-ivs-evs",
+        "/calculator?tab=damage": "/calculadora-de-dano",
+        "/calculator?tab=catch": "/calculadora-de-captura"
+      };
+      var GRUPOS_HUEVO = {
+        "monster": "monstruo", "water1": "agua-1", "water2": "agua-2", "water3": "agua-3",
+        "bug": "bicho", "flying": "volador", "ground": "campo", "fairy": "hada",
+        "plant": "planta", "humanshape": "humanoide", "mineral": "mineral",
+        "indeterminate": "amorfo", "dragon": "dragon", "ditto": "ditto",
+        "no-eggs": "desconocido"
+      };
+      var q = h.indexOf('?');
+      var partes = (q === -1 ? h.slice(1) : h.slice(1, q)).split('/').filter(Boolean);
+      var path = '/' + partes.join('/');
+      var params = new URLSearchParams(q === -1 ? '' : h.slice(q + 1));
+      // La pestana de la calculadora se pliega en la ruta, como en urlDe().
+      var clave = path;
+      if (path === '/calculator') {
+        var tab = params.get('tab');
+        params.delete('tab');
+        if (RUTAS_ESTATICAS.hasOwnProperty('/calculator?tab=' + tab)) clave = '/calculator?tab=' + tab;
+      }
+      var destino = null;
+      if (RUTAS_ESTATICAS.hasOwnProperty(clave)) {
+        destino = RUTAS_ESTATICAS[clave];
+      } else if (partes.length === 2 && partes[0] === 'egg' && GRUPOS_HUEVO.hasOwnProperty(partes[1])) {
+        destino = '/grupos-huevo/' + GRUPOS_HUEVO[partes[1]];
+      } else if (partes.length === 2 && partes[0] === 'pokedex' && /^[1-9]\d*$/.test(partes[1])) {
+        destino = path;
+      }
+      if (destino === null) return;
+      // encodeURIComponent y no params.toString(), que escribe el espacio como
+      // "+": la misma query que escribiria urlDe().
+      var query = [];
+      params.forEach(function (v, k) { query.push(encodeURIComponent(k) + '=' + encodeURIComponent(v)); });
+      location.replace(destino + (query.length ? '?' + query.join('&') : ''));
+    })();
+  </script>
   <!-- El tema, antes de pintar. Lo ponia app.js, que es un modulo diferido: con
        la portada ya en el HTML, quien tenga el tema claro veria el fondo oscuro
        hasta que bajara el JS. Sincrono y en el head, no hay parpadeo. -->
@@ -72,9 +134,19 @@
        otra ruta hay que ocultarlo antes de la primera pintura, o el <h1> de la
        portada parpadea un frame hasta que el JS diferido lo borre. La portada
        es solo '/' (con o sin query), lo mismo que decide parseRuta en ui.js;
-       cualquier otra ruta no. -->
+       cualquier otra ruta no.
+       Tampoco lo es '/' con un enlace #/ de antes que no sea la portada
+       (#/moves/53): el script de migracion de arriba o app.js lo van a llevar
+       a su pagina, y mientras tanto el hero no tiene que verse. Si app.js no
+       lo reconoce, quita la clase y se queda en la portada. -->
   <script>
-    if (location.pathname !== '/') document.documentElement.classList.add('no-hero');
+    (function () {
+      var h = location.hash.indexOf('#/') === 0 ? location.hash.slice(1) : '/';
+      var legado = h.split('?')[0].split('/').filter(Boolean).join('/');
+      if (location.pathname !== '/' || (legado !== '' && legado !== 'home')) {
+        document.documentElement.classList.add('no-hero');
+      }
+    })();
   </script>
 </head>
 <body>
