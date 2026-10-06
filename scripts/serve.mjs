@@ -16,12 +16,14 @@
 // hace Netlify para poder recargar en local:
 //
 //   - Un fichero que existe se sirve tal cual. Siempre gana.
-//   - /pokedex/<id> responde 301 hacia /pokedex/<nombre>. En dist sale de
-//     dist/_redirects, el mismo fichero que lee Netlify, asi que en local se
-//     prueban sus reglas de verdad; en el fuente no hay build, y la emula
-//     urlDe() con data/rutas.json.
+//   - /pokedex/<id> responde 301 hacia /pokedex/<nombre>, y /en/pokedex/<id>
+//     hacia /en/pokedex/<name>. En dist sale de dist/_redirects, el mismo
+//     fichero que lee Netlify, asi que en local se prueban sus reglas de
+//     verdad; en el fuente no hay build, y la emula urlDe() con
+//     data/rutas.json, en el idioma del prefijo.
 //   - Fuente: cualquier ruta que js/rutas.js reconoce (logicaDe != null) sirve
-//     index.html, y el router pinta la pagina.
+//     index.html, y el router pinta la pagina. Las de /en tambien: logicaDe
+//     ya las entiende.
 //   - dist: prueba <ruta>.html y <ruta>/index.html, que es como Netlify busca
 //     las paginas que genera el build.
 //   - Lo demas es 404.html con status 404, no index.html con 200: una URL que
@@ -115,15 +117,17 @@ createServer(async (req, res) => {
       return;
     }
     // El id numerico es la URL de antes; su sitio es la del nombre, con el
-    // ancla de las formas sin pagina propia (#forma-deoxys-attack).
+    // ancla de las formas sin pagina propia (#forma-deoxys-attack), y en el
+    // mismo idioma: /en/pokedex/25 va a /en/pokedex/pikachu.
     const regla = REDIRECTS.get(crudo);
     if (regla) {
       res.writeHead(regla.status, { Location: regla.hacia, 'Cache-Control': 'no-store' }).end();
       return;
     }
-    const id = crudo.match(/^\/pokedex\/(\d+)$/);
+    const id = crudo.match(/^(\/en)?\/pokedex\/(\d+)$/);
     if (!DIST && id && logicaDe(crudo)) {
-      res.writeHead(301, { Location: urlDe(`/pokedex/${id[1]}`), 'Cache-Control': 'no-store' }).end();
+      const destino = urlDe(`/pokedex/${id[2]}`, id[1] ? 'en' : 'es');
+      res.writeHead(301, { Location: destino, 'Cache-Control': 'no-store' }).end();
       return;
     }
     const pagina = await paginaDe(crudo, path);
