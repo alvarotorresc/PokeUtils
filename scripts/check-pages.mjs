@@ -150,8 +150,17 @@ check('un robots noindex', uno(pika, /<meta name="robots" content="([^"]*)"/g), 
 check('no-hero ya en el <html>', /<html lang="es" class="no-hero">/.test(pika), true);
 check('sin el hero de la portada', [pika.includes('data-shell'), pika.includes('<h1>')], [false, false]);
 check('sin comentarios HTML', pika.includes('<!--'), false);
-check('y con los mismos <script> que el esqueleto',
-  (pika.match(/<script\b/g) || []).length, (esqueleto.replace(/<!--[\s\S]*?-->/g, '').match(/<script\b/g) || []).length);
+// D9: la migracion de los #/, el no-hero y los dos swaps de idioma solo hacen
+// algo en la portada espanola, que es el index.html tal cual. En las generadas
+// ya esta todo en el HTML. Quedan Umami, el tema con el modulepreload y app.js.
+const scripts = html => (html.match(/<script\b/g) || []).length;
+const MUERTOS = ['var RUTAS_ESTATICAS', "classList.add('no-hero')", 'var EN_NAV', 'var EN_HERO'];
+check('el esqueleto lleva los cuatro scripts de la portada', MUERTOS.map(m => esqueleto.includes(m)), [true, true, true, true]);
+check('y una pagina generada, cuatro <script> menos', [scripts(pika), scripts(paginaHtml(esqueleto, por('/en')))],
+  Array(2).fill(scripts(sinComentarios(esqueleto)) - 4));
+check('ninguno de los cuatro', [pika, paginaHtml(esqueleto, por('/en/pokedex/pikachu')), paginaHtml(esqueleto, por('/en'))]
+  .map(html => MUERTOS.filter(m => html.includes(m))), [[], [], []]);
+check('el tema y el modulepreload siguen', [pika.includes("'pkutils_theme'"), pika.includes("l.rel = 'modulepreload'")], [true, true]);
 // Sin el atributo, cada filtro (replaceState con ?q=) cuenta como una visita
 // en Umami: 1 pageview de mas por filtro, medido en el preview de la PR #21.
 const umami = html => html.replace(/<!--[\s\S]*?-->/g, '').match(/<script\b[^>]*analytics\.alvarotc\.com[^>]*>/g) || [];

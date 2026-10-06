@@ -260,6 +260,35 @@ function enlacesEnIngles(html) {
   });
 }
 
+// Los scripts inline de index.html que solo hacen algo en la portada espanola
+// (D9). La migracion de los #/ sale si la ruta no es /; el no-hero y los dos
+// swaps de idioma hacen en el navegador lo que una pagina generada ya trae
+// escrito en el HTML (la clase, el <html lang> y los textos en ingles). Son
+// unos 5,5 KB por pagina, y el swap del nav ademas pisaba el href del
+// conmutador con la portada hasta que hidrataba app.js.
+//
+// Cada uno se reconoce por una marca que tiene que estar en exactamente un
+// <script> sin atributos: si index.html cambia y una deja de casar, el build se
+// para en vez de dejar el script dentro o llevarse otro.
+export const SCRIPTS_DE_LA_PORTADA = [
+  ['la migracion de los #/', 'var RUTAS_ESTATICAS'],
+  ['el no-hero', "classList.add('no-hero')"],
+  ['el swap del nav', 'var EN_NAV'],
+  ['el swap del hero', 'var EN_HERO'],
+];
+
+function sinScriptsDeLaPortada(html) {
+  let salida = html;
+  for (const [que, marca] of SCRIPTS_DE_LA_PORTADA) {
+    const bloques = [...salida.matchAll(/[ \t]*<script>[\s\S]*?<\/script>[ \t]*\n?/g)].filter(m => m[0].includes(marca));
+    if (bloques.length !== 1) {
+      throw new Error(`pages.mjs: ${que} (${marca}) esta en ${bloques.length} <script> de index.html (tiene que ser 1) -- revisa la marca`);
+    }
+    salida = salida.replace(bloques[0][0], '');
+  }
+  return salida;
+}
+
 // El index.html ya construido (con los nombres hasheados) -> el de esta ruta.
 export function paginaHtml(esqueleto, ruta, origen = ORIGEN) {
   if (ruta.publica === '/') throw new Error('La portada no se regenera: es el index.html tal cual');
@@ -271,7 +300,7 @@ export function paginaHtml(esqueleto, ruta, origen = ORIGEN) {
   // Primero fuera los comentarios: el build ya pasa el esqueleto sin ellos,
   // pero check-pages le pasa el fuente, y sus comentarios nombran <html lang>,
   // el conmutador o el hero, que son patrones de aqui abajo.
-  let html = sinComentarios(esqueleto);
+  let html = sinScriptsDeLaPortada(sinComentarios(esqueleto));
   html = sustituir(html, /<title>PokeUtils<\/title>/, () => `<title>${titulo}</title>`, 'el <title>');
   html = sustituir(html, /<meta name="description" content="[^"]*">/,
     () => `<meta name="description" content="${descripcion}">`, 'la meta description');

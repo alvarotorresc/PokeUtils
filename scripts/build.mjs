@@ -29,7 +29,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import {
   rutasPublicas, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas, sinComentarios,
-  literalesEspanol, ORIGEN,
+  literalesEspanol, ORIGEN, SCRIPTS_DE_LA_PORTADA,
 } from './pages.mjs';
 import {
   TABLA_ESTATICA, GRUPOS_HUEVO_ES, SECCIONES_DE_FICHA, IDIOMAS, urlDe, logicaDe, idiomaDe,
@@ -381,6 +381,19 @@ async function generarPaginas(esqueleto) {
       if (esperado === otro && ficheroDe(path) !== parDe(f, otro)) {
         throw new Error(`dist/${f}: el conmutador lleva a ${href} y su par es dist/${parDe(f, otro)}`);
       }
+    }
+  }
+
+  // (m) Los scripts inline de la portada (D9) se quedan en index.html y en
+  // ninguna otra: en una generada solo pesan, y el swap del nav pisaba el href
+  // del conmutador. Por su marca, no por getItem('pkutils_lang'), que ya solo
+  // lo lleva la migracion.
+  for (const { f, html } of paginas) {
+    const marcas = SCRIPTS_DE_LA_PORTADA.map(([, marca]) => marca).filter(marca => html.includes(marca));
+    const esperadas = f === 'index.html' ? SCRIPTS_DE_LA_PORTADA.map(([, marca]) => marca) : [];
+    if (JSON.stringify(marcas) !== JSON.stringify(esperadas)) {
+      throw new Error(`dist/${f} lleva los scripts ${JSON.stringify(marcas)} y deberia llevar ${JSON.stringify(esperadas)}`
+        + ' -- solo la portada espanola necesita la migracion, el no-hero y los swaps de idioma');
     }
   }
   return ficheros.length;
