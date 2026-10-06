@@ -9,7 +9,8 @@ import { getLevel, setLevel, onLevelChange } from './level.js';
 import { t, getLang, setLang, onLangChange } from './i18n.js';
 import { purgeLegacyCache } from './api.js';
 import { leer, escribir } from './storage.js';
-import { renderError, parseHash, wireSpriteFade, urlDe } from './ui.js';
+import { renderError, parseRuta, navegar, fijarRouter, wireSpriteFade } from './ui.js';
+import { urlDe, cargarIndice, tituloDe } from './rutas.js';
 import { cascaraDeRuta } from './cascaras.js';
 import { attachGlobalSearch } from './global-search.js';
 
@@ -205,7 +206,9 @@ document.addEventListener('keydown', e => {
   );
   if (enCampo) return;
 
-  const esHome = esRutaHome(parseHash().path);
+  // Por pathname y no con parseRuta: la portada es solo '/', y asi el atajo no
+  // depende de que haya llegado el indice de rutas.
+  const esHome = location.pathname === '/';
   if (esHome) {
     // El input central lo pinta home.js; en la primera pintura ya esta en el
     // HTML, pero conviene comprobarlo en vivo y no asumir que existe.
@@ -222,13 +225,13 @@ document.addEventListener('keydown', e => {
 
 // ===== ROUTER =====
 //
-// parseHash vive en ui.js, junto a replaceQuery, que es quien escribe lo que
+// parseRuta vive en ui.js, junto a replaceQuery, que es quien escribe lo que
 // esto lee: la guarda de replaceQuery compara la ruta que le pasan con la
 // vigente, y esa comparacion solo vale si las dos mitades normalizan igual. Una
 // sola implementacion, importada desde los dos lados.
 
 // The tab that lights up is the tool's category, which the path does not carry:
-// #/moves has to light up Datos. tools.js holds that map.
+// /moves has to light up Datos. tools.js holds that map.
 function updateActiveNav(path) {
   const active = esRutaHome(path) ? 'home' : categoryOf(path);
   document.querySelectorAll('.nav-link').forEach(link => {
@@ -241,8 +244,8 @@ function updateActiveNav(path) {
 // comprobacion de si la navegacion sigue siendo la vigente.
 let navegacion = 0;
 
-// Las dos rutas que llevan un nombre en la direccion (#/abilities/<nombre> y
-// #/egg/<grupo>) tienen que deshacer el escapado del hash. decodeURIComponent
+// Las dos rutas que llevan un nombre en la ruta logica (/abilities/<nombre> y
+// /egg/<grupo>) tienen que deshacer su escapado. decodeURIComponent
 // lanza URIError con cualquier "%" que no vaya seguido de dos digitos hex, y a
 // eso se llega de verdad: un enlace copiado y truncado a mitad de un %XX, o un
 // "%" literal escrito a mano en la direccion.
@@ -258,7 +261,7 @@ const decodificarSlug = slug => {
   }
 };
 
-// ===== A que ruta lleva un hash =====
+// ===== A que modulo lleva una ruta =====
 //
 // Salio del cuerpo de route() para que el prefetch pueda pedir el modulo de
 // una ruta sin navegar a ella: pasar el raton por un enlace resuelve su
@@ -325,9 +328,41 @@ function destinoDe(path, parts, query) {
   return destino;
 }
 
+// Las rutas fijas se resuelven sin el indice de rutas; una ficha
+// (/pokedex/pikachu) no sabe que id es hasta que llega data/rutas.json, y
+// parseRuta lanza. Solo en ese caso se espera aqui.
+async function resolverRuta(indice) {
+  try {
+    return parseRuta();
+  } catch {
+    await indice;
+    return parseRuta();
+  }
+}
+
 async function route() {
   const token = ++navegacion;
-  const { path, parts, query } = parseHash();
+  // Toda pagina pinta enlaces con urlDe(), y los que van a una ficha necesitan
+  // el indice: se pide ya y se espera junto al modulo, no despues. El catch
+  // vacio es solo para que un fallo no quede como promesa suelta en las ramas
+  // que no llegan a esperarlo; el error de verdad se recoge abajo.
+  const indice = cargarIndice();
+  indice.catch(() => {});
+  let ruta;
+  try {
+    ruta = await resolverRuta(indice);
+  } catch (err) {
+    if (token !== navegacion) return;
+    console.error('Route error:', err);
+    renderError(app, err, route);
+    return;
+  }
+  if (token !== navegacion) return;
+  // null es una direccion que no es pagina de la app. Con path '' no casa con
+  // ninguna ruta, ni con la home, y cae en el "no encontrado" de mas abajo.
+  const { path, parts, query } = ruta ?? { path: '', parts: [], query: new URLSearchParams() };
+  // Las fichas lo cambian por su nombre en cuanto lo saben (tituloDe).
+  document.title = tituloDe(`${path}?${query}`);
   updateActiveNav(path);
   const esHome = esRutaHome(path);
   // El buscador del nav no existe en la home -- el central del enjambre
@@ -378,7 +413,7 @@ async function route() {
       <div class="no-results">
         <div class="icon">❓</div>
         <p>${t('common.notfound')}</p>
-        <p style="margin-top:12px"><a href="${urlDe('/')}">${t('common.backhome')}</a></p>
+        <p style="margin-top:12px"><a href="/">${t('common.backhome')}</a></p>
       </div>
     `;
     return;
@@ -386,7 +421,7 @@ async function route() {
 
   const [bajar, pintar] = destino;
   try {
-    const modulo = await bajar();
+    const [modulo] = await Promise.all([bajar(), indice]);
     // Bajar tarda, y en ese hueco cabe otro clic. Si lo hubo, este render ya no
     // es el que toca: pintarlo dejaria la pagina anterior sobre la nueva ruta.
     if (token !== navegacion) return;
@@ -423,28 +458,75 @@ const adelantados = new Set();
 
 function adelantar(a) {
   const href = a?.getAttribute('href');
-  if (!href || !href.startsWith('#/') || adelantados.has(href)) return;
+  if (!href || adelantados.has(href)) return;
+  let ruta;
+  try {
+    ruta = parseRuta(new URL(href, location.href));
+  } catch {
+    // Una ficha antes de que llegue el indice de rutas: no se sabe a que modulo
+    // lleva. Sin apuntarla, para que el siguiente paso del raton lo reintente.
+    return;
+  }
+  if (!ruta) return;
   adelantados.add(href);
-  const { path, parts, query } = parseHash(href);
-  const destino = destinoDe(path, parts, query);
+  const destino = destinoDe(ruta.path, ruta.parts, ruta.query);
   // Un fallo aqui no puede romper una navegacion que ni siquiera ha ocurrido.
   destino?.[0]().catch(() => adelantados.delete(href));
 }
 
 for (const evento of ['pointerenter', 'touchstart']) {
   document.addEventListener(evento, (e) => {
-    const a = e.target instanceof Element ? e.target.closest('a[href^="#/"]') : null;
+    const a = e.target instanceof Element ? e.target.closest('a[href^="/"]') : null;
     if (a) adelantar(a);
   }, { capture: true, passive: true });
 }
 
 wireSpriteFade();
 
-window.addEventListener('hashchange', () => {
-  // La altura reservada solo hace falta para la primera pintura. En cuanto el
-  // usuario navega, manda el layout de siempre: flex:1 ya pega el footer al
-  // fondo, y mantener los 100vh dejaria hueco en las rutas que caben enteras.
+// ===== NAVEGAR SIN RECARGAR =====
+//
+// La altura reservada solo hace falta para la primera pintura. En cuanto el
+// usuario navega, manda el layout de siempre: flex:1 ya pega el footer al
+// fondo, y mantener los 100vh dejaria hueco en las rutas que caben enteras.
+function alCambiarRuta() {
   app.removeAttribute('data-reservando');
   route();
+}
+fijarRouter(alCambiarRuta);
+// Atras y adelante: la URL ya cambio, solo falta pintarla.
+window.addEventListener('popstate', alCambiarRuta);
+
+// Los enlaces son <a href> de verdad (se pueden abrir en otra pestana, copiar,
+// y los ve un buscador), pero un clic normal en uno de la app no recarga: se
+// queda con el clic y navega con pushState. Todo lo que no es eso es del
+// navegador: un clic con modificador o con otro boton (otra pestana), un
+// target o un download, otro origen, una direccion que no es pagina de la app
+// (que asi da su 404 de verdad) y un ancla dentro de la misma pagina.
+document.addEventListener('click', (e) => {
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const a = e.target instanceof Element ? e.target.closest('a[href]') : null;
+  if (!a || (a.target && a.target !== '_self') || a.hasAttribute('download')) return;
+  const url = new URL(a.href, location.href);
+  if (url.origin !== location.origin) return;
+
+  let ruta;
+  try {
+    ruta = parseRuta(url);
+  } catch {
+    // Una ficha antes de que llegue el indice: se espera y se decide entonces.
+    // Si el indice no baja, el navegador la carga entera, que tambien llega.
+    e.preventDefault();
+    cargarIndice().then(
+      () => (parseRuta(url) ? navegar(url.href) : location.assign(url.href)),
+      () => location.assign(url.href),
+    );
+    return;
+  }
+  if (!ruta) return;
+  if (url.hash && url.pathname === location.pathname && url.search === location.search
+    && parseRuta()?.path === ruta.path) return;
+  e.preventDefault();
+  navegar(url.href);
 });
+
 route();

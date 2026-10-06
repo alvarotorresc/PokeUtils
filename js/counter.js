@@ -1,13 +1,14 @@
 // ===== COUNTER PAGE =====
 //
-// The team comes in through the URL in the same format #/team uses, so a build
+// The team comes in through the URL in the same format /team uses, so a build
 // moves between the two pages as a link instead of being typed twice. The
 // maths lives in threats.js.
 import { counters } from './threats.js';
 import { fetchPokemonList, fetchMeta } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
 import { defaultFormat } from './meta.js';
-import { skeletonHTML, replaceQuery, toolTabsHTML, wireToolTabs, urlDe } from './ui.js';
+import { skeletonHTML, replaceQuery, toolTabsHTML, wireToolTabs } from './ui.js';
+import { urlDe } from './rutas.js';
 import { esqueletoDe } from './cascaras.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';

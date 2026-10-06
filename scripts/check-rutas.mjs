@@ -15,7 +15,7 @@ import { readFile } from 'node:fs/promises';
 import { gzipSync } from 'node:zlib';
 import {
   slugEs, TABLA_ESTATICA, GRUPOS_HUEVO_ES, construirIndice, fijarIndice,
-  urlDe, logicaDe, legadoALogica,
+  urlDe, logicaDe, legadoALogica, TITULOS, tituloDe,
 } from '../js/rutas.js';
 import { tieneUrlPropia } from '../js/forms.js';
 import { EGG_GROUPS } from '../js/egg-groups.js';
@@ -110,6 +110,15 @@ check('la ruta manda sobre un tab colado en la query',
   comoTexto(logicaDe('/calculadora-de-dano', '?tab=catch&a=6')), '/calculator?tab=damage&a=6');
 check('la query se escribe con %20, nunca con +',
   urlDe('/pokedex?q=mr mime'), '/pokedex?q=mr%20mime');
+
+// tituloDe va por URL publica: una pagina estatica sin entrada en TITULOS
+// saldria como la portada, 'PokeUtils', sin que nada fallara.
+check('cada pagina estatica tiene su titulo',
+  publicasEstaticas.filter(p => p !== '/' && !Object.hasOwn(TITULOS, p)), []);
+check('y no sobra ninguno', Object.keys(TITULOS).filter(p => !publicasEstaticas.includes(p)), []);
+check('la portada se llama PokeUtils', tituloDe('/'), 'PokeUtils');
+check('cada pestana de la calculadora tiene el suyo',
+  tituloDe('/calculator?tab=damage&a=6'), 'Calculadora de daño · PokeUtils');
 check('y un + viejo se lee como espacio',
   logicaDe('/pokedex', '?q=mr+mime').query.get('q'), 'mr mime');
 
@@ -135,6 +144,8 @@ check('una especie no es forma con URL propia', tieneUrlPropia(pokemon[0]), fals
 check('ida y vuelta de los 1351, con o sin URL propia',
   pokemon.filter(p => idaYVuelta(`/pokedex/${p.id}`) !== `/pokedex/${p.id}`).map(p => p.name), []);
 check('pikachu', urlDe('/pokedex/25'), '/pokedex/pikachu');
+check('una ficha sin nombre todavia lleva el de su seccion', tituloDe('/pokedex/25'), 'Pokédex · PokeUtils');
+check('y con nombre, el suyo', tituloDe('/pokedex/25', 'Pikachu'), 'Pikachu · PokeUtils');
 check('mr-mime y farfetchd conservan su nombre', [urlDe('/pokedex/122'), urlDe('/pokedex/83')],
   ['/pokedex/mr-mime', '/pokedex/farfetchd']);
 // El nombre de PokeAPI de la forma por defecto (deoxys-normal) no es el de la

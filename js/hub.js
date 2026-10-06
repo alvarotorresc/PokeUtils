@@ -5,7 +5,7 @@
 import { spriteUrl } from './data.js';
 import { CATEGORIES, toolsIn } from './tools.js';
 import { t } from './i18n.js';
-import { urlDe } from './ui.js';
+import { urlDe } from './rutas.js';
 
 export function renderHub(container, categoryId) {
   const category = CATEGORIES.find(c => c.id === categoryId);

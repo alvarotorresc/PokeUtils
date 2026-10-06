@@ -4,16 +4,18 @@
 // in TABS with its own header text and render function, so adding one is a
 // single entry rather than a change to the router or the navigation bar.
 //
-// The active tab lives in the hash query, like the Pokedex and Moves list state,
-// and each tab gets the query so it can carry state of its own:
-//   #/calculator                    -> IV/EV
-//   #/calculator?tab=catch          -> capture
-//   #/calculator?tab=damage&a=6&... -> a shared damage calc
+// The active tab is the `tab` of the logical route, like the Pokedex and Moves
+// list state, and each tab gets the query so it can carry state of its own.
+// En la URL publica cada pestana es su propia ruta (js/rutas.js pliega el tab):
+//   /calculadora-ivs-evs              -> IV/EV     (/calculator)
+//   /calculadora-de-captura           -> capture   (/calculator?tab=catch)
+//   /calculadora-de-dano?a=6&...      -> a shared damage calc (tab=damage)
 import { renderIvEv } from './calc-ivev.js';
 import { renderCapture } from './calc-capture.js';
 import { renderDamage } from './calc-damage.js';
 import { t } from './i18n.js';
-import { replaceQuery } from './ui.js';
+import { replaceQuery, parseRuta } from './ui.js';
+import { tituloDe } from './rutas.js';
 
 const TABS = [
   { id: 'ivev', label: 'calc.tab.ivev', title: 'calc.title', subtitle: 'calc.subtitle', render: renderIvEv },
@@ -42,19 +44,24 @@ export function renderCalculator(container, query) {
 
   container.querySelectorAll('.tab[data-tab]').forEach(btn => {
     btn.onclick = () => {
-      // replaceQuery does not fire hashchange, so the page is re-rendered here
-      // rather than through the router. The rest of the query is carried over:
+      // replaceQuery does not run the router (replaceState emits no popstate),
+      // so the page is re-rendered here. The rest of the query is carried over:
       // the damage tab keeps its whole calc in there, and leaving for the
       // capture tab and back should not throw it away. It has to be read from
-      // the hash and not from `query`, which is the copy this render was called
-      // with: the damage panel rewrites the hash as the user builds the calc,
-      // so the captured one is a snapshot of how the page was opened.
-      const carried = Object.fromEntries(new URLSearchParams(location.hash.split('?')[1] || ''));
+      // the address bar and not from `query`, which is the copy this render was
+      // called with: the damage panel rewrites the URL as the user builds the
+      // calc, so the captured one is a snapshot of how the page was opened.
+      // parseRuta devuelve el tab ya sacado de la ruta (/calculadora-de-dano es
+      // tab=damage), y replaceQuery lo vuelve a plegar en la que toque.
+      const carried = Object.fromEntries(parseRuta().query);
       replaceQuery('/calculator', {
         ...carried,
         tab: btn.dataset.tab === TABS[0].id ? '' : btn.dataset.tab,
       });
-      renderCalculator(container, new URLSearchParams(location.hash.split('?')[1] || ''));
+      // La pestana cambia de pagina (cada una tiene su URL) sin pasar por
+      // route(), asi que el titulo tambien se pone aqui.
+      document.title = tituloDe(`/calculator?${parseRuta().query}`);
+      renderCalculator(container, parseRuta().query);
     };
   });
 

@@ -5,7 +5,8 @@
 import { speedSpread, speedTiers } from './speed-tiers.js';
 import { fetchPokemonList } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { skeletonHTML, replaceQuery, esc, toolTabsHTML, wireToolTabs, urlDe } from './ui.js';
+import { skeletonHTML, replaceQuery, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { urlDe } from './rutas.js';
 import { esqueletoDe } from './cascaras.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';

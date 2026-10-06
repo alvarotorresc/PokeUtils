@@ -1,6 +1,6 @@
 // ===== DAMAGE CALCULATOR =====
 //
-// One of the three panels of #/calculator. All the maths lives in damage.js and
+// One of the three panels of /calculator. All the maths lives in damage.js and
 // battle-data.js; this module collects inputs and renders the result.
 import { TYPES, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN, spriteUrl } from './data.js';
 import { searchPokemon, fetchMoves, fetchItems, fetchBerries, fetchPokemonList } from './api.js';
@@ -32,7 +32,7 @@ export function renderDamage(container, query) {
   let defender = null;
   let move = null;
   let allMoves = null;
-  // While a shared link is being rebuilt the panel must not write the hash: the
+  // While a shared link is being rebuilt the panel must not write the URL: the
   // half-restored state would overwrite the very URL it is reading.
   let restoring = true;
 
@@ -95,7 +95,7 @@ export function renderDamage(container, query) {
   // ===== one side of the fight =====
   //
   // El defensor lleva DOS campos de EVs, PS y Defensa, como ya hace
-  // minimumSpread en #/survive. Con uno solo los dos se leian del mismo sitio:
+  // minimumSpread en /survive. Con uno solo los dos se leian del mismo sitio:
   // poner 252 daba un defensor con 252 en PS Y 252 en la defensa -- legal (504
   // <= 510) pero no lo que dice la etiqueta, y el reparto mas comun de todos
   // (252 PS / 0 Def) no se podia ni pedir. El atacante se queda con uno porque
@@ -424,9 +424,9 @@ export function renderDamage(container, query) {
 
   // ===== the calc in the URL =====
   //
-  // Read out of the panel, straight into the hash, so any calc can be pasted to
-  // someone else. replaceQuery does not fire hashchange, so this never re-enters
-  // the router mid-calculation.
+  // Read out of the panel, straight into the URL, so any calc can be pasted to
+  // someone else. replaceQuery writes with replaceState, which emits no
+  // popstate, so this never re-enters the router mid-calculation.
   function readState() {
     const fields = {};
     for (const field of FIELDS) {

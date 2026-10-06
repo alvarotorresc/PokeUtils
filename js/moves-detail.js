@@ -6,7 +6,8 @@
 
 import { spriteUrl } from './data.js';
 import { fetchMoves, fetchLearnsets, fetchPokemonList } from './api.js';
-import { skeletonHTML, renderError, hostDeRuta, esc, urlDe } from './ui.js';
+import { skeletonHTML, renderError, hostDeRuta, esc, titularFicha } from './ui.js';
+import { urlDe } from './rutas.js';
 import { esqueletoDeFicha } from './cascaras.js';
 import { t, typeName, categoryName, pokeName, getLang } from './i18n.js';
 import { priorityLabel, priorityHint, statChangeLabel } from './move-effects.js';
@@ -126,6 +127,7 @@ export async function renderMoveDetail(container, id) {
   const dash = '—';
   const desc = getLang() === 'es' ? (move.descriptionEs || move.descriptionEn) : (move.descriptionEn || move.descriptionEs);
   const displayName = pokeName(move);
+  titularFicha(`/moves/${id}`, displayName);
   const altName = getLang() === 'es' ? (move.nameEn || move.name) : move.nameEs;
   const changes = move.statChanges || [];
 

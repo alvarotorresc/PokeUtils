@@ -6,7 +6,8 @@
 import { spriteUrl } from './data.js';
 import { CATEGORIES, TOOLS, toolsIn } from './tools.js';
 import { t, getLang } from './i18n.js';
-import { esc, urlDe } from './ui.js';
+import { esc } from './ui.js';
+import { urlDe } from './rutas.js';
 import { attachGlobalSearch, leerHistorial } from './global-search.js';
 
 // The background is made of real sprites from the app, not an illustration: 100
@@ -75,7 +76,18 @@ const chipsHTML = () => {
   if (!historial.length) {
     return QUICK.map(([id, name]) => chipHTML(urlDe(`/pokedex/${id}`), name, spriteUrl(id))).join('');
   }
-  return historial.map(e => chipHTML(urlDe(e.route), e.name, e.sprite || spriteUrl(e.id))).join('');
+  return historial.map(e => {
+    // Lo guardado puede ser de una version anterior y llevar a una ruta que ya
+    // no existe: urlDe() lanza con ella, y un chip viejo no puede tumbar la
+    // portada entera. Ese chip se salta y el resto se pinta.
+    let href;
+    try {
+      href = urlDe(e.route);
+    } catch {
+      return '';
+    }
+    return chipHTML(href, e.name, e.sprite || spriteUrl(e.id));
+  }).join('');
 };
 
 // El rotulo de categoria: etiqueta, linea de acento y -- solo si se le pasa un
@@ -192,7 +204,7 @@ export function renderHome(container) {
   const paramsArranque = new URLSearchParams(location.search);
   if (paramsArranque.has('q')) {
     const termino = paramsArranque.get('q').trim();
-    history.replaceState(null, '', location.pathname + location.hash);
+    history.replaceState(null, '', location.pathname);
     if (termino) {
       globalSearchInput.value = termino;
       globalSearchInput.dispatchEvent(new Event('input', { bubbles: true }));

@@ -1,7 +1,8 @@
 // ===== POKEMON DETAIL =====
 import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, NATURES } from './data.js';
 import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchDex } from './api.js';
-import { skeletonHTML, renderError, hostDeRuta, wireScrollFade, esc, urlDe } from './ui.js';
+import { skeletonHTML, renderError, hostDeRuta, wireScrollFade, esc, titularFicha } from './ui.js';
+import { urlDe } from './rutas.js';
 import { esqueletoDeFicha } from './cascaras.js';
 import { evolutionText, ramasResueltas, textoDeRama, nodoActual } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
@@ -439,7 +440,8 @@ export async function renderPokedexDetail(container, id) {
   }
 
   // A form's page is its species' page with a different tab selected: the URL
-  // stays #/pokedex/6 so every link already shared keeps working, and the
+  // stays /pokedex/charizard (the forms with a page of their own, megas and
+  // regionals, have their own URL; js/rutas.js decides), and the
   // species keeps owning the dex number, the neighbours, evolution, the
   // learnset and breeding. Only what the header shows changes.
   const dexId = pokemon.speciesId || pokemon.id;
@@ -479,6 +481,7 @@ export async function renderPokedexDetail(container, id) {
   const maxStat = 255;
 
   const displayName = pokeName(pokemon);
+  titularFicha(`/pokedex/${id}`, displayName);
   const altName = getLang() === 'es' ? (pokemon.nameEn || pokemon.name) : pokemon.nameEs;
   // La descripcion viaja en los dos idiomas desde que se hornea en build: antes
   // se pedia a pokeapi solo en espanol y la ficha en ingles la ensenaba asi.
@@ -685,8 +688,8 @@ export async function renderPokedexDetail(container, id) {
     if (!btn) return;
     const next = Number(btn.dataset.form);
     if (next === pokemon.id) return;
-    // Repaint in place. Changing location.hash would fire route(), reload the
-    // page and lose the scroll position for a change of four numbers.
+    // Repaint in place. Navigating would run route(), reload the page and lose
+    // the scroll position for a change of four numbers.
     renderPokedexDetail(container, next);
   });
 

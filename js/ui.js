@@ -7,16 +7,7 @@
 import { t } from './i18n.js';
 import { ErrorKind } from './api.js';
 import { toolsIn } from './tools.js';
-
-// ===== PROVISIONAL: la URL de una ruta logica =====
-//
-// Las plantillas ya piden su enlace a urlDe() con la ruta logica
-// ('/moves/9', '/calculator?tab=damage'), pero el router todavia lee el hash,
-// asi que de momento la URL es la misma ruta con un '#' delante. La de verdad,
-// la publica en espanol, esta en js/rutas.js y entra en cuanto el router lea
-// pathname. Quien la llame tiene que pasar la query ya escapada: aqui no se
-// toca, y asi el href sale igual que antes letra a letra.
-export const urlDe = logica => `#${logica}`;
+import { urlDe, logicaDe, tituloDe } from './rutas.js';
 
 // ===== HELPER: un nodo propio para lo que pinta la ruta =====
 //
@@ -94,9 +85,10 @@ export function renderError(container, err, onRetry, { backHome = true } = {}) {
   container.appendChild(box);
 }
 
-// ===== HELPER: hash parsing =====
+// ===== HELPER: la ruta actual =====
 //
-// The hash carries page state as a query string: #/pokedex?gen=1&sort=spe
+// La direccion es la URL publica (/pokedex?gen=1&sort=spe, /movimientos/puno-trueno)
+// y la app piensa en rutas logicas (/pokedex, /moves/9): js/rutas.js traduce.
 //
 // This lived in app.js, next to the router that reads it. It is here now
 // because replaceQuery, right below, is the half that *writes* it, and the two
@@ -107,24 +99,52 @@ export function renderError(container, err, onRetry, { backHome = true } = {}) {
 // as before: nothing in js/ imports app.js.
 const normalizePath = path => '/' + String(path).split('/').filter(Boolean).join('/');
 
-// El argumento es para adelantar el modulo de una ruta a la que todavia no se
-// ha ido: el prefetch de app.js necesita resolver el destino del enlace bajo el
-// raton, no el de la pagina que se esta viendo. Sin el, por defecto, es la
-// direccion actual, que es lo que necesitan los otros llamantes.
-export function parseHash(hash = location.hash) {
-  const raw = hash.replace(/^#/, '') || '/';
-  const qIndex = raw.indexOf('?');
-  const pathPart = qIndex === -1 ? raw : raw.slice(0, qIndex);
-  const queryPart = qIndex === -1 ? '' : raw.slice(qIndex + 1);
-  const parts = pathPart.split('/').filter(Boolean);
-  return { path: normalizePath(pathPart), parts, query: new URLSearchParams(queryPart) };
+// {path, parts, query} logicos, o null si la direccion no es una pagina de la
+// app. Por defecto lee la barra; el prefetch y el interceptor de clics de
+// app.js le pasan la URL de un enlace al que todavia no se ha ido.
+//
+// Lanza en una ficha (/pokedex/pikachu) si data/rutas.json no ha llegado: sin
+// el indice no se sabe que id lleva ese slug. route() lo espera; los demas
+// llamantes que pueden llegar antes que el lo tratan.
+export function parseRuta(url = location) {
+  return logicaDe(url.pathname, url.search, url.hash);
 }
 
-// ===== HELPER: hash query =====
+// El titulo de una ficha con su nombre, que route() no sabe (pone el de la
+// seccion). Solo si esa ficha sigue siendo la pagina: la de un Pokemon o un
+// movimiento espera a sus datos, y si se pinta tarde (ver hostDeRuta) su titulo
+// pisaria el de la ruta a la que ya se ha ido.
+export function titularFicha(ruta, nombre) {
+  if (parseRuta()?.path === ruta) document.title = tituloDe(ruta, nombre);
+}
+
+// ===== HELPER: navegar sin recargar =====
 //
-// Rewrites the hash without firing hashchange, so the live page survives.
-// route() calls app.innerHTML = '' the moment it fires, which would wipe the
-// search input along with its focus and caret mid-typing.
+// route() vive en app.js, y nada en js/ importa app.js (ver arriba): el router
+// se apunta aqui al arrancar y quien quiera navegar -- el buscador, la tabla de
+// movimientos, el interceptor de clics -- llama a navegar().
+let alNavegar = null;
+export function fijarRouter(fn) {
+  alNavegar = fn;
+}
+
+// El unico pushState de la app. Solo si la URL cambia, para no apilar dos
+// veces la misma entrada en el historial; pero el router corre SIEMPRE: volver
+// a pedir la pagina en la que ya estas (Enter sobre el mismo resultado del
+// buscador) tiene que repintarla. Con el hash eso necesitaba fingir un
+// hashchange, porque asignar el valor que ya tenia no emitia nada.
+export function navegar(url) {
+  const destino = new URL(url, location.href);
+  if (destino.href !== location.href) history.pushState(null, '', destino.href);
+  alNavegar?.();
+}
+
+// ===== HELPER: la query de la ruta =====
+//
+// Rewrites the URL with replaceState, so the live page survives: nothing
+// emits popstate and route() does not run. route() calls app.innerHTML = ''
+// the moment it runs, which would wipe the search input along with its focus
+// and caret mid-typing.
 export function replaceQuery(path, params) {
   // A route the user already left does not get to write the address bar.
   //
@@ -140,22 +160,24 @@ export function replaceQuery(path, params) {
   // has to remember something is a caller that eventually forgets, and the
   // twelfth one gets this for free. Both sides go through the same
   // normalization, so a caller writing '/pokedex/' is not a different route.
-  if (parseHash().path !== normalizePath(path)) return;
+  // Y se comparan rutas logicas, no URLs: la pestana de la calculadora cambia
+  // la direccion (/calculadora-ivs-evs -> /calculadora-de-dano) sin dejar de ser
+  // /calculator.
+  if (parseRuta()?.path !== normalizePath(path)) return;
 
   // encodeURIComponent y no URLSearchParams.toString(), que escribe el espacio
   // como "+". El "+" solo significa espacio en un cuerpo de formulario
-  // (application/x-www-form-urlencoded), y esto es un fragmento: cualquiera que
-  // lo lea con decodeURIComponent -- app.js ya lo hace con los nombres de
-  // #/abilities/<nombre> y #/egg/<grupo> -- se encuentra un "+" literal.
+  // (application/x-www-form-urlencoded), y quien lea la query con
+  // decodeURIComponent se encuentra un "+" literal.
   //
-  // Y sobre todo, la otra mitad de la aplicacion ya escribia %20: el buscador
-  // global monta sus destinos con encodeURIComponent. Con las dos ortografias
-  // vivas, abrir un enlace compartido como #/pokedex?q=mr%20mime lo reescribia
-  // en la barra como #/pokedex?q=mr+mime en el primer render -- el mismo estado
-  // con dos direcciones, y la que se comparte no es la que se ve. Medido en el
-  // navegador, sin tocar una tecla.
+  // Y sobre todo, la otra mitad de la aplicacion ya escribia %20: urlDe() monta
+  // las querys de los enlaces y del buscador global con encodeURIComponent. Con
+  // las dos ortografias vivas, abrir un enlace compartido como
+  // /pokedex?q=mr%20mime lo reescribia en la barra como /pokedex?q=mr+mime en
+  // el primer render -- el mismo estado con dos direcciones, y la que se
+  // comparte no es la que se ve. Medido en el navegador, sin tocar una tecla.
   //
-  // Los enlaces viejos con "+" siguen funcionando: parseHash los lee con
+  // Los enlaces viejos con "+" siguen funcionando: parseRuta los lee con
   // URLSearchParams, que decodifica las dos ortografias como espacio.
   const partes = [];
   for (const [key, value] of Object.entries(params)) {
@@ -164,7 +186,9 @@ export function replaceQuery(path, params) {
     }
   }
   const query = partes.join('&');
-  history.replaceState(null, '', `#${path}${query ? '?' + query : ''}`);
+  // urlDe pliega el tab de la calculadora en la ruta y deja el resto como esta:
+  // vuelve a escapar con encodeURIComponent, asi que el %20 sobrevive.
+  history.replaceState(null, '', urlDe(`${path}${query ? '?' + query : ''}`));
 }
 
 // ===== HELPER: escape a value interpolated into HTML =====

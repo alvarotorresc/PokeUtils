@@ -1,12 +1,13 @@
 // ===== TEAM ANALYSIS PAGE =====
 //
-// Six Pokemon in, combined weaknesses out. The team lives in the hash query so
+// Six Pokemon in, combined weaknesses out. The team lives in the URL query so
 // a build can be shared as a link, the same way the Pokedex carries its filters.
 
 import { TYPES, spriteUrl } from './data.js';
 import { fetchPokemonList } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { skeletonHTML, renderError, replaceQuery, hostDeRuta, esc, toolTabsHTML, wireToolTabs, urlDe } from './ui.js';
+import { skeletonHTML, renderError, replaceQuery, hostDeRuta, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { urlDe } from './rutas.js';
 import { esqueletoDe } from './cascaras.js';
 import { t, typeName, pokeName } from './i18n.js';
 import { defensiveMatrix, threats, unresisted, stabTypes, offensiveCoverage } from './team-analysis.js';

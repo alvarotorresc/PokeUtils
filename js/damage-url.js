@@ -1,8 +1,8 @@
 // ===== DAMAGE CALCULATOR URL STATE =====
 //
-// A damage calc is worth sharing, so the whole panel lives in the hash query the
-// same way #/team carries its six members:
-//   #/calculator?tab=damage&a=6&d=3&m=53&al=100&crit=1
+// A damage calc is worth sharing, so the whole panel lives in the URL query the
+// same way /equipo carries its six members:
+//   /calculadora-de-dano?a=6&d=3&m=53&al=100&crit=1
 //
 // This module is the pure half: the field table, and the two functions that turn
 // the panel state into query parameters and back. Everything here has to survive

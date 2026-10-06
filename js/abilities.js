@@ -1,6 +1,6 @@
 // ===== ABILITIES PAGE =====
 import { fetchAbilities } from './api.js';
-import { skeletonHTML, renderPagination, toolTabsHTML, wireToolTabs } from './ui.js';
+import { skeletonHTML, renderPagination, toolTabsHTML, wireToolTabs, titularFicha } from './ui.js';
 import { PAGINA, esqueletoDe } from './cascaras.js';
 import { t, pokeName, getLang } from './i18n.js';
 import { norm } from './normalize.js';
@@ -71,6 +71,7 @@ export function renderAbilities(container, highlightName = null) {
       const targetIndex = allAbilities.findIndex(a => matchesTarget(a, targetName));
       if (targetIndex !== -1) {
         currentPage = Math.floor(targetIndex / PAGE_SIZE) + 1;
+        titularFicha(`/abilities/${highlightName}`, pokeName(allAbilities[targetIndex]));
       }
     }
 

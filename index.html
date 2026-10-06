@@ -70,15 +70,11 @@
   </script>
   <!-- El hero estatico de mas abajo solo vale para la portada: en cualquier
        otra ruta hay que ocultarlo antes de la primera pintura, o el <h1> de la
-       portada parpadea un frame hasta que el JS diferido lo borre. Replica el
-       "home o no" de parseHash en app.js -- '', '#/' y '#/home' (con o sin
-       query) son portada, cualquier otra cosa no. -->
+       portada parpadea un frame hasta que el JS diferido lo borre. La portada
+       es solo '/' (con o sin query), lo mismo que decide parseRuta en ui.js;
+       cualquier otra ruta no. -->
   <script>
-    (function () {
-      var raw = location.hash.slice(1) || '/';
-      var path = raw.split('?')[0].split('/').filter(Boolean).join('/');
-      if (path !== '' && path !== 'home') document.documentElement.classList.add('no-hero');
-    })();
+    if (location.pathname !== '/') document.documentElement.classList.add('no-hero');
   </script>
 </head>
 <body>
@@ -86,7 +82,7 @@
 
   <nav class="nav" id="nav">
     <div class="nav-inner">
-      <a href="#/" class="nav-logo">
+      <a href="/" class="nav-logo">
         <div class="pokeball-icon-sm"></div>
         <span>POKEUTILS</span>
       </a>
@@ -110,11 +106,11 @@
         <span></span><span></span><span></span>
       </button>
       <div class="nav-links" id="navLinks">
-        <a href="#/" class="nav-link" data-page="home">INICIO</a>
-        <a href="#/pokedex" class="nav-link" data-page="pokedex">POKEDEX</a>
-        <a href="#/data" class="nav-link" data-page="data">DATOS</a>
-        <a href="#/competitive" class="nav-link" data-page="competitive">COMPETITIVO</a>
-        <a href="#/calculator" class="nav-link" data-page="calculator">CALCULADORA</a>
+        <a href="/" class="nav-link" data-page="home">INICIO</a>
+        <a href="/pokedex" class="nav-link" data-page="pokedex">POKEDEX</a>
+        <a href="/datos" class="nav-link" data-page="data">DATOS</a>
+        <a href="/competitivo" class="nav-link" data-page="competitive">COMPETITIVO</a>
+        <a href="/calculadora-ivs-evs" class="nav-link" data-page="calculator">CALCULADORA</a>
       </div>
     </div>
   </nav>
@@ -249,9 +245,9 @@
          esta bajo el pliegue y no es LCP, asi que no hay nada que adelantar
          antes del primer pintado. -->
     <p class="footer-links" style="font-size:0.46rem">
-      <a href="#/faq" id="footerFaq">FAQ</a> &middot;
-      <a href="#/privacy" id="footerPrivacy">Privacidad</a> &middot;
-      <a href="#/terms" id="footerTerms">T&eacute;rminos</a>
+      <a href="/faq" id="footerFaq">FAQ</a> &middot;
+      <a href="/privacidad" id="footerPrivacy">Privacidad</a> &middot;
+      <a href="/terminos" id="footerTerms">T&eacute;rminos</a>
     </p>
     <div class="footer-legal">
       <p class="footer-hint">PokeUtils is an unofficial, free fan made app and is NOT affiliated, endorsed or supported by Nintendo, GAME FREAK or The Pok&eacute;mon company in any way.</p>

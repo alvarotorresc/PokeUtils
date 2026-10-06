@@ -96,7 +96,7 @@ export async function renderSurvive(container, query = new URLSearchParams()) {
   }
 
   function render() {
-    // Defaults stay out of the URL so a plain #/survive?a=6&m=53&d=3 remains
+    // Defaults stay out of the URL so a plain /sobrevive?a=6&m=53&d=3 remains
     // the clean link, the same rule the Pokedex filters follow.
     replaceQuery('/survive', {
       a: state.a || '', m: state.m || '', d: state.d || '',

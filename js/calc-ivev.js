@@ -1,6 +1,6 @@
 // ===== IV/EV CALCULATOR =====
 //
-// One of the three panels of #/calculator. The page header and the calculator
+// One of the three panels of /calculator. The page header and the calculator
 // tabs live in calculator.js; this module renders from the intro card down.
 import { NATURES, STAT_KEYS, STAT_COLORS, spriteUrl } from './data.js';
 import { searchPokemon } from './api.js';

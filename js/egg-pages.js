@@ -6,7 +6,8 @@
 import { EGG_GROUPS, membersOf, groupCounts, hasEggData } from './egg-groups.js';
 import { fetchPokemonList } from './api.js';
 import { pokemonCardHTML } from './pokedex.js';
-import { skeletonHTML, renderPagination, replaceQuery, toolTabsHTML, urlDe } from './ui.js';
+import { skeletonHTML, renderPagination, replaceQuery, toolTabsHTML, titularFicha } from './ui.js';
+import { urlDe } from './rutas.js';
 import { PAGINA, esqueletoDe } from './cascaras.js';
 import { t } from './i18n.js';
 
@@ -70,6 +71,7 @@ export async function renderEggGroup(container, group, query = new URLSearchPara
     return;
   }
 
+  titularFicha(`/egg/${group}`, eggGroupName(group));
   let page = Math.max(1, parseInt(query.get('p'), 10) || 1);
 
   container.innerHTML = `

@@ -482,3 +482,53 @@ export function legadoALogica(hash) {
   const name = nombre === null ? null : habilidadDe(nombre);
   return name ? `/abilities/${name}${query}` : null;
 }
+
+// ===== El titulo de la pestana =====
+//
+// Uno solo para las dos mitades: el cliente lo pone en cada navegacion y el
+// build lo escribira en el <title> de cada pagina generada, asi que una URL no
+// tiene un titulo al cargarla y otro al llegar a ella con un clic.
+//
+// Por URL publica y no por ruta logica: las tres pestanas de la calculadora son
+// una ruta y tres paginas. Las fichas ponen su nombre al pintarse (una linea en
+// cada uno de los cuatro renderizadores de detalle, que son los que lo saben);
+// hasta entonces llevan el de su seccion.
+export const TITULOS = {
+  '/pokedex': 'Pokédex',
+  '/tipos': 'Tabla de tipos',
+  '/grupos-huevo': 'Grupos huevo',
+  '/movimientos': 'Movimientos',
+  '/habilidades': 'Habilidades',
+  '/objetos': 'Objetos',
+  '/naturalezas': 'Naturalezas',
+  '/comparador': 'Comparador',
+  '/datos': 'Datos',
+  '/competitivo': 'Competitivo',
+  '/equipo': 'Equipo',
+  '/contrarrestar': 'Contrarrestar',
+  '/velocidad': 'Velocidad',
+  '/sobrevive': 'Sobrevive',
+  '/sets-del-meta': 'Sets del meta',
+  '/faq': 'Preguntas frecuentes',
+  '/privacidad': 'Privacidad',
+  '/terminos': 'Términos',
+  '/calculadora-ivs-evs': 'Calculadora de IVs y EVs',
+  '/calculadora-de-dano': 'Calculadora de daño',
+  '/calculadora-de-captura': 'Calculadora de captura',
+};
+
+// tituloDe('/moves')               -> 'Movimientos · PokeUtils'
+// tituloDe('/moves/9', 'Puño Trueno') -> 'Puño Trueno · PokeUtils'
+// La portada, o lo que no tiene pagina, se queda en 'PokeUtils'. Una ficha
+// pide urlDe(), asi que necesita el indice como todo lo demas.
+export function tituloDe(logica, nombre) {
+  if (nombre) return `${nombre} · PokeUtils`;
+  let publica;
+  try {
+    publica = urlDe(logica).split(/[?#]/)[0];
+  } catch {
+    return 'PokeUtils';
+  }
+  const seccion = TITULOS[publica] ?? TITULOS[`/${publica.split('/')[1]}`];
+  return seccion ? `${seccion} · PokeUtils` : 'PokeUtils';
+}
