@@ -94,6 +94,12 @@ check('sin el hero de la portada', [pika.includes('data-shell'), pika.includes('
 check('sin comentarios HTML', pika.includes('<!--'), false);
 check('y con los mismos <script> que el esqueleto',
   (pika.match(/<script\b/g) || []).length, (esqueleto.replace(/<!--[\s\S]*?-->/g, '').match(/<script\b/g) || []).length);
+// Sin el atributo, cada filtro (replaceState con ?q=) cuenta como una visita
+// en Umami: 1 pageview de mas por filtro, medido en el preview de la PR #21.
+const umami = html => html.replace(/<!--[\s\S]*?-->/g, '').match(/<script\b[^>]*analytics\.alvarotc\.com[^>]*>/g) || [];
+check('Umami ignora la query en el esqueleto',
+  umami(esqueleto).map(t => /\sdata-exclude-search="true"/.test(t)), [true]);
+check('y en las paginas generadas', umami(pika).map(t => /\sdata-exclude-search="true"/.test(t)), [true]);
 check('el <main> sigue ahi, vacio', /<main class="main" id="app" data-reservando><\/main>/.test(pika), true);
 
 const conComillas = paginaHtml(esqueleto, { ...por('/pokedex/pikachu'), titulo: 'A & "B" <c>', descripcion: 'd"e' });

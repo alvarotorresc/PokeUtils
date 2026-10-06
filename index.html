@@ -50,11 +50,17 @@
        deja de cargar en SILENCIO (sin error visible salvo en la consola del
        navegador). Al actualizar Umami: recalcular con
        `curl -s https://analytics.alvarotc.com/script.js | openssl dgst -sha384 -binary | openssl base64 -A`
-       y sustituir el hash de abajo en el mismo commit que la actualizacion. -->
+       y sustituir el hash de abajo en el mismo commit que la actualizacion.
+       data-exclude-search: con rutas reales los filtros escriben la query con
+       replaceState (/pokedex?q=pikac) y Umami contaba cada cambio como una
+       visita nueva: 1 pageview de mas por cada filtro, medido en el preview de
+       la PR #21. Con #/ no pasaba porque Umami ignora el hash. Asi solo cuenta
+       los cambios de ruta. scripts/check-pages.mjs vigila que siga puesto. -->
   <script defer src="https://analytics.alvarotc.com/script.js"
           integrity="sha384-6PHtXKae10+dZuA/fcmjkSTDco+NPBE5fZ4eS/Em2lVIsS6FdDZIgs06MBJLEcSW"
           crossorigin="anonymous"
-          data-website-id="55e0f212-eb38-4998-882b-cf73e5bb906c"></script>
+          data-website-id="55e0f212-eb38-4998-882b-cf73e5bb906c"
+          data-exclude-search="true"></script>
   <!-- Los enlaces de antes (#/pokedex, #/calculator?tab=damage&a=6) siguen
        compartidos por ahi. Las rutas fijas y los grupos huevo se redirigen aqui,
        antes de pintar nada y sin esperar a ningun modulo, con location.replace
