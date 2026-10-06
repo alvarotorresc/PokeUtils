@@ -16,8 +16,10 @@
 // hace Netlify para poder recargar en local:
 //
 //   - Un fichero que existe se sirve tal cual. Siempre gana.
-//   - /pokedex/<id> responde 301 hacia /pokedex/<nombre>, como las reglas de
-//     redirect que genera el build.
+//   - /pokedex/<id> responde 301 hacia /pokedex/<nombre>. En dist sale de
+//     dist/_redirects, el mismo fichero que lee Netlify, asi que en local se
+//     prueban sus reglas de verdad; en el fuente no hay build, y la emula
+//     urlDe() con data/rutas.json.
 //   - Fuente: cualquier ruta que js/rutas.js reconoce (logicaDe != null) sirve
 //     index.html, y el router pinta la pagina.
 //   - dist: prueba <ruta>.html y <ruta>/index.html, que es como Netlify busca
@@ -42,6 +44,16 @@ const DIST = ROOT !== REPO;
 // El indice de rutas se lee una vez al arrancar: es el mismo data/rutas.json
 // que baja el navegador (build.mjs lo copia a dist/data/).
 fijarIndice(JSON.parse(await readFile(join(ROOT, 'data', 'rutas.json'), 'utf8')));
+
+// dist/_redirects: "desde  hacia  status" por linea, # al principio es
+// comentario. Solo reglas exactas, que son las unicas que genera el build.
+const REDIRECTS = new Map();
+if (DIST) {
+  for (const linea of (await readFile(join(ROOT, '_redirects'), 'utf8')).split('\n')) {
+    const [desde, hacia, status] = linea.trim().split(/\s+/);
+    if (desde && !desde.startsWith('#')) REDIRECTS.set(desde, { hacia, status: Number(status) || 301 });
+  }
+}
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -102,10 +114,15 @@ createServer(async (req, res) => {
       servir(res, 200, file, await readFile(file));
       return;
     }
-    // El id numerico es la URL de antes; su sitio es la del nombre. urlDe
-    // conserva el ancla de las formas sin pagina propia (#forma-deoxys-attack).
+    // El id numerico es la URL de antes; su sitio es la del nombre, con el
+    // ancla de las formas sin pagina propia (#forma-deoxys-attack).
+    const regla = REDIRECTS.get(crudo);
+    if (regla) {
+      res.writeHead(regla.status, { Location: regla.hacia, 'Cache-Control': 'no-store' }).end();
+      return;
+    }
     const id = crudo.match(/^\/pokedex\/(\d+)$/);
-    if (id && logicaDe(crudo)) {
+    if (!DIST && id && logicaDe(crudo)) {
       res.writeHead(301, { Location: urlDe(`/pokedex/${id[1]}`), 'Cache-Control': 'no-store' }).end();
       return;
     }

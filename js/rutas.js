@@ -88,6 +88,12 @@ export const GRUPOS_HUEVO_ES = {
 };
 const GRUPO_DE_SLUG = Object.fromEntries(Object.entries(GRUPOS_HUEVO_ES).map(([g, s]) => [s, g]));
 
+// Las secciones logicas con ficha (/<seccion>/<id o nombre>): las que tienen una
+// rama `parts[0] === '<seccion>' && parts[1]` en destinoDe() de app.js, cosa
+// que vigila check-rutas.mjs. build.mjs la usa para comprobar que cada pagina
+// generada lleva a algo que el router sabe pintar, sin importar app.js.
+export const SECCIONES_DE_FICHA = ['pokedex', 'moves', 'abilities', 'egg'];
+
 // ===== Slugs =====
 
 // 'Puño Trueno' -> 'puno-trueno'. NFD separa la tilde de su letra (y la
@@ -517,18 +523,43 @@ export const TITULOS = {
   '/calculadora-de-captura': 'Calculadora de captura',
 };
 
+// Las fichas no pueden llevar solo su nombre: el build genera una pagina por
+// ficha, cada <title> tiene que ser unico, y con el nombre pelado chocaban 21.
+//   - Las colisiones con sufijo en la URL (decision 2: las 18 parejas de
+//     movimientos Z y las dos Unidad Ecuestre) lo llevan tambien en el titulo,
+//     entre parentesis. Se reconoce porque la URL es el slug del nombre mas uno
+//     de estos sufijos; con otro nombre (el ingles) no casa y no se pone nada.
+//   - Los grupos huevo y las habilidades dicen lo que son: Ditto es Pokemon y
+//     grupo huevo, y Competitivo es habilidad y el hub de herramientas.
+const SUFIJOS_TITULO = { fisico: 'físico', especial: 'especial', glastrier: 'Glastrier', spectrier: 'Spectrier' };
+const PREFIJOS_TITULO = { 'grupos-huevo': 'Grupo huevo', habilidades: 'Habilidad' };
+
 // tituloDe('/moves')               -> 'Movimientos · PokeUtils'
 // tituloDe('/moves/9', 'Puño Trueno') -> 'Puño Trueno · PokeUtils'
+// tituloDe('/egg/ditto', 'Ditto')  -> 'Grupo huevo Ditto · PokeUtils'
 // La portada, o lo que no tiene pagina, se queda en 'PokeUtils'. Una ficha
 // pide urlDe(), asi que necesita el indice como todo lo demas.
 export function tituloDe(logica, nombre) {
-  if (nombre) return `${nombre} · PokeUtils`;
-  let publica;
+  let publica = null;
   try {
     publica = urlDe(logica).split(/[?#]/)[0];
   } catch {
-    return 'PokeUtils';
+    // Sin pagina: con nombre se titula igual, sin el es la portada.
   }
+  if (nombre) {
+    const [, seccion, slug] = (publica ?? '').split('/');
+    let titulo = nombre;
+    if (slug) {
+      const base = slugEs(nombre);
+      const sufijo = slug.startsWith(`${base}-`) ? slug.slice(base.length + 1) : '';
+      if (['movimientos', 'habilidades'].includes(seccion) && Object.hasOwn(SUFIJOS_TITULO, sufijo)) {
+        titulo += ` (${SUFIJOS_TITULO[sufijo]})`;
+      }
+      if (Object.hasOwn(PREFIJOS_TITULO, seccion)) titulo = `${PREFIJOS_TITULO[seccion]} ${titulo}`;
+    }
+    return `${titulo} · PokeUtils`;
+  }
+  if (publica === null) return 'PokeUtils';
   const seccion = TITULOS[publica] ?? TITULOS[`/${publica.split('/')[1]}`];
   return seccion ? `${seccion} · PokeUtils` : 'PokeUtils';
 }

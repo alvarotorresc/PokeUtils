@@ -16,7 +16,7 @@ import { gzipSync } from 'node:zlib';
 import { runInNewContext } from 'node:vm';
 import {
   slugEs, TABLA_ESTATICA, GRUPOS_HUEVO_ES, construirIndice, fijarIndice,
-  urlDe, logicaDe, legadoALogica, TITULOS, tituloDe,
+  urlDe, logicaDe, legadoALogica, TITULOS, tituloDe, SECCIONES_DE_FICHA,
 } from '../js/rutas.js';
 import { tieneUrlPropia } from '../js/forms.js';
 import { EGG_GROUPS } from '../js/egg-groups.js';
@@ -92,6 +92,9 @@ const rutasDeApp = [...appJs.matchAll(/path === '(\/[a-z]*)'/g)].map(m => m[1]);
 check('app.js sigue teniendo sus rutas fijas', rutasDeApp.length >= 19, true);
 check('cada ruta fija de app.js esta en la tabla',
   rutasDeApp.filter(r => !(r in TABLA_ESTATICA)), []);
+const fichasDeApp = [...appJs.matchAll(/parts\[0\] === '([a-z]+)' && parts\[1\]/g)].map(m => m[1]);
+check('las secciones con ficha de app.js son SECCIONES_DE_FICHA',
+  [...fichasDeApp].sort(), [...SECCIONES_DE_FICHA].sort());
 
 const publicasEstaticas = [...new Set(Object.values(TABLA_ESTATICA))];
 check('22 paginas estaticas (con las 3 pestanas de la calculadora)', publicasEstaticas.length, 22);
@@ -263,6 +266,31 @@ check('las 17 del README llegan a su URL publica',
 const enReadme = [...(await leerTexto('README.md')).matchAll(/#\/[^\s)`]*/g)].map(m => m[0]);
 check('el README no enlaza ningun #/ que no este en la lista',
   enReadme.filter(h => !(h in README)), []);
+
+console.log('\nTitulos unicos\n');
+
+// El build genera una pagina por ficha y cada una necesita un <title> propio.
+// Con solo el nombre chocaban 21: las 18 parejas de movimientos Z (fisico y
+// especial se llaman igual), las dos Unidad Ecuestre, Ditto (Pokemon y grupo
+// huevo) y Competitivo (habilidad y hub). Las de sufijo llevan el suyo entre
+// parentesis y los grupos huevo y las habilidades dicen lo que son. Va en
+// tituloDe y no en el build para que el cliente ponga el mismo al navegar.
+check('las dos carreras arrolladoras',
+  [tituloDe('/moves/622', 'Carrera Arrolladora'), tituloDe('/moves/623', 'Carrera Arrolladora')],
+  ['Carrera Arrolladora (físico) · PokeUtils', 'Carrera Arrolladora (especial) · PokeUtils']);
+check('las dos Unidad Ecuestre',
+  [tituloDe('/abilities/as-one-glastrier', 'Unidad Ecuestre'), tituloDe('/abilities/as-one-spectrier', 'Unidad Ecuestre')],
+  ['Habilidad Unidad Ecuestre (Glastrier) · PokeUtils', 'Habilidad Unidad Ecuestre (Spectrier) · PokeUtils']);
+check('Ditto el grupo no es Ditto el Pokemon',
+  [tituloDe('/pokedex/132', 'Ditto'), tituloDe('/egg/ditto', 'Ditto')],
+  ['Ditto · PokeUtils', 'Grupo huevo Ditto · PokeUtils']);
+check('Competitivo la habilidad no es el hub',
+  [tituloDe('/abilities/defiant', 'Competitivo'), tituloDe('/competitive')],
+  ['Habilidad Competitivo · PokeUtils', 'Competitivo · PokeUtils']);
+check('un movimiento sin colision no lleva nada', tituloDe('/moves/9', 'Puño Trueno'), 'Puño Trueno · PokeUtils');
+// Y en ingles, con otro nombre, no se adivina sufijo: el titulo en EN no lo
+// genera el build, y la URL sigue siendo la misma.
+check('en ingles no hay sufijo que sacar', tituloDe('/moves/622', 'Breakneck Blitz'), 'Breakneck Blitz · PokeUtils');
 
 console.log('\nLa migracion inline de index.html\n');
 
