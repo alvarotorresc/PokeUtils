@@ -117,5 +117,23 @@ check('una forma sin URL, a su especie con el ancla', regla('/pokedex/10001'),
   ['/pokedex/10001', '/pokedex/deoxys#forma-deoxys-attack', '301']);
 check('ningun destino empieza por #', lineas.filter(l => l.split(/\s+/).some((t, i) => i > 0 && t.startsWith('#'))), []);
 
+console.log('\nSus cabeceras en netlify.toml\n');
+
+// El HTML no puede cachearse: es quien dice los nombres hasheados de esta
+// version. Netlify ya lo sirve con max-age=0 por defecto, pero la decision 3
+// fue escribirlo por prefijo, como el resto de politicas del toml. Y un splat
+// /pokedex/* no casa con /pokedex a secas: cada pagina fija necesita el suyo.
+const toml = await leerTexto('netlify.toml');
+const bloques = new Map([...toml.matchAll(/\[\[headers\]\]\s*\n\s*for = "([^"]+)"\s*\n\s*\[headers\.values\]\s*\n([\s\S]*?)(?=\n\s*\n|\n\[\[|$)/g)]
+  .map(m => [m[1], m[2]]));
+const prefijos = [...new Set(rutas.filter(r => r.publica !== '/').map(r => {
+  const [, seccion, hijo] = r.publica.split('/');
+  return hijo ? `/${seccion}/*` : r.publica;
+}))];
+check('25 bloques: 21 paginas fijas y 4 secciones con fichas', prefijos.length, 25);
+check('cada una tiene el suyo en netlify.toml', prefijos.filter(f => !bloques.has(f)), []);
+check('y todos revalidan',
+  prefijos.filter(f => !/Cache-Control = "public, max-age=0, must-revalidate"/.test(bloques.get(f) ?? '')), []);
+
 console.log(failed ? `\n${failed} FAILED\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);

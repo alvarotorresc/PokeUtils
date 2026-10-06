@@ -163,9 +163,152 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
+# ===== LAS PAGINAS GENERADAS =====
+#
+# Desde que hay rutas reales, build.mjs (scripts/pages.mjs) escribe una pagina
+# por ruta: dist/pokedex.html, dist/pokedex/pikachu.html... 2.468 mas la
+# portada. Son el mismo index.html con otra cabecera, asi que llevan los mismos
+# nombres hasheados y la misma regla: revalidar siempre.
+#
+# Netlify ya sirve el HTML con este valor por defecto, pero se escribe por
+# prefijo (decision 3 del plan de rutas) para que la politica este aqui y no en
+# un comportamiento de Netlify que nadie ve. Un `for = "/*"` no vale: casaria
+# tambien con /js/* y el CSS hasheado, que ya fijan su Cache-Control
+# `immutable`, y es justo la colision que el bloque de seguridad evita.
+#
+# Un splat /pokedex/* no casa con /pokedex a secas, asi que cada pagina fija
+# lleva su bloque y cada seccion con fichas, otro con splat.
+# check-pages.mjs falla si aparece una pagina sin el suyo. Que Netlify los
+# aplique a /pokedex (servido desde pokedex.html) se mide con `curl -I` en el
+# deploy preview, como el resto de este fichero.
+[[headers]]
+  for = "/pokedex"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/tipos"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/grupos-huevo"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/movimientos"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/habilidades"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/objetos"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/naturalezas"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/comparador"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/datos"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/competitivo"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/equipo"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/contrarrestar"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/velocidad"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/sobrevive"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/sets-del-meta"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/faq"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/privacidad"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/terminos"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/calculadora-ivs-evs"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/calculadora-de-dano"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/calculadora-de-captura"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/pokedex/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/grupos-huevo/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/movimientos/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/habilidades/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
 # ===== LOS CUATRO FICHEROS SUELTOS =====
 #
-# build.mjs:229-231 copia cuatro ficheros de la raiz tal cual -- 404.html,
+# build.mjs copia cuatro ficheros de la raiz tal cual -- 404.html,
 # manifest.webmanifest, robots.txt y sitemap.xml -- y hasta aqui eran los unicos
 # del sitio sin politica escrita ni motivo escrito para no tenerla. Ninguno
 # lleva hash en el nombre, asi que `immutable` esta descartado para los cuatro:
@@ -221,9 +364,9 @@
 # un dia. Una hora acota eso y sigue ahorrando practicamente todas las
 # peticiones -- estos dos ficheros cambian una vez al ano, no una vez a la hora.
 #
-# El sitemap solo lista la raiz a proposito (ver su comentario: las rutas de la
-# SPA van por fragmento y un sitemap no los admite), asi que su contenido no
-# cambia ni cuando se anade una herramienta.
+# El sitemap solo lista la raiz: las demas paginas llevan noindex mientras dure
+# la PR 1 de rutas reales, asi que su contenido no cambia ni cuando se anade una
+# herramienta.
 [[headers]]
   for = "/robots.txt"
   [headers.values]
