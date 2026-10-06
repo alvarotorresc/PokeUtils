@@ -1,10 +1,11 @@
-// El indice de rutas: los slugs en espanol de cada ficha, ya resueltos.
+// El indice de rutas: los slugs de cada ficha en los dos idiomas, ya resueltos.
 //
-// Las URLs publicas de una ficha (/pokedex/pikachu, /movimientos/puno-trueno)
-// salen de nombres que solo estan en los datasets, y el navegador no se va a
-// bajar moves.json entero para pintar un enlace. Este fichero lleva lo justo
-// para traducir en los dos sentidos; la logica vive en construirIndice() de
-// js/rutas.js, que es lo mismo que check-rutas.mjs regenera para compararlo.
+// Las URLs publicas de una ficha (/pokedex/pikachu, /movimientos/puno-trueno,
+// /en/moves/thunder-punch) salen de nombres que solo estan en los datasets, y el
+// navegador no se va a bajar moves.json entero para pintar un enlace. Este
+// fichero lleva lo justo para traducir en los dos sentidos; la logica vive en
+// construirIndice() de js/rutas.js, que es lo mismo que check-rutas.mjs
+// regenera para compararlo.
 //
 // Sin red: se deriva de los datasets ya construidos. Hay que volver a correrlo
 // despues de cada `build-data.mjs`.
