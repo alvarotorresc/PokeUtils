@@ -4,21 +4,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PokeUtils</title>
-  <!-- Las fuentes se descubrian dentro de style.css, o sea un salto despues.
+  <!-- Todas las rutas de este fichero son absolutas ("/fonts/...", no
+       "fonts/..."): la pagina tambien se sirve en /pokedex/pikachu, y ahi una
+       relativa resolveria contra /pokedex/ y daria 404.
+
+       Las fuentes se descubrian dentro de style.css, o sea un salto despues.
        Precargarlas aqui las pone a bajar en paralelo con la hoja de estilos. -->
-  <link rel="preload" href="fonts/press-start-2p-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="fonts/vt323-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="style.css">
+  <link rel="preload" href="/fonts/press-start-2p-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/vt323-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.css">
   <!-- La pokebola del nav (opcion A del lienzo de iconos), no ya el rayo del
        favicon anterior: es el mismo dibujo que usan el manifest y la
        og:image, generado por scripts/build-icons.mjs. El SVG y el PNG salen
        los dos con fondo transparente de verdad (RGBA, esquinas en alpha 0 --
        verificado, no solo eyeballing) para leerse igual en pestana clara y
        oscura; el PNG es el respaldo para quien no soporte favicon en SVG. -->
-  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
-  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
   <!-- Una unica canonical, la raiz: las rutas de esta SPA viven en el
        fragmento (#/pokedex...), invisible para un rastreador -- misma razon
        por la que sitemap.xml solo lista esta misma URL. -->
@@ -60,7 +64,7 @@
       // y no con un <link> fijo para no traerse ademas el idioma que no se usa.
       var l = document.createElement('link');
       l.rel = 'modulepreload';
-      l.href = 'js/i18n-' + (localStorage.getItem('pkutils_lang') || 'es') + '.js';
+      l.href = '/js/i18n-' + (localStorage.getItem('pkutils_lang') || 'es') + '.js';
       document.head.appendChild(l);
     } catch (e) {}
   </script>
@@ -256,6 +260,6 @@
     </div>
   </footer>
 
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="/js/app.js"></script>
 </body>
 </html>

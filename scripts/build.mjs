@@ -197,19 +197,24 @@ async function main() {
   let html = await readFile(join(ROOT, 'index.html'), 'utf8');
   await comprobarLiteralesEN(html);
   html = html
-    .replace('href="style.css"', `href="/${cssNombre}"`)
-    .replace('src="js/app.js"', `src="/${appJs}"`)
+    .replace('href="/style.css"', `href="/${cssNombre}"`)
+    .replace('src="/js/app.js"', `src="/${appJs}"`)
     // El modulepreload se construia concatenando el idioma; con hash hay que
     // darle los nombres reales, o precargaria ficheros que no existen sin que
     // se entere nadie.
     .replace(
-      /l\.href = 'js\/i18n-' \+ \(localStorage\.getItem\('pkutils_lang'\) \|\| 'es'\) \+ '\.js';/,
+      /l\.href = '\/js\/i18n-' \+ \(localStorage\.getItem\('pkutils_lang'\) \|\| 'es'\) \+ '\.js';/,
       `l.href = ${JSON.stringify(diccionario)}[localStorage.getItem('pkutils_lang') || 'es'] || ${JSON.stringify(diccionario.es)};`,
     );
+  // Se buscan las dos ortografias, relativa y absoluta: si index.html cambia de
+  // una a otra y los replace de arriba no, dejan de casar sin decir nada, y un
+  // aserto que solo mirase la vieja pasaria en verde con el fichero sin hash.
   for (const [buscado, nombre] of [['style.css', cssNombre], ['js/app.js', appJs]]) {
-    if (html.includes(`"${buscado}"`)) throw new Error(`index.html sigue apuntando a ${buscado} en vez de a ${nombre}`);
+    if (html.includes(`"${buscado}"`) || html.includes(`"/${buscado}"`)) {
+      throw new Error(`index.html sigue apuntando a ${buscado} en vez de a ${nombre}`);
+    }
   }
-  if (html.includes("'js/i18n-'")) throw new Error('El modulepreload de index.html sigue armando la ruta a mano');
+  if (/'\/?js\/i18n-'/.test(html)) throw new Error('El modulepreload de index.html sigue armando la ruta a mano');
   await writeFile(join(OUT, 'index.html'), html);
 
   // ===== lo que se copia tal cual =====

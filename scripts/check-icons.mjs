@@ -30,9 +30,10 @@ function check(label, actual, expected) {
   console.log(`${ok ? '  ok  ' : '  FAIL'} ${label}: ${JSON.stringify(actual)}${ok ? '' : ` (expected ${JSON.stringify(expected)})`}`);
 }
 
-// index.html escribe las rutas relativas ("icons/x.png"), 404.html absolutas
-// ("/icons/x.png") porque se sirve bajo cualquier ruta que no exista, y la
-// og:image lleva el origen entero porque una etiqueta og necesita URL absoluta.
+// index.html y 404.html escriben las rutas absolutas ("/icons/x.png") porque
+// se sirven bajo rutas que no son la raiz, el manifest relativas a si mismo
+// ("icons/x.png"), y la og:image lleva el origen entero porque una etiqueta og
+// necesita URL absoluta.
 // Las tres formas apuntan al mismo fichero: se normalizan antes de comparar.
 const normalizar = ruta => ruta
   .replace(/^https?:\/\/[^/]+/, '')
@@ -63,13 +64,13 @@ const sinFichero = referenciadas.filter(r => !enDisco.has(r.replace(/^icons\//, 
 check('ninguna referencia apunta a un fichero que no existe', sinFichero, []);
 check('y son 8 ficheros distintos para las 11 referencias', referenciadas.length, 8);
 
-// index.html:21 tambien enlaza el manifest, que es un fichero suelto de la raiz
+// index.html tambien enlaza el manifest, que es un fichero suelto de la raiz
 // que build.mjs copia a mano: si se renombra, el navegador no instala nada. Que
 // el fichero exista lo garantiza el leer() de arriba, que reventaria; lo que
 // esto vigila es el enlace, que es el que se puede quedar apuntando a un nombre
 // viejo sin que nada falle.
 check('index.html sigue enlazando manifest.webmanifest',
-  /<link rel="manifest" href="manifest\.webmanifest">/.test(index), true);
+  /<link rel="manifest" href="\/manifest\.webmanifest">/.test(index), true);
 
 console.log('\nNada de sobra\n');
 
