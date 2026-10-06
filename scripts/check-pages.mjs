@@ -251,12 +251,12 @@ console.log('\nSus cabeceras en netlify.toml\n');
 const toml = await leerTexto('netlify.toml');
 const bloques = new Map([...toml.matchAll(/\[\[headers\]\]\s*\n\s*for = "([^"]+)"\s*\n\s*\[headers\.values\]\s*\n([\s\S]*?)(?=\n\s*\n|\n\[\[|$)/g)]
   .map(m => [m[1], m[2]]));
-// Las de /en tienen sus dos bloques en el commit de netlify.toml.
-const prefijos = [...new Set(de('es').filter(r => r.publica !== '/').map(r => {
+// Las inglesas caen todas en dos: /en y /en/* (seccion 'en').
+const prefijos = [...new Set(rutas.filter(r => r.publica !== '/').map(r => {
   const [, seccion, hijo] = r.publica.split('/');
   return hijo ? `/${seccion}/*` : r.publica;
 }))];
-check('25 bloques: 21 paginas fijas y 4 secciones con fichas', prefijos.length, 25);
+check('27 bloques: 21 paginas fijas, 4 secciones con fichas, /en y /en/*', prefijos.length, 27);
 check('cada una tiene el suyo en netlify.toml', prefijos.filter(f => !bloques.has(f)), []);
 check('y todos revalidan',
   prefijos.filter(f => !/Cache-Control = "public, max-age=0, must-revalidate"/.test(bloques.get(f) ?? '')), []);
