@@ -10,7 +10,7 @@ import { t, getLang, setLang, onLangChange } from './i18n.js';
 import { purgeLegacyCache } from './api.js';
 import { leer, escribir } from './storage.js';
 import { renderError, parseRuta, navegar, fijarRouter, wireSpriteFade } from './ui.js';
-import { urlDe, cargarIndice, tituloDe, legadoALogica } from './rutas.js';
+import { urlDe, cargarIndice, tituloDe, legadoALogica, idiomaDe, esPortada, urlEquivalente } from './rutas.js';
 import { cascaraDeRuta } from './cascaras.js';
 import { attachGlobalSearch } from './global-search.js';
 
@@ -30,6 +30,8 @@ const navSearchScrim = document.getElementById('navSearchScrim');
 const footerFaq = document.getElementById('footerFaq');
 const footerPrivacy = document.getElementById('footerPrivacy');
 const footerTerms = document.getElementById('footerTerms');
+const footerData = document.getElementById('footerData');
+const navLogo = document.querySelector('.nav-logo');
 
 // La ruta actual decide "home o no", tanto para el nav-link activo como para
 // el buscador del nav: la misma condicion que ya usaba updateActiveNav.
@@ -60,8 +62,31 @@ themeToggle.addEventListener('click', toggleTheme);
 initTheme();
 
 // ===== LANGUAGE =====
+//
+// El conmutador es un <a> a la misma pagina en el otro idioma: se puede abrir en
+// otra pestana, y un buscador ve el par. Lo dice su texto (el idioma al que
+// lleva) y lo dicen hreflang y lang.
+const otroIdioma = () => (getLang() === 'es' ? 'en' : 'es');
+
 function updateLangBtn() {
-  langToggle.textContent = getLang() === 'es' ? 'EN' : 'ES';
+  const otro = otroIdioma();
+  langToggle.textContent = otro.toUpperCase();
+  langToggle.setAttribute('hreflang', otro);
+  langToggle.setAttribute('lang', otro);
+}
+
+// El href, con la direccion de ahora mismo. Se pone en cada route(), y otra vez
+// al pulsarlo: los filtros reescriben la query con replaceQuery sin pasar por
+// route(), y el clic tiene que llevarse la query de este momento. Si no se puede
+// calcular (una ficha sin el indice de rutas), la portada del otro idioma, que
+// es a donde lleva urlEquivalente lo que no es una pagina.
+function actualizarConmutador() {
+  const otro = otroIdioma();
+  try {
+    langToggle.setAttribute('href', urlEquivalente(location, otro));
+  } catch {
+    langToggle.setAttribute('href', otro === 'en' ? '/en' : '/');
+  }
 }
 
 function updateNavLabels() {
@@ -69,6 +94,7 @@ function updateNavLabels() {
     const page = link.dataset.page;
     if (page === 'home') {
       link.textContent = t('nav.home');
+      link.setAttribute('href', urlDe('/'));
       return;
     }
     const category = CATEGORIES.find(c => c.id === page);
@@ -82,6 +108,7 @@ function updateNavLabels() {
   navSearchInput.placeholder = t('nav.search');
   navSearchInput.setAttribute('aria-label', t('nav.search'));
   navSearchToggle.setAttribute('aria-label', t('nav.search'));
+  navLogo.setAttribute('href', urlDe('/'));
 }
 
 // The footer is static markup in index.html, born in Spanish like the nav
@@ -89,24 +116,33 @@ function updateNavLabels() {
 // the hero, it sits below the fold: nothing there is LCP, so there is nothing
 // to race the first paint for.
 function updateFooterLabels() {
+  footerData.textContent = t('footer.data');
   footerFaq.textContent = t('footer.faq');
   footerPrivacy.textContent = t('footer.privacy');
   footerTerms.textContent = t('footer.terms');
+  footerFaq.setAttribute('href', urlDe('/faq'));
+  footerPrivacy.setAttribute('href', urlDe('/privacy'));
+  footerTerms.setAttribute('href', urlDe('/terms'));
 }
 
+// Sin preventDefault: navega el interceptor de clics de mas abajo, como
+// cualquier otro enlace, y route() cambia el idioma al ver la URL nueva. Esto
+// va en el propio enlace, antes de que el clic llegue al document: deja el href
+// al dia y guarda la eleccion, que es lo unico que lee la migracion de los #/.
 langToggle.addEventListener('click', () => {
-  setLang(getLang() === 'es' ? 'en' : 'es');
+  actualizarConmutador();
+  escribir('pkutils_lang', otroIdioma());
 });
 
 onLangChange((lang) => {
-  // The pre-paint script in index.html only covers the first paint (and only
-  // for a saved 'en'); this is the one spot that keeps it correct for the
-  // rest of the session, on every toggle either direction.
+  // El <html lang> lo pone el HTML (y el swap del <head> en el fuente) para la
+  // primera pintura; esto lo mantiene al dia en cada cambio de la sesion.
+  // Sin route(): quien cambia el idioma es route(), que ya esta pintando.
   document.documentElement.lang = lang;
   updateLangBtn();
   updateNavLabels();
   updateFooterLabels();
-  route(); // re-render current page
+  updateLevelBtn();
 });
 
 updateLangBtn();
@@ -115,7 +151,8 @@ updateFooterLabels();
 
 // ===== FORMAT LEVEL =====
 function updateLevelBtn() {
-  levelToggle.textContent = `Nv${getLevel()}`;
+  levelToggle.textContent = `${t('nav.level.abbr')}${getLevel()}`;
+  levelToggle.title = t('nav.level');
 }
 
 levelToggle.addEventListener('click', () => setLevel(getLevel() === 50 ? 100 : 50));
@@ -206,9 +243,9 @@ document.addEventListener('keydown', e => {
   );
   if (enCampo) return;
 
-  // Por pathname y no con parseRuta: la portada es solo '/', y asi el atajo no
-  // depende de que haya llegado el indice de rutas.
-  const esHome = location.pathname === '/';
+  // Por pathname y no con parseRuta: la portada es '/' o '/en', y asi el atajo
+  // no depende de que haya llegado el indice de rutas.
+  const esHome = esPortada(location.pathname);
   if (esHome) {
     // El input central lo pinta home.js; en la primera pintura ya esta en el
     // HTML, pero conviene comprobarlo en vivo y no asumir que existe.
@@ -358,6 +395,22 @@ async function route() {
     return;
   }
   if (token !== navegacion) return;
+  // El idioma es el de la direccion, y se cambia aqui, antes de pintar nada:
+  // cubre la carga directa, el conmutador y atras y adelante con una sola
+  // regla. setLang espera a su diccionario, y en ese hueco cabe otro clic.
+  const lang = ruta?.idioma ?? idiomaDe(location.pathname);
+  if (lang !== getLang()) {
+    try {
+      await setLang(lang);
+    } catch (err) {
+      if (token !== navegacion) return;
+      console.error('Route error:', err);
+      renderError(app, err, route);
+      return;
+    }
+    if (token !== navegacion) return;
+  }
+  actualizarConmutador();
   // null es una direccion que no es pagina de la app. Con path '' no casa con
   // ninguna ruta, ni con la home, y cae en el "no encontrado" de mas abajo.
   const { path, parts, query } = ruta ?? { path: '', parts: [], query: new URLSearchParams() };
@@ -413,7 +466,7 @@ async function route() {
       <div class="no-results">
         <div class="icon">❓</div>
         <p>${t('common.notfound')}</p>
-        <p style="margin-top:12px"><a href="/">${t('common.backhome')}</a></p>
+        <p style="margin-top:12px"><a href="${urlDe('/')}">${t('common.backhome')}</a></p>
       </div>
     `;
     return;

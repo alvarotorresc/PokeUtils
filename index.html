@@ -130,20 +130,23 @@
     try {
       if (localStorage.getItem('pkutils_theme') === 'light')
         document.documentElement.classList.add('light');
-      // Y el diccionario del idioma guardado, que i18n.js espera con un await de
-      // primer nivel: sin esto bajaria por detras de app.js en vez de a la vez, y
-      // el corte de i18n en dos habria costado mas de lo que ahorra. Se pide aqui
-      // y no con un <link> fijo para no traerse ademas el idioma que no se usa.
+      // Y el diccionario del idioma de la direccion, que i18n.js espera con un
+      // await de primer nivel: sin esto bajaria por detras de app.js en vez de a
+      // la vez, y el corte de i18n en dos habria costado mas de lo que ahorra. Se
+      // pide aqui y no con un <link> fijo para no traerse ademas el idioma que no
+      // se usa. El idioma sale del path con la misma regla que idiomaDe() de
+      // js/rutas.js: /en o /en/..., y lo demas es espanol.
+      var lang = location.pathname === '/en' || location.pathname.indexOf('/en/') === 0 ? 'en' : 'es';
       var l = document.createElement('link');
       l.rel = 'modulepreload';
-      l.href = '/js/i18n-' + (localStorage.getItem('pkutils_lang') || 'es') + '.js';
+      l.href = '/js/i18n-' + lang + '.js';
       document.head.appendChild(l);
     } catch (e) {}
   </script>
   <!-- El hero estatico de mas abajo solo vale para la portada: en cualquier
        otra ruta hay que ocultarlo antes de la primera pintura, o el <h1> de la
        portada parpadea un frame hasta que el JS diferido lo borre. La portada
-       es solo '/' (con o sin query), lo mismo que decide parseRuta en ui.js;
+       es '/' o '/en' (con o sin query), lo mismo que decide parseRuta en ui.js;
        cualquier otra ruta no.
        Tampoco lo es '/' con un enlace #/ de antes que no sea la portada
        (#/moves/53): el script de migracion de arriba o app.js lo van a llevar
@@ -151,9 +154,11 @@
        lo reconoce, quita la clase y se queda en la portada. -->
   <script>
     (function () {
+      var p = location.pathname;
       var h = location.hash.indexOf('#/') === 0 ? location.hash.slice(1) : '/';
       var legado = h.split('?')[0].split('/').filter(Boolean).join('/');
-      if (location.pathname !== '/' || (legado !== '' && legado !== 'home')) {
+      // Los #/ de antes solo vivian en la raiz: en /en un hash no es un enlace viejo.
+      if ((p !== '/' && p !== '/en') || (p === '/' && legado !== '' && legado !== 'home')) {
         document.documentElement.classList.add('no-hero');
       }
     })();
@@ -178,7 +183,7 @@
       </div>
       <div class="nav-toggles" id="navToggles">
         <button class="nav-toggle-btn" id="levelToggle" title="Nivel 50 / 100">Nv50</button>
-        <button class="nav-toggle-btn" id="langToggle" title="ES/EN">EN</button>
+        <a href="/en" class="nav-toggle-btn" id="langToggle" title="ES/EN" hreflang="en" lang="en">EN</a>
         <button class="nav-toggle-btn" id="themeToggle" title="Theme">☀️</button>
       </div>
       <button class="nav-search-toggle nav-search-toggle--hidden" id="navSearchToggle" aria-label="Buscar" aria-expanded="false">
@@ -197,10 +202,11 @@
     </div>
   </nav>
 
-  <!-- Si el idioma guardado es "en", el nav nace en espanol: esta escrito a
-       mano mas arriba porque va antes de que exista el modulo de i18n
-       (app.js:61-92 ya lo traduce tras hidratar -- esto solo adelanta el
-       cambio a antes del primer pintado). Va aqui, inmediatamente despues de
+  <!-- En una direccion en ingles (/en, /en/...), el nav nace en espanol: esta
+       escrito a mano mas arriba porque va antes de que exista el modulo de i18n
+       (updateNavLabels en app.js ya lo traduce tras hidratar -- esto solo
+       adelanta el cambio a antes del primer pintado). Las paginas generadas
+       por el build ya nacen traducidas; esto es para el fuente sin build. Va aqui, inmediatamente despues de
        </nav> y no compartido con el del hero de mas abajo, para que su ventana
        sea la minima posible: solo necesita el <nav> ya parseado, no el resto
        del documento.
@@ -215,7 +221,7 @@
        eliminado por este cambio -- solo encogido, separando este script del
        hero para que la ventana de LO PRIMERO que se ve (el nav, arriba del
        todo) sea casi nula.
-       EN_NAV es una copia de seis claves de js/i18n-en.js. scripts/build.mjs
+       EN_NAV es una copia de ocho claves de js/i18n-en.js. scripts/build.mjs
        compara ambos bloques (este y el del hero) con el diccionario real en
        cada build -- ver comprobarLiteralesEN. -->
   <script>
@@ -224,18 +230,20 @@
       // sitio bloqueados este getItem lanza, y sin envolver se quedaba sin
       // capturar. Ver js/storage.js.
       try {
-        if ((localStorage.getItem('pkutils_lang') || 'es') !== 'en') return;
+        // La misma regla que idiomaDe() de js/rutas.js. Ya no mira el idioma
+        // guardado: lo decide la direccion.
+        var p = location.pathname;
+        if (p !== '/en' && p.indexOf('/en/') !== 0) return;
         // El <html lang> tiene que coincidir con lo que se pinta desde el
         // primer frame, no solo el nav: <html lang="es"> es el valor estatico
-        // de arriba, correcto para quien no ha guardado idioma o guardo 'es'.
-        // js/app.js:onLangChange lo mantiene correcto el resto de la sesion,
-        // en cualquier direccion del toggle -- esta linea solo cubre el hueco
-        // entre "nace en HTML" y "app.js ya corrio" para quien guardo 'en'.
+        // de arriba. js/app.js:onLangChange lo mantiene correcto el resto de la
+        // sesion -- esta linea solo cubre el hueco entre "nace en HTML" y
+        // "app.js ya corrio".
         document.documentElement.lang = 'en';
         var EN_NAV = {
           "navHome": "HOME", "navPokedex": "POKEDEX", "navData": "DATA",
           "navCompetitive": "COMPETITIVE", "navCalculator": "CALCULATOR",
-          "navSearch": "Search..."
+          "navSearch": "Search...", "navLevel": "Level 50 / 100", "navLevelAbbr": "Lv"
         };
         var LABELS = { home: EN_NAV.navHome, pokedex: EN_NAV.navPokedex, data: EN_NAV.navData,
           competitive: EN_NAV.navCompetitive, calculator: EN_NAV.navCalculator };
@@ -247,6 +255,20 @@
         if (navSearch) {
           navSearch.placeholder = EN_NAV.navSearch;
           navSearch.setAttribute('aria-label', EN_NAV.navSearch);
+        }
+        // El conmutador lleva al espanol. Su href exacto (la misma pagina en
+        // espanol) lo pone app.js con urlEquivalente; hasta entonces, la portada.
+        var conmutador = document.getElementById('langToggle');
+        if (conmutador) {
+          conmutador.textContent = 'ES';
+          conmutador.setAttribute('href', '/');
+          conmutador.setAttribute('hreflang', 'es');
+          conmutador.setAttribute('lang', 'es');
+        }
+        var nivel = document.getElementById('levelToggle');
+        if (nivel) {
+          nivel.title = EN_NAV.navLevel;
+          nivel.textContent = nivel.textContent.replace(/^Nv/, EN_NAV.navLevelAbbr);
         }
       } catch (e) {}
     })();
@@ -261,8 +283,8 @@
   <!-- La portada de la home viene pintada del servidor. #app estaba vacio, asi
        que el <h1> (el LCP) no existia hasta que bajaba el JS: 1884 ms, y al
        inyectarlo el footer ya pintado saltaba hacia abajo, 0,208 de CLS.
-       Los textos van en espanol, que es el idioma por defecto; si hay otro
-       guardado, renderHome los cambia sin mover el alto.
+       Los textos van en espanol, que es el idioma por defecto; en /en los
+       cambia el swap de mas abajo, y renderHome sin mover el alto.
        Sin fade-in aqui: el <h1> ya esta pintado en este HTML, y la animacion de
        opacidad hace que Chrome no lo cuente como pintado hasta que termina --
        ~350ms de "element render delay" sumados al LCP por algo que ya se veia.
@@ -299,10 +321,9 @@
        con EN_NAV en cada build -- ver comprobarLiteralesEN en build.mjs. -->
   <script>
     (function () {
-      // Mismo motivo que el bloque del nav: getItem puede lanzar. Ver
-      // js/storage.js.
+      // Solo la portada en ingles: en el resto de paginas el hero esta oculto.
       try {
-        if ((localStorage.getItem('pkutils_lang') || 'es') !== 'en') return;
+        if (location.pathname !== '/en') return;
         var EN_HERO = {
           "heroA": "1351 Pokemon.", "heroB": "16 tools.",
           "heroSearch": "Search a Pokemon, a move, an item..."
@@ -319,7 +340,7 @@
   </script>
 
   <footer class="footer">
-    <p>Datos de <a href="https://pokeapi.co" target="_blank" rel="noopener">PokeAPI</a></p>
+    <p><span id="footerData">Datos de</span> <a href="https://pokeapi.co" target="_blank" rel="noopener">PokeAPI</a></p>
     <p style="margin-top:8px;font-size:0.46rem;color:var(--ink-2);line-height:1.6">Made with <span class="pokeball-inline"></span> by <a href="https://github.com/alvarotorresc" target="_blank" rel="noopener">Alvaro Torres</a></p>
     <!-- Nace en espanol como los nav-link: js/app.js:updateFooterLabels lo
          traduce tras hidratar, igual que updateNavLabels hace con el nav. Sin

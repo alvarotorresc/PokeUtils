@@ -4,11 +4,17 @@
 // que bajaba el arranque. Y la mitad era siempre para el idioma que esa visita
 // no iba a mirar. Ahora cada uno es su propio modulo y solo baja el que se usa.
 
-import { leer, escribir } from './storage.js';
+import { idiomaDe, fijarIdioma } from './rutas.js';
 
-// En el cuerpo del modulo: con el almacenamiento bloqueado, un getItem pelado
-// lanzaba aqui y ningun importador de i18n llegaba a correr. Ver js/storage.js.
-let currentLang = leer('pkutils_lang') || 'es';
+// El idioma lo decide la direccion (/en/... es ingles, lo demas espanol), no el
+// almacenamiento: una URL compartida se abre igual para todo el mundo, y es la
+// que indexa un buscador. pkutils_lang solo lo escribe el conmutador y solo lo
+// lee la migracion de los #/ de antes (app.js e index.html). En node no hay
+// location -- los checks importan este modulo -- y se arranca en espanol.
+let currentLang = globalThis.location ? idiomaDe(globalThis.location.pathname) : 'es';
+// El mismo idioma para t() y para urlDe(): un enlace nunca se pinta en un idioma
+// y su texto en otro.
+fijarIdioma(currentLang);
 let onChangeCallbacks = [];
 const diccionarios = {};
 
@@ -49,14 +55,13 @@ export function getLang() {
 
 // Asincrona desde que los diccionarios se cargan aparte: el idioma no cambia
 // hasta que el suyo esta bajado, o t() responderia en el idioma viejo.
+//
+// Ya no guarda nada: lo llama route() cada vez que la URL esta en otro idioma
+// (tambien con atras y adelante), y navegar no es elegir idioma. Lo que se
+// guarda es el clic en el conmutador, y lo guarda app.js.
 export async function setLang(lang) {
   await cargar(lang);
-  // La escritura va ANTES de tocar el estado. Al reves, un fallo suyo dejaba
-  // currentLang ya cambiado sin haber disparado los callbacks: t() contestaba
-  // en el idioma nuevo con toda la interfaz pintada aun en el viejo, hasta que
-  // algo la repintara por otro motivo. escribir() ya no puede lanzar, pero el
-  // orden lo deja inmune tambien a lo que venga.
-  escribir('pkutils_lang', lang);
+  fijarIdioma(lang);
   currentLang = lang;
   onChangeCallbacks.forEach(cb => cb(lang));
 }

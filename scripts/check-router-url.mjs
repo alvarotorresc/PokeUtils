@@ -383,10 +383,10 @@ check('se puede desactivar la salida donde no hay callejon',
 //
 // Los cuatro sin salida, medidos en navegador uno a uno: el desplegable del
 // buscador, la linea evolutiva y los movimientos de una ficha, y quien aprende
-// un movimiento. Los cuatro con salida: la ruta entera del router (dos veces:
-// cuando no baja su modulo y cuando no baja data/rutas.json, sin el que una
-// ficha no sabe que id es), la ficha de un movimiento cuando no baja
-// moves.json, y el equipo.
+// un movimiento. Los cinco con salida: la ruta entera del router (tres veces:
+// cuando no baja su modulo, cuando no baja data/rutas.json, sin el que una
+// ficha no sabe que id es, y cuando no baja el diccionario del idioma de la
+// direccion), la ficha de un movimiento cuando no baja moves.json, y el equipo.
 const llamantesError = [];
 for (const fichero of readdirSync(join(RAIZ, 'js')).filter(f => f.endsWith('.js') && f !== 'ui.js')) {
   const src = readFileSync(join(RAIZ, 'js', fichero), 'utf8');
@@ -401,10 +401,59 @@ for (const { fichero, sinSalida } of llamantesError) {
   console.log(`       js/${fichero}${sinSalida ? '  (seccion: sin salida)' : '  (pagina: con salida)'}`);
 }
 
-check('el censo de llamantes no ha cambiado sin revisarse', llamantesError.length, 8);
+check('el censo de llamantes no ha cambiado sin revisarse', llamantesError.length, 9);
 check('y los cuatro de seccion siguen sin enlace de vuelta',
   llamantesError.filter(l => l.sinSalida).map(l => l.fichero).sort(),
   ['global-search.js', 'moves-detail.js', 'pokedex-detail.js', 'pokedex-detail.js']);
+
+// ===== El idioma lo decide la URL =====
+//
+// i18n.js toma el idioma del path al arrancar y lo comparte con rutas.js, asi
+// que t() y urlDe() nunca discrepan. Se importa en otro proceso, con un
+// location de mentira puesto antes: el idioma se decide en el cuerpo del modulo
+// y en este ya esta importado en espanol.
+console.log('\nEl idioma lo decide la URL\n');
+
+const { execFileSync } = await import('node:child_process');
+function idiomaAlArrancar(pathname, guardado) {
+  const codigo = `
+    globalThis.location = { pathname: ${JSON.stringify(pathname)} };
+    const almacen = { pkutils_lang: ${JSON.stringify(guardado)} };
+    globalThis.localStorage = {
+      getItem: k => (k in almacen ? almacen[k] : null),
+      setItem: (k, v) => { almacen[k] = String(v); },
+      removeItem: k => { delete almacen[k]; },
+    };
+    const { getLang, t, setLang } = await import('./js/i18n.js');
+    const { urlDe } = await import('./js/rutas.js');
+    const antes = [getLang(), t('nav.home'), urlDe('/moves')];
+    await setLang(getLang() === 'es' ? 'en' : 'es');
+    console.log(JSON.stringify({ antes, despues: [getLang(), urlDe('/moves')], guardado: almacen.pkutils_lang }));
+  `;
+  return JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', codigo], { cwd: RAIZ, encoding: 'utf8' }));
+}
+check('/en/moves arranca en ingles aunque el guardado diga es', idiomaAlArrancar('/en/moves', 'es'), {
+  antes: ['en', 'HOME', '/en/moves'], despues: ['es', '/movimientos'], guardado: 'es',
+});
+check('/ arranca en espanol aunque el guardado diga en', idiomaAlArrancar('/', 'en'), {
+  antes: ['es', 'INICIO', '/movimientos'], despues: ['en', '/en/moves'], guardado: 'en',
+});
+check('/english no es ingles', idiomaAlArrancar('/english', null).antes[0], 'es');
+
+// Cables trampa de texto sobre app.js: el cambio de idioma ya no repinta por
+// su cuenta (lo hace route(), que es quien lo dispara: si lo repintara el
+// callback, cada route() en el otro idioma pediria otro route()), y route()
+// fija el idioma antes de poner el titulo y la cascara.
+const appSinComentarios = fuentes.find(f => f.fichero === 'app.js').src;
+const callbackIdioma = appSinComentarios.match(/onLangChange\(\(?\w*\)? => \{([\s\S]*?)\n\}\);/);
+check('app.js tiene su onLangChange', Boolean(callbackIdioma), true);
+check('y no llama a route()', /\broute\(/.test(callbackIdioma?.[1] ?? 'route('), false);
+const cuerpoRoute = appSinComentarios.match(/async function route\(\) \{([\s\S]*?)\n\}/)?.[1] ?? '';
+const iSetLang = cuerpoRoute.indexOf('await setLang(');
+check('route() espera a setLang antes del titulo',
+  iSetLang !== -1 && iSetLang < cuerpoRoute.indexOf('document.title'), true);
+check('i18n.js ya no lee el idioma guardado',
+  /pkutils_lang/.test(fuentes.find(f => f.fichero === 'i18n.js').src), false);
 
 console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);

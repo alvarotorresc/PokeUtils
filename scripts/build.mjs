@@ -86,7 +86,7 @@ async function comprobarLiteralesEN(html) {
   comprobarBloque('EN_NAV', {
     navHome: 'nav.home', navPokedex: 'nav.pokedex', navData: 'nav.data',
     navCompetitive: 'nav.competitive', navCalculator: 'nav.calculator',
-    navSearch: 'nav.search',
+    navSearch: 'nav.search', navLevel: 'nav.level', navLevelAbbr: 'nav.level.abbr',
   });
   comprobarBloque('EN_HERO', {
     heroA: 'home.claim.a', heroB: 'home.claim.b', heroSearch: 'home.search',
@@ -359,8 +359,8 @@ async function main() {
     // darle los nombres reales, o precargaria ficheros que no existen sin que
     // se entere nadie.
     .replace(
-      /l\.href = '\/js\/i18n-' \+ \(localStorage\.getItem\('pkutils_lang'\) \|\| 'es'\) \+ '\.js';/,
-      `l.href = ${JSON.stringify(diccionario)}[localStorage.getItem('pkutils_lang') || 'es'] || ${JSON.stringify(diccionario.es)};`,
+      /l\.href = '\/js\/i18n-' \+ lang \+ '\.js';/,
+      `l.href = ${JSON.stringify(diccionario)}[lang];`,
     );
   // Se buscan las dos ortografias, relativa y absoluta: si index.html cambia de
   // una a otra y los replace de arriba no, dejan de casar sin decir nada, y un
