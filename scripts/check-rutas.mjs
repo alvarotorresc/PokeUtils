@@ -18,7 +18,7 @@ import {
   slugEs, TABLA_ESTATICA, GRUPOS_HUEVO_ES, construirIndice, fijarIndice,
   urlDe, logicaDe, legadoALogica, TITULOS, tituloDe, SECCIONES_DE_FICHA,
   TABLA_ESTATICA_EN, GRUPOS_HUEVO_EN, idiomaDe, esPortada, fijarIdioma,
-  legadoAPublica, urlEquivalente,
+  legadoAPublica, urlEquivalente, TITULOS_EN, DESAMBIGUAR_EN,
 } from '../js/rutas.js';
 import { tieneUrlPropia } from '../js/forms.js';
 import { EGG_GROUPS } from '../js/egg-groups.js';
@@ -422,9 +422,80 @@ check('Competitivo la habilidad no es el hub',
   [tituloDe('/abilities/defiant', 'Competitivo'), tituloDe('/competitive')],
   ['Habilidad Competitivo · PokeUtils', 'Competitivo · PokeUtils']);
 check('un movimiento sin colision no lleva nada', tituloDe('/moves/9', 'Puño Trueno'), 'Puño Trueno · PokeUtils');
-// Y en ingles, con otro nombre, no se adivina sufijo: el titulo en EN no lo
-// genera el build, y la URL sigue siendo la misma.
-check('en ingles no hay sufijo que sacar', tituloDe('/moves/622', 'Breakneck Blitz'), 'Breakneck Blitz · PokeUtils');
+// Con el nombre de un idioma y la URL del otro no casa ningun sufijo, y no se
+// adivina: el titulo en ingles se pide en ingles (abajo).
+check('nombre en ingles con URL en espanol: sin sufijo', tituloDe('/moves/622', 'Breakneck Blitz', 'es'),
+  'Breakneck Blitz · PokeUtils');
+
+console.log('\nTitulos unicos en ingles\n');
+
+// Las mismas reglas con las palabras del ingles, que van detras: "Levitate
+// ability", "Ditto egg group" y, en las parejas, la variante antes que el tipo:
+// "As One (Glastrier) ability". El nombre es el que pinta la ficha en ingles
+// (pokeName: nameEn o, sin el, name).
+const nombreEn = e => e.nameEn || e.name;
+check('cada pagina fija en ingles tiene su titulo',
+  publicasEstaticasEn.filter(p => p !== '/en' && !Object.hasOwn(TITULOS_EN, p)), []);
+check('y no sobra ninguno', Object.keys(TITULOS_EN).filter(p => !publicasEstaticasEn.includes(p)), []);
+check('la portada en ingles se llama PokeUtils', tituloDe('/', undefined, 'en'), 'PokeUtils');
+check('las tres pestanas', ['/calculator', '/calculator?tab=damage', '/calculator?tab=catch'].map(l => tituloDe(l, undefined, 'en')),
+  ['IV and EV calculator · PokeUtils', 'Damage calculator · PokeUtils', 'Catch calculator · PokeUtils']);
+check('una ficha sin nombre lleva el de su seccion, en ingles',
+  [tituloDe('/moves/9', undefined, 'en'), tituloDe('/egg/ditto', undefined, 'en')],
+  ['Moves · PokeUtils', 'Egg groups · PokeUtils']);
+check('las dos breakneck blitz',
+  [tituloDe('/moves/622', 'Breakneck Blitz', 'en'), tituloDe('/moves/623', 'Breakneck Blitz', 'en')],
+  ['Breakneck Blitz (physical) · PokeUtils', 'Breakneck Blitz (special) · PokeUtils']);
+check('las dos As One',
+  [tituloDe('/abilities/as-one-glastrier', 'As One', 'en'), tituloDe('/abilities/as-one-spectrier', 'As One', 'en')],
+  ['As One (Glastrier) ability · PokeUtils', 'As One (Spectrier) ability · PokeUtils']);
+check('Ditto el grupo no es Ditto el Pokemon, en ingles',
+  [tituloDe('/pokedex/132', 'Ditto', 'en'), tituloDe('/egg/ditto', 'Ditto', 'en')],
+  ['Ditto · PokeUtils', 'Ditto egg group · PokeUtils']);
+// D6: la herramienta es "Counters" para no chocar con el movimiento Counter, y
+// la habilidad Competitive lleva "ability" detras.
+check('Counter el movimiento no es la herramienta',
+  [tituloDe('/moves/68', 'Counter', 'en'), tituloDe('/counter', undefined, 'en')],
+  ['Counter · PokeUtils', 'Counters · PokeUtils']);
+check('Competitive la habilidad no es el hub',
+  [tituloDe('/abilities/competitive', 'Competitive', 'en'), tituloDe('/competitive', undefined, 'en')],
+  ['Competitive ability · PokeUtils', 'Competitive · PokeUtils']);
+// D7: las dos megas de Meowstic se llaman igual en el dataset. Se desambiguan
+// aqui por slug hasta que la PR 5 arregle el dato.
+check('las dos Mega Meowstic',
+  [tituloDe('/pokedex/10314', 'Mega Meowstic', 'en'), tituloDe('/pokedex/10326', 'Mega Meowstic', 'en')],
+  ['Mega Meowstic (male) · PokeUtils', 'Mega Meowstic (female) · PokeUtils']);
+check('y en espanol no se toca', tituloDe('/pokedex/10314', 'Meowstic Mega macho', 'es'), 'Meowstic Mega macho · PokeUtils');
+
+const conUrl = pokemon.filter(p => !p.speciesId || tieneUrlPropia(p));
+const nombresEnRepetidos = new Set(conUrl.map(nombreEn).filter((n, i, todos) => todos.indexOf(n) !== i));
+check('DESAMBIGUAR_EN solo cubre colisiones reales del dataset',
+  Object.keys(DESAMBIGUAR_EN).filter(slug => {
+    const p = conUrl.find(x => urlDe(`/pokedex/${x.id}`, 'en') === `/en/pokedex/${slug}`);
+    return !p || !nombresEnRepetidos.has(nombreEn(p));
+  }), []);
+check('y las cubre todas',
+  conUrl.filter(p => nombresEnRepetidos.has(nombreEn(p)) && !Object.hasOwn(DESAMBIGUAR_EN, urlDe(`/pokedex/${p.id}`, 'en').split('/').pop()))
+    .map(p => p.name), []);
+
+const titulosEn = [
+  ...Object.keys(TABLA_ESTATICA_EN).filter(l => l !== '/home').map(l => tituloDe(l, undefined, 'en')),
+  ...conUrl.map(p => tituloDe(`/pokedex/${p.id}`, nombreEn(p), 'en')),
+  ...moves.map(m => tituloDe(`/moves/${m.id}`, nombreEn(m), 'en')),
+  ...abilities.map(a => tituloDe(`/abilities/${a.name}`, nombreEn(a), 'en')),
+  ...EGG_GROUPS.map(g => tituloDe(`/egg/${g}`, en[`egg.group.${g}`], 'en')),
+];
+check('un titulo por pagina en ingles', titulosEn.length, todasEn.length);
+check('ninguno repetido', [...new Set(titulosEn.filter((x, i) => titulosEn.indexOf(x) !== i))], []);
+// Solo las 19 parejas llevan sufijo: un name que acabara en -special por si
+// mismo no deberia ganar un parentesis.
+check('38 titulos con sufijo de pareja', titulosEn.filter(x => / \((physical|special|Glastrier|Spectrier)\)/.test(x)).length, 38);
+
+fijarIdioma('en');
+const tituloConEn = [tituloDe('/moves'), tituloDe('/moves/9', 'Thunder Punch')];
+fijarIdioma('es');
+check('tituloDe sin idioma usa el activo', tituloConEn, ['Moves · PokeUtils', 'Thunder Punch · PokeUtils']);
+check('y vuelve a espanol', tituloDe('/moves'), 'Movimientos · PokeUtils');
 
 console.log('\nLa migracion inline de index.html\n');
 

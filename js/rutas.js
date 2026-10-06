@@ -683,43 +683,98 @@ export const TITULOS = {
   '/calculadora-de-captura': 'Calculadora de captura',
 };
 
+// Las mismas 21, con su direccion en ingles. "Counters" y no "Counter" (D6 de
+// la PR 2): el movimiento Counter tambien es una pagina y el titulo es unico.
+export const TITULOS_EN = {
+  '/en/pokedex': 'Pokédex',
+  '/en/types': 'Type chart',
+  '/en/egg-groups': 'Egg groups',
+  '/en/moves': 'Moves',
+  '/en/abilities': 'Abilities',
+  '/en/items': 'Items',
+  '/en/natures': 'Natures',
+  '/en/compare': 'Compare',
+  '/en/data': 'Data',
+  '/en/competitive': 'Competitive',
+  '/en/team': 'Team',
+  '/en/counter': 'Counters',
+  '/en/speed': 'Speed',
+  '/en/survive': 'Survive',
+  '/en/meta-sets': 'Meta sets',
+  '/en/faq': 'Frequently asked questions',
+  '/en/privacy': 'Privacy',
+  '/en/terms': 'Terms',
+  '/en/iv-ev-calculator': 'IV and EV calculator',
+  '/en/damage-calculator': 'Damage calculator',
+  '/en/catch-calculator': 'Catch calculator',
+};
+const TITULOS_POR_IDIOMA = { es: TITULOS, en: TITULOS_EN };
+
 // Las fichas no pueden llevar solo su nombre: el build genera una pagina por
 // ficha, cada <title> tiene que ser unico, y con el nombre pelado chocaban 21.
 //   - Las colisiones con sufijo en la URL (decision 2: las 18 parejas de
 //     movimientos Z y las dos Unidad Ecuestre) lo llevan tambien en el titulo,
 //     entre parentesis. Se reconoce porque la URL es el slug del nombre mas uno
-//     de estos sufijos; con otro nombre (el ingles) no casa y no se pone nada.
+//     de estos sufijos; con el nombre del otro idioma no casa y no se pone nada.
+//     En ingles el sufijo sale del name (breakneck-blitz--physical), que es lo
+//     que lleva la URL.
 //   - Los grupos huevo y las habilidades dicen lo que son: Ditto es Pokemon y
-//     grupo huevo, y Competitivo es habilidad y el hub de herramientas.
-const SUFIJOS_TITULO = { fisico: 'físico', especial: 'especial', glastrier: 'Glastrier', spectrier: 'Spectrier' };
-const PREFIJOS_TITULO = { 'grupos-huevo': 'Grupo huevo', habilidades: 'Habilidad' };
+//     grupo huevo, y Competitivo es habilidad y el hub de herramientas. En
+//     espanol delante ("Habilidad Levitacion") y en ingles detras ("Levitate
+//     ability"), y siempre despues de la variante: "As One (Glastrier) ability".
+const SUFIJOS_TITULO = {
+  es: { fisico: 'físico', especial: 'especial', glastrier: 'Glastrier', spectrier: 'Spectrier' },
+  en: { physical: 'physical', special: 'special', glastrier: 'Glastrier', spectrier: 'Spectrier' },
+};
+const TIPO_DE_FICHA = {
+  es: { egg: 'Grupo huevo', abilities: 'Habilidad' },
+  en: { egg: 'egg group', abilities: 'ability' },
+};
 
-// tituloDe('/moves')               -> 'Movimientos · PokeUtils'
-// tituloDe('/moves/9', 'Puño Trueno') -> 'Puño Trueno · PokeUtils'
-// tituloDe('/egg/ditto', 'Ditto')  -> 'Grupo huevo Ditto · PokeUtils'
-// La portada, o lo que no tiene pagina, se queda en 'PokeUtils'. Una ficha
-// pide urlDe(), asi que necesita el indice como todo lo demas.
-export function tituloDe(logica, nombre) {
+// Dos fichas que en ingles se llaman igual en el dataset: las dos megas de
+// Meowstic son "Mega Meowstic" (en espanol ya dicen macho y hembra). Por slug,
+// y solo en el titulo (D7): el dato lo arregla la PR 5, y check-rutas falla si
+// aqui queda una que ya no choca.
+export const DESAMBIGUAR_EN = { 'meowstic-male-mega': 'male', 'meowstic-female-mega': 'female' };
+
+// tituloDe('/moves')                     -> 'Movimientos · PokeUtils'
+// tituloDe('/moves/9', 'Puño Trueno')    -> 'Puño Trueno · PokeUtils'
+// tituloDe('/egg/ditto', 'Ditto')        -> 'Grupo huevo Ditto · PokeUtils'
+// tituloDe('/egg/ditto', 'Ditto', 'en')  -> 'Ditto egg group · PokeUtils'
+// Sin idioma, el activo, como urlDe. La portada, o lo que no tiene pagina, se
+// queda en 'PokeUtils'. Una ficha pide urlDe(), asi que necesita el indice como
+// todo lo demas.
+export function tituloDe(logica, nombre, idiomaDestino = idioma) {
+  const l = exigirIdioma(idiomaDestino);
   let publica = null;
   try {
-    publica = urlDe(logica).split(/[?#]/)[0];
+    publica = urlDe(logica, l).split(/[?#]/)[0];
   } catch {
     // Sin pagina: con nombre se titula igual, sin el es la portada.
   }
+  // La seccion, sin el prefijo del idioma: '/en/moves/x' es la de movimientos.
+  const [, seccionPublica, slug] = (publica ?? '').slice(PREFIJO[l].length).split('/');
   if (nombre) {
-    const [, seccion, slug] = (publica ?? '').split('/');
+    const seccion = Object.hasOwn(SECCION_LOGICA[l], seccionPublica) ? SECCION_LOGICA[l][seccionPublica] : null;
     let titulo = nombre;
     if (slug) {
       const base = slugEs(nombre);
       const sufijo = slug.startsWith(`${base}-`) ? slug.slice(base.length + 1) : '';
-      if (['movimientos', 'habilidades'].includes(seccion) && Object.hasOwn(SUFIJOS_TITULO, sufijo)) {
-        titulo += ` (${SUFIJOS_TITULO[sufijo]})`;
+      if (['moves', 'abilities'].includes(seccion) && Object.hasOwn(SUFIJOS_TITULO[l], sufijo)) {
+        titulo += ` (${SUFIJOS_TITULO[l][sufijo]})`;
       }
-      if (Object.hasOwn(PREFIJOS_TITULO, seccion)) titulo = `${PREFIJOS_TITULO[seccion]} ${titulo}`;
+      if (l === 'en' && seccion === 'pokedex' && Object.hasOwn(DESAMBIGUAR_EN, slug)) {
+        titulo += ` (${DESAMBIGUAR_EN[slug]})`;
+      }
+      if (Object.hasOwn(TIPO_DE_FICHA[l], seccion)) {
+        const tipo = TIPO_DE_FICHA[l][seccion];
+        titulo = l === 'es' ? `${tipo} ${titulo}` : `${titulo} ${tipo}`;
+      }
     }
     return `${titulo} · PokeUtils`;
   }
   if (publica === null) return 'PokeUtils';
-  const seccion = TITULOS[publica] ?? TITULOS[`/${publica.split('/')[1]}`];
+  const titulos = TITULOS_POR_IDIOMA[l];
+  const seccion = titulos[publica] ?? titulos[`${PREFIJO[l]}/${seccionPublica}`];
   return seccion ? `${seccion} · PokeUtils` : 'PokeUtils';
 }

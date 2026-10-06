@@ -18,6 +18,9 @@ export default {
     'nav.speed': 'SPEED',
     'nav.survive': 'SURVIVE',
     'nav.counter': 'COUNTER',
+    // El boton de nivel: el title y la abreviatura que va delante del numero (Nv50).
+    'nav.level': 'Level 50 / 100',
+    'nav.level.abbr': 'Lv',
 
     'speed.title': 'Speed',
     'speed.subtitle': 'Who moves before a chosen Pokemon',
@@ -550,6 +553,7 @@ export default {
     'footer.faq': 'FAQ',
     'footer.privacy': 'Privacy',
     'footer.terms': 'Terms',
+    'footer.data': 'Data from',
 
     'faq.title': 'FAQ',
     'faq.subtitle': 'What PokeUtils is, and where each piece of data comes from',
