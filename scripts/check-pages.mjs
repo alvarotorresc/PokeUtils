@@ -67,19 +67,23 @@ check('los 18 tipos en cada idioma',
 
 const alternas = { es: '/', en: '/en' };
 check('la portada', por('/'), {
-  idioma: 'es', logica: '/', publica: '/', alternas, titulo: 'PokeUtils',
-  descripcion: 'Tu guía Pokémon retro: análisis competitivo, herramientas de cría, Pokédex completa y calculadoras de daño.',
+  idioma: 'es', logica: '/', publica: '/', alternas, titulo: 'Pokédex, tabla de tipos y calculadoras Pokémon · PokeUtils',
+  descripcion: 'Pokédex con los 1025 Pokémon, tabla de tipos, grupos huevo, calculadoras de daño, captura e IVs y herramientas para montar tu equipo competitivo.',
   noindex: false,
 });
-// La de antes de la PR 2, que estaba en ingles en la portada espanola (D11).
 check('la portada en ingles', por('/en'), {
-  idioma: 'en', logica: '/', publica: '/en', alternas, titulo: 'PokeUtils',
-  descripcion: 'Your retro Pokemon guide: competitive analysis, breeding tools, complete Pokédex and damage calculators.',
+  idioma: 'en', logica: '/', publica: '/en', alternas, titulo: 'Pokédex, type chart and Pokémon calculators · PokeUtils',
+  descripcion: 'Pokédex with all 1025 Pokémon, a type chart, egg groups, damage, catch and IV calculators, and tools to build your competitive team.',
   noindex: false,
 });
 check('index.html lleva la descripcion de la portada (D11)',
   [...esqueleto.matchAll(/<meta (?:name|property)="(?:og:)?description" content="([^"]*)">/g)].map(m => m[1]),
   [por('/').descripcion, por('/').descripcion]);
+// La portada espanola es el index.html tal cual, sin pasar por paginaHtml: si
+// su <title> se quedara atras, Google veria uno y el cliente pondria otro.
+check('y su <title> y su og:title, los de tituloDe',
+  [...esqueleto.matchAll(/<title>([^<]*)<\/title>|<meta property="og:title" content="([^"]*)">/g)].map(m => m[1] ?? m[2]),
+  [por('/').titulo, por('/').titulo]);
 check('cada fila sabe donde esta su par',
   rutas.filter(r => r.alternas[r.idioma] !== r.publica || !por(r.alternas.es) || !por(r.alternas.en)).map(r => r.publica), []);
 check('y el par la tiene a ella', rutas.filter(r => {
@@ -95,12 +99,12 @@ check('un movimiento', [por('/movimientos/puno-trueno')?.titulo, por('/movimient
   ['Puño Trueno · PokeUtils', '/moves/9']);
 check('su descripcion es la del juego', por('/movimientos/puno-trueno')?.descripcion.startsWith('Puño Trueno: '), true);
 check('una habilidad', por('/habilidades/hedor')?.titulo, 'Habilidad Hedor · PokeUtils');
-check('un grupo', por('/grupos-huevo/agua-1')?.titulo, 'Grupo huevo Agua 1 · PokeUtils');
+check('un grupo, con su titulo largo', por('/grupos-huevo/agua-1')?.titulo, 'Grupo huevo Agua 1: Pokémon y con quién crían · PokeUtils');
 check('un tipo, con su nombre completo y noindex hasta que tenga contenido',
   [por('/tipos/electrico')?.logica, por('/tipos/electrico')?.titulo, por('/tipos/electrico')?.noindex],
-  ['/types/electric', 'Tipo Eléctrico · PokeUtils', true]);
+  ['/types/electric', 'Tipo Eléctrico: debilidad, resistencias, Pokémon · PokeUtils', true]);
 check('una pestana de la calculadora', [por('/calculadora-de-dano')?.logica, por('/calculadora-de-dano')?.titulo],
-  ['/calculator?tab=damage', 'Calculadora de daño · PokeUtils']);
+  ['/calculator?tab=damage', 'Calculadora de daño Pokémon: KO y rangos de daño · PokeUtils']);
 
 console.log('\nLas paginas en ingles\n');
 
@@ -120,11 +124,11 @@ check('un movimiento Z (D4)', por('/en/moves/breakneck-blitz-physical')?.titulo,
 check('una habilidad', [por('/en/abilities/stench')?.titulo, por('/en/abilities/stench')?.descripcion.startsWith('Stench: ')],
   ['Stench ability · PokeUtils', true]);
 check('un grupo', [por('/en/egg-groups/water-1')?.titulo, por('/en/egg-groups/water-1')?.descripcion],
-  ['Water 1 egg group · PokeUtils', 'The Pokémon in the Water 1 egg group and who they can breed with.']);
+  ['Water 1 egg group: Pokémon and breeding partners · PokeUtils', 'The Pokémon in the Water 1 egg group and who they can breed with.']);
 check('un tipo', [por('/en/types/electric')?.titulo, por('/en/types/electric')?.alternas.es],
-  ['Electric type · PokeUtils', '/tipos/electrico']);
+  ['Electric type: weakness, resistances and Pokémon · PokeUtils', '/tipos/electrico']);
 check('una pestana de la calculadora', [por('/en/damage-calculator')?.logica, por('/en/damage-calculator')?.titulo],
-  ['/calculator?tab=damage', 'Damage calculator · PokeUtils']);
+  ['/calculator?tab=damage', 'Pokémon damage calculator: KO chances and rolls · PokeUtils']);
 check('la descripcion de una fija sale del diccionario ingles', por('/en/faq')?.descripcion, 'What PokeUtils is, and where each piece of data comes from.');
 check('pokeName en ingles sin tocar el idioma activo',
   [pokeName({ name: 'mr-mime', nameEs: 'Mr. Mime', nameEn: 'Mr. Mime' }, 'en'), pokeName({ name: 'x', nameEs: 'Equis', nameEn: 'Ex' }, 'en'),
@@ -179,8 +183,13 @@ const conComillas = paginaHtml(esqueleto, { ...por('/pokedex/pikachu'), titulo: 
 check('el nombre se escapa', [uno(conComillas, /<title>([^<]*)<\/title>/g)[0], uno(conComillas, /<meta name="description" content="([^"]*)"/g)[0]],
   ['A &amp; &quot;B&quot; &lt;c&gt;', 'd&quot;e']);
 check('la portada no se genera con esto', lanza(() => paginaHtml(esqueleto, por('/'))), true);
-check('un esqueleto que ya no casa lanza, no sale a medias',
-  lanza(() => paginaHtml(esqueleto.replace('<title>PokeUtils</title>', '<title>X</title>'), por('/pokedex/pikachu'))), true);
+// El patron del <title> acepta cualquier titulo, asi que lo que tiene que
+// saltar es que falte o que haya dos.
+check('un esqueleto que ya no casa lanza, no sale a medias', [
+  lanza(() => paginaHtml(esqueleto.replace(/<title>[^<]*<\/title>/, ''), por('/pokedex/pikachu'))),
+  lanza(() => paginaHtml(esqueleto.replace(/(<title>[^<]*<\/title>)/, '$1$1'), por('/pokedex/pikachu'))),
+  lanza(() => paginaHtml(esqueleto.replace('<meta property="og:url"', '<meta property="og:urlx"'), por('/pokedex/pikachu'))),
+], [true, true, true]);
 
 console.log('\nhreflang\n');
 

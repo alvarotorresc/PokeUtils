@@ -48,11 +48,11 @@ const SUBTITULOS = {
 
 // La de las portadas, que no sale del diccionario: ninguna clave dice esto. La
 // espanola es tambien la del index.html (D11), que se sirve sin build y no se
-// regenera; check-pages comprueba que siguen siendo la misma. La inglesa es la
-// que llevaba la portada antes de la PR 2.
+// regenera; check-pages comprueba que siguen siendo la misma. De 120 a 155
+// caracteres, lo que muestra un resultado de Google sin cortar (PR 3).
 const DESCRIPCION_PORTADA = {
-  es: 'Tu guía Pokémon retro: análisis competitivo, herramientas de cría, Pokédex completa y calculadoras de daño.',
-  en: 'Your retro Pokemon guide: competitive analysis, breeding tools, complete Pokédex and damage calculators.',
+  es: 'Pokédex con los 1025 Pokémon, tabla de tipos, grupos huevo, calculadoras de daño, captura e IVs y herramientas para montar tu equipo competitivo.',
+  en: 'Pokédex with all 1025 Pokémon, a type chart, egg groups, damage, catch and IV calculators, and tools to build your competitive team.',
 };
 
 // La de cada ficha. En ingles solo descriptionEn (no hay ninguna vacia): la
@@ -311,7 +311,9 @@ export function paginaHtml(esqueleto, ruta, origen = ORIGEN) {
   // pero check-pages le pasa el fuente, y sus comentarios nombran <html lang>,
   // el conmutador o el hero, que son patrones de aqui abajo.
   let html = sinScriptsDeLaPortada(sinComentarios(esqueleto));
-  html = sustituir(html, /<title>PokeUtils<\/title>/, () => `<title>${titulo}</title>`, 'el <title>');
+  // Cualquier titulo y no 'PokeUtils': desde la PR 3 el index.html lleva el
+  // largo de la portada. Que case una vez sigue siendo lo que se exige.
+  html = sustituir(html, /<title>[^<]*<\/title>/, () => `<title>${titulo}</title>`, 'el <title>');
   html = sustituir(html, /<meta name="description" content="[^"]*">/,
     () => `<meta name="description" content="${descripcion}">`, 'la meta description');
   html = sustituir(html, /<meta property="og:title" content="[^"]*">/,

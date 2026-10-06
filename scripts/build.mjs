@@ -34,6 +34,7 @@ import {
 import {
   TABLA_ESTATICA, GRUPOS_HUEVO_ES, TIPOS_ES, SECCIONES_DE_FICHA, IDIOMAS, urlDe, logicaDe, idiomaDe,
 } from '../js/rutas.js';
+import { TITULOS_SEO } from '../js/titulos.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'dist');
@@ -397,6 +398,30 @@ async function generarPaginas(esqueleto) {
       throw new Error(`dist/${f} lleva los scripts ${JSON.stringify(marcas)} y deberia llevar ${JSON.stringify(esperadas)}`
         + ' -- solo la portada espanola necesita la migracion, el no-hero y los swaps de idioma');
     }
+  }
+
+  // (o) Las 53 paginas por idioma que se indexan llevan en disco el titulo de
+  // titulos.js, de 50 a 60 caracteres (lo que Google ensena sin cortar), y su
+  // og:title es el mismo. La portada espanola cuenta: es el index.html a mano,
+  // el unico que no pasa por paginaHtml. La description entra aqui cuando la
+  // escriban los textos (PR 3, commit 4).
+  const desescapar = texto => texto.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  const conTituloLargo = rutas.filter(r => Object.hasOwn(TITULOS_SEO[r.idioma], r.logica));
+  const esperadasConTitulo = IDIOMAS.reduce((n, l) => n + Object.keys(TITULOS_SEO[l]).length, 0);
+  if (conTituloLargo.length !== esperadasConTitulo) {
+    throw new Error(`${conTituloLargo.length} paginas con titulo de titulos.js y titulos.js tiene ${esperadasConTitulo}`);
+  }
+  for (const ruta of conTituloLargo) {
+    const f = ficheroDe(ruta.publica);
+    const html = porFichero.get(f);
+    const [titulo] = unico(html, /<title>([^<]*)<\/title>/g).map(desescapar);
+    const og = unico(html, /<meta property="og:title" content="([^"]*)">/g).map(desescapar);
+    const largo = [...titulo].length;
+    if (titulo !== TITULOS_SEO[ruta.idioma][ruta.logica]) {
+      throw new Error(`dist/${f} lleva el titulo "${titulo}" y titulos.js dice "${TITULOS_SEO[ruta.idioma][ruta.logica]}"`);
+    }
+    if (largo < 50 || largo > 60) throw new Error(`dist/${f}: su titulo tiene ${largo} caracteres (de 50 a 60)`);
+    if (JSON.stringify(og) !== JSON.stringify([titulo])) throw new Error(`dist/${f}: og:title ${JSON.stringify(og)} y title "${titulo}"`);
   }
   return ficheros.length;
 }

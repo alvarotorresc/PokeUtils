@@ -24,6 +24,7 @@
 // pueda importar: lo usan check-rutas.mjs, serve.mjs y el build.
 
 import { isForm, tieneUrlPropia } from './forms.js';
+import { TITULOS_SEO } from './titulos.js';
 
 // ===== Idiomas =====
 
@@ -785,13 +786,31 @@ const TIPO_DE_FICHA = {
 // aqui queda una que ya no choca.
 export const DESAMBIGUAR_EN = { 'meowstic-male-mega': 'male', 'meowstic-female-mega': 'female' };
 
-// tituloDe('/moves')                     -> 'Movimientos · PokeUtils'
+// Las 53 de titulos.js, por URL publica y no por ruta logica: asi casan
+// tambien '/calculator?tab=damage&a=6', el '/?' que pasa route() y el alias
+// '/home', sin normalizar la query aqui otra vez. Se monta la primera vez que
+// hace falta y no al cargar el modulo, cuando urlDe aun no tiene sus tablas.
+let seoPorPublica = null;
+function tituloSeo(publica, l) {
+  if (!seoPorPublica) {
+    seoPorPublica = Object.fromEntries(IDIOMAS.map(idiomaTabla => [idiomaTabla, Object.fromEntries(
+      Object.entries(TITULOS_SEO[idiomaTabla]).map(([logica, titulo]) => [urlDe(logica, idiomaTabla), titulo]))]));
+  }
+  return Object.hasOwn(seoPorPublica[l], publica) ? seoPorPublica[l][publica] : null;
+}
+
+// tituloDe('/moves')                     -> 'Movimientos Pokémon: potencia, precisión y PP · PokeUtils'
 // tituloDe('/moves/9', 'Puño Trueno')    -> 'Puño Trueno · PokeUtils'
-// tituloDe('/egg/ditto', 'Ditto')        -> 'Grupo huevo Ditto · PokeUtils'
-// tituloDe('/egg/ditto', 'Ditto', 'en')  -> 'Ditto egg group · PokeUtils'
-// Sin idioma, el activo, como urlDe. La portada, o lo que no tiene pagina, se
-// queda en 'PokeUtils'. Una ficha pide urlDe(), asi que necesita el indice como
-// todo lo demas.
+// tituloDe('/abilities/levitate', 'Levitación') -> 'Habilidad Levitación · PokeUtils'
+// tituloDe('/egg/ditto', 'Ditto')        -> 'Grupo huevo Ditto: cría con casi cualquiera · PokeUtils'
+// Sin idioma, el activo, como urlDe. Lo que no tiene pagina se queda en
+// 'PokeUtils'. Una ficha pide urlDe(), asi que necesita el indice como todo lo
+// demas.
+//
+// Las paginas de titulos.js ganan siempre, tambien con nombre: los grupos huevo
+// y los tipos se titulan con su nombre al pintarse (titularFicha), y si ese
+// nombre pasara por delante, el cliente pondria "Grupo huevo Ditto" donde el
+// build escribio el titulo largo.
 export function tituloDe(logica, nombre, idiomaDestino = idioma) {
   const l = exigirIdioma(idiomaDestino);
   let publica = null;
@@ -802,6 +821,8 @@ export function tituloDe(logica, nombre, idiomaDestino = idioma) {
   }
   // La seccion, sin el prefijo del idioma: '/en/moves/x' es la de movimientos.
   const [, seccionPublica, slug] = (publica ?? '').slice(PREFIJO[l].length).split('/');
+  const seo = publica === null ? null : tituloSeo(publica, l);
+  if (seo) return seo;
   if (nombre) {
     const seccion = Object.hasOwn(SECCION_LOGICA[l], seccionPublica) ? SECCION_LOGICA[l][seccionPublica] : null;
     let titulo = nombre;
