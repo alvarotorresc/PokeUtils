@@ -520,13 +520,17 @@ check('su copia de TABLA_ESTATICA es la de rutas.js', literal('RUTAS_ESTATICAS')
 check('su copia de GRUPOS_HUEVO_ES es la de rutas.js', literal('GRUPOS_HUEVO'), GRUPOS_HUEVO_ES);
 
 // Lo que hace el <head> con un hash: a donde manda (o null) y si oculta el hero.
-const enHead = (hash, pathname = '/') => {
+// Sin `localStorage` en el contexto, como con el almacenamiento bloqueado: la
+// lectura lanza y tiene que caer en espanol. Con `guardado`, uno de mentira.
+const enHead = (hash, pathname = '/', guardado) => {
   let destino = null;
   const clases = new Set();
   const location = { hash, pathname, replace: url => { destino ??= url; } };
   const document = { documentElement: { classList: { add: c => clases.add(c) } } };
+  const contexto = { location, document, URLSearchParams };
+  if (guardado !== undefined) contexto.localStorage = { getItem: k => (k === 'pkutils_lang' ? guardado : null) };
   for (const codigo of [migracion, noHero]) {
-    runInNewContext(codigo, { location, document, URLSearchParams });
+    runInNewContext(codigo, contexto);
   }
   return { destino, noHero: clases.has('no-hero') };
 };
@@ -549,6 +553,17 @@ check('un movimiento o una habilidad se quedan para app.js, sin hero',
 check('sin hash no hace nada', enHead(''), { destino: null, noHero: false });
 check('un grupo que no existe tampoco', enHead('#/egg/nada').destino, null);
 check('fuera de la raiz un #/ no es un enlace de antes', enHead('#/pokedex', '/faq').destino, null);
+
+// Con 'en' guardado por el conmutador, el inline no redirige nada: sus tablas
+// son solo las de espanol, y una segunda copia a mano de las de ingles seria
+// otra cosa que mantener. Lo resuelve app.js con legadoAPublica, que ya prueba
+// este check mas arriba. El hero se oculta igual mientras tanto.
+check('con en guardado, ninguna de las 17 del README se redirige aqui',
+  Object.keys(README).filter(h => enHead(h, '/', 'en').destino !== null), []);
+check('  y el hero se oculta igual', enHead('#/moves', '/', 'en'), { destino: null, noHero: true });
+check('con es guardado, o basura, redirige como siempre',
+  [enHead('#/moves', '/', 'es').destino, enHead('#/moves', '/', 'fr').destino, enHead('#/moves', '/', null).destino],
+  ['/movimientos', '/movimientos', '/movimientos']);
 
 console.log(failed ? `\n${failed} FAILED\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);

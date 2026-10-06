@@ -10,7 +10,7 @@ import { t, getLang, setLang, onLangChange } from './i18n.js';
 import { purgeLegacyCache } from './api.js';
 import { leer, escribir } from './storage.js';
 import { renderError, parseRuta, navegar, fijarRouter, wireSpriteFade } from './ui.js';
-import { urlDe, cargarIndice, tituloDe, legadoALogica, idiomaDe, esPortada, urlEquivalente } from './rutas.js';
+import { urlDe, cargarIndice, tituloDe, legadoAPublica, idiomaDe, esPortada, urlEquivalente } from './rutas.js';
 import { cascaraDeRuta } from './cascaras.js';
 import { attachGlobalSearch } from './global-search.js';
 
@@ -587,9 +587,14 @@ document.addEventListener('click', (e) => {
 // Las rutas fijas, los grupos huevo y los Pokemon por id ya los ha redirigido
 // el script del <head> de index.html. Lo que llega aqui con un #/ es lo que
 // necesita el indice de rutas para saber su slug -- #/moves/53,
-// #/abilities/As%20One -- o algo que no existe. replaceState y no
-// location.replace: la app ya esta cargada y basta con pintar la ruta buena, sin
-// volver a pedir la pagina.
+// #/abilities/As%20One --, algo que no existe, o cualquiera de ellos si el
+// conmutador dejo guardado el ingles: el enlace viejo no llevaba idioma, y el
+// que eligio esa persona es lo mas parecido a lo que veia. Es el unico sitio
+// que lee pkutils_lang (con el inline del <head>); navegar nunca lo hace, y la
+// portada / no redirige.
+//
+// replaceState y no location.replace: la app ya esta cargada y basta con pintar
+// la ruta buena, sin volver a pedir la pagina.
 //
 // Si no lleva a ninguna parte se quita el hash y se queda en la portada. El
 // no-hero que puso el <head> por si acaso se quita tambien: con el puesto, la
@@ -597,14 +602,14 @@ document.addEventListener('click', (e) => {
 async function arrancar() {
   if (location.pathname === '/' && location.hash.startsWith('#/')) {
     await cargarIndice().catch(() => {});
-    let logica = null;
+    let destino = null;
     try {
-      logica = legadoALogica(location.hash);
+      destino = legadoAPublica(location.hash, leer('pkutils_lang'));
     } catch {
       // Sin indice no se sabe que slug lleva; mejor la portada que un error.
     }
-    if (logica) {
-      history.replaceState(null, '', urlDe(logica));
+    if (destino) {
+      history.replaceState(null, '', destino);
     } else {
       history.replaceState(null, '', location.pathname + location.search);
       document.documentElement.classList.remove('no-hero');

@@ -67,7 +67,8 @@
        para no dejar la direccion vieja en el historial. Un Pokemon por id va a
        /pokedex/<id>, y la 301 del servidor lo lleva a su nombre. Los
        movimientos y las habilidades necesitan el indice de rutas: de esos se
-       encarga app.js al arrancar (legadoALogica).
+       encarga app.js al arrancar (legadoAPublica), y tambien de todos si el
+       conmutador dejo guardado el ingles.
        RUTAS_ESTATICAS y GRUPOS_HUEVO son copia a mano de TABLA_ESTATICA y
        GRUPOS_HUEVO_ES de js/rutas.js, que aqui no se puede importar.
        check-rutas.mjs ejecuta este script y compara cada destino con el de
@@ -78,6 +79,13 @@
       // no es un enlace de antes, y esta cabecera la llevan todas.
       var h = location.hash;
       if (location.pathname !== '/' || h.indexOf('#/') !== 0) return;
+      // Con el ingles guardado por el conmutador, el destino es la pagina en
+      // ingles, y estas tablas son solo las de espanol: lo resuelve app.js con
+      // legadoAPublica, sin una segunda copia a mano. Con el almacenamiento
+      // bloqueado, getItem lanza y se sigue en espanol.
+      try {
+        if (localStorage.getItem('pkutils_lang') === 'en') return;
+      } catch (e) {}
       var RUTAS_ESTATICAS = {
         "/": "/", "/home": "/", "/pokedex": "/pokedex", "/types": "/tipos",
         "/egg": "/grupos-huevo", "/moves": "/movimientos", "/abilities": "/habilidades",
