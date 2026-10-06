@@ -15,10 +15,43 @@
 // sentido: los slugs ya resueltos viajan en data/rutas.json, que genera
 // scripts/build-rutas.mjs con construirIndice() de este mismo fichero.
 //
+// Cada pagina existe en dos idiomas: en espanol en la raiz y en ingles bajo
+// /en (/en/moves/thunder-punch). La ruta logica es la misma en los dos; lo que
+// cambia es la direccion, y la decide el idioma que se le pase o, si no se le
+// pasa, el activo (fijarIdioma), para que los llamantes de siempre no cambien.
+//
 // Sin DOM y sin importar api.js (que arrastra storage.js), para que node lo
 // pueda importar: lo usan check-rutas.mjs, serve.mjs y el build.
 
 import { isForm, tieneUrlPropia } from './forms.js';
+
+// ===== Idiomas =====
+
+export const IDIOMAS = ['es', 'en'];
+
+// El idioma de una direccion sale de su prefijo, y nada mas: /enx, /english o
+// la portada son espanol. Una direccion no tiene un idioma por el
+// almacenamiento ni por el navegador de quien la abre.
+export const idiomaDe = pathname => {
+  const ruta = String(pathname);
+  return ruta === '/en' || ruta.startsWith('/en/') ? 'en' : 'es';
+};
+export const esPortada = pathname => pathname === '/' || pathname === '/en';
+
+// El idioma activo. Lo fija i18n.js al arrancar y en cada cambio, el mismo que
+// usa t(): asi un enlace nunca se pinta en un idioma y su texto en otro. El
+// build y los checks no dependen de el, pasan el idioma explicito.
+let idioma = 'es';
+const exigirIdioma = l => {
+  if (!IDIOMAS.includes(l)) throw new Error(`"${l}" no es un idioma de la app (${IDIOMAS.join(', ')})`);
+  return l;
+};
+export function fijarIdioma(l) {
+  idioma = exigirIdioma(l);
+}
+
+// El prefijo de cada idioma: el espanol vive en la raiz.
+const PREFIJO = { es: '', en: '/en' };
 
 // ===== Rutas fijas =====
 //
@@ -59,10 +92,47 @@ export const TABLA_ESTATICA = {
 // defecto, o uno que no existe -- es la de IV/EV, igual que en calculator.js.
 const PESTANAS = ['damage', 'catch'];
 
-const PUBLICA_A_LOGICA = {};
-for (const [logica, publica] of Object.entries(TABLA_ESTATICA)) {
-  if (!(publica in PUBLICA_A_LOGICA)) PUBLICA_A_LOGICA[publica] = logica;
-}
+// Las mismas rutas logicas, en el mismo orden, que check-rutas compara con las
+// de arriba. Los nombres son los que se buscan en ingles, no una traduccion
+// literal: /en/egg-groups, /en/meta-sets, /en/iv-ev-calculator.
+export const TABLA_ESTATICA_EN = {
+  '/': '/en',
+  '/home': '/en',
+  '/pokedex': '/en/pokedex',
+  '/types': '/en/types',
+  '/egg': '/en/egg-groups',
+  '/moves': '/en/moves',
+  '/abilities': '/en/abilities',
+  '/items': '/en/items',
+  '/natures': '/en/natures',
+  '/compare': '/en/compare',
+  '/data': '/en/data',
+  '/competitive': '/en/competitive',
+  '/team': '/en/team',
+  '/counter': '/en/counter',
+  '/speed': '/en/speed',
+  '/survive': '/en/survive',
+  '/meta': '/en/meta-sets',
+  '/faq': '/en/faq',
+  '/privacy': '/en/privacy',
+  '/terms': '/en/terms',
+  '/calculator': '/en/iv-ev-calculator',
+  '/calculator?tab=damage': '/en/damage-calculator',
+  '/calculator?tab=catch': '/en/catch-calculator',
+};
+const TABLAS = { es: TABLA_ESTATICA, en: TABLA_ESTATICA_EN };
+
+// publica -> logica, una por idioma. Las claves llevan el prefijo, asi que las
+// dos podrian ir en una; separadas, una direccion solo se busca en la tabla de
+// su idioma y no hay forma de que una del otro se cuele.
+const invertir = tabla => {
+  const salida = {};
+  for (const [logica, publica] of Object.entries(tabla)) {
+    if (!(publica in salida)) salida[publica] = logica;
+  }
+  return salida;
+};
+const PUBLICA_A_LOGICA = { es: invertir(TABLA_ESTATICA), en: invertir(TABLA_ESTATICA_EN) };
 
 // ===== Grupos huevo =====
 //
@@ -86,13 +156,43 @@ export const GRUPOS_HUEVO_ES = {
   ditto: 'ditto',
   'no-eggs': 'desconocido',
 };
-const GRUPO_DE_SLUG = Object.fromEntries(Object.entries(GRUPOS_HUEVO_ES).map(([g, s]) => [s, g]));
+// Con la misma regla, sobre las etiquetas de i18n-en.js.
+export const GRUPOS_HUEVO_EN = {
+  monster: 'monster',
+  water1: 'water-1',
+  water2: 'water-2',
+  water3: 'water-3',
+  bug: 'bug',
+  flying: 'flying',
+  ground: 'field',
+  fairy: 'fairy',
+  plant: 'grass',
+  humanshape: 'human-like',
+  mineral: 'mineral',
+  indeterminate: 'amorphous',
+  dragon: 'dragon',
+  ditto: 'ditto',
+  'no-eggs': 'no-eggs',
+};
+const GRUPOS_HUEVO = { es: GRUPOS_HUEVO_ES, en: GRUPOS_HUEVO_EN };
+const deSlugAGrupo = tabla => Object.fromEntries(Object.entries(tabla).map(([g, s]) => [s, g]));
+const GRUPO_DE_SLUG = { es: deSlugAGrupo(GRUPOS_HUEVO_ES), en: deSlugAGrupo(GRUPOS_HUEVO_EN) };
 
 // Las secciones logicas con ficha (/<seccion>/<id o nombre>): las que tienen una
 // rama `parts[0] === '<seccion>' && parts[1]` en destinoDe() de app.js, cosa
 // que vigila check-rutas.mjs. build.mjs la usa para comprobar que cada pagina
 // generada lleva a algo que el router sabe pintar, sin importar app.js.
 export const SECCIONES_DE_FICHA = ['pokedex', 'moves', 'abilities', 'egg'];
+
+// Como se llama cada seccion con ficha en la direccion de cada idioma.
+const SECCIONES = {
+  es: { pokedex: 'pokedex', moves: 'movimientos', abilities: 'habilidades', egg: 'grupos-huevo' },
+  en: { pokedex: 'pokedex', moves: 'moves', abilities: 'abilities', egg: 'egg-groups' },
+};
+const SECCION_LOGICA = {
+  es: Object.fromEntries(Object.entries(SECCIONES.es).map(([l, p]) => [p, l])),
+  en: Object.fromEntries(Object.entries(SECCIONES.en).map(([l, p]) => [p, l])),
+};
 
 // ===== Slugs =====
 
@@ -143,6 +243,7 @@ function resolverColisiones(filas) {
 //   especies:  [slug]                      posicion i = especie de id i+1
 //   formas:    {primerId: [[name, speciesId], ...]}   tramos de ids seguidos
 //   moves:     {primerId: [slug, ...]}                tramos de ids seguidos
+//   movesEn:   {primerId: [slug, ...]}                lo mismo, en ingles
 //   abilities: {name: slug}
 //   alias:     {clave: name}               solo para los enlaces #/ viejos
 //
@@ -165,6 +266,12 @@ function resolverColisiones(filas) {
 // alias resuelve las habilidades por los otros dos nombres con los que la app
 // las ha enlazado (el visible en ingles, "As One", y el espanol): solo las
 // claves que no casan ya con un name o un slug, asi que son unas pocas.
+//
+// En ingles, los Pokemon llevan el mismo slug y las habilidades su name, que ya
+// esta en `abilities`: solo los movimientos necesitan campo propio. Su slug es
+// el del name de PokeAPI (D4 de la PR 2), que coincide con el nombre en ingles
+// salvo en los Z, que escriben breakneck-blitz--physical y quedan en
+// breakneck-blitz-physical, y en vice-grip ("Vise Grip"). 5,0 KB gz mas.
 // [[id, valor]] ordenados -> {primerId: [valor, ...]}, y la vuelta.
 function tramos(pares) {
   const salida = {};
@@ -210,6 +317,15 @@ export function construirIndice({ pokemon, moves, abilities }) {
   if (new Set(enPokedex).size !== enPokedex.length) throw new Error('Hay dos fichas con el mismo slug en /pokedex');
 
   const filasMoves = resolverColisiones(moves.map(m => ({ id: m.id, name: m.name, slug: slugEs(m.nameEs) })));
+  // Sin resolverColisiones: sus sufijos son en espanol (-fisico) y en una URL en
+  // ingles quedarian mal sin que nada avisara. Medido, en ingles no hay ninguna
+  // colision; si un dataset nuevo trae una, que se decida su sufijo a mano.
+  const filasMovesEn = moves.map(m => ({ id: m.id, slug: slugEs(m.name) }));
+  const vistosEn = new Set();
+  for (const f of filasMovesEn) {
+    if (vistosEn.has(f.slug)) throw new Error(`Dos movimientos con el slug en ingles "${f.slug}"`);
+    vistosEn.add(f.slug);
+  }
   const filasAbilities = resolverColisiones(abilities.map(a => ({ name: a.name, slug: slugEs(a.nameEs) })));
 
   const conocidas = new Set(filasAbilities.flatMap(f => [f.name, f.slug]));
@@ -227,6 +343,7 @@ export function construirIndice({ pokemon, moves, abilities }) {
     especies: slugsEspecie,
     formas,
     moves: tramos([...filasMoves].sort((a, b) => a.id - b.id).map(f => [f.id, f.slug])),
+    movesEn: tramos([...filasMovesEn].sort((a, b) => a.id - b.id).map(f => [f.id, f.slug])),
     abilities: Object.fromEntries(filasAbilities.map(f => [f.name, f.slug])),
     alias,
   };
@@ -239,6 +356,7 @@ let inverso = null;
 // id -> {name, speciesId, propia} y id -> slug, ya desplegados de sus tramos.
 let forma = null;
 let move = null;
+let moveEn = null;
 let pendiente = null;
 
 // Las vueltas (slug -> id) se montan una vez aqui y no en cada consulta.
@@ -251,6 +369,7 @@ export function fijarIndice(json) {
     forma.set(id, { name, speciesId, propia: tieneUrlPropia({ name, speciesId }) });
   }
   move = desplegar(json.moves);
+  moveEn = desplegar(json.movesEn);
   const formaPropia = new Map();
   const formaDe = new Map();
   for (const [id, f] of forma) {
@@ -262,12 +381,16 @@ export function fijarIndice(json) {
     formaPropia,
     formaDe,
     move: new Map([...move].map(([id, slug]) => [slug, id])),
+    moveEn: new Map([...moveEn].map(([id, slug]) => [slug, id])),
     ability: new Map(Object.entries(json.abilities).map(([name, slug]) => [slug, name])),
   };
 }
 
 // La misma ruta relativa al modulo que usa api.js: en el build este fichero
-// acaba en dist/js/<trozo>.js y data/ sigue estando un nivel por encima.
+// acaba en dist/js/<trozo>.js y data/ sigue estando un nivel por encima. El
+// build le anade ?v=<hash del contenido> (versionarIndice en scripts/build.mjs):
+// el fichero no lleva hash en el nombre y /data/* se cachea, asi que sin version
+// un JS nuevo podia leer un indice viejo. Este literal es el que busca alli.
 const URL_INDICE = new URL('../data/rutas.json', import.meta.url);
 
 // Memoizado como los datasets de api.js. Si falla, se olvida la promesa para
@@ -337,12 +460,16 @@ const idDe = texto => (/^[1-9]\d*$/.test(texto) ? Number(texto) : null);
 // ===== logica -> publica =====
 //
 // urlDe('/moves/9')                     -> '/movimientos/puno-trueno'
+// urlDe('/moves/9', 'en')               -> '/en/moves/thunder-punch'
 // urlDe('/calculator?tab=damage&a=6')   -> '/calculadora-de-dano?a=6'
 // urlDe('/pokedex/10001')               -> '/pokedex/deoxys#forma-deoxys-attack'
 //
-// Lanza con una ruta que no tiene pagina: un enlace a ninguna parte es un fallo
-// de quien lo pinta, y descubrirlo en un 404 de produccion es tarde.
-export function urlDe(logica) {
+// Sin idioma, el activo. Lanza con una ruta que no tiene pagina: un enlace a
+// ninguna parte es un fallo de quien lo pinta, y descubrirlo en un 404 de
+// produccion es tarde. Y con un idioma que no existe, en vez de caer en el
+// espanol: un .map(urlDe) le pasaria el indice del array sin que nadie lo viera.
+export function urlDe(logica, idiomaDestino = idioma) {
+  const l = exigirIdioma(idiomaDestino);
   const texto = String(logica);
   const q = texto.indexOf('?');
   const path = normalizar(q === -1 ? texto : texto.slice(0, q));
@@ -355,36 +482,37 @@ export function urlDe(logica) {
     if (PESTANAS.includes(tab)) claveTabla = `/calculator?tab=${tab}`;
   }
 
-  let publica = Object.hasOwn(TABLA_ESTATICA, claveTabla) ? TABLA_ESTATICA[claveTabla] : undefined;
+  let publica = Object.hasOwn(TABLAS[l], claveTabla) ? TABLAS[l][claveTabla] : undefined;
   let ancla = '';
   if (publica === undefined) {
     const [seccion, id, ...resto] = path.split('/').filter(Boolean);
+    let ficha;
     if (id !== undefined && resto.length === 0) {
       if (seccion === 'egg') {
         const grupo = decodificar(id);
-        if (Object.hasOwn(GRUPOS_HUEVO_ES, grupo)) publica = `/grupos-huevo/${GRUPOS_HUEVO_ES[grupo]}`;
+        if (Object.hasOwn(GRUPOS_HUEVO[l], grupo)) ficha = GRUPOS_HUEVO[l][grupo];
       } else if (['pokedex', 'moves', 'abilities'].includes(seccion)) {
         exigirIndice(texto);
         if (seccion === 'pokedex') {
           const n = idDe(id);
           if (n !== null && n <= indice.especies.length) {
-            publica = `/pokedex/${indice.especies[n - 1]}`;
+            ficha = indice.especies[n - 1];
           } else if (n !== null && forma.has(n)) {
             const { name, speciesId, propia } = forma.get(n);
-            publica = `/pokedex/${propia ? name : indice.especies[speciesId - 1]}`;
+            ficha = propia ? name : indice.especies[speciesId - 1];
             if (!propia) ancla = `#forma-${name}`;
           }
         } else if (seccion === 'moves') {
-          const n = idDe(id);
-          const slug = move.get(n);
-          if (slug) publica = `/movimientos/${slug}`;
+          ficha = (l === 'en' ? moveEn : move).get(idDe(id));
         } else {
+          // Por cualquiera de sus tres nombres; en ingles la URL lleva el name.
           const nombre = decodificar(id);
           const name = nombre === null ? null : habilidadDe(nombre);
-          if (name) publica = `/habilidades/${indice.abilities[name]}`;
+          if (name) ficha = l === 'en' ? name : indice.abilities[name];
         }
       }
     }
+    if (ficha) publica = `${PREFIJO[l]}/${SECCIONES[l][seccion]}/${ficha}`;
   }
   if (publica === undefined) throw new Error(`urlDe: "${texto}" no tiene pagina`);
   return publica + consultaDe(params) + ancla;
@@ -393,15 +521,22 @@ export function urlDe(logica) {
 // ===== publica -> logica =====
 //
 // Recibe lo que da `location` (pathname, search, hash) y devuelve lo mismo que
-// parseHash en ui.js -- {path, parts, query} con la ruta logica -- o null si
-// esa direccion no es una pagina de la app. null es un 404 de verdad: el
-// servidor local lo usa para decidir, y el router para no interceptar el clic.
+// parseHash en ui.js -- {path, parts, query} con la ruta logica -- mas el
+// idioma de la direccion, o null si esa direccion no es una pagina de la app.
+// null es un 404 de verdad: el servidor local lo usa para decidir, y el router
+// para no interceptar el clic.
 //
-// Estricto a proposito: ni mayusculas, ni barra final, ni '/pokedex/025'. Una
+// Estricto a proposito: ni mayusculas, ni barra final, ni '/pokedex/025', ni
+// una seccion de un idioma con el prefijo del otro (/en/movimientos/...). Una
 // pagina, una direccion.
 export function logicaDe(pathname, search = '', hash = '') {
+  // Una barra codificada (%2F) no es una barra: decodificada antes de partir la
+  // ruta, /en%2Fpokedex seria /en/pokedex, una segunda direccion para la misma
+  // pagina. Fuera, y el idioma se lee de la ruta tal cual llega.
+  if (/%2f/i.test(pathname)) return null;
   const ruta = decodificar(pathname);
   if (ruta === null) return null;
+  const l = idiomaDe(pathname);
   const params = new URLSearchParams(search);
 
   const resultado = logica => {
@@ -413,19 +548,22 @@ export function logicaDe(pathname, search = '', hash = '') {
       params.delete('tab');
       query = new URLSearchParams(tab ? [['tab', tab], ...params] : [...params]);
     }
-    return { path, parts: path.split('/').filter(Boolean), query };
+    return { path, parts: path.split('/').filter(Boolean), query, idioma: l };
   };
 
-  if (Object.hasOwn(PUBLICA_A_LOGICA, ruta)) return resultado(PUBLICA_A_LOGICA[ruta]);
+  if (Object.hasOwn(PUBLICA_A_LOGICA[l], ruta)) return resultado(PUBLICA_A_LOGICA[l][ruta]);
 
-  const trozos = ruta.split('/');
+  // Sin el prefijo, una ficha es /<seccion>/<slug> en los dos idiomas. /en/ se
+  // queda en '/' y no casa aqui: la portada solo es /en, sin barra.
+  const trozos = ruta.slice(PREFIJO[l].length).split('/');
   if (trozos.length !== 3 || trozos[0] !== '') return null;
-  const [, seccion, slug] = trozos;
+  const [, seccionPublica, slug] = trozos;
+  const seccion = Object.hasOwn(SECCION_LOGICA[l], seccionPublica) ? SECCION_LOGICA[l][seccionPublica] : null;
 
-  if (seccion === 'grupos-huevo') {
-    return Object.hasOwn(GRUPO_DE_SLUG, slug) ? resultado(`/egg/${GRUPO_DE_SLUG[slug]}`) : null;
+  if (seccion === 'egg') {
+    return Object.hasOwn(GRUPO_DE_SLUG[l], slug) ? resultado(`/egg/${GRUPO_DE_SLUG[l][slug]}`) : null;
   }
-  if (!['pokedex', 'movimientos', 'habilidades'].includes(seccion)) return null;
+  if (seccion === null) return null;
   exigirIndice(ruta);
 
   if (seccion === 'pokedex') {
@@ -444,9 +582,13 @@ export function logicaDe(pathname, search = '', hash = '') {
     }
     return resultado(`/pokedex/${especie}`);
   }
-  if (seccion === 'movimientos') {
-    return inverso.move.has(slug) ? resultado(`/moves/${inverso.move.get(slug)}`) : null;
+  if (seccion === 'moves') {
+    const vuelta = l === 'en' ? inverso.moveEn : inverso.move;
+    return vuelta.has(slug) ? resultado(`/moves/${vuelta.get(slug)}`) : null;
   }
+  // En ingles la habilidad va por su name y solo por el: aceptar tambien el slug
+  // en espanol o el alias, como habilidadDe, daria dos direcciones a una pagina.
+  if (l === 'en') return Object.hasOwn(indice.abilities, slug) ? resultado(`/abilities/${slug}`) : null;
   return inverso.ability.has(slug) ? resultado(`/abilities/${inverso.ability.get(slug)}`) : null;
 }
 
@@ -489,6 +631,31 @@ export function legadoALogica(hash) {
   return name ? `/abilities/${name}${query}` : null;
 }
 
+// El destino de un #/ de antes en el idioma que el conmutador dejo guardado, o
+// null. Pura, para que la pruebe check-rutas: el almacenamiento lo lee app.js.
+// Cualquier cosa que no sea 'en' -- nada guardado, o basura -- es espanol.
+export function legadoAPublica(hash, idiomaGuardado) {
+  const logica = legadoALogica(hash);
+  return logica === null ? null : urlDe(logica, idiomaGuardado === 'en' ? 'en' : 'es');
+}
+
+// ===== La misma pagina en el otro idioma =====
+//
+// Lo que pondra el conmutador: la direccion actual ({pathname, search, hash},
+// vale `location`) en el idioma de destino, con su query y su ancla. Si no es
+// una pagina de la app, la portada de ese idioma.
+//
+// urlEquivalente(location de /calculadora-de-dano?a=6, 'en') -> '/en/damage-calculator?a=6'
+export function urlEquivalente({ pathname, search = '', hash = '' }, idiomaDestino) {
+  const l = exigirIdioma(idiomaDestino);
+  const logica = logicaDe(pathname, search, hash);
+  if (!logica) return TABLAS[l]['/'];
+  const query = String(logica.query);
+  const destino = urlDe(logica.path + (query ? `?${query}` : ''), l);
+  // La de una forma sin URL propia ya lleva su #forma-; otra ancla se conserva.
+  return destino.includes('#') ? destino : destino + hash;
+}
+
 // ===== El titulo de la pestana =====
 //
 // Uno solo para las dos mitades: el cliente lo pone en cada navegacion y el
@@ -523,43 +690,98 @@ export const TITULOS = {
   '/calculadora-de-captura': 'Calculadora de captura',
 };
 
+// Las mismas 21, con su direccion en ingles. "Counters" y no "Counter" (D6 de
+// la PR 2): el movimiento Counter tambien es una pagina y el titulo es unico.
+export const TITULOS_EN = {
+  '/en/pokedex': 'Pokédex',
+  '/en/types': 'Type chart',
+  '/en/egg-groups': 'Egg groups',
+  '/en/moves': 'Moves',
+  '/en/abilities': 'Abilities',
+  '/en/items': 'Items',
+  '/en/natures': 'Natures',
+  '/en/compare': 'Compare',
+  '/en/data': 'Data',
+  '/en/competitive': 'Competitive',
+  '/en/team': 'Team',
+  '/en/counter': 'Counters',
+  '/en/speed': 'Speed',
+  '/en/survive': 'Survive',
+  '/en/meta-sets': 'Meta sets',
+  '/en/faq': 'Frequently asked questions',
+  '/en/privacy': 'Privacy',
+  '/en/terms': 'Terms',
+  '/en/iv-ev-calculator': 'IV and EV calculator',
+  '/en/damage-calculator': 'Damage calculator',
+  '/en/catch-calculator': 'Catch calculator',
+};
+const TITULOS_POR_IDIOMA = { es: TITULOS, en: TITULOS_EN };
+
 // Las fichas no pueden llevar solo su nombre: el build genera una pagina por
 // ficha, cada <title> tiene que ser unico, y con el nombre pelado chocaban 21.
 //   - Las colisiones con sufijo en la URL (decision 2: las 18 parejas de
 //     movimientos Z y las dos Unidad Ecuestre) lo llevan tambien en el titulo,
 //     entre parentesis. Se reconoce porque la URL es el slug del nombre mas uno
-//     de estos sufijos; con otro nombre (el ingles) no casa y no se pone nada.
+//     de estos sufijos; con el nombre del otro idioma no casa y no se pone nada.
+//     En ingles el sufijo sale del name (breakneck-blitz--physical), que es lo
+//     que lleva la URL.
 //   - Los grupos huevo y las habilidades dicen lo que son: Ditto es Pokemon y
-//     grupo huevo, y Competitivo es habilidad y el hub de herramientas.
-const SUFIJOS_TITULO = { fisico: 'físico', especial: 'especial', glastrier: 'Glastrier', spectrier: 'Spectrier' };
-const PREFIJOS_TITULO = { 'grupos-huevo': 'Grupo huevo', habilidades: 'Habilidad' };
+//     grupo huevo, y Competitivo es habilidad y el hub de herramientas. En
+//     espanol delante ("Habilidad Levitacion") y en ingles detras ("Levitate
+//     ability"), y siempre despues de la variante: "As One (Glastrier) ability".
+const SUFIJOS_TITULO = {
+  es: { fisico: 'físico', especial: 'especial', glastrier: 'Glastrier', spectrier: 'Spectrier' },
+  en: { physical: 'physical', special: 'special', glastrier: 'Glastrier', spectrier: 'Spectrier' },
+};
+const TIPO_DE_FICHA = {
+  es: { egg: 'Grupo huevo', abilities: 'Habilidad' },
+  en: { egg: 'egg group', abilities: 'ability' },
+};
 
-// tituloDe('/moves')               -> 'Movimientos · PokeUtils'
-// tituloDe('/moves/9', 'Puño Trueno') -> 'Puño Trueno · PokeUtils'
-// tituloDe('/egg/ditto', 'Ditto')  -> 'Grupo huevo Ditto · PokeUtils'
-// La portada, o lo que no tiene pagina, se queda en 'PokeUtils'. Una ficha
-// pide urlDe(), asi que necesita el indice como todo lo demas.
-export function tituloDe(logica, nombre) {
+// Dos fichas que en ingles se llaman igual en el dataset: las dos megas de
+// Meowstic son "Mega Meowstic" (en espanol ya dicen macho y hembra). Por slug,
+// y solo en el titulo (D7): el dato lo arregla la PR 5, y check-rutas falla si
+// aqui queda una que ya no choca.
+export const DESAMBIGUAR_EN = { 'meowstic-male-mega': 'male', 'meowstic-female-mega': 'female' };
+
+// tituloDe('/moves')                     -> 'Movimientos · PokeUtils'
+// tituloDe('/moves/9', 'Puño Trueno')    -> 'Puño Trueno · PokeUtils'
+// tituloDe('/egg/ditto', 'Ditto')        -> 'Grupo huevo Ditto · PokeUtils'
+// tituloDe('/egg/ditto', 'Ditto', 'en')  -> 'Ditto egg group · PokeUtils'
+// Sin idioma, el activo, como urlDe. La portada, o lo que no tiene pagina, se
+// queda en 'PokeUtils'. Una ficha pide urlDe(), asi que necesita el indice como
+// todo lo demas.
+export function tituloDe(logica, nombre, idiomaDestino = idioma) {
+  const l = exigirIdioma(idiomaDestino);
   let publica = null;
   try {
-    publica = urlDe(logica).split(/[?#]/)[0];
+    publica = urlDe(logica, l).split(/[?#]/)[0];
   } catch {
     // Sin pagina: con nombre se titula igual, sin el es la portada.
   }
+  // La seccion, sin el prefijo del idioma: '/en/moves/x' es la de movimientos.
+  const [, seccionPublica, slug] = (publica ?? '').slice(PREFIJO[l].length).split('/');
   if (nombre) {
-    const [, seccion, slug] = (publica ?? '').split('/');
+    const seccion = Object.hasOwn(SECCION_LOGICA[l], seccionPublica) ? SECCION_LOGICA[l][seccionPublica] : null;
     let titulo = nombre;
     if (slug) {
       const base = slugEs(nombre);
       const sufijo = slug.startsWith(`${base}-`) ? slug.slice(base.length + 1) : '';
-      if (['movimientos', 'habilidades'].includes(seccion) && Object.hasOwn(SUFIJOS_TITULO, sufijo)) {
-        titulo += ` (${SUFIJOS_TITULO[sufijo]})`;
+      if (['moves', 'abilities'].includes(seccion) && Object.hasOwn(SUFIJOS_TITULO[l], sufijo)) {
+        titulo += ` (${SUFIJOS_TITULO[l][sufijo]})`;
       }
-      if (Object.hasOwn(PREFIJOS_TITULO, seccion)) titulo = `${PREFIJOS_TITULO[seccion]} ${titulo}`;
+      if (l === 'en' && seccion === 'pokedex' && Object.hasOwn(DESAMBIGUAR_EN, slug)) {
+        titulo += ` (${DESAMBIGUAR_EN[slug]})`;
+      }
+      if (Object.hasOwn(TIPO_DE_FICHA[l], seccion)) {
+        const tipo = TIPO_DE_FICHA[l][seccion];
+        titulo = l === 'es' ? `${tipo} ${titulo}` : `${titulo} ${tipo}`;
+      }
     }
     return `${titulo} · PokeUtils`;
   }
   if (publica === null) return 'PokeUtils';
-  const seccion = TITULOS[publica] ?? TITULOS[`/${publica.split('/')[1]}`];
+  const titulos = TITULOS_POR_IDIOMA[l];
+  const seccion = titulos[publica] ?? titulos[`${PREFIJO[l]}/${seccionPublica}`];
   return seccion ? `${seccion} · PokeUtils` : 'PokeUtils';
 }

@@ -70,7 +70,8 @@
     #
     # Cada directiva, derivada de lo que el sitio carga de verdad:
     #  - script-src: 'unsafe-inline' por los 5 bloques inline de index.html
-    #    (migracion de los enlaces #/, tema, hero, y los dos swaps de idioma), los 2 de 404.html (tema e
+    #    (migracion de los enlaces #/, tema, hero, y los dos swaps de idioma;
+    #    las paginas generadas solo conservan el del tema), los 2 de 404.html (tema e
     #    idioma) y, sobre todo, los manejadores en atributo que generan las
     #    plantillas JS -- 9 onerror= y 2 onclick="history.back()". Con hashes no
     #    se puede: el hash cubriria el atributo y haria falta 'unsafe-hashes',
@@ -166,9 +167,10 @@
 # ===== LAS PAGINAS GENERADAS =====
 #
 # Desde que hay rutas reales, build.mjs (scripts/pages.mjs) escribe una pagina
-# por ruta: dist/pokedex.html, dist/pokedex/pikachu.html... 2.468 mas la
-# portada. Son el mismo index.html con otra cabecera, asi que llevan los mismos
-# nombres hasheados y la misma regla: revalidar siempre.
+# por ruta y por idioma: dist/pokedex.html, dist/pokedex/pikachu.html,
+# dist/en.html, dist/en/pokedex/pikachu.html... 4.937 mas la portada. Son el
+# mismo index.html con otra cabecera, asi que llevan los mismos nombres
+# hasheados y la misma regla: revalidar siempre.
 #
 # Netlify ya sirve el HTML con este valor por defecto, pero se escribe por
 # prefijo (decision 3 del plan de rutas) para que la politica este aqui y no en
@@ -303,6 +305,20 @@
 
 [[headers]]
   for = "/habilidades/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Las paginas en ingles. /en/* cubre las 2.468 de debajo de /en, fijas y
+# fichas, pero no /en a secas (servida desde en.html), que lleva el suyo como
+# /pokedex. Que /en, /en/ y la carpeta en/ convivan con en.html sin que gane la
+# carpeta se mide en el deploy preview.
+[[headers]]
+  for = "/en"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/en/*"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 

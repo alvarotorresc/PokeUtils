@@ -320,6 +320,14 @@ a:hover {
   line-height: 1;
 }
 
+/* El conmutador de idioma es un <a> (lleva a la misma pagina en el otro
+   idioma) y los otros dos son <button>: sin esto, el enlace saldria subrayado
+   y, al ser inline, con un alto distinto del de sus vecinos. */
+a.nav-toggle-btn {
+  display: inline-block;
+  text-decoration: none;
+}
+
 .nav-toggle-btn:hover {
   border-color: var(--border-accent);
   color: var(--accent-text);

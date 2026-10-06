@@ -288,9 +288,12 @@
     </form>
     <a class="err404-home" href="/" id="err404Home">Volver al inicio</a>
   </main>
-  <!-- Traduccion adelantada, mismo patron que index.html (nav/hero): lee
-       pkutils_lang y reescribe los textos EN antes del primer pintado, sin
-       esperar a ningun modulo.
+  <!-- Traduccion adelantada, mismo patron que index.html (nav/hero): en una
+       direccion en ingles (/en, /en/...) reescribe los textos EN antes del
+       primer pintado, sin esperar a ningun modulo. Un solo 404.html para los
+       dos idiomas (D8 de la PR 2): Netlify lo sirve para cualquier URL que no
+       existe, y el idioma lo dice esa URL, no el almacenamiento. El buscador y
+       el enlace de vuelta van tambien a la portada en ingles.
        EN_404.backHome es una copia de common.backhome (js/i18n-en.js):
        scripts/build.mjs la comprueba contra el diccionario real en cada
        build, igual que hace comprobarLiteralesEN con el nav y el hero de
@@ -303,7 +306,9 @@
   <script>
     (function () {
       try {
-        if ((localStorage.getItem('pkutils_lang') || 'es') !== 'en') return;
+        // La misma regla que idiomaDe() de js/rutas.js.
+        var p = location.pathname;
+        if (p !== '/en' && p.indexOf('/en/') !== 0) return;
         document.documentElement.lang = 'en';
         var EN_404 = {
           title: 'THE WILD POKÉMON FLED!',
@@ -318,7 +323,10 @@
         input.placeholder = EN_404.searchPlaceholder;
         input.setAttribute('aria-label', EN_404.searchPlaceholder);
         document.getElementById('err404Submit').textContent = EN_404.submit;
-        document.getElementById('err404Home').textContent = EN_404.backHome;
+        var vuelta = document.getElementById('err404Home');
+        vuelta.textContent = EN_404.backHome;
+        vuelta.setAttribute('href', '/en');
+        document.querySelector('.err404-search').setAttribute('action', '/en');
       } catch (e) {}
     })();
   </script>

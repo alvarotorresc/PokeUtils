@@ -29,9 +29,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import {
   rutasPublicas, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas, sinComentarios,
+  literalesEspanol, ORIGEN, SCRIPTS_DE_LA_PORTADA,
 } from './pages.mjs';
 import {
-  TABLA_ESTATICA, GRUPOS_HUEVO_ES, SECCIONES_DE_FICHA, urlDe, logicaDe,
+  TABLA_ESTATICA, GRUPOS_HUEVO_ES, SECCIONES_DE_FICHA, IDIOMAS, urlDe, logicaDe, idiomaDe,
 } from '../js/rutas.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -86,7 +87,7 @@ async function comprobarLiteralesEN(html) {
   comprobarBloque('EN_NAV', {
     navHome: 'nav.home', navPokedex: 'nav.pokedex', navData: 'nav.data',
     navCompetitive: 'nav.competitive', navCalculator: 'nav.calculator',
-    navSearch: 'nav.search',
+    navSearch: 'nav.search', navLevel: 'nav.level', navLevelAbbr: 'nav.level.abbr',
   });
   comprobarBloque('EN_HERO', {
     heroA: 'home.claim.a', heroB: 'home.claim.b', heroSearch: 'home.search',
@@ -149,6 +150,48 @@ async function comprobarBackHome404(html) {
   }
 }
 
+// La version del indice va en la URL que pide js/rutas.js, ?v=<hash del
+// contenido>, y se pone ANTES de que esbuild calcule el hash del trozo: con un
+// replace sobre la salida ya nombrada, un cambio solo de datos publicaria
+// contenido nuevo bajo el nombre de siempre, que /js/* sirve como immutable un
+// ano. En el fuente no se toca nada: sin build se pide rutas.json a secas, y
+// serve.mjs sirve sin cache. Query y no rutas-<hash>.json: no hace falta otro
+// bloque de cabeceras, y serve.mjs y el build siguen leyendo data/rutas.json.
+function versionarIndice(version) {
+  return {
+    name: 'version-del-indice',
+    setup(b) {
+      b.onLoad({ filter: /[\\/]js[\\/]rutas\.js$/ }, async ({ path }) => {
+        const fuente = await readFile(path, 'utf8');
+        const buscado = "'../data/rutas.json'";
+        const veces = fuente.split(buscado).length - 1;
+        if (veces !== 1) throw new Error(`js/rutas.js tiene ${veces} veces ${buscado} y tiene que ser 1`);
+        return { contents: fuente.replace(buscado, `'../data/rutas.json?v=${version}'`), loader: 'js' };
+      });
+    },
+  };
+}
+
+// El indice de rutas no lleva hash en el nombre y /data/* se sirve con una hora
+// de max-age y una semana de stale-while-revalidate (netlify.toml): sin version
+// en la URL, un JS recien desplegado podia leer el rutas.json de antes, y
+// fijarIndice lanza con un indice al que le falta un campo (movesEn), que es
+// toda la navegacion caida. La URL que pide el JS tiene que ser la del
+// contenido que se publica, y se mira en dist/, ya escrito: un replace que deje
+// de casar en el plugin no da ningun error por si solo.
+async function comprobarVersionIndice(salidas) {
+  const esperada = `../data/rutas.json?v=${hash8(await readFile(join(OUT, 'data', 'rutas.json')))}`;
+  const conIndice = [];
+  for (const p of salidas.filter(s => s.endsWith('.js'))) {
+    const codigo = await readFile(join(OUT, p), 'utf8');
+    for (const [url] of codigo.matchAll(/\.\.\/data\/rutas\.json[^"'`\s]*/g)) conIndice.push({ p, url });
+  }
+  if (conIndice.length !== 1 || conIndice[0].url !== esperada) {
+    throw new Error(`El JS de dist/ pide ${JSON.stringify(conIndice.map(c => `${c.p}: ${c.url}`))} `
+      + `y el indice publicado es ${esperada} -- mira versionarIndice en scripts/build.mjs`);
+  }
+}
+
 // Todos los .html de una carpeta, con su ruta relativa ('pokedex/pikachu.html').
 async function htmlDe(dir, base = dir) {
   const salida = [];
@@ -167,6 +210,7 @@ async function htmlDe(dir, base = dir) {
 // check-*.mjs porque `npm run check` corre ANTES del build: lo que miran es el
 // dist/ ya escrito, leido otra vez de disco.
 async function generarPaginas(esqueleto) {
+  // esqueleto: el index.html ya construido, que es tambien la portada espanola.
   const leerDato = async nombre => JSON.parse(await readFile(join(ROOT, 'data', `${nombre}.json`), 'utf8'));
   const [indice, pokemon, moves, abilities] = await Promise.all(['rutas', 'pokemon', 'moves', 'abilities'].map(leerDato));
   const rutas = rutasPublicas({ indice, pokemon, moves, abilities });
@@ -183,28 +227,36 @@ async function generarPaginas(esqueleto) {
   const ficheros = (await htmlDe(OUT)).filter(f => f !== '404.html');
   const paginas = await Promise.all(ficheros.map(async f => ({ f, html: await readFile(join(OUT, f), 'utf8') })));
   const publicaDe = f => (f === 'index.html' ? '/' : `/${f.replace(/\.html$/, '')}`);
+  const idiomaDeFichero = f => idiomaDe(publicaDe(f));
   const unico = (html, re) => [...html.matchAll(re)].map(m => m[1]);
+  const porFichero = new Map(paginas.map(p => [p.f, p.html]));
 
   // (a) Ningun enlace al router de antes.
   for (const { f, html } of [...paginas, { f: '404.html', html: await readFile(join(OUT, '404.html'), 'utf8') }]) {
     if (html.includes('href="#/')) throw new Error(`dist/${f} enlaza un href="#/": las rutas ya no van por el hash`);
   }
 
-  // (b) Un titulo y una canonical por pagina, y ninguno repetido.
-  for (const [que, re] of [['<title>', /<title>([^<]*)<\/title>/g], ['canonical', /<link rel="canonical" href="([^"]*)"/g]]) {
+  // (b) Un titulo y una canonical por pagina. El titulo no se repite dentro de
+  // un idioma (Pikachu se llama igual en los dos, y las dos portadas son
+  // PokeUtils); la canonical, en todo el sitio.
+  for (const [que, re, ambito] of [
+    ['<title>', /<title>([^<]*)<\/title>/g, idiomaDeFichero],
+    ['canonical', /<link rel="canonical" href="([^"]*)"/g, () => 'sitio'],
+  ]) {
     const vistos = new Map();
     for (const { f, html } of paginas) {
       const valores = unico(html, re);
       if (valores.length !== 1) throw new Error(`dist/${f} tiene ${valores.length} ${que} (tiene que ser 1)`);
-      if (vistos.has(valores[0])) throw new Error(`dist/${f} y dist/${vistos.get(valores[0])} tienen el mismo ${que}: ${valores[0]}`);
-      vistos.set(valores[0], f);
+      const clave = `${ambito(f)} ${valores[0]}`;
+      if (vistos.has(clave)) throw new Error(`dist/${f} y dist/${vistos.get(clave)} tienen el mismo ${que}: ${valores[0]}`);
+      vistos.set(clave, f);
     }
   }
 
-  // (c) Cada pagina a la que la app sabe ir tiene su fichero: todos los ids de
-  // Pokemon (las formas sin URL caen en su especie), movimientos, habilidades y
-  // grupos, y la tabla fija con las tres pestanas. Sin query ni ancla, que es
-  // lo que pide el navegador al servidor.
+  // (c) Cada pagina a la que la app sabe ir tiene su fichero, en los dos
+  // idiomas: todos los ids de Pokemon (las formas sin URL caen en su especie),
+  // movimientos, habilidades y grupos, y la tabla fija con las tres pestanas.
+  // Sin query ni ancla, que es lo que pide el navegador al servidor.
   const enDisco = new Set(ficheros);
   const alcanzables = [
     ...Object.keys(TABLA_ESTATICA),
@@ -214,16 +266,21 @@ async function generarPaginas(esqueleto) {
     ...Object.keys(GRUPOS_HUEVO_ES).map(g => `/egg/${g}`),
   ];
   for (const logica of alcanzables) {
-    const publica = urlDe(logica).split(/[?#]/)[0];
-    if (!enDisco.has(ficheroDe(publica))) throw new Error(`${logica} lleva a ${publica}, y dist/${ficheroDe(publica)} no existe`);
+    for (const l of IDIOMAS) {
+      const publica = urlDe(logica, l).split(/[?#]/)[0];
+      if (!enDisco.has(ficheroDe(publica))) throw new Error(`${logica} lleva a ${publica}, y dist/${ficheroDe(publica)} no existe`);
+    }
   }
 
-  // (d) Y al reves: cada pagina de dist/ es una ruta que el router sabe pintar.
+  // (d) Y al reves: cada pagina de dist/ es una ruta que el router sabe pintar,
+  // en el idioma de su prefijo (logicaDe da null a /en/movimientos/x).
   for (const { f } of paginas) {
     const ruta = logicaDe(publicaDe(f));
     const ok = ruta && (Object.hasOwn(TABLA_ESTATICA, ruta.path)
       || (ruta.parts.length === 2 && SECCIONES_DE_FICHA.includes(ruta.parts[0])));
     if (!ok) throw new Error(`dist/${f} no lleva a ninguna pagina de la app (logicaDe da ${JSON.stringify(ruta?.path ?? null)})`);
+    const prefijo = f === 'en.html' || f.startsWith('en/') ? 'en' : 'es';
+    if (ruta.idioma !== prefijo) throw new Error(`dist/${f} esta bajo el prefijo de ${prefijo} y logicaDe la da en ${ruta.idioma}`);
   }
 
   // (e) Ninguna ruta relativa: cada pagina se sirve en su propia URL.
@@ -234,20 +291,110 @@ async function generarPaginas(esqueleto) {
     if (html.includes('<!--')) throw new Error(`dist/${f} conserva un comentario HTML (<!--): pasa por sinComentarios`);
   }
 
-  // (f) noindex en todas salvo la portada.
+  // (f) noindex en todas salvo las dos portadas (D2: /en tambien se indexa).
+  const portadas = ['index.html', 'en.html'];
   for (const { f, html } of paginas) {
     const robots = unico(html, /<meta name="robots" content="([^"]*)"/g);
-    const esperado = f === 'index.html' ? [] : ['noindex'];
+    const esperado = portadas.includes(f) ? [] : ['noindex'];
     if (JSON.stringify(robots) !== JSON.stringify(esperado)) {
       throw new Error(`dist/${f} lleva robots ${JSON.stringify(robots)} y deberia llevar ${JSON.stringify(esperado)}`
-        + ' -- la portada es la unica indexable');
+        + ' -- las dos portadas son las unicas indexables');
     }
   }
 
-  // (g) Tantas paginas como dicen los datos.
-  const esperadas = paginasEsperadas({ pokemon, moves, abilities });
+  // (g) Tantas paginas como dicen los datos, una por idioma.
+  const esperadas = IDIOMAS.length * paginasEsperadas({ pokemon, moves, abilities });
   if (ficheros.length !== esperadas || rutas.length !== esperadas) {
     throw new Error(`dist/ tiene ${ficheros.length} paginas y pages.mjs ${rutas.length}, pero los datos dicen ${esperadas}`);
+  }
+
+  // (h) hreflang: exactamente es, en y x-default, en ese orden; el de su idioma
+  // es su canonical y x-default es el espanol; cada destino existe; y el bloque
+  // es el mismo, byte a byte, que el de su par. Un hreflang que no es reciproco
+  // Google lo ignora sin avisar.
+  const ficheroDeUrl = url => (url.startsWith(`${ORIGEN}/`) ? ficheroDe(url.slice(ORIGEN.length)) : null);
+  const bloqueDe = html => unico(html, /(<link rel="alternate" hreflang="[^"]*" href="[^"]*">)/g).join('\n');
+  for (const { f, html } of paginas) {
+    const alternas = [...html.matchAll(/<link rel="alternate" hreflang="([^"]*)" href="([^"]*)">/g)].map(m => [m[1], m[2]]);
+    const canonical = unico(html, /<link rel="canonical" href="([^"]*)"/g)[0];
+    const l = idiomaDeFichero(f);
+    const por = Object.fromEntries(alternas);
+    if (JSON.stringify(alternas.map(a => a[0])) !== '["es","en","x-default"]') {
+      throw new Error(`dist/${f} lleva hreflang ${JSON.stringify(alternas.map(a => a[0]))} y tiene que llevar es, en y x-default`);
+    }
+    if (por[l] !== canonical) throw new Error(`dist/${f}: su hreflang ${l} es ${por[l]} y su canonical ${canonical}`);
+    if (por['x-default'] !== por.es) throw new Error(`dist/${f}: x-default es ${por['x-default']} y no el espanol, ${por.es}`);
+    if (l === 'en' && idiomaDe(canonical.slice(ORIGEN.length)) !== 'en') throw new Error(`dist/${f} es inglesa y su canonical es ${canonical}`);
+    for (const [, url] of alternas) {
+      if (!enDisco.has(ficheroDeUrl(url))) throw new Error(`dist/${f} lleva un hreflang a ${url}, que no esta en dist/`);
+    }
+    const par = ficheroDeUrl(por[l === 'es' ? 'en' : 'es']);
+    if (bloqueDe(porFichero.get(par)) !== bloqueDe(html)) {
+      throw new Error(`dist/${f} y su par dist/${par} no llevan el mismo bloque de hreflang`);
+    }
+  }
+
+  // (i) Cada pagina tiene un par y solo uno: la espanola apunta a una inglesa
+  // que apunta de vuelta a ella. Con (h) y la cuenta de (g), es una biyeccion.
+  const parDe = (f, otro) => ficheroDeUrl(Object.fromEntries(
+    [...porFichero.get(f).matchAll(/<link rel="alternate" hreflang="([^"]*)" href="([^"]*)">/g)].map(m => [m[1], m[2]]))[otro]);
+  const espanolas = ficheros.filter(f => idiomaDeFichero(f) === 'es');
+  const inglesasVistas = new Set();
+  for (const f of espanolas) {
+    const par = parDe(f, 'en');
+    if (idiomaDeFichero(par) !== 'en' || parDe(par, 'es') !== f || inglesasVistas.has(par)) {
+      throw new Error(`dist/${f} y dist/${par} no son un par: cada pagina espanola tiene que tener su inglesa, y al reves`);
+    }
+    inglesasVistas.add(par);
+  }
+  if (inglesasVistas.size * 2 !== ficheros.length) {
+    throw new Error(`${espanolas.length} paginas espanolas y ${ficheros.length - espanolas.length} inglesas: no salen a pares`);
+  }
+
+  // (j) El <html lang> es el de la direccion: es lo primero que lee un lector
+  // de pantalla, y el buscador lo cruza con el hreflang.
+  for (const { f, html } of paginas) {
+    const lang = unico(html, /^<html lang="([^"]*)"/gm);
+    if (JSON.stringify(lang) !== JSON.stringify([idiomaDeFichero(f)])) {
+      throw new Error(`dist/${f} lleva <html lang> ${JSON.stringify(lang)} y su direccion es ${idiomaDeFichero(f)}`);
+    }
+  }
+
+  // (k) Ningun texto espanol en una pagina inglesa (ver literalesEspanol en
+  // pages.mjs): el contenido lo pinta el JS con el diccionario, pero el nav, el
+  // pie y el hero salen de la plantilla espanola.
+  for (const { f, html } of paginas.filter(p => idiomaDeFichero(p.f) === 'en')) {
+    const colados = literalesEspanol(html, esqueleto);
+    if (colados.length) throw new Error(`dist/${f} lleva texto en espanol: ${JSON.stringify(colados)} -- mira traducirPlantilla en pages.mjs`);
+  }
+
+  // (l) Los enlaces internos van al idioma de la pagina, y el conmutador al par.
+  for (const { f, html } of paginas) {
+    const l = idiomaDeFichero(f);
+    const otro = l === 'es' ? 'en' : 'es';
+    for (const [etiqueta, href] of [...html.matchAll(/(<a [^>]*?href="(\/[^"]*)"[^>]*>)/g)].map(m => [m[1], m[2]])) {
+      const [path, search = ''] = href.split('?');
+      const ruta = logicaDe(path, search);
+      if (!ruta) throw new Error(`dist/${f} enlaza ${href}, que no es una pagina de la app`);
+      const esperado = etiqueta.includes('id="langToggle"') ? otro : l;
+      if (ruta.idioma !== esperado) throw new Error(`dist/${f} (${l}) enlaza ${href}, en ${ruta.idioma}`);
+      if (esperado === otro && ficheroDe(path) !== parDe(f, otro)) {
+        throw new Error(`dist/${f}: el conmutador lleva a ${href} y su par es dist/${parDe(f, otro)}`);
+      }
+    }
+  }
+
+  // (m) Los scripts inline de la portada (D9) se quedan en index.html y en
+  // ninguna otra: en una generada solo pesan, y el swap del nav pisaba el href
+  // del conmutador. Por su marca, no por getItem('pkutils_lang'), que ya solo
+  // lo lleva la migracion.
+  for (const { f, html } of paginas) {
+    const marcas = SCRIPTS_DE_LA_PORTADA.map(([, marca]) => marca).filter(marca => html.includes(marca));
+    const esperadas = f === 'index.html' ? SCRIPTS_DE_LA_PORTADA.map(([, marca]) => marca) : [];
+    if (JSON.stringify(marcas) !== JSON.stringify(esperadas)) {
+      throw new Error(`dist/${f} lleva los scripts ${JSON.stringify(marcas)} y deberia llevar ${JSON.stringify(esperadas)}`
+        + ' -- solo la portada espanola necesita la migracion, el no-hero y los swaps de idioma');
+    }
   }
   return ficheros.length;
 }
@@ -274,6 +421,7 @@ async function main() {
     entryNames: '[name]-[hash]',
     chunkNames: '[name]-[hash]',
     metafile: true,
+    plugins: [versionarIndice(hash8(await readFile(join(ROOT, 'data', 'rutas.json'))))],
     // Los sprites y los datos se piden por URL en tiempo de ejecucion, no se
     // importan: nada que resolver aqui.
     logLevel: 'warning',
@@ -316,8 +464,8 @@ async function main() {
     // darle los nombres reales, o precargaria ficheros que no existen sin que
     // se entere nadie.
     .replace(
-      /l\.href = '\/js\/i18n-' \+ \(localStorage\.getItem\('pkutils_lang'\) \|\| 'es'\) \+ '\.js';/,
-      `l.href = ${JSON.stringify(diccionario)}[localStorage.getItem('pkutils_lang') || 'es'] || ${JSON.stringify(diccionario.es)};`,
+      /l\.href = '\/js\/i18n-' \+ lang \+ '\.js';/,
+      `l.href = ${JSON.stringify(diccionario)}[lang];`,
     );
   // Se buscan las dos ortografias, relativa y absoluta: si index.html cambia de
   // una a otra y los replace de arriba no, dejan de casar sin decir nada, y un
@@ -337,6 +485,7 @@ async function main() {
   for (const carpeta of COPIAR) {
     await cp(join(ROOT, carpeta), join(OUT, carpeta), { recursive: true });
   }
+  await comprobarVersionIndice(salidas);
 
   // manifest.webmanifest, robots.txt, sitemap.xml y 404.html son ficheros
   // sueltos en la raiz, no una carpeta: el bucle de arriba no los toca. Como

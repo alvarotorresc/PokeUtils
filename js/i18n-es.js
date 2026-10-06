@@ -19,6 +19,9 @@ export default {
     'nav.speed': 'VELOCIDAD',
     'nav.survive': 'SOBREVIVE',
     'nav.counter': 'CONTRARRESTAR',
+    // El boton de nivel: el title y la abreviatura que va delante del numero (Nv50).
+    'nav.level': 'Nivel 50 / 100',
+    'nav.level.abbr': 'Nv',
 
     'speed.title': 'Velocidad',
     'speed.subtitle': 'Quién llega antes que un Pokémon elegido',
@@ -571,6 +574,7 @@ export default {
     'footer.faq': 'FAQ',
     'footer.privacy': 'Privacidad',
     'footer.terms': 'Términos',
+    'footer.data': 'Datos de',
 
     // FAQ
     'faq.title': 'Preguntas frecuentes',
