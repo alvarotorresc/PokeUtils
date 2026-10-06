@@ -43,3 +43,15 @@ export function competitiveList(list) {
 // sprite: a Zygarde Mega with Zygarde's face reads as the Pokemon, while the
 // question mark the onerror paints reads as a broken page.
 export const spriteIdFor = p => (p.noSprite && p.speciesId ? p.speciesId : p.id);
+
+// Que formas tienen pagina (y URL) propia en vez de una pestana en la ficha de
+// su especie: las 97 megas y las 60 regionales, 157 en total. Son las que se
+// buscan por su nombre ("charizard mega x", "raichu alola"); el resto --
+// gigamax, dominantes, gorras, los modos de Deoxys -- vive en su pestana, y su
+// id lleva a la especie con `#forma-<name>`.
+//
+// Las mismas dos regex con las que cuenta check-forms.mjs. Es una union, no una
+// suma: raticate-totem-alola y pikachu-alola-cap son regionales y algo mas.
+const MEGA = /-mega(-|$)/;
+const REGIONAL = /-(alola|galar|hisui|paldea)(-|$)/;
+export const tieneUrlPropia = p => isForm(p) && (MEGA.test(p.name) || REGIONAL.test(p.name));

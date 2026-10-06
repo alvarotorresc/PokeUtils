@@ -7,6 +7,7 @@ import { spriteUrl } from './data.js';
 import { CATEGORIES, TOOLS, toolsIn } from './tools.js';
 import { t, getLang } from './i18n.js';
 import { esc } from './ui.js';
+import { urlDe } from './rutas.js';
 import { attachGlobalSearch, leerHistorial } from './global-search.js';
 
 // The background is made of real sprites from the app, not an illustration: 100
@@ -73,9 +74,20 @@ const chipHTML = (href, name, sprite) =>
 const chipsHTML = () => {
   const historial = leerHistorial();
   if (!historial.length) {
-    return QUICK.map(([id, name]) => chipHTML(`#/pokedex/${id}`, name, spriteUrl(id))).join('');
+    return QUICK.map(([id, name]) => chipHTML(urlDe(`/pokedex/${id}`), name, spriteUrl(id))).join('');
   }
-  return historial.map(e => chipHTML(e.route, e.name, e.sprite || spriteUrl(e.id))).join('');
+  return historial.map(e => {
+    // Lo guardado puede ser de una version anterior y llevar a una ruta que ya
+    // no existe: urlDe() lanza con ella, y un chip viejo no puede tumbar la
+    // portada entera. Ese chip se salta y el resto se pinta.
+    let href;
+    try {
+      href = urlDe(e.route);
+    } catch {
+      return '';
+    }
+    return chipHTML(href, e.name, e.sprite || spriteUrl(e.id));
+  }).join('');
 };
 
 // El rotulo de categoria: etiqueta, linea de acento y -- solo si se le pasa un
@@ -96,7 +108,7 @@ const groupHeaderHTML = (label, count) => `
 const wantedHTML = () => WANTED.map((id, i) => {
   const tool = TOOLS.find(x => x.id === id);
   return `
-    <a class="mw" href="${tool.route}" style="--i:${i}">
+    <a class="mw" href="${urlDe(tool.route)}" style="--i:${i}">
       <img src="${spriteUrl(tool.icon)}" alt="" loading="lazy">
       <span>
         <span class="t">${t(tool.label)}</span>
@@ -114,7 +126,7 @@ export function renderHome(container) {
       ${groupHeaderHTML(t(`hub.${category.id}.title`), tools.length)}
       <div class="home-grid">
         ${tools.map(tool => `
-          <a href="${tool.route}" class="home-card">
+          <a href="${urlDe(tool.route)}" class="home-card">
             <img class="icon" src="${spriteUrl(tool.icon)}" alt="" loading="lazy">
             <div class="label">${t(tool.label)}</div>
             <div class="desc">${t(tool.desc)}</div>
@@ -192,7 +204,7 @@ export function renderHome(container) {
   const paramsArranque = new URLSearchParams(location.search);
   if (paramsArranque.has('q')) {
     const termino = paramsArranque.get('q').trim();
-    history.replaceState(null, '', location.pathname + location.hash);
+    history.replaceState(null, '', location.pathname);
     if (termino) {
       globalSearchInput.value = termino;
       globalSearchInput.dispatchEvent(new Event('input', { bubbles: true }));

@@ -4,31 +4,39 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PokeUtils</title>
-  <!-- Las fuentes se descubrian dentro de style.css, o sea un salto despues.
+  <!-- Todas las rutas de este fichero son absolutas ("/fonts/...", no
+       "fonts/..."): la pagina tambien se sirve en /pokedex/pikachu, y ahi una
+       relativa resolveria contra /pokedex/ y daria 404.
+
+       Las fuentes se descubrian dentro de style.css, o sea un salto despues.
        Precargarlas aqui las pone a bajar en paralelo con la hoja de estilos. -->
-  <link rel="preload" href="fonts/press-start-2p-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="fonts/vt323-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="style.css">
+  <link rel="preload" href="/fonts/press-start-2p-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/vt323-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/style.css">
   <!-- La pokebola del nav (opcion A del lienzo de iconos), no ya el rayo del
        favicon anterior: es el mismo dibujo que usan el manifest y la
        og:image, generado por scripts/build-icons.mjs. El SVG y el PNG salen
        los dos con fondo transparente de verdad (RGBA, esquinas en alpha 0 --
        verificado, no solo eyeballing) para leerse igual en pestana clara y
        oscura; el PNG es el respaldo para quien no soporte favicon en SVG. -->
-  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
-  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="manifest" href="manifest.webmanifest">
-  <!-- Una unica canonical, la raiz: las rutas de esta SPA viven en el
-       fragmento (#/pokedex...), invisible para un rastreador -- misma razon
-       por la que sitemap.xml solo lista esta misma URL. -->
+  <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <!-- La canonical de la portada. Este fichero es tambien el esqueleto de
+       las demas paginas: scripts/pages.mjs lo copia por cada ruta publica
+       (dist/pokedex/pikachu.html...) y cambia esta canonical por la de esa
+       ruta, el <title>, la descripcion y los og:, y le anade un noindex. Los
+       patrones de alli casan con estas lineas tal cual estan: si cambian, el
+       build se para en vez de sacar paginas con la canonical de la portada. -->
   <link rel="canonical" href="https://pokeutils.alvarotc.com/">
   <meta name="theme-color" content="#1a1a3e">
   <meta name="author" content="Alvaro Torres">
   <meta name="description" content="Your retro Pokemon guide: competitive analysis, breeding tools, complete Pokédex and damage calculators.">
-  <!-- Enlace compartido (WhatsApp, redes): son estaticas, asi que cualquier
-       ruta de esta SPA con hash (#/pokedex, #/team...) se previsualiza igual
-       que la portada -- no hay forma de variarlas sin un servidor por detras. -->
+  <!-- Enlace compartido (WhatsApp, redes): las previsualizaciones no ejecutan
+       JS, asi que leen esto tal cual. Cada pagina generada lleva aqui su propio
+       og:title, og:description y og:url (ver scripts/pages.mjs); la imagen es
+       la misma para todas. -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="PokeUtils">
   <meta property="og:description" content="Your retro Pokemon guide: competitive analysis, breeding tools, complete Pokédex and damage calculators.">
@@ -42,11 +50,79 @@
        deja de cargar en SILENCIO (sin error visible salvo en la consola del
        navegador). Al actualizar Umami: recalcular con
        `curl -s https://analytics.alvarotc.com/script.js | openssl dgst -sha384 -binary | openssl base64 -A`
-       y sustituir el hash de abajo en el mismo commit que la actualizacion. -->
+       y sustituir el hash de abajo en el mismo commit que la actualizacion.
+       data-exclude-search: con rutas reales los filtros escriben la query con
+       replaceState (/pokedex?q=pikac) y Umami contaba cada cambio como una
+       visita nueva: 1 pageview de mas por cada filtro, medido en el preview de
+       la PR #21. Con #/ no pasaba porque Umami ignora el hash. Asi solo cuenta
+       los cambios de ruta. scripts/check-pages.mjs vigila que siga puesto. -->
   <script defer src="https://analytics.alvarotc.com/script.js"
           integrity="sha384-6PHtXKae10+dZuA/fcmjkSTDco+NPBE5fZ4eS/Em2lVIsS6FdDZIgs06MBJLEcSW"
           crossorigin="anonymous"
-          data-website-id="55e0f212-eb38-4998-882b-cf73e5bb906c"></script>
+          data-website-id="55e0f212-eb38-4998-882b-cf73e5bb906c"
+          data-exclude-search="true"></script>
+  <!-- Los enlaces de antes (#/pokedex, #/calculator?tab=damage&a=6) siguen
+       compartidos por ahi. Las rutas fijas y los grupos huevo se redirigen aqui,
+       antes de pintar nada y sin esperar a ningun modulo, con location.replace
+       para no dejar la direccion vieja en el historial. Un Pokemon por id va a
+       /pokedex/<id>, y la 301 del servidor lo lleva a su nombre. Los
+       movimientos y las habilidades necesitan el indice de rutas: de esos se
+       encarga app.js al arrancar (legadoALogica).
+       RUTAS_ESTATICAS y GRUPOS_HUEVO son copia a mano de TABLA_ESTATICA y
+       GRUPOS_HUEVO_ES de js/rutas.js, que aqui no se puede importar.
+       check-rutas.mjs ejecuta este script y compara cada destino con el de
+       urlDe(legadoALogica(...)). -->
+  <script>
+    (function () {
+      // Solo en la raiz, que es donde vivian: en cualquier otra pagina un #/
+      // no es un enlace de antes, y esta cabecera la llevan todas.
+      var h = location.hash;
+      if (location.pathname !== '/' || h.indexOf('#/') !== 0) return;
+      var RUTAS_ESTATICAS = {
+        "/": "/", "/home": "/", "/pokedex": "/pokedex", "/types": "/tipos",
+        "/egg": "/grupos-huevo", "/moves": "/movimientos", "/abilities": "/habilidades",
+        "/items": "/objetos", "/natures": "/naturalezas", "/compare": "/comparador",
+        "/data": "/datos", "/competitive": "/competitivo", "/team": "/equipo",
+        "/counter": "/contrarrestar", "/speed": "/velocidad", "/survive": "/sobrevive",
+        "/meta": "/sets-del-meta", "/faq": "/faq", "/privacy": "/privacidad",
+        "/terms": "/terminos", "/calculator": "/calculadora-ivs-evs",
+        "/calculator?tab=damage": "/calculadora-de-dano",
+        "/calculator?tab=catch": "/calculadora-de-captura"
+      };
+      var GRUPOS_HUEVO = {
+        "monster": "monstruo", "water1": "agua-1", "water2": "agua-2", "water3": "agua-3",
+        "bug": "bicho", "flying": "volador", "ground": "campo", "fairy": "hada",
+        "plant": "planta", "humanshape": "humanoide", "mineral": "mineral",
+        "indeterminate": "amorfo", "dragon": "dragon", "ditto": "ditto",
+        "no-eggs": "desconocido"
+      };
+      var q = h.indexOf('?');
+      var partes = (q === -1 ? h.slice(1) : h.slice(1, q)).split('/').filter(Boolean);
+      var path = '/' + partes.join('/');
+      var params = new URLSearchParams(q === -1 ? '' : h.slice(q + 1));
+      // La pestana de la calculadora se pliega en la ruta, como en urlDe().
+      var clave = path;
+      if (path === '/calculator') {
+        var tab = params.get('tab');
+        params.delete('tab');
+        if (RUTAS_ESTATICAS.hasOwnProperty('/calculator?tab=' + tab)) clave = '/calculator?tab=' + tab;
+      }
+      var destino = null;
+      if (RUTAS_ESTATICAS.hasOwnProperty(clave)) {
+        destino = RUTAS_ESTATICAS[clave];
+      } else if (partes.length === 2 && partes[0] === 'egg' && GRUPOS_HUEVO.hasOwnProperty(partes[1])) {
+        destino = '/grupos-huevo/' + GRUPOS_HUEVO[partes[1]];
+      } else if (partes.length === 2 && partes[0] === 'pokedex' && /^[1-9]\d*$/.test(partes[1])) {
+        destino = path;
+      }
+      if (destino === null) return;
+      // encodeURIComponent y no params.toString(), que escribe el espacio como
+      // "+": la misma query que escribiria urlDe().
+      var query = [];
+      params.forEach(function (v, k) { query.push(encodeURIComponent(k) + '=' + encodeURIComponent(v)); });
+      location.replace(destino + (query.length ? '?' + query.join('&') : ''));
+    })();
+  </script>
   <!-- El tema, antes de pintar. Lo ponia app.js, que es un modulo diferido: con
        la portada ya en el HTML, quien tenga el tema claro veria el fondo oscuro
        hasta que bajara el JS. Sincrono y en el head, no hay parpadeo. -->
@@ -60,20 +136,26 @@
       // y no con un <link> fijo para no traerse ademas el idioma que no se usa.
       var l = document.createElement('link');
       l.rel = 'modulepreload';
-      l.href = 'js/i18n-' + (localStorage.getItem('pkutils_lang') || 'es') + '.js';
+      l.href = '/js/i18n-' + (localStorage.getItem('pkutils_lang') || 'es') + '.js';
       document.head.appendChild(l);
     } catch (e) {}
   </script>
   <!-- El hero estatico de mas abajo solo vale para la portada: en cualquier
        otra ruta hay que ocultarlo antes de la primera pintura, o el <h1> de la
-       portada parpadea un frame hasta que el JS diferido lo borre. Replica el
-       "home o no" de parseHash en app.js -- '', '#/' y '#/home' (con o sin
-       query) son portada, cualquier otra cosa no. -->
+       portada parpadea un frame hasta que el JS diferido lo borre. La portada
+       es solo '/' (con o sin query), lo mismo que decide parseRuta en ui.js;
+       cualquier otra ruta no.
+       Tampoco lo es '/' con un enlace #/ de antes que no sea la portada
+       (#/moves/53): el script de migracion de arriba o app.js lo van a llevar
+       a su pagina, y mientras tanto el hero no tiene que verse. Si app.js no
+       lo reconoce, quita la clase y se queda en la portada. -->
   <script>
     (function () {
-      var raw = location.hash.slice(1) || '/';
-      var path = raw.split('?')[0].split('/').filter(Boolean).join('/');
-      if (path !== '' && path !== 'home') document.documentElement.classList.add('no-hero');
+      var h = location.hash.indexOf('#/') === 0 ? location.hash.slice(1) : '/';
+      var legado = h.split('?')[0].split('/').filter(Boolean).join('/');
+      if (location.pathname !== '/' || (legado !== '' && legado !== 'home')) {
+        document.documentElement.classList.add('no-hero');
+      }
     })();
   </script>
 </head>
@@ -82,7 +164,7 @@
 
   <nav class="nav" id="nav">
     <div class="nav-inner">
-      <a href="#/" class="nav-logo">
+      <a href="/" class="nav-logo">
         <div class="pokeball-icon-sm"></div>
         <span>POKEUTILS</span>
       </a>
@@ -106,11 +188,11 @@
         <span></span><span></span><span></span>
       </button>
       <div class="nav-links" id="navLinks">
-        <a href="#/" class="nav-link" data-page="home">INICIO</a>
-        <a href="#/pokedex" class="nav-link" data-page="pokedex">POKEDEX</a>
-        <a href="#/data" class="nav-link" data-page="data">DATOS</a>
-        <a href="#/competitive" class="nav-link" data-page="competitive">COMPETITIVO</a>
-        <a href="#/calculator" class="nav-link" data-page="calculator">CALCULADORA</a>
+        <a href="/" class="nav-link" data-page="home">INICIO</a>
+        <a href="/pokedex" class="nav-link" data-page="pokedex">POKEDEX</a>
+        <a href="/datos" class="nav-link" data-page="data">DATOS</a>
+        <a href="/competitivo" class="nav-link" data-page="competitive">COMPETITIVO</a>
+        <a href="/calculadora-ivs-evs" class="nav-link" data-page="calculator">CALCULADORA</a>
       </div>
     </div>
   </nav>
@@ -245,9 +327,9 @@
          esta bajo el pliegue y no es LCP, asi que no hay nada que adelantar
          antes del primer pintado. -->
     <p class="footer-links" style="font-size:0.46rem">
-      <a href="#/faq" id="footerFaq">FAQ</a> &middot;
-      <a href="#/privacy" id="footerPrivacy">Privacidad</a> &middot;
-      <a href="#/terms" id="footerTerms">T&eacute;rminos</a>
+      <a href="/faq" id="footerFaq">FAQ</a> &middot;
+      <a href="/privacidad" id="footerPrivacy">Privacidad</a> &middot;
+      <a href="/terminos" id="footerTerms">T&eacute;rminos</a>
     </p>
     <div class="footer-legal">
       <p class="footer-hint">PokeUtils is an unofficial, free fan made app and is NOT affiliated, endorsed or supported by Nintendo, GAME FREAK or The Pok&eacute;mon company in any way.</p>
@@ -256,6 +338,6 @@
     </div>
   </footer>
 
-  <script type="module" src="js/app.js"></script>
+  <script type="module" src="/js/app.js"></script>
 </body>
 </html>

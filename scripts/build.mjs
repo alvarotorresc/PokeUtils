@@ -27,6 +27,12 @@ import { createHash } from 'node:crypto';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
+import {
+  rutasPublicas, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas, sinComentarios,
+} from './pages.mjs';
+import {
+  TABLA_ESTATICA, GRUPOS_HUEVO_ES, SECCIONES_DE_FICHA, urlDe, logicaDe,
+} from '../js/rutas.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'dist');
@@ -93,19 +99,22 @@ async function comprobarLiteralesEN(html) {
 // resolveria contra ELLA, no contra la raiz, y el recurso no cargaria --
 // tiene que ser absoluta o apuntar a otro origen (http...). Comprueba los
 // href/src/action del marcado y los url() del CSS embebido.
-function comprobarRutasAbsolutas404(html) {
+//
+// Lo mismo vale ahora para cada pagina generada: /pokedex/pikachu.html se sirve
+// en /pokedex/pikachu, y ahi "fonts/x.woff2" seria /pokedex/fonts/x.woff2.
+function comprobarRutasAbsolutas(html, nombre) {
   const encontradas = [
     ...[...html.matchAll(/(?:href|src|action)="([^"]*)"/g)].map(m => m[1]),
     ...[...html.matchAll(/url\((['"]?)([^'")]+)\1\)/g)].map(m => m[2]),
   ];
   if (encontradas.length === 0) {
-    throw new Error('404.html ya no tiene ningun href/src/action/url() que comprobar -- '
+    throw new Error(`${nombre} ya no tiene ningun href/src/action/url() que comprobar -- `
       + 'revisa que el fichero siga teniendo su marcado habitual');
   }
   for (const ruta of encontradas) {
     if (!ruta.startsWith('/') && !ruta.startsWith('http')) {
-      throw new Error(`404.html referencia "${ruta}" con una ruta relativa -- Netlify sirve `
-        + 'este fichero en la URL pedida, no en la raiz, asi que tiene que ser absoluta ("/...")');
+      throw new Error(`${nombre} referencia "${ruta}" con una ruta relativa -- se sirve `
+        + 'en la URL pedida, no en la raiz, asi que tiene que ser absoluta ("/...")');
     }
   }
 }
@@ -140,7 +149,111 @@ async function comprobarBackHome404(html) {
   }
 }
 
+// Todos los .html de una carpeta, con su ruta relativa ('pokedex/pikachu.html').
+async function htmlDe(dir, base = dir) {
+  const salida = [];
+  for (const entrada of await readdir(dir, { withFileTypes: true })) {
+    const ruta = join(dir, entrada.name);
+    if (entrada.isDirectory()) salida.push(...await htmlDe(ruta, base));
+    else if (entrada.name.endsWith('.html')) salida.push(relative(base, ruta));
+  }
+  return salida;
+}
+
+// ===== Una pagina por ruta =====
+//
+// Escribe dist/<ruta>.html para cada ruta publica (ver scripts/pages.mjs) y
+// dist/_redirects con las 301 de los ids. Los asertos van aqui y no en un
+// check-*.mjs porque `npm run check` corre ANTES del build: lo que miran es el
+// dist/ ya escrito, leido otra vez de disco.
+async function generarPaginas(esqueleto) {
+  const leerDato = async nombre => JSON.parse(await readFile(join(ROOT, 'data', `${nombre}.json`), 'utf8'));
+  const [indice, pokemon, moves, abilities] = await Promise.all(['rutas', 'pokemon', 'moves', 'abilities'].map(leerDato));
+  const rutas = rutasPublicas({ indice, pokemon, moves, abilities });
+
+  for (const ruta of rutas) {
+    if (ruta.publica === '/') continue; // la portada es el index.html de arriba, tal cual
+    const destino = join(OUT, ficheroDe(ruta.publica));
+    await mkdir(dirname(destino), { recursive: true });
+    await writeFile(destino, paginaHtml(esqueleto, ruta));
+  }
+  await writeFile(join(OUT, '_redirects'), redirectsDe({ indice, pokemon }));
+
+  // ----- los asertos, contra lo escrito en disco -----
+  const ficheros = (await htmlDe(OUT)).filter(f => f !== '404.html');
+  const paginas = await Promise.all(ficheros.map(async f => ({ f, html: await readFile(join(OUT, f), 'utf8') })));
+  const publicaDe = f => (f === 'index.html' ? '/' : `/${f.replace(/\.html$/, '')}`);
+  const unico = (html, re) => [...html.matchAll(re)].map(m => m[1]);
+
+  // (a) Ningun enlace al router de antes.
+  for (const { f, html } of [...paginas, { f: '404.html', html: await readFile(join(OUT, '404.html'), 'utf8') }]) {
+    if (html.includes('href="#/')) throw new Error(`dist/${f} enlaza un href="#/": las rutas ya no van por el hash`);
+  }
+
+  // (b) Un titulo y una canonical por pagina, y ninguno repetido.
+  for (const [que, re] of [['<title>', /<title>([^<]*)<\/title>/g], ['canonical', /<link rel="canonical" href="([^"]*)"/g]]) {
+    const vistos = new Map();
+    for (const { f, html } of paginas) {
+      const valores = unico(html, re);
+      if (valores.length !== 1) throw new Error(`dist/${f} tiene ${valores.length} ${que} (tiene que ser 1)`);
+      if (vistos.has(valores[0])) throw new Error(`dist/${f} y dist/${vistos.get(valores[0])} tienen el mismo ${que}: ${valores[0]}`);
+      vistos.set(valores[0], f);
+    }
+  }
+
+  // (c) Cada pagina a la que la app sabe ir tiene su fichero: todos los ids de
+  // Pokemon (las formas sin URL caen en su especie), movimientos, habilidades y
+  // grupos, y la tabla fija con las tres pestanas. Sin query ni ancla, que es
+  // lo que pide el navegador al servidor.
+  const enDisco = new Set(ficheros);
+  const alcanzables = [
+    ...Object.keys(TABLA_ESTATICA),
+    ...pokemon.map(p => `/pokedex/${p.id}`),
+    ...moves.map(m => `/moves/${m.id}`),
+    ...abilities.map(a => `/abilities/${a.name}`),
+    ...Object.keys(GRUPOS_HUEVO_ES).map(g => `/egg/${g}`),
+  ];
+  for (const logica of alcanzables) {
+    const publica = urlDe(logica).split(/[?#]/)[0];
+    if (!enDisco.has(ficheroDe(publica))) throw new Error(`${logica} lleva a ${publica}, y dist/${ficheroDe(publica)} no existe`);
+  }
+
+  // (d) Y al reves: cada pagina de dist/ es una ruta que el router sabe pintar.
+  for (const { f } of paginas) {
+    const ruta = logicaDe(publicaDe(f));
+    const ok = ruta && (Object.hasOwn(TABLA_ESTATICA, ruta.path)
+      || (ruta.parts.length === 2 && SECCIONES_DE_FICHA.includes(ruta.parts[0])));
+    if (!ok) throw new Error(`dist/${f} no lleva a ninguna pagina de la app (logicaDe da ${JSON.stringify(ruta?.path ?? null)})`);
+  }
+
+  // (e) Ninguna ruta relativa: cada pagina se sirve en su propia URL.
+  for (const { f, html } of paginas) comprobarRutasAbsolutas(html, `dist/${f}`);
+
+  // (e2) Ningun comentario HTML: son documentacion del fuente, no del sitio.
+  for (const { f, html } of paginas) {
+    if (html.includes('<!--')) throw new Error(`dist/${f} conserva un comentario HTML (<!--): pasa por sinComentarios`);
+  }
+
+  // (f) noindex en todas salvo la portada.
+  for (const { f, html } of paginas) {
+    const robots = unico(html, /<meta name="robots" content="([^"]*)"/g);
+    const esperado = f === 'index.html' ? [] : ['noindex'];
+    if (JSON.stringify(robots) !== JSON.stringify(esperado)) {
+      throw new Error(`dist/${f} lleva robots ${JSON.stringify(robots)} y deberia llevar ${JSON.stringify(esperado)}`
+        + ' -- la portada es la unica indexable');
+    }
+  }
+
+  // (g) Tantas paginas como dicen los datos.
+  const esperadas = paginasEsperadas({ pokemon, moves, abilities });
+  if (ficheros.length !== esperadas || rutas.length !== esperadas) {
+    throw new Error(`dist/ tiene ${ficheros.length} paginas y pages.mjs ${rutas.length}, pero los datos dicen ${esperadas}`);
+  }
+  return ficheros.length;
+}
+
 async function main() {
+  const inicio = Date.now();
   await rm(OUT, { recursive: true, force: true });
   await mkdir(join(OUT, 'js'), { recursive: true });
 
@@ -197,19 +310,27 @@ async function main() {
   let html = await readFile(join(ROOT, 'index.html'), 'utf8');
   await comprobarLiteralesEN(html);
   html = html
-    .replace('href="style.css"', `href="/${cssNombre}"`)
-    .replace('src="js/app.js"', `src="/${appJs}"`)
+    .replace('href="/style.css"', `href="/${cssNombre}"`)
+    .replace('src="/js/app.js"', `src="/${appJs}"`)
     // El modulepreload se construia concatenando el idioma; con hash hay que
     // darle los nombres reales, o precargaria ficheros que no existen sin que
     // se entere nadie.
     .replace(
-      /l\.href = 'js\/i18n-' \+ \(localStorage\.getItem\('pkutils_lang'\) \|\| 'es'\) \+ '\.js';/,
+      /l\.href = '\/js\/i18n-' \+ \(localStorage\.getItem\('pkutils_lang'\) \|\| 'es'\) \+ '\.js';/,
       `l.href = ${JSON.stringify(diccionario)}[localStorage.getItem('pkutils_lang') || 'es'] || ${JSON.stringify(diccionario.es)};`,
     );
+  // Se buscan las dos ortografias, relativa y absoluta: si index.html cambia de
+  // una a otra y los replace de arriba no, dejan de casar sin decir nada, y un
+  // aserto que solo mirase la vieja pasaria en verde con el fichero sin hash.
   for (const [buscado, nombre] of [['style.css', cssNombre], ['js/app.js', appJs]]) {
-    if (html.includes(`"${buscado}"`)) throw new Error(`index.html sigue apuntando a ${buscado} en vez de a ${nombre}`);
+    if (html.includes(`"${buscado}"`) || html.includes(`"/${buscado}"`)) {
+      throw new Error(`index.html sigue apuntando a ${buscado} en vez de a ${nombre}`);
+    }
   }
-  if (html.includes("'js/i18n-'")) throw new Error('El modulepreload de index.html sigue armando la ruta a mano');
+  if (/'\/?js\/i18n-'/.test(html)) throw new Error('El modulepreload de index.html sigue armando la ruta a mano');
+  // Sin comentarios HTML, como las paginas generadas (ver sinComentarios). Los
+  // asertos de arriba ya han mirado el fuente; ninguno depende de un comentario.
+  html = sinComentarios(html);
   await writeFile(join(OUT, 'index.html'), html);
 
   // ===== lo que se copia tal cual =====
@@ -224,11 +345,15 @@ async function main() {
   // que si llevan el CSS y el JS -- 404.html en concreto no puede depender de
   // ningun nombre hasheado (ver el comentario de sus @font-face).
   const html404 = await readFile(join(ROOT, '404.html'), 'utf8');
-  comprobarRutasAbsolutas404(html404);
+  comprobarRutasAbsolutas(html404, '404.html');
   await comprobarBackHome404(html404);
   for (const suelto of ['manifest.webmanifest', 'robots.txt', 'sitemap.xml', '404.html']) {
     await cp(join(ROOT, suelto), join(OUT, suelto));
   }
+
+  // ===== una pagina por ruta =====
+  // Sobre el index.html ya reescrito: cada pagina lleva los nombres con hash.
+  const nPaginas = await generarPaginas(html);
 
   // ===== cuentas =====
   const jsFuente = (await Promise.all(
@@ -241,7 +366,9 @@ async function main() {
   const gzSalida = jsSalida.reduce((s, b) => s + gz(b), 0);
   console.log(`\n  JS:   ${jsFuente.length} modulos, ${kb(gzFuente)} gz -> ${jsSalida.length} ficheros, ${kb(gzSalida)} gz`);
   console.log(`  CSS:  ${kb(gz(cssFuente))} gz -> ${kb(gz(cssBuf))} gz  (${cssNombre})`);
-  console.log(`  dist: ${kb(await pesoDe(OUT))} en disco, con data/, sprites/ y fonts/\n`);
+  console.log(`  HTML: ${nPaginas} paginas y dist/_redirects`);
+  console.log(`  dist: ${kb(await pesoDe(OUT))} en disco, con data/, sprites/ y fonts/`);
+  console.log(`  en ${((Date.now() - inicio) / 1000).toFixed(1)} s\n`);
 }
 
 await main();

@@ -39,7 +39,7 @@ const SOURCES = [
   {
     key: 'pokemon', kind: 'pokemon',
     names: p => [p.nameEs, p.nameEn, p.name],
-    route: p => `#/pokedex/${p.id}`,
+    route: p => `/pokedex/${p.id}`,
     // Por spriteIdFor y no por el id: las 11 formas sin sprite propio (los dos
     // iniciales de Let's Go, los ocho modos de Koraidon y Miraidon y la Mega de
     // Zygarde) pedian un fichero que no existe y salian con el hueco en blanco
@@ -49,17 +49,19 @@ const SOURCES = [
   {
     key: 'moves', kind: 'move',
     names: m => [m.nameEs, m.nameEn, m.name],
-    route: m => `#/moves/${m.id}`,
+    route: m => `/moves/${m.id}`,
     // La MT de su tipo: un movimiento no tiene sprite propio, pero la maquina
     // tecnica lleva el color del tipo y de paso lo dice.
     sprite: m => itemSpriteUrl(`tm-${m.type || 'normal'}`),
   },
   {
-    // The abilities page takes a name, not an id: that is the route the detail
-    // page already links to.
+    // The abilities page takes a name, not an id. El name de PokeAPI y no el
+    // nameEn visible ("As One" son dos habilidades): es el mismo que enlazan la
+    // ficha, el comparador y los sets del meta, asi que una habilidad tiene una
+    // sola ruta.
     key: 'abilities', kind: 'ability',
     names: a => [a.nameEs, a.nameEn, a.name],
-    route: a => `#/abilities/${encodeURIComponent(a.nameEn || a.name)}`,
+    route: a => `/abilities/${encodeURIComponent(a.name)}`,
     // La Capsula Habilidad, que es literalmente el objeto que cambia una.
     sprite: () => itemSpriteUrl('ability-capsule'),
   },
@@ -72,7 +74,7 @@ const SOURCES = [
     // maquina, y de ocho resultados eso son dos gastados en lo mismo.
     skip: i => i.category === 'machines',
     names: i => [i.nameEs, i.nameEn, i.name],
-    route: i => `#/items?q=${encodeURIComponent(i.nameEs || i.name)}`,
+    route: i => `/items?q=${encodeURIComponent(i.nameEs || i.name)}`,
     // Por itemSprite y no por el nombre: 1029 de los 1848 objetos no tienen
     // sprite arriba, y una fila de objeto que salga en el panel pedia un
     // fichero que no existe. El `noSprite` viaja en el indice (build-search.mjs
@@ -275,14 +277,14 @@ export function searchAll(datasets, term, limit = 8, lang = 'es') {
   // cualquiera en vez de con la de mas puntuacion.
   //
   // Por ruta y no por etiqueta. Un objeto no tiene ficha propia -- su ruta es
-  // #/items?q=<nombre>, la lista abierta filtrada (ver SOURCES) -- asi que
+  // /items?q=<nombre>, la lista abierta filtrada (ver SOURCES) -- asi que
   // bicycle, bike--green y bike--yellow son tres registros distintos de la BD
   // que llevan a una pagina byte a byte identica: buscar "bici" gastaba tres de
   // los ocho huecos en la misma fila, y otros cuatro en "Bici Rotom". No se
   // esconde informacion al quitarlas, porque no habia ninguna que ver.
   //
   // Deduplicar por NOMBRE si escondería algo: "Zygarde Forma 10%" son dos
-  // Pokemon con ficha propia (#/pokedex/10118 y #/pokedex/10181) que se llaman
+  // Pokemon con ficha propia (/pokedex/10118 y /pokedex/10181) que se llaman
   // igual. Ahi el arreglo seria que labelOf desambiguara, no tapar uno.
   const vistas = new Set();
   const unicos = ordenados.filter(h => !vistas.has(h.route) && vistas.add(h.route));

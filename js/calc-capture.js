@@ -1,6 +1,6 @@
 // ===== CAPTURE CALCULATOR =====
 //
-// One of the three panels of #/calculator. All the maths lives in capture.js;
+// One of the three panels of /calculator. All the maths lives in capture.js;
 // this module only collects inputs and renders the result.
 import { spriteUrl, itemSpriteUrl } from './data.js';
 import { searchPokemon } from './api.js';

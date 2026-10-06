@@ -5,6 +5,7 @@
 import { spriteUrl } from './data.js';
 import { CATEGORIES, toolsIn } from './tools.js';
 import { t } from './i18n.js';
+import { urlDe } from './rutas.js';
 
 export function renderHub(container, categoryId) {
   const category = CATEGORIES.find(c => c.id === categoryId);
@@ -24,7 +25,7 @@ export function renderHub(container, categoryId) {
     </div>
     <div class="home-grid">
       ${tools.map(tool => `
-        <a href="${tool.route}" class="home-card">
+        <a href="${urlDe(tool.route)}" class="home-card">
           <img class="icon" src="${spriteUrl(tool.icon)}" alt="" loading="lazy">
           <div class="label">${t(tool.label)}</div>
           <div class="desc">${t(tool.desc)}</div>

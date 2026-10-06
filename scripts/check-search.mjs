@@ -32,7 +32,7 @@ const first = term => searchAll(datasets, term, 8)[0] || {};
 console.log('\nEncuentra en los cuatro dominios\n');
 
 check('un Pokemon', first('pikachu').kind, 'pokemon');
-check('y lleva a su ficha', first('pikachu').route, '#/pokedex/25');
+check('y lleva a su ficha', first('pikachu').route, '/pokedex/25');
 check('un movimiento', first('surf').kind, 'move');
 check('una habilidad', first('levitate').kind, 'ability');
 check('un objeto', first('master ball').kind, 'item');
@@ -107,12 +107,12 @@ console.log('\nEl quinto dominio: las 16 herramientas\n');
 // El caso que le da sentido a la tarea: escribir "velocidad" no encontraba
 // nunca la herramienta Velocidad.
 check('velocidad encuentra la herramienta, no un Pokemon o movimiento', first('velocidad').kind, 'tool');
-check('y navega a su ruta', first('velocidad').route, '#/speed');
+check('y navega a su ruta', first('velocidad').route, '/speed');
 check('speed responde lo mismo en ingles', searchAll(datasets, 'speed', 8, 'en')[0]?.kind, 'tool');
 check('con el nombre en ingles', searchAll(datasets, 'speed', 8, 'en')[0]?.name, 'SPEED');
 check('dano encuentra la Calculadora de Dano', first('daño').kind, 'tool');
-check('y su pestana es damage, no capture', first('daño').route, '#/calculator?tab=damage');
-check('captura navega a catch, no a capture', first('captura').route, '#/calculator?tab=catch');
+check('y su pestana es damage, no capture', first('daño').route, '/calculator?tab=damage');
+check('captura navega a catch, no a capture', first('captura').route, '/calculator?tab=catch');
 // "velocidad" empareja por nameEs, pero con la app en ingles hay que ensenar
 // nameEn: el mismo bug que labelOf ya evita en los otros cuatro dominios.
 check('un termino en espanol con la app en ingles sale en ingles',
@@ -122,8 +122,8 @@ check('un termino en espanol con la app en ingles sale en ingles',
 // EMPIEZA por "dex", asi que dejo de encontrarla hasta que se anadio como
 // sinonimo exacto.
 check('dex encuentra la Pokedex', first('dex').kind, 'tool');
-check('y es la Pokedex, no otra herramienta', first('dex').route, '#/pokedex');
-check('lo mismo en ingles', searchAll(datasets, 'dex', 8, 'en')[0]?.route, '#/pokedex');
+check('y es la Pokedex, no otra herramienta', first('dex').route, '/pokedex');
+check('lo mismo en ingles', searchAll(datasets, 'dex', 8, 'en')[0]?.route, '/pokedex');
 
 console.log('\nNingun sinonimo se cuela por substring en un termino de control\n');
 
@@ -184,7 +184,7 @@ check('un contains de herramienta nunca desplaza a un exacto de otro dominio', d
 
 console.log('\nNi un hueco del panel se gasta en una fila que lleva al mismo sitio que otra\n');
 
-// La ruta de un objeto es #/items?q=<nombre> (no tiene ficha propia: la lista se
+// La ruta de un objeto es /items?q=<nombre> (no tiene ficha propia: la lista se
 // abre filtrada), asi que tres filas de la BD que comparten nombre visible dan
 // la MISMA etiqueta y el MISMO destino. "bici" son bicycle/bike--green/
 // bike--yellow: entradas distintas, pagina identica. De 8 resultados, seis
@@ -263,7 +263,7 @@ const DIFICILES = {
 check('los nombres dificiles siguen llevando a su Pokemon',
   Object.entries(DIFICILES).filter(([t, id]) => first(t).id !== id).map(([t]) => t), []);
 // dano/daño es la herramienta, no un Pokemon: la n con virgulilla se pliega.
-check('dano sigue encontrando la Calculadora de Dano', first('dano').route, '#/calculator?tab=damage');
+check('dano sigue encontrando la Calculadora de Dano', first('dano').route, '/calculator?tab=damage');
 
 console.log('\nUn termino sin herramienta se comporta como antes\n');
 
@@ -311,12 +311,18 @@ check('con la ruta de otro tipo', historialDe('[{"name":"Pikachu","route":25}]')
 
 console.log('\nY lo que si tiene forma pasa entero\n');
 
-check('una entrada valida', historialDe('[{"name":"Pikachu","route":"#/pokedex/25","id":25}]'),
-  [{ name: 'Pikachu', route: '#/pokedex/25', id: 25 }]);
+check('una entrada valida', historialDe('[{"name":"Pikachu","route":"/pokedex/25","id":25}]'),
+  [{ name: 'Pikachu', route: '/pokedex/25', id: 25 }]);
+// El historial de antes guardaba la ruta con el '#' delante. Sale sin el, que es
+// la ruta logica que se guarda ahora: el chip sigue llevando a la misma ficha y
+// apuntar() no la duplica al volver a abrirla.
+check('una entrada de antes, con #/, sale con la ruta logica',
+  historialDe('[{"name":"Pikachu","route":"#/pokedex/25","id":25}]'),
+  [{ name: 'Pikachu', route: '/pokedex/25', id: 25 }]);
 // El caso real de un cambio de esquema: lo bueno se queda, lo viejo cae.
 check('de una lista mezclada sobrevive solo lo que tiene forma',
   historialDe('[1,null,{"nombre":"viejo"},{"name":"Surf","route":"#/moves/57"}]'),
-  [{ name: 'Surf', route: '#/moves/57' }]);
+  [{ name: 'Surf', route: '/moves/57' }]);
 check('y nunca mas de seis',
   historialDe(JSON.stringify(Array.from({ length: 9 }, (_, i) => ({ name: `P${i}`, route: `#/p/${i}` })))).length, 6);
 // El marcado guardado a mano SI pasa el filtro: tiene nombre y ruta, que es lo

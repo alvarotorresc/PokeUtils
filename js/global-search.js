@@ -8,7 +8,8 @@
 // para leer cuatro campos de cada registro; desde build-search.mjs es un solo
 // fichero de 80,5 KB gz, asi que ya no hace falta pintar a medias y repintar.
 import { searchAll } from './search-index.js';
-import { esc, renderError } from './ui.js';
+import { esc, renderError, navegar } from './ui.js';
+import { urlDe, cargarIndice } from './rutas.js';
 import { fetchSearchIndex } from './api.js';
 import { getLang, t } from './i18n.js';
 
@@ -40,10 +41,18 @@ const tieneForma = e => e
   && typeof e.route === 'string' && e.route !== ''
   && typeof e.name === 'string' && e.name !== '';
 
+// La ruta se guarda logica ('/pokedex/25') y quien pinta el chip la pasa por
+// urlDe(). Hasta ahora se guardaba con el '#' delante, que era ya la URL: a esas
+// se les quita para que el historial de antes siga llevando al mismo sitio, y
+// para que apuntar() no las tome por otra entrada distinta de la misma ficha.
+const sinAlmohadilla = e => (e.route.startsWith('#/') ? { ...e, route: e.route.slice(1) } : e);
+
 export function leerHistorial() {
   try {
     const guardado = JSON.parse(localStorage.getItem(HISTORIAL) || '[]');
-    return Array.isArray(guardado) ? guardado.filter(tieneForma).slice(0, MAX_HISTORIAL) : [];
+    return Array.isArray(guardado)
+      ? guardado.filter(tieneForma).map(sinAlmohadilla).slice(0, MAX_HISTORIAL)
+      : [];
   } catch {
     return []; // un localStorage corrupto no puede tumbar la home
   }
@@ -84,28 +93,16 @@ export function attachGlobalSearch(input, alGuardar) {
     alGuardar?.(apuntar({ kind: r.kind, id: r.id, name: r.name, route: r.route, sprite: r.sprite }));
   };
 
-  // ===== Ir a un destino que puede ser el que ya esta en la barra =====
+  // ===== Ir a un destino =====
   //
-  // Asignar a location.hash el valor que ya tiene NO dispara hashchange, asi que
-  // route() no corre. El usuario hacia clic en un resultado y la aplicacion no
-  // reaccionaba: como el blur cierra el panel 150 ms despues, la unica senal que
-  // recibia era que su clic hizo desaparecer los resultados sin llevarle a
-  // ningun sitio. La navegacion de fragmento del <a href> de la fila tampoco
-  // emite el evento cuando el fragmento es el mismo.
-  //
-  // La comparacion es TEXTUAL y sobre el hash crudo, deliberadamente. La
-  // pregunta no es "es la misma ruta" sino "va a emitir hashchange el
-  // navegador", y eso solo depende de que la cadena sea identica. Con parseHash
-  // (que tira la query) #/items?q=Bici y #/items?q=Pluma saldrian iguales y se
-  // repintaria la pagina sin mover la barra de direcciones.
-  const mismoHash = destino => location.hash.slice(1) === destino;
-
-  // route() no esta exportado, asi que se emite el evento que el router ya
-  // escucha. Su listener no mira e.newURL ni e.oldURL, solo location.hash.
-  const irA = destino => {
-    if (mismoHash(destino)) window.dispatchEvent(new HashChangeEvent('hashchange'));
-    else location.hash = destino;
+  // navegar() repinta aunque el destino sea la pagina en la que ya estas. Con el
+  // hash no era asi: asignar a location.hash el valor que ya tenia no emitia
+  // hashchange, y un clic en el resultado de la ruta vigente no hacia nada mas
+  // que cerrar el panel. Ahora la URL solo se apila si cambia y el router corre
+  // siempre (ui.js).
+  const irA = url => {
     panel.hidden = true;
+    navegar(url);
   };
 
   panel.addEventListener('click', e => {
@@ -115,18 +112,19 @@ export function attachGlobalSearch(input, alGuardar) {
     // Un clic con modificador (o con otro boton) es "abrir en otra pestana": de
     // eso se encarga el navegador con el href, no nosotros.
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    // Y solo se intercepta el caso que el navegador NO resuelve. Cualquier otro
-    // href sigue siendo una navegacion de fragmento normal, que ya emite
-    // hashchange sola: preventDefault en todos seria quitarle trabajo al
-    // navegador para volver a hacerlo peor.
-    const destino = fila.getAttribute('href').slice(1);
-    if (!mismoHash(destino)) return;
+    // El clic normal se resuelve aqui entero, y el preventDefault le dice al
+    // interceptor de app.js que ya esta: si no, los dos navegarian.
     e.preventDefault();
-    irA(destino);
+    irA(fila.getAttribute('href'));
   });
 
+  // Con el indice de rutas a la vez: cada fila pinta su href con urlDe(), y el
+  // de una ficha no existe sin el.
   async function loadIndex() {
-    if (!datasets.pokemon) Object.assign(datasets, await fetchSearchIndex());
+    if (!datasets.pokemon) {
+      const [indice] = await Promise.all([fetchSearchIndex(), cargarIndice()]);
+      Object.assign(datasets, indice);
+    }
   }
 
   // ===== Cuando el indice no baja =====
@@ -193,7 +191,7 @@ export function attachGlobalSearch(input, alGuardar) {
       // vacia (linea de arriba), pero sin esta clase reservaba igual los
       // 108px fijos del resto -- ver la regla de flex-basis en style.css.
       return `${header}
-      <a class="gs-row${esHerramienta ? ' gs-row-tool' : ''}" href="${esc(r.route)}" data-i="${i}">
+      <a class="gs-row${esHerramienta ? ' gs-row-tool' : ''}" href="${esc(urlDe(r.route))}" data-i="${i}">
         <img class="gs-sprite" src="${esc(r.sprite)}" alt="" loading="lazy"
              onerror="this.style.visibility='hidden'">
         <span class="gs-kind">${kind}</span>
@@ -256,8 +254,7 @@ export function attachGlobalSearch(input, alGuardar) {
       const term = input.value.trim();
       const marked = rows[cursor]?.getAttribute('href');
       if (marked) recordar(cursor);
-      irA(marked ? marked.slice(1)
-        : (term ? `/pokedex?q=${encodeURIComponent(term)}` : '/pokedex'));
+      irA(marked || urlDe(term ? `/pokedex?q=${encodeURIComponent(term)}` : '/pokedex'));
     } else if (e.key === 'Escape') {
       panel.hidden = true;
     }

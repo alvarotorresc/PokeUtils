@@ -1,7 +1,8 @@
 // ===== POKEMON DETAIL =====
 import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, NATURES } from './data.js';
 import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchDex } from './api.js';
-import { skeletonHTML, renderError, hostDeRuta, wireScrollFade, esc } from './ui.js';
+import { skeletonHTML, renderError, hostDeRuta, wireScrollFade, esc, titularFicha } from './ui.js';
+import { urlDe } from './rutas.js';
 import { esqueletoDeFicha } from './cascaras.js';
 import { evolutionText, ramasResueltas, textoDeRama, nodoActual } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
@@ -33,7 +34,7 @@ function evoNodeHTML(species, currentId, nameOf, dex = species) {
   `;
   return isCurrent
     ? `<span class="evo-node current">${inner}</span>`
-    : `<a class="evo-node" href="#/pokedex/${species}">${inner}</a>`;
+    : `<a class="evo-node" href="${urlDe(`/pokedex/${species}`)}">${inner}</a>`;
 }
 
 const evoBranchHTML = (condicion, destino) => `
@@ -148,7 +149,7 @@ function moveRowHTML(move, level) {
   return `
     <div class="mv-row">
       <span class="mv-level">${level === null ? '' : (level === 0 ? t('learn.start') : `${t('learn.col.level')} ${level}`)}</span>
-      <a class="mv-name" href="#/moves/${move.id}">${move.nameEs && getLang() === 'es' ? move.nameEs : move.nameEn}</a>
+      <a class="mv-name" href="${urlDe(`/moves/${move.id}`)}">${move.nameEs && getLang() === 'es' ? move.nameEs : move.nameEn}</a>
       <span class="type-badge sm" data-type="${esc(move.type)}" style="cursor:default">${typeName(move.type)}</span>
       <span class="move-category ${esc(move.category)}">${t('cat.' + move.category)}</span>
       <span class="mv-num">${move.power ?? dash}</span>
@@ -306,8 +307,8 @@ function metaSetHTML(found, owner, names) {
   // tiene. Los objetos no tienen ficha propia y abren su lista filtrada.
   const nombre = (kind, slug) => {
     const texto = metaName(kind, slug, names, lang);
-    const href = metaLink(kind, slug, names);
-    return href ? `<a class="meta-name-link" href="${href}">${texto}</a>` : texto;
+    const ruta = metaLink(kind, slug, names);
+    return ruta ? `<a class="meta-name-link" href="${urlDe(ruta)}">${texto}</a>` : texto;
   };
   const top = (kind, list) => list?.[0]
     ? `${nombre(kind, list[0][0])} ${pct(list[0][1])}`
@@ -338,7 +339,7 @@ function metaSetHTML(found, owner, names) {
     <ul class="meta-moveset">
       ${set.m.slice(0, 4).map(([slug, p]) => `<li>${nombre('moves', slug)} ${pct(p)}</li>`).join('')}
     </ul>
-    <p class="meta-foot"><a href="#/meta?f=${format}&id=${found.ownerId}">${t('meta.more')}</a> · ${t('meta.from', { month: MONTH })}</p>
+    <p class="meta-foot"><a href="${urlDe(`/meta?f=${format}&id=${found.ownerId}`)}">${t('meta.more')}</a> · ${t('meta.from', { month: MONTH })}</p>
   `;
 }
 
@@ -357,7 +358,7 @@ async function renderMetaSection(host, dexId, format, meta, allPokemon) {
     const owner = allPokemon.find(p => p.id === found.ownerId);
     host.innerHTML = `
       <h3 class="section-title">${t('meta.section')}</h3>
-      ${found.own ? '' : `<p class="meta-family">${t('meta.family', { name: `<a href="#/pokedex/${found.ownerId}">${owner ? pokeName(owner) : '#' + found.ownerId}</a>` })}</p>`}
+      ${found.own ? '' : `<p class="meta-family">${t('meta.family', { name: `<a href="${urlDe(`/pokedex/${found.ownerId}`)}">${owner ? pokeName(owner) : '#' + found.ownerId}</a>` })}</p>`}
       ${metaSetHTML(found, owner, names)}
     `;
   } catch {
@@ -373,7 +374,7 @@ function eggSectionHTML(pokemon, all) {
   if (!hasEggData(all) || !entry?.eggGroups) return '';
 
   const groups = entry.eggGroups
-    .map(g => `<a class="egg-chip" href="#/egg/${g}">${t('egg.group.' + g)}</a>`)
+    .map(g => `<a class="egg-chip" href="${urlDe(`/egg/${g}`)}">${t('egg.group.' + g)}</a>`)
     .join('');
 
   // -1 is genderless, 0 always male, 8 always female; anything between is a
@@ -432,14 +433,15 @@ export async function renderPokedexDetail(container, id) {
       <div class="no-results">
         <div class="icon">❓</div>
         <p>${t('pokedex.notfound')}</p>
-        <p style="margin-top:12px"><a href="#/pokedex">${t('pokedex.back')}</a></p>
+        <p style="margin-top:12px"><a href="${urlDe('/pokedex')}">${t('pokedex.back')}</a></p>
       </div>
     `;
     return;
   }
 
   // A form's page is its species' page with a different tab selected: the URL
-  // stays #/pokedex/6 so every link already shared keeps working, and the
+  // stays /pokedex/charizard (the forms with a page of their own, megas and
+  // regionals, have their own URL; js/rutas.js decides), and the
   // species keeps owning the dex number, the neighbours, evolution, the
   // learnset and breeding. Only what the header shows changes.
   const dexId = pokemon.speciesId || pokemon.id;
@@ -479,6 +481,7 @@ export async function renderPokedexDetail(container, id) {
   const maxStat = 255;
 
   const displayName = pokeName(pokemon);
+  titularFicha(`/pokedex/${id}`, displayName);
   const altName = getLang() === 'es' ? (pokemon.nameEn || pokemon.name) : pokemon.nameEs;
   // La descripcion viaja en los dos idiomas desde que se hornea en build: antes
   // se pedia a pokeapi solo en espanol y la ficha en ingles la ensenaba asi.
@@ -584,13 +587,15 @@ export async function renderPokedexDetail(container, id) {
            donde estaba. -->
       <div class="ability-list">
         ${pokemon.abilities.map(a => {
+          // a.nameEn es el name de PokeAPI ('pressure'), que es lo que lleva la
+          // ruta; el nombre visible en ingles es displayEn.
           const desc = getLang() === 'es'
             ? (a.descriptionEs || a.effect)
             : (a.descriptionEn || a.effect);
           return `
             <div class="ability-item">
               <div class="ability-head">
-                <a class="ability-link" href="#/abilities/${encodeURIComponent(a.nameEn)}">${getLang() === 'es' ? a.nameEs : a.displayEn}</a>
+                <a class="ability-link" href="${urlDe(`/abilities/${encodeURIComponent(a.nameEn)}`)}">${getLang() === 'es' ? a.nameEs : a.displayEn}</a>
                 ${a.isHidden ? `<span class="ability-tag">${t('pokedex.hidden')}</span>` : ''}
               </div>
               ${desc ? `<p class="ability-desc">${esc(desc)}</p>` : ''}
@@ -645,7 +650,7 @@ export async function renderPokedexDetail(container, id) {
       </div>
 
       <div class="poke-nav">
-        ${dexId > 1 ? `<a href="#/pokedex/${dexId - 1}" class="page-btn poke-nav-btn">
+        ${dexId > 1 ? `<a href="${urlDe(`/pokedex/${dexId - 1}`)}" class="page-btn poke-nav-btn">
           <span class="poke-nav-arrow">◀</span>
           <img src="${spriteUrl(dexId - 1)}" alt="" onerror="this.style.display='none'">
           <span class="poke-nav-label">
@@ -653,7 +658,7 @@ export async function renderPokedexDetail(container, id) {
             <span class="poke-nav-name">${pokemon.prevName || ''}</span>
           </span>
         </a>` : '<div></div>'}
-        ${dexId < 1025 ? `<a href="#/pokedex/${dexId + 1}" class="page-btn poke-nav-btn next">
+        ${dexId < 1025 ? `<a href="${urlDe(`/pokedex/${dexId + 1}`)}" class="page-btn poke-nav-btn next">
           <span class="poke-nav-label">
             <span class="poke-nav-dex">#${String(dexId + 1).padStart(4, '0')}</span>
             <span class="poke-nav-name">${pokemon.nextName || ''}</span>
@@ -683,8 +688,8 @@ export async function renderPokedexDetail(container, id) {
     if (!btn) return;
     const next = Number(btn.dataset.form);
     if (next === pokemon.id) return;
-    // Repaint in place. Changing location.hash would fire route(), reload the
-    // page and lose the scroll position for a change of four numbers.
+    // Repaint in place. Navigating would run route(), reload the page and lose
+    // the scroll position for a change of four numbers.
     renderPokedexDetail(container, next);
   });
 

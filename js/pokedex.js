@@ -3,6 +3,7 @@ import { TYPES, spriteUrl, STAT_KEYS, GENERATIONS, SORT_KEYS } from './data.js';
 import { fetchPokemonList } from './api.js';
 import { isForm, spriteIdFor } from './forms.js';
 import { skeletonHTML, renderPagination, replaceQuery, esc, toolTabsHTML } from './ui.js';
+import { urlDe } from './rutas.js';
 import { PAGINA, esqueletoDe } from './cascaras.js';
 import { t, typeName, statName, pokeName } from './i18n.js';
 import { norm } from './normalize.js';
@@ -15,7 +16,7 @@ const PAGE_SIZE = PAGINA.pokedex;
 // the variable sits there unused.
 export function pokemonCardHTML(p, i = 0) {
   return `
-    <a class="pokemon-card" href="#/pokedex/${p.id}" style="--i:${Math.min(i, 11)}">
+    <a class="pokemon-card" href="${urlDe(`/pokedex/${p.id}`)}" style="--i:${Math.min(i, 11)}">
       <img class="sprite" src="${spriteUrl(spriteIdFor(p))}" alt="${esc(pokeName(p))}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><text x=%2248%22 y=%2260%22 text-anchor=%22middle%22 font-size=%2240%22>?</text></svg>'">
       <div class="dex-number">#${String(p.speciesId || p.id).padStart(4, '0')}</div>
       <div class="poke-name">${esc(pokeName(p))}</div>
@@ -64,7 +65,7 @@ function animarAlto(grid, altoPrevio) {
 }
 
 export function renderPokedex(container, query = new URLSearchParams()) {
-  // The whole list state lives in the hash query, so leaving for a detail page
+  // The whole list state lives in the URL query, so leaving for a detail page
   // and coming back restores exactly what you were looking at.
   const state = {
     q: query.get('q') || '',
@@ -149,7 +150,7 @@ export function renderPokedex(container, query = new URLSearchParams()) {
   const countEl = container.querySelector('#pdxCount');
   const clearBtn = container.querySelector('#pdxClear');
 
-  // Default values are left out so plain #/pokedex stays the clean URL.
+  // Default values are left out so plain /pokedex stays the clean URL.
   function syncUrl() {
     replaceQuery('/pokedex', {
       q: state.q,

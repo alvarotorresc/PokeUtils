@@ -1,7 +1,8 @@
 // ===== MOVES PAGE =====
 import { TYPES } from './data.js';
 import { fetchMoves } from './api.js';
-import { skeletonHTML, renderPagination, replaceQuery, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { skeletonHTML, renderPagination, replaceQuery, esc, toolTabsHTML, wireToolTabs, navegar } from './ui.js';
+import { urlDe } from './rutas.js';
 import { PAGINA, esqueletoDe } from './cascaras.js';
 import { t, typeName, categoryName, pokeName, getLang, statName } from './i18n.js';
 import { norm } from './normalize.js';
@@ -16,7 +17,7 @@ const PAGE_SIZE = PAGINA.moves;
 const STAT_FILTER_KEYS = ['atk', 'def', 'spa', 'spd', 'spe', 'acc', 'eva'];
 
 export function renderMoves(container, query = new URLSearchParams()) {
-  // The whole list state lives in the hash query, so opening a move and coming
+  // The whole list state lives in the URL query, so opening a move and coming
   // back restores exactly what you were looking at.
   const state = {
     q: query.get('q') || '',
@@ -83,7 +84,7 @@ export function renderMoves(container, query = new URLSearchParams()) {
   const statSelect = container.querySelector('#mvStat');
   const clearBtn = container.querySelector('#mvClear');
 
-  // Defaults are left out so a plain #/moves stays the clean URL.
+  // Defaults are left out so a plain /movimientos stays the clean URL.
   function syncUrl() {
     replaceQuery('/moves', {
       q: state.q,
@@ -237,7 +238,7 @@ export function renderMoves(container, query = new URLSearchParams()) {
     // listener hoisted out of render() would go on pointing at a dead one.
     tbody.addEventListener('click', (e) => {
       const row = e.target.closest('tr[data-move-id]');
-      if (row) location.hash = `#/moves/${row.dataset.moveId}`;
+      if (row) navegar(urlDe(`/moves/${row.dataset.moveId}`));
     });
 
     page.forEach(m => {

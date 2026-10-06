@@ -1,11 +1,11 @@
 // Comprueba que la barra de direcciones no la pueda escribir una ruta que ya
 // no esta en pantalla, y que las rutas que la escriben existan de verdad.
 //
-// El bug: replaceQuery() escribia el hash sin mirar nada. El router protege el
-// import() con un token y hostDeRuta protege las escrituras al DOM, pero la URL
-// no pasaba por ninguno de los dos: con los datos tardando, se hacia clic en
-// POKEDEX, a los 700 ms clic en FAQ, y quedaba el FAQ pintado con la barra
-// diciendo #/pokedex.
+// El bug: replaceQuery() escribia la URL sin mirar nada (entonces era el hash).
+// El router protege el import() con un token y hostDeRuta protege las
+// escrituras al DOM, pero la URL no pasaba por ninguno de los dos: con los datos
+// tardando, se hacia clic en POKEDEX, a los 700 ms clic en FAQ, y quedaba el FAQ
+// pintado con la barra diciendo #/pokedex.
 //
 // Aqui no se compara texto contra texto: se importa js/ui.js de verdad, con un
 // location y un history de mentira, y se mira si escribe o no. La carrera en si
@@ -35,19 +35,33 @@ function check(label, actual, expected) {
 
 // ===== Un location y un history de mentira =====
 //
-// replaceQuery lee los dos en el momento de la llamada, no al importar el
-// modulo, asi que basta con dejarlos puestos en globalThis antes de llamar.
+// replaceQuery y navegar leen los dos en el momento de la llamada, no al
+// importar el modulo, asi que basta con dejarlos puestos en globalThis antes de
+// llamar. La barra se fija con una URL entera y se trocea como lo haria el
+// navegador: pathname sin decodificar, search y hash.
 const escrituras = [];
-globalThis.location = { hash: '#/' };
+const apiladas = [];
+globalThis.location = {};
+const ponerBarra = url => {
+  const u = new URL(url, 'http://localhost');
+  Object.assign(globalThis.location, { href: u.href, origin: u.origin, pathname: u.pathname, search: u.search, hash: u.hash });
+};
+ponerBarra('/');
+const escribirBarra = (lista, url) => { lista.push(String(url)); ponerBarra(url); };
 globalThis.history = {
-  replaceState: (_estado, _titulo, url) => { escrituras.push(String(url)); },
+  replaceState: (_estado, _titulo, url) => escribirBarra(escrituras, url),
+  pushState: (_estado, _titulo, url) => escribirBarra(apiladas, url),
 };
 
-const { replaceQuery, parseHash } = await import('../js/ui.js');
+// Las fichas y los grupos necesitan el indice de rutas, como en el navegador.
+const { fijarIndice } = await import('../js/rutas.js');
+fijarIndice(JSON.parse(readFileSync(join(RAIZ, 'data', 'rutas.json'), 'utf8')));
 
-// Devuelve lo que replaceQuery escribio, o null si no escribio nada.
-function escribeDesde(hash, path, params) {
-  globalThis.location.hash = hash;
+const { replaceQuery, parseRuta, navegar, fijarRouter } = await import('../js/ui.js');
+
+// Devuelve lo que replaceQuery escribio (sin el origen), o null si no escribio nada.
+function escribeDesde(barra, path, params) {
+  ponerBarra(barra);
   escrituras.length = 0;
   replaceQuery(path, params);
   return escrituras.length === 0 ? null : escrituras[escrituras.length - 1];
@@ -55,98 +69,123 @@ function escribeDesde(hash, path, params) {
 
 console.log('\nLa ruta vigente sincroniza su URL como siempre\n');
 
-check('#/pokedex escribiendo /pokedex',
-  escribeDesde('#/pokedex', '/pokedex', { q: 'pika', p: 2 }), '#/pokedex?q=pika&p=2');
-check('#/pokedex con query previa escribiendo /pokedex',
-  escribeDesde('#/pokedex?q=viejo&p=9', '/pokedex', { q: 'pika' }), '#/pokedex?q=pika');
-check('#/calculator escribiendo /calculator',
-  escribeDesde('#/calculator?tab=damage', '/calculator', { tab: 'damage' }), '#/calculator?tab=damage');
+check('/pokedex escribiendo /pokedex',
+  escribeDesde('/pokedex', '/pokedex', { q: 'pika', p: 2 }), '/pokedex?q=pika&p=2');
+check('/pokedex con query previa escribiendo /pokedex',
+  escribeDesde('/pokedex?q=viejo&p=9', '/pokedex', { q: 'pika' }), '/pokedex?q=pika');
+// La calculadora es una ruta logica con tres URLs: el tab se pliega en la ruta.
+check('/calculadora-de-dano escribiendo /calculator con tab=damage',
+  escribeDesde('/calculadora-de-dano', '/calculator', { tab: 'damage', a: 6 }), '/calculadora-de-dano?a=6');
+check('y volver a IV/EV cambia la ruta sin perder el calculo',
+  escribeDesde('/calculadora-de-dano?a=6', '/calculator', { tab: '', a: 6 }), '/calculadora-ivs-evs?a=6');
 // La unica ruta interpolada: egg-pages construye `/egg/${group}`.
-check('#/egg/ground escribiendo /egg/ground',
-  escribeDesde('#/egg/ground', '/egg/ground', { p: 3 }), '#/egg/ground?p=3');
+check('/grupos-huevo/campo escribiendo /egg/ground',
+  escribeDesde('/grupos-huevo/campo', '/egg/ground', { p: 3 }), '/grupos-huevo/campo?p=3');
 // Los valores por defecto se omiten y la URL queda limpia.
 check('parametros vacios fuera de la URL',
-  escribeDesde('#/moves', '/moves', { q: '', type: null, p: '' }), '#/moves');
+  escribeDesde('/movimientos', '/moves', { q: '', type: null, p: '' }), '/movimientos');
 // La normalizacion es la misma a los dos lados, asi que las barras de sobra no
 // cuentan como otra ruta.
-check('#//pokedex/ sigue siendo /pokedex',
-  escribeDesde('#//pokedex/', '/pokedex', { p: 2 }), '#/pokedex?p=2');
+check('un llamante que escribe /pokedex/ sigue siendo /pokedex',
+  escribeDesde('/pokedex', '/pokedex/', { p: 2 }), '/pokedex?p=2');
 
 console.log('\nLas dos mitades de la aplicacion escriben el espacio igual\n');
 
 // replaceQuery escribia la query con URLSearchParams.toString(), que pone "+"
-// donde hay un espacio, mientras el buscador global monta sus destinos con
+// donde hay un espacio, mientras el buscador global montaba sus destinos con
 // encodeURIComponent, que pone "%20". Un enlace compartido como
-// #/pokedex?q=mr%20mime se reescribia solo a #/pokedex?q=mr+mime en el primer
+// /pokedex?q=mr%20mime se reescribia solo a /pokedex?q=mr+mime en el primer
 // render de la pagina: el mismo estado con dos direcciones, y la que se ve en
 // la barra no era la que se habia compartido.
 //
 // Gana %20 porque "+" solo significa espacio en un cuerpo de formulario
-// (application/x-www-form-urlencoded) y esto es un fragmento -- quien lo lea
-// con decodeURIComponent se encuentra un "+" literal -- y porque es la
-// ortografia que la otra mitad ya escribia.
+// (application/x-www-form-urlencoded) -- quien lo lea con decodeURIComponent se
+// encuentra un "+" literal -- y porque es la ortografia de urlDe(), que monta
+// los enlaces y los destinos del buscador.
 check('un espacio se escribe %20, no +',
-  escribeDesde('#/pokedex', '/pokedex', { q: 'mr mime' }), '#/pokedex?q=mr%20mime');
+  escribeDesde('/pokedex', '/pokedex', { q: 'mr mime' }), '/pokedex?q=mr%20mime');
 check('y varios espacios tambien',
-  escribeDesde('#/items', '/items', { q: 'gran cana de pescar' }),
-  '#/items?q=gran%20cana%20de%20pescar');
-// El destino que monta el buscador global para la misma fila, letra a letra:
-// es la comparacion que da sentido al arreglo, y ademas es TEXTUAL en
-// global-search.js (mismoHash), que compara el hash crudo.
-check('replaceQuery escribe lo mismo que el buscador global',
-  escribeDesde('#/items', '/items', { q: 'Master Ball' }),
-  `#/items?q=${encodeURIComponent('Master Ball')}`);
+  escribeDesde('/objetos', '/items', { q: 'gran cana de pescar' }),
+  '/objetos?q=gran%20cana%20de%20pescar');
+// El destino que monta el buscador global para la misma fila, letra a letra.
+const { urlDe } = await import('../js/rutas.js');
+check('replaceQuery escribe lo mismo que el enlace del buscador',
+  escribeDesde('/objetos', '/items', { q: 'Master Ball' }),
+  urlDe(`/items?q=${encodeURIComponent('Master Ball')}`));
 
 // Un "+" literal escrito por el usuario tiene que sobrevivir, y con las dos
 // ortografias lo hace: se escapa como %2B en las dos.
 check('un + literal no se confunde con un espacio',
-  escribeDesde('#/moves', '/moves', { q: 'a+b' }), '#/moves?q=a%2Bb');
+  escribeDesde('/movimientos', '/moves', { q: 'a+b' }), '/movimientos?q=a%2Bb');
 // La enye, que es el caso normal en este buscador: no cambia, porque los dos
 // codificadores escapan el UTF-8 igual. Con los bytes puestos, no con la
 // palabra "enye" en la etiqueta y una cadena ASCII en el valor.
 check('una enye sigue viajando en UTF-8 escapado',
-  escribeDesde('#/pokedex', '/pokedex', { q: 'ñu añejo' }),
-  '#/pokedex?q=%C3%B1u%20a%C3%B1ejo');
+  escribeDesde('/pokedex', '/pokedex', { q: 'ñu añejo' }),
+  '/pokedex?q=%C3%B1u%20a%C3%B1ejo');
 // El separador y el signo igual dentro de un valor no pueden partir la query.
 check('un & dentro del valor no abre otro parametro',
-  escribeDesde('#/moves', '/moves', { q: 'a&p=9' }), '#/moves?q=a%26p%3D9');
+  escribeDesde('/movimientos', '/moves', { q: 'a&p=9' }), '/movimientos?q=a%26p%3D9');
 
 // El espacio no es lo unico que cambia de ortografia: URLSearchParams escapa
-// !'()~ y encodeURIComponent los deja literales. Los cinco son legales en un
-// fragmento y vuelven tal cual, pero el apostrofo sale de verdad -- Farfetch'd
-// es un Pokemon que se busca -- y el enlace compartido cambia de aspecto, asi
-// que se fija en vez de descubrirse.
+// !'()~ y encodeURIComponent los deja literales. El apostrofo sale de verdad --
+// Farfetch'd es un Pokemon que se busca -- y el enlace compartido cambia de
+// aspecto, asi que se fija en vez de descubrirse.
 check('el apostrofo de Farfetchd viaja literal',
-  escribeDesde('#/pokedex', '/pokedex', { q: "farfetch'd" }), "#/pokedex?q=farfetch'd");
-globalThis.location.hash = "#/pokedex?q=farfetch'd";
-check('  y se vuelve a leer entero', parseHash().query.get('q'), "farfetch'd");
-globalThis.location.hash = '#/pokedex?q=farfetch%27d';
-check('  y el enlace viejo, con %27, tambien', parseHash().query.get('q'), "farfetch'd");
+  escribeDesde('/pokedex', '/pokedex', { q: "farfetch'd" }), "/pokedex?q=farfetch'd");
+ponerBarra("/pokedex?q=farfetch'd");
+check('  y se vuelve a leer entero', parseRuta().query.get('q'), "farfetch'd");
+ponerBarra('/pokedex?q=farfetch%27d');
+check('  y el enlace viejo, con %27, tambien', parseRuta().query.get('q'), "farfetch'd");
 
-// Los enlaces viejos, con "+", siguen leyendose: parseHash usa URLSearchParams,
-// que decodifica las dos ortografias como espacio. Sin esto, el arreglo seria
-// un cambio que rompe cada enlace ya compartido.
-globalThis.location.hash = '#/pokedex?q=mr+mime';
+// Los enlaces viejos, con "+", siguen leyendose: parseRuta usa URLSearchParams,
+// que decodifica las dos ortografias como espacio.
+ponerBarra('/pokedex?q=mr+mime');
 check('un enlace viejo con + se sigue leyendo como espacio',
-  parseHash().query.get('q'), 'mr mime');
-globalThis.location.hash = '#/pokedex?q=mr%20mime';
-check('y el nuevo con %20 se lee igual', parseHash().query.get('q'), 'mr mime');
+  parseRuta().query.get('q'), 'mr mime');
+ponerBarra('/pokedex?q=mr%20mime');
+check('y el nuevo con %20 se lee igual', parseRuta().query.get('q'), 'mr mime');
 
 console.log('\nUna ruta que ya no esta en pantalla no escribe nada\n');
 
-check('render tardio de /pokedex estando en #/faq',
-  escribeDesde('#/faq', '/pokedex', { q: 'pika', p: 2 }), null);
-check('render tardio de /moves estando en #/pokedex',
-  escribeDesde('#/pokedex', '/moves', { q: 'placaje' }), null);
-check('render tardio de /egg/ground estando en #/egg/water1',
-  escribeDesde('#/egg/water1', '/egg/ground', { p: 3 }), null);
-check('render tardio de /egg/ground estando en el indice #/egg',
-  escribeDesde('#/egg', '/egg/ground', { p: 3 }), null);
+check('render tardio de /pokedex estando en /faq',
+  escribeDesde('/faq', '/pokedex', { q: 'pika', p: 2 }), null);
+check('render tardio de /moves estando en /pokedex',
+  escribeDesde('/pokedex', '/moves', { q: 'placaje' }), null);
+check('render tardio de /egg/ground estando en /grupos-huevo/agua-1',
+  escribeDesde('/grupos-huevo/agua-1', '/egg/ground', { p: 3 }), null);
+check('render tardio de /egg/ground estando en el indice /grupos-huevo',
+  escribeDesde('/grupos-huevo', '/egg/ground', { p: 3 }), null);
 check('render tardio de /team estando en la home',
-  escribeDesde('#/', '/team', { ids: '25,6' }), null);
+  escribeDesde('/', '/team', { ids: '25,6' }), null);
 // La ficha de un Pokemon es otra ruta aunque comparta el primer segmento.
-check('render tardio de /pokedex estando en la ficha #/pokedex/25',
-  escribeDesde('#/pokedex/25', '/pokedex', { p: 2 }), null);
+check('render tardio de /pokedex estando en la ficha /pokedex/pikachu',
+  escribeDesde('/pokedex/pikachu', '/pokedex', { p: 2 }), null);
+// Una direccion que no es pagina (parseRuta da null) tampoco se reescribe.
+check('ni estando en una direccion que no es de la app',
+  escribeDesde('/noexiste', '/pokedex', { p: 2 }), null);
+
+console.log('\nnavegar apila la URL solo si cambia, y el router corre siempre\n');
+
+// Con el hash, ir al destino en el que ya estabas no emitia hashchange y el
+// clic no hacia nada; el buscador lo arreglaba fingiendo el evento. Ahora la
+// regla es una: pushState si la URL cambia, route() siempre.
+let rutas = 0;
+fijarRouter(() => { rutas++; });
+function navegaDesde(barra, destino) {
+  ponerBarra(barra);
+  apiladas.length = 0;
+  rutas = 0;
+  navegar(destino);
+  return { apila: apiladas.map(u => u.replace(location.origin, '')), router: rutas };
+}
+check('a otra pagina: apila y pinta',
+  navegaDesde('/pokedex', '/movimientos/puno-trueno'), { apila: ['/movimientos/puno-trueno'], router: 1 });
+check('a la misma: no apila, pero repinta',
+  navegaDesde('/pokedex/pikachu', '/pokedex/pikachu'), { apila: [], router: 1 });
+// Misma ruta, otra query: es otra URL, y la barra tiene que moverse.
+check('misma ruta con otra query: apila',
+  navegaDesde('/objetos?q=Bici', '/objetos?q=Pluma'), { apila: ['/objetos?q=Pluma'], router: 1 });
 
 // ===== Las rutas que declaran los llamantes tienen que existir =====
 
@@ -220,39 +259,37 @@ for (const { fichero, recorte, sync } of PAGINADAS) {
     + (ok ? '' : ' -- mueve la llamada que sincroniza la URL por debajo del recorte de pagina, y por encima del return de "sin resultados"'));
 }
 
-// ===== El buscador compara el hash CRUDO antes de asignarlo =====
+// ===== Una sola forma de navegar =====
 //
-// El otro lado de la misma moneda que replaceQuery: alli el problema era
-// escribir la URL de mas, aqui es no escribirla y no repintar. Asignar a
-// location.hash el valor que ya tiene no dispara hashchange, asi que un clic en
-// el resultado que apunta a la ruta vigente no hacia absolutamente nada.
-//
-// El cable trampa protege la parte que es facil "simplificar" mal: la
-// comparacion tiene que ser textual sobre location.hash, NO por ruta con
-// parseHash. parseHash tira la query, con lo que #/items?q=Bici y #/items?q=Pluma
-// saldrian iguales y el buscador repintaria la pagina sin mover la barra. Esto
-// es DOM y eventos, que no se ejecutan en node; la verificacion de verdad es el
-// navegador (tres casos medidos: clic en la fila desde #/items?q=Bici, Enter
-// sobre Pikachu desde #/pokedex/25, y Enter dos veces desde #/pokedex?q=pika).
-console.log('\nEl buscador global compara el hash crudo antes de asignarlo\n');
+// Cables trampa de texto: navegar() es el unico sitio que apila una URL, y ya
+// no queda nadie navegando por el hash. Un pushState suelto en otro modulo se
+// saltaria la regla de arriba (repintar siempre, no apilar la misma URL dos
+// veces), y un `location.hash =` volveria a una navegacion que el router ya no
+// escucha. Sobre el codigo sin comentarios, que mencionan las dos cosas para
+// explicar por que no se usan.
+console.log('\nUna sola forma de navegar\n');
+
+const sinComentarios = src => src
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .split('\n').map(l => l.replace(/(^|[^:'"`])\/\/.*$/, '$1')).join('\n');
+const fuentes = readdirSync(join(RAIZ, 'js')).filter(f => f.endsWith('.js'))
+  .map(f => ({ fichero: f, src: sinComentarios(readFileSync(join(RAIZ, 'js', f), 'utf8')) }));
+
+const conPushState = fuentes.flatMap(({ fichero, src }) =>
+  [...src.matchAll(/\bpushState\(/g)].map(() => fichero));
+check('un solo pushState en js/, el de navegar en ui.js', conPushState, ['ui.js']);
+check('y esta dentro de navegar',
+  /export function navegar\([^)]*\)\s*\{[^}]*history\.pushState\(/.test(fuentes.find(f => f.fichero === 'ui.js').src), true);
+// [^=] para no contar un "location.hash === x", que es una comparacion.
+check('ninguna asignacion a location.hash en js/',
+  fuentes.filter(({ src }) => /location\.hash\s*=[^=]/.test(src)).map(f => f.fichero), []);
+check('nadie finge un hashchange',
+  fuentes.filter(({ src }) => /HashChangeEvent|'hashchange'/.test(src)).map(f => f.fichero), []);
 
 const gs = readFileSync(join(RAIZ, 'js', 'global-search.js'), 'utf8');
-
-check('compara sobre location.hash, no por ruta',
-  /location\.hash\.slice\(1\) === destino/.test(gs), true);
-check('y cuando coincide emite el evento que el router escucha',
-  /dispatchEvent\(new HashChangeEvent\('hashchange'\)\)/.test(gs), true);
-// [^=] para no contar un "location.hash === x", que es una comparacion y no una
-// asignacion: sin eso, cualquiera que anada una comparacion futura rompe un
-// check que no tiene nada que ver con lo suyo.
-check('no queda ninguna asignacion a location.hash fuera de esa decision',
-  [...gs.matchAll(/location\.hash\s*=[^=]/g)].length, 1);
-// Sobre los imports y no sobre el fichero entero: "parseHash" aparece en el
-// comentario que explica por que NO se usa, y un check que lee comentarios
-// comprueba la prosa en vez del codigo.
-const importaParseHash = [...gs.matchAll(/import\s*\{([^}]*)\}\s*from/g)]
-  .some(m => /\bparseHash\b/.test(m[1]));
-check('no se importa parseHash para decidir si repintar', importaParseHash, false);
+const importaNavegar = [...gs.matchAll(/import\s*\{([^}]*)\}\s*from\s*'\.\/ui\.js'/g)]
+  .some(m => /\bnavegar\b/.test(m[1]));
+check('el buscador global navega con navegar()', importaNavegar, true);
 
 // ===== Una direccion malformada cae en "no encontrado", no en un bucle =====
 //
@@ -322,7 +359,7 @@ check('con reintento: primero el boton y despues el enlace',
   conBoton.hijos.map(n => n.tag), ['button', 'p']);
 check('sin reintento: queda el enlace igual',
   sinBoton.hijos.map(n => n.tag), ['p']);
-check('el enlace apunta a la home', /<a href="#\/">/.test(htmlDe(conBoton)), true);
+check('el enlace apunta a la home', /<a href="\/">/.test(htmlDe(conBoton)), true);
 // Con la clave traducida y no con el texto a pelo: si alguien la borra de un
 // idioma, t() devuelve la clave y esto lo caza.
 check('y lleva el texto traducido de volver al inicio',
@@ -346,8 +383,10 @@ check('se puede desactivar la salida donde no hay callejon',
 //
 // Los cuatro sin salida, medidos en navegador uno a uno: el desplegable del
 // buscador, la linea evolutiva y los movimientos de una ficha, y quien aprende
-// un movimiento. Los tres con salida: la ruta entera del router, la ficha de un
-// movimiento cuando no baja moves.json, y el equipo.
+// un movimiento. Los cuatro con salida: la ruta entera del router (dos veces:
+// cuando no baja su modulo y cuando no baja data/rutas.json, sin el que una
+// ficha no sabe que id es), la ficha de un movimiento cuando no baja
+// moves.json, y el equipo.
 const llamantesError = [];
 for (const fichero of readdirSync(join(RAIZ, 'js')).filter(f => f.endsWith('.js') && f !== 'ui.js')) {
   const src = readFileSync(join(RAIZ, 'js', fichero), 'utf8');
@@ -362,7 +401,7 @@ for (const { fichero, sinSalida } of llamantesError) {
   console.log(`       js/${fichero}${sinSalida ? '  (seccion: sin salida)' : '  (pagina: con salida)'}`);
 }
 
-check('el censo de llamantes no ha cambiado sin revisarse', llamantesError.length, 7);
+check('el censo de llamantes no ha cambiado sin revisarse', llamantesError.length, 8);
 check('y los cuatro de seccion siguen sin enlace de vuelta',
   llamantesError.filter(l => l.sinSalida).map(l => l.fichero).sort(),
   ['global-search.js', 'moves-detail.js', 'pokedex-detail.js', 'pokedex-detail.js']);

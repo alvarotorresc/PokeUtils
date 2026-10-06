@@ -8,6 +8,7 @@ import { fetchPokemonList, fetchAbilities } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
 import { defensiveMatrix } from './team-analysis.js';
 import { skeletonHTML, replaceQuery, esc, toolTabsHTML } from './ui.js';
+import { urlDe } from './rutas.js';
 import { esqueletoDe } from './cascaras.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
 import { attachTooltip } from './tooltip.js';
@@ -48,7 +49,7 @@ export async function renderCompare(container, query = new URLSearchParams()) {
   };
 
   const abilityLinkHTML = slug => `
-    <a class="ability-link" href="#/abilities/${encodeURIComponent(slug)}" data-ability="${esc(slug)}">${abilityLabel(slug)}</a>
+    <a class="ability-link" href="${urlDe(`/abilities/${encodeURIComponent(slug)}`)}" data-ability="${esc(slug)}">${abilityLabel(slug)}</a>
   `;
 
   // A typo in a shared link must not blank the page: unknown ids drop out and
@@ -139,7 +140,7 @@ export async function renderCompare(container, query = new URLSearchParams()) {
                 <th></th>
                 ${picks.map(p => `
                   <th>
-                    <a href="#/pokedex/${p.id}">
+                    <a href="${urlDe(`/pokedex/${p.id}`)}">
                       <img class="cmp-sprite" src="${spriteUrl(spriteIdFor(p))}" alt="${esc(pokeName(p))}">
                       <div class="cmp-name">${pokeName(p)}</div>
                     </a>

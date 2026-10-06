@@ -1,6 +1,6 @@
 // ===== COUNTER PAGE =====
 //
-// The team comes in through the URL in the same format #/team uses, so a build
+// The team comes in through the URL in the same format /team uses, so a build
 // moves between the two pages as a link instead of being typed twice. The
 // maths lives in threats.js.
 import { counters } from './threats.js';
@@ -8,6 +8,7 @@ import { fetchPokemonList, fetchMeta } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
 import { defaultFormat } from './meta.js';
 import { skeletonHTML, replaceQuery, toolTabsHTML, wireToolTabs } from './ui.js';
+import { urlDe } from './rutas.js';
 import { esqueletoDe } from './cascaras.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
@@ -74,7 +75,7 @@ export async function renderCounter(container, query = new URLSearchParams()) {
         <p class="egg-note note-center">${t('counter.summary', { total: result.total, half: result.half, size: team.length })}</p>
         <div class="ct-rows">
           ${result.rows.map(r => `
-            <a class="ct-row" href="#/pokedex/${r.id}">
+            <a class="ct-row" href="${urlDe(`/pokedex/${r.id}`)}">
               <img src="${spriteUrl(spriteIdFor(r))}" alt="" loading="lazy">
               <span class="ct-name">${pokeName(r)}</span>
               ${r.faster >= result.half ? `<span class="ct-fast" title="${t('counter.faster')}">⚡</span>` : ''}
