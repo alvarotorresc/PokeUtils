@@ -8,7 +8,7 @@
 // para leer cuatro campos de cada registro; desde build-search.mjs es un solo
 // fichero de 80,5 KB gz, asi que ya no hace falta pintar a medias y repintar.
 import { searchAll } from './search-index.js';
-import { esc, renderError } from './ui.js';
+import { esc, renderError, urlDe } from './ui.js';
 import { fetchSearchIndex } from './api.js';
 import { getLang, t } from './i18n.js';
 
@@ -40,10 +40,18 @@ const tieneForma = e => e
   && typeof e.route === 'string' && e.route !== ''
   && typeof e.name === 'string' && e.name !== '';
 
+// La ruta se guarda logica ('/pokedex/25') y quien pinta el chip la pasa por
+// urlDe(). Hasta ahora se guardaba con el '#' delante, que era ya la URL: a esas
+// se les quita para que el historial de antes siga llevando al mismo sitio, y
+// para que apuntar() no las tome por otra entrada distinta de la misma ficha.
+const sinAlmohadilla = e => (e.route.startsWith('#/') ? { ...e, route: e.route.slice(1) } : e);
+
 export function leerHistorial() {
   try {
     const guardado = JSON.parse(localStorage.getItem(HISTORIAL) || '[]');
-    return Array.isArray(guardado) ? guardado.filter(tieneForma).slice(0, MAX_HISTORIAL) : [];
+    return Array.isArray(guardado)
+      ? guardado.filter(tieneForma).map(sinAlmohadilla).slice(0, MAX_HISTORIAL)
+      : [];
   } catch {
     return []; // un localStorage corrupto no puede tumbar la home
   }
@@ -193,7 +201,7 @@ export function attachGlobalSearch(input, alGuardar) {
       // vacia (linea de arriba), pero sin esta clase reservaba igual los
       // 108px fijos del resto -- ver la regla de flex-basis en style.css.
       return `${header}
-      <a class="gs-row${esHerramienta ? ' gs-row-tool' : ''}" href="${esc(r.route)}" data-i="${i}">
+      <a class="gs-row${esHerramienta ? ' gs-row-tool' : ''}" href="${esc(urlDe(r.route))}" data-i="${i}">
         <img class="gs-sprite" src="${esc(r.sprite)}" alt="" loading="lazy"
              onerror="this.style.visibility='hidden'">
         <span class="gs-kind">${kind}</span>

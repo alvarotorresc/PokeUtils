@@ -6,7 +6,7 @@
 import { EGG_GROUPS, membersOf, groupCounts, hasEggData } from './egg-groups.js';
 import { fetchPokemonList } from './api.js';
 import { pokemonCardHTML } from './pokedex.js';
-import { skeletonHTML, renderPagination, replaceQuery, toolTabsHTML } from './ui.js';
+import { skeletonHTML, renderPagination, replaceQuery, toolTabsHTML, urlDe } from './ui.js';
 import { PAGINA, esqueletoDe } from './cascaras.js';
 import { t } from './i18n.js';
 
@@ -23,7 +23,7 @@ function staleDataHTML() {
     <div class="no-results">
       <div class="icon">🥚</div>
       <p>${t('egg.stale')}</p>
-      <p style="margin-top:12px"><a href="#/">${t('common.backhome')}</a></p>
+      <p style="margin-top:12px"><a href="${urlDe('/')}">${t('common.backhome')}</a></p>
     </div>
   `;
 }
@@ -48,7 +48,7 @@ export async function renderEggIndex(container) {
   content.innerHTML = `
     <div class="egg-grid">
       ${groupCounts(all).map(({ group, count }) => `
-        <a class="egg-card" href="#/egg/${group}">
+        <a class="egg-card" href="${urlDe(`/egg/${group}`)}">
           <div class="label">${eggGroupName(group)}</div>
           <div class="count">${count}</div>
         </a>
@@ -64,7 +64,7 @@ export async function renderEggGroup(container, group, query = new URLSearchPara
       <div class="no-results">
         <div class="icon">❓</div>
         <p>${t('common.notfound')}</p>
-        <p style="margin-top:12px"><a href="#/egg">${t('egg.back')}</a></p>
+        <p style="margin-top:12px"><a href="${urlDe('/egg')}">${t('egg.back')}</a></p>
       </div>
     `;
     return;
@@ -74,7 +74,7 @@ export async function renderEggGroup(container, group, query = new URLSearchPara
 
   container.innerHTML = `
     ${toolTabsHTML('pokedex', 'egg')}
-    <p class="back-link"><a href="#/egg">${t('egg.back')}</a></p>
+    <p class="back-link"><a href="${urlDe('/egg')}">${t('egg.back')}</a></p>
     <div class="page-header">
       <h1>${eggGroupName(group)}</h1>
       <p id="eggCount"></p>

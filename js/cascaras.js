@@ -156,7 +156,7 @@ export function cascaraDeRuta(path, parts) {
   if (ESTATICAS[path]) return cabeceraSuelta(ESTATICAS[path]) + skeletonHTML({ shape: 'blocks', rows: 3 });
   if (CATEGORIES.some(x => x.id === parts[0] && !x.direct)) return cascaraHub(parts[0]);
 
-  const tool = TOOLS.find(x => x.route === `#${base}`);
+  const tool = TOOLS.find(x => x.route === base);
   const def = tool && PANTALLAS[tool.id];
   if (!tool || !def) return null;
 

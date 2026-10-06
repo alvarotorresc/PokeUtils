@@ -47,15 +47,15 @@ export function metaName(kind, slug, names, lang) {
   return entrada.en || entrada.es || prettySlug(slug);
 }
 
-// La ruta a la pagina que explica ese nombre, o null si no la hay. Los objetos
-// no tienen ficha propia: su lista se abre filtrada, que es lo que ya hace el
-// buscador global.
+// La ruta logica a la pagina que explica ese nombre, o null si no la hay; quien
+// la pinta la pasa por urlDe(). Los objetos no tienen ficha propia: su lista se
+// abre filtrada, que es lo que ya hace el buscador global.
 export function metaLink(kind, slug, names) {
   const entrada = names?.[kind]?.[slug];
   if (!entrada) return null;
-  if (kind === 'moves') return entrada.id ? `#/moves/${entrada.id}` : null;
-  if (kind === 'abilities') return `#/abilities/${encodeURIComponent(slug)}`;
-  if (kind === 'items') return `#/items?q=${encodeURIComponent(entrada.es || entrada.en)}`;
+  if (kind === 'moves') return entrada.id ? `/moves/${entrada.id}` : null;
+  if (kind === 'abilities') return `/abilities/${encodeURIComponent(slug)}`;
+  if (kind === 'items') return `/items?q=${encodeURIComponent(entrada.es || entrada.en)}`;
   return null;
 }
 

@@ -6,7 +6,7 @@
 import { TYPES, spriteUrl } from './data.js';
 import { fetchPokemonList } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { skeletonHTML, renderError, replaceQuery, hostDeRuta, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { skeletonHTML, renderError, replaceQuery, hostDeRuta, esc, toolTabsHTML, wireToolTabs, urlDe } from './ui.js';
 import { esqueletoDe } from './cascaras.js';
 import { t, typeName, pokeName } from './i18n.js';
 import { defensiveMatrix, threats, unresisted, stabTypes, offensiveCoverage } from './team-analysis.js';
@@ -101,7 +101,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
     // instead of being typed a second time. Hidden with an empty team, where it
     // would lead to a page with nothing to say.
     counterLink.hidden = state.ids.length === 0;
-    counterLink.innerHTML = `<a href="#/counter?ids=${state.ids.join(',')}">${t('counter.fromteam')}</a>`;
+    counterLink.innerHTML = `<a href="${urlDe(`/counter?ids=${state.ids.join(',')}`)}">${t('counter.fromteam')}</a>`;
   }
 
   function renderSlots() {

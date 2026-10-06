@@ -5,7 +5,7 @@
 import { speedSpread, speedTiers } from './speed-tiers.js';
 import { fetchPokemonList } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { skeletonHTML, replaceQuery, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { skeletonHTML, replaceQuery, esc, toolTabsHTML, wireToolTabs, urlDe } from './ui.js';
 import { esqueletoDe } from './cascaras.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
@@ -30,7 +30,7 @@ export async function renderSpeed(container, query = new URLSearchParams()) {
 
   function rowHTML(o) {
     return `
-      <a class="spd-row" href="#/speed?id=${o.id}">
+      <a class="spd-row" href="${urlDe(`/speed?id=${o.id}`)}">
         <img src="${spriteUrl(spriteIdFor(o))}" alt="" loading="lazy">
         <span class="spd-name">${pokeName(o)}</span>
         <span class="spd-value">${o.speed}</span>

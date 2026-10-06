@@ -49,24 +49,24 @@ console.log('\nUna categoria con una sola herramienta va directa\n');
 
 // Hoy Pokedex y Competitivo tienen una sola herramienta: la pestana lleva a
 // ella y no a un hub que no ensenaria nada. Cuando el sub-bloque 4 anada las
-// suyas, estas dos comprobaciones cambian a '#/pokedex' y '#/competitive'.
+// suyas, estas dos comprobaciones cambian a '/pokedex' y '/competitive'.
 // Pokedex ya tiene tres herramientas, asi que esto ya no sale de "le queda una
-// sola": es la marca `direct` puesta a mano. Va a la lista porque #/pokedex es
+// sola": es la marca `direct` puesta a mano. Va a la lista porque /pokedex es
 // la ruta compartida por ahi fuera y la que lleva los filtros en la URL.
-check('Pokedex sigue yendo a la lista, ahora por decision', targetOf('pokedex'), '#/pokedex');
+check('Pokedex sigue yendo a la lista, ahora por decision', targetOf('pokedex'), '/pokedex');
 check('Pokedex tiene tres herramientas', toolsIn('pokedex').map(t => t.id), ['pokedex', 'compare', 'egg']);
 check('toda herramienta con pestanas tiene etiqueta corta',
   toolsIn('pokedex').filter(t => !t.tab).map(t => t.id), []);
 // Competitivo tiene cinco herramientas: por la regla medida deja de ir directo a
 // Equipo y abre su hub, sin marcar nada a mano. La quinta, los sets del meta,
 // entro sin tocar la barra -- que es exactamente para lo que se hicieron los hubs.
-check('Competitivo abre su hub', targetOf('competitive'), '#/competitive');
+check('Competitivo abre su hub', targetOf('competitive'), '/competitive');
 check('Competitivo tiene cinco herramientas',
   toolsIn('competitive').map(t => t.id), ['team', 'counter', 'speed', 'survive', 'meta']);
 check('las categorias con hub no llevan etiqueta corta de pestana',
   toolsIn('competitive').filter(t => t.tab).map(t => t.id), []);
-check('Datos abre su hub', targetOf('data'), '#/data');
-check('Calculadora abre su pagina de pestanas', targetOf('calculator'), '#/calculator');
+check('Datos abre su hub', targetOf('data'), '/data');
+check('Calculadora abre su pagina de pestanas', targetOf('calculator'), '/calculator');
 
 console.log('\nTraducciones\n');
 

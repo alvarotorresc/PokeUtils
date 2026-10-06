@@ -6,7 +6,7 @@
 
 import { spriteUrl } from './data.js';
 import { fetchMoves, fetchLearnsets, fetchPokemonList } from './api.js';
-import { skeletonHTML, renderError, hostDeRuta, esc } from './ui.js';
+import { skeletonHTML, renderError, hostDeRuta, esc, urlDe } from './ui.js';
 import { esqueletoDeFicha } from './cascaras.js';
 import { t, typeName, categoryName, pokeName, getLang } from './i18n.js';
 import { priorityLabel, priorityHint, statChangeLabel } from './move-effects.js';
@@ -27,7 +27,7 @@ function learnerHTML(entry, pokemon, method) {
     ? (entry.level === 0 ? t('learn.start') : `${t('learn.col.level')} ${entry.level}`)
     : '';
   return `
-    <a class="learner" href="#/pokedex/${entry.id}">
+    <a class="learner" href="${urlDe(`/pokedex/${entry.id}`)}">
       <img src="${spriteUrl(entry.id)}" alt="${esc(name)}" loading="lazy"
            onerror="this.style.visibility='hidden'">
       <span class="learner-name">${name}</span>
@@ -117,7 +117,7 @@ export async function renderMoveDetail(container, id) {
       <div class="no-results">
         <div class="icon">❓</div>
         <p>${t('moves.notfound')}</p>
-        <p style="margin-top:12px"><a href="#/moves">${t('moves.back')}</a></p>
+        <p style="margin-top:12px"><a href="${urlDe('/moves')}">${t('moves.back')}</a></p>
       </div>
     `;
     return;

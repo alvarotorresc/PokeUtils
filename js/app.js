@@ -9,7 +9,7 @@ import { getLevel, setLevel, onLevelChange } from './level.js';
 import { t, getLang, setLang, onLangChange } from './i18n.js';
 import { purgeLegacyCache } from './api.js';
 import { leer, escribir } from './storage.js';
-import { renderError, parseHash, wireSpriteFade } from './ui.js';
+import { renderError, parseHash, wireSpriteFade, urlDe } from './ui.js';
 import { cascaraDeRuta } from './cascaras.js';
 import { attachGlobalSearch } from './global-search.js';
 
@@ -74,7 +74,7 @@ function updateNavLabels() {
     if (!category) return;
     link.textContent = t(category.label);
     // A category with a single tool links straight to it; targetOf decides.
-    link.setAttribute('href', targetOf(category.id));
+    link.setAttribute('href', urlDe(targetOf(category.id)));
   });
   // Reescribir texto y aria-label es idempotente: no hace falta volver a
   // montar attachGlobalSearch, que solo se llama una vez mas abajo.
@@ -378,7 +378,7 @@ async function route() {
       <div class="no-results">
         <div class="icon">❓</div>
         <p>${t('common.notfound')}</p>
-        <p style="margin-top:12px"><a href="#/">${t('common.backhome')}</a></p>
+        <p style="margin-top:12px"><a href="${urlDe('/')}">${t('common.backhome')}</a></p>
       </div>
     `;
     return;

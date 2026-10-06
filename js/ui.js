@@ -8,6 +8,16 @@ import { t } from './i18n.js';
 import { ErrorKind } from './api.js';
 import { toolsIn } from './tools.js';
 
+// ===== PROVISIONAL: la URL de una ruta logica =====
+//
+// Las plantillas ya piden su enlace a urlDe() con la ruta logica
+// ('/moves/9', '/calculator?tab=damage'), pero el router todavia lee el hash,
+// asi que de momento la URL es la misma ruta con un '#' delante. La de verdad,
+// la publica en espanol, esta en js/rutas.js y entra en cuanto el router lea
+// pathname. Quien la llame tiene que pasar la query ya escapada: aqui no se
+// toca, y asi el href sale igual que antes letra a letra.
+export const urlDe = logica => `#${logica}`;
+
 // ===== HELPER: un nodo propio para lo que pinta la ruta =====
 //
 // El token de app.js cancela la navegacion si tarda el import, pero no si tarda
@@ -77,7 +87,7 @@ export function renderError(container, err, onRetry, { backHome = true } = {}) {
   if (backHome) {
     const back = document.createElement('p');
     back.style.marginTop = '12px';
-    back.innerHTML = `<a href="#/">${t('common.backhome')}</a>`;
+    back.innerHTML = `<a href="${urlDe('/')}">${t('common.backhome')}</a>`;
     box.appendChild(back);
   }
 
@@ -201,7 +211,7 @@ export function toolTabsHTML(categoryId, activeToolId) {
   const tools = toolsIn(categoryId);
   const scrolls = tools.length > 3;
   const tabs = tools.map(tool => `
-    <a href="${tool.route}" class="tab${tool.id === activeToolId ? ' active' : ''}">${t(tool.tab || tool.label)}</a>
+    <a href="${urlDe(tool.route)}" class="tab${tool.id === activeToolId ? ' active' : ''}">${t(tool.tab || tool.label)}</a>
   `).join('');
   if (!scrolls) return `<div class="tabs tool-tabs">${tabs}</div>`;
   return `

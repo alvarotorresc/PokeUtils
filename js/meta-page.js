@@ -7,7 +7,7 @@ import { fetchMeta, fetchPokemonList, fetchMetaNames } from './api.js';
 import { FORMATS, MONTH, defaultFormat, metaSetOf, metaName, metaLink, usageRanking } from './meta.js';
 import { spriteUrl, STAT_KEYS, NATURES } from './data.js';
 import { spriteIdFor } from './forms.js';
-import { skeletonHTML, replaceQuery, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { skeletonHTML, replaceQuery, esc, toolTabsHTML, wireToolTabs, urlDe } from './ui.js';
 import { esqueletoDe } from './cascaras.js';
 import { getLevel } from './level.js';
 import { t, pokeName, typeName, statName, getLang, natureName } from './i18n.js';
@@ -45,8 +45,8 @@ export async function renderMeta(container, query = new URLSearchParams()) {
   // tiene. Mismo criterio que en la ficha.
   const nombre = (kind, slug) => {
     const texto = metaName(kind, slug, names, getLang());
-    const href = metaLink(kind, slug, names);
-    return href ? `<a class="meta-name-link" href="${href}">${texto}</a>` : texto;
+    const ruta = metaLink(kind, slug, names);
+    return ruta ? `<a class="meta-name-link" href="${urlDe(ruta)}">${texto}</a>` : texto;
   };
 
   // "nothing" es no teracristalizar, no un tipo: pasado por typeName salia como

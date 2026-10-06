@@ -154,9 +154,9 @@ check('un slug que no esta se formatea', metaName('items', 'no-existe', names, '
 
 console.log('\nLos enlaces apuntan a donde toca\n');
 
-check('el movimiento a su ficha', metaLink('moves', 'sludge-bomb', names), '#/moves/188');
-check('la habilidad a la suya', metaLink('abilities', 'chlorophyll', names), '#/abilities/chlorophyll');
-check('el objeto a su lista filtrada', metaLink('items', 'life-orb', names), '#/items?q=Vidasfera');
+check('el movimiento a su ficha', metaLink('moves', 'sludge-bomb', names), '/moves/188');
+check('la habilidad a la suya', metaLink('abilities', 'chlorophyll', names), '/abilities/chlorophyll');
+check('el objeto a su lista filtrada', metaLink('items', 'life-orb', names), '/items?q=Vidasfera');
 check('y lo que no esta no lleva enlace', metaLink('items', 'no-existe', names), null);
 
 console.log('\nLas 194 habilidades del meta resuelven de verdad\n');
@@ -169,11 +169,11 @@ console.log('\nLas 194 habilidades del meta resuelven de verdad\n');
 const slugsHabilidad = Object.keys(names.abilities);
 
 const formaEquivocada = slugsHabilidad.filter(slug =>
-  metaLink('abilities', slug, names) !== `#/abilities/${encodeURIComponent(slug)}`);
+  metaLink('abilities', slug, names) !== `/abilities/${encodeURIComponent(slug)}`);
 
 const noResuelven = slugsHabilidad.filter(slug => {
   const link = metaLink('abilities', slug, names);
-  const targetName = decodeURIComponent(link.slice('#/abilities/'.length));
+  const targetName = decodeURIComponent(link.slice('/abilities/'.length));
   return abilities.findIndex(a => matchesTarget(a, targetName)) === -1;
 });
 

@@ -1,7 +1,7 @@
 // ===== MOVES PAGE =====
 import { TYPES } from './data.js';
 import { fetchMoves } from './api.js';
-import { skeletonHTML, renderPagination, replaceQuery, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { skeletonHTML, renderPagination, replaceQuery, esc, toolTabsHTML, wireToolTabs, urlDe } from './ui.js';
 import { PAGINA, esqueletoDe } from './cascaras.js';
 import { t, typeName, categoryName, pokeName, getLang, statName } from './i18n.js';
 import { norm } from './normalize.js';
@@ -237,7 +237,7 @@ export function renderMoves(container, query = new URLSearchParams()) {
     // listener hoisted out of render() would go on pointing at a dead one.
     tbody.addEventListener('click', (e) => {
       const row = e.target.closest('tr[data-move-id]');
-      if (row) location.hash = `#/moves/${row.dataset.moveId}`;
+      if (row) location.hash = urlDe(`/moves/${row.dataset.moveId}`);
     });
 
     page.forEach(m => {
