@@ -152,6 +152,19 @@ function sustituir(html, patron, por, que) {
   return html.replace(patron, por);
 }
 
+// Los comentarios HTML de index.html son documentacion para quien lo edita
+// (casi el 40% del fichero) y viajaban en cada una de las 2.469 paginas. Fuera,
+// con la linea que ocupaban. Ningun <script> ni <style> lleva "<!--" dentro
+// (medido); y si alguno lo llevara, el numero de <script> cambiaria y esto
+// lanza en vez de dejar un script partido.
+export function sinComentarios(html) {
+  const scripts = h => (h.match(/<script\b/g) || []).length;
+  const sin = html.replace(/[ \t]*<!--[\s\S]*?-->[ \t]*\n?/g, '');
+  const antes = scripts(html.replace(/<!--[\s\S]*?-->/g, ''));
+  if (scripts(sin) !== antes) throw new Error('sinComentarios: quitar los comentarios ha cambiado los <script> de la pagina');
+  return sin;
+}
+
 // El index.html ya construido (con los nombres hasheados) -> el de esta ruta.
 export function paginaHtml(esqueleto, ruta, origen = ORIGEN) {
   if (ruta.publica === '/') throw new Error('La portada no se regenera: es el index.html tal cual');
@@ -179,7 +192,7 @@ export function paginaHtml(esqueleto, ruta, origen = ORIGEN) {
   html = sustituir(html, /^<html lang="es">/m, () => '<html lang="es" class="no-hero">', 'el <html>');
   html = sustituir(html, /<main class="main" id="app" data-reservando>[\s\S]*?<\/main>/,
     () => '<main class="main" id="app" data-reservando></main>', 'el <main> con el hero');
-  return html;
+  return sinComentarios(html);
 }
 
 // dist/_redirects: el id numerico de antes (/pokedex/25) a su nombre, con 301.

@@ -28,7 +28,7 @@ import { join, dirname, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import {
-  rutasPublicas, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas,
+  rutasPublicas, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas, sinComentarios,
 } from './pages.mjs';
 import {
   TABLA_ESTATICA, GRUPOS_HUEVO_ES, SECCIONES_DE_FICHA, urlDe, logicaDe,
@@ -229,6 +229,11 @@ async function generarPaginas(esqueleto) {
   // (e) Ninguna ruta relativa: cada pagina se sirve en su propia URL.
   for (const { f, html } of paginas) comprobarRutasAbsolutas(html, `dist/${f}`);
 
+  // (e2) Ningun comentario HTML: son documentacion del fuente, no del sitio.
+  for (const { f, html } of paginas) {
+    if (html.includes('<!--')) throw new Error(`dist/${f} conserva un comentario HTML (<!--): pasa por sinComentarios`);
+  }
+
   // (f) noindex en todas salvo la portada.
   for (const { f, html } of paginas) {
     const robots = unico(html, /<meta name="robots" content="([^"]*)"/g);
@@ -323,6 +328,9 @@ async function main() {
     }
   }
   if (/'\/?js\/i18n-'/.test(html)) throw new Error('El modulepreload de index.html sigue armando la ruta a mano');
+  // Sin comentarios HTML, como las paginas generadas (ver sinComentarios). Los
+  // asertos de arriba ya han mirado el fuente; ninguno depende de un comentario.
+  html = sinComentarios(html);
   await writeFile(join(OUT, 'index.html'), html);
 
   // ===== lo que se copia tal cual =====

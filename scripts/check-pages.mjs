@@ -90,10 +90,10 @@ check('description y og:description, la misma',
   [por('/pokedex/pikachu').descripcion, por('/pokedex/pikachu').descripcion]);
 check('un robots noindex', uno(pika, /<meta name="robots" content="([^"]*)"/g), ['noindex']);
 check('no-hero ya en el <html>', /<html lang="es" class="no-hero">/.test(pika), true);
-// Sin los comentarios, que nombran el <h1> del hero para explicarlo.
-const pikaSinComentarios = pika.replace(/<!--[\s\S]*?-->/g, '');
-check('sin el hero de la portada', [pikaSinComentarios.includes('data-shell'), pikaSinComentarios.includes('<h1>')],
-  [false, false]);
+check('sin el hero de la portada', [pika.includes('data-shell'), pika.includes('<h1>')], [false, false]);
+check('sin comentarios HTML', pika.includes('<!--'), false);
+check('y con los mismos <script> que el esqueleto',
+  (pika.match(/<script\b/g) || []).length, (esqueleto.replace(/<!--[\s\S]*?-->/g, '').match(/<script\b/g) || []).length);
 check('el <main> sigue ahi, vacio', /<main class="main" id="app" data-reservando><\/main>/.test(pika), true);
 
 const conComillas = paginaHtml(esqueleto, { ...por('/pokedex/pikachu'), titulo: 'A & "B" <c>', descripcion: 'd"e' });
