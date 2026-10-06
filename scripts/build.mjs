@@ -149,6 +149,48 @@ async function comprobarBackHome404(html) {
   }
 }
 
+// La version del indice va en la URL que pide js/rutas.js, ?v=<hash del
+// contenido>, y se pone ANTES de que esbuild calcule el hash del trozo: con un
+// replace sobre la salida ya nombrada, un cambio solo de datos publicaria
+// contenido nuevo bajo el nombre de siempre, que /js/* sirve como immutable un
+// ano. En el fuente no se toca nada: sin build se pide rutas.json a secas, y
+// serve.mjs sirve sin cache. Query y no rutas-<hash>.json: no hace falta otro
+// bloque de cabeceras, y serve.mjs y el build siguen leyendo data/rutas.json.
+function versionarIndice(version) {
+  return {
+    name: 'version-del-indice',
+    setup(b) {
+      b.onLoad({ filter: /[\\/]js[\\/]rutas\.js$/ }, async ({ path }) => {
+        const fuente = await readFile(path, 'utf8');
+        const buscado = "'../data/rutas.json'";
+        const veces = fuente.split(buscado).length - 1;
+        if (veces !== 1) throw new Error(`js/rutas.js tiene ${veces} veces ${buscado} y tiene que ser 1`);
+        return { contents: fuente.replace(buscado, `'../data/rutas.json?v=${version}'`), loader: 'js' };
+      });
+    },
+  };
+}
+
+// El indice de rutas no lleva hash en el nombre y /data/* se sirve con una hora
+// de max-age y una semana de stale-while-revalidate (netlify.toml): sin version
+// en la URL, un JS recien desplegado podia leer el rutas.json de antes, y
+// fijarIndice lanza con un indice al que le falta un campo (movesEn), que es
+// toda la navegacion caida. La URL que pide el JS tiene que ser la del
+// contenido que se publica, y se mira en dist/, ya escrito: un replace que deje
+// de casar en el plugin no da ningun error por si solo.
+async function comprobarVersionIndice(salidas) {
+  const esperada = `../data/rutas.json?v=${hash8(await readFile(join(OUT, 'data', 'rutas.json')))}`;
+  const conIndice = [];
+  for (const p of salidas.filter(s => s.endsWith('.js'))) {
+    const codigo = await readFile(join(OUT, p), 'utf8');
+    for (const [url] of codigo.matchAll(/\.\.\/data\/rutas\.json[^"'`\s]*/g)) conIndice.push({ p, url });
+  }
+  if (conIndice.length !== 1 || conIndice[0].url !== esperada) {
+    throw new Error(`El JS de dist/ pide ${JSON.stringify(conIndice.map(c => `${c.p}: ${c.url}`))} `
+      + `y el indice publicado es ${esperada} -- mira versionarIndice en scripts/build.mjs`);
+  }
+}
+
 // Todos los .html de una carpeta, con su ruta relativa ('pokedex/pikachu.html').
 async function htmlDe(dir, base = dir) {
   const salida = [];
@@ -274,6 +316,7 @@ async function main() {
     entryNames: '[name]-[hash]',
     chunkNames: '[name]-[hash]',
     metafile: true,
+    plugins: [versionarIndice(hash8(await readFile(join(ROOT, 'data', 'rutas.json'))))],
     // Los sprites y los datos se piden por URL en tiempo de ejecucion, no se
     // importan: nada que resolver aqui.
     logLevel: 'warning',
@@ -337,6 +380,7 @@ async function main() {
   for (const carpeta of COPIAR) {
     await cp(join(ROOT, carpeta), join(OUT, carpeta), { recursive: true });
   }
+  await comprobarVersionIndice(salidas);
 
   // manifest.webmanifest, robots.txt, sitemap.xml y 404.html son ficheros
   // sueltos en la raiz, no una carpeta: el bucle de arriba no los toca. Como

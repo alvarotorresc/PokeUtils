@@ -387,7 +387,10 @@ export function fijarIndice(json) {
 }
 
 // La misma ruta relativa al modulo que usa api.js: en el build este fichero
-// acaba en dist/js/<trozo>.js y data/ sigue estando un nivel por encima.
+// acaba en dist/js/<trozo>.js y data/ sigue estando un nivel por encima. El
+// build le anade ?v=<hash del contenido> (versionarIndice en scripts/build.mjs):
+// el fichero no lleva hash en el nombre y /data/* se cachea, asi que sin version
+// un JS nuevo podia leer un indice viejo. Este literal es el que busca alli.
 const URL_INDICE = new URL('../data/rutas.json', import.meta.url);
 
 // Memoizado como los datasets de api.js. Si falla, se olvida la promesa para
