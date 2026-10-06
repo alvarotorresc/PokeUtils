@@ -59,8 +59,16 @@ export function getLang() {
 // Ya no guarda nada: lo llama route() cada vez que la URL esta en otro idioma
 // (tambien con atras y adelante), y navegar no es elegir idioma. Lo que se
 // guarda es el clic en el conmutador, y lo guarda app.js.
+//
+// Mientras baja el diccionario la URL puede cambiar otra vez: se pulsa ES en
+// /en/x y se vuelve atras antes de que llegue el espanol. El route() de la
+// vuelta ve el idioma aun en ingles y no llama a setLang, asi que al llegar el
+// diccionario este setLang ya no manda: si su idioma no es el de la URL de
+// ahora, no se aplica, y el idioma activo sigue siendo el de la direccion. En
+// node no hay location (check-evolution lo llama a pelo) y se aplica siempre.
 export async function setLang(lang) {
   await cargar(lang);
+  if (globalThis.location && idiomaDe(globalThis.location.pathname) !== lang) return;
   fijarIdioma(lang);
   currentLang = lang;
   onChangeCallbacks.forEach(cb => cb(lang));

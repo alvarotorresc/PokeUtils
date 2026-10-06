@@ -427,7 +427,10 @@ function idiomaAlArrancar(pathname, guardado) {
     const { getLang, t, setLang } = await import('./js/i18n.js');
     const { urlDe } = await import('./js/rutas.js');
     const antes = [getLang(), t('nav.home'), urlDe('/moves')];
-    await setLang(getLang() === 'es' ? 'en' : 'es');
+    // Como route(): la URL ya es la del otro idioma cuando se pide el cambio.
+    const otro = getLang() === 'es' ? 'en' : 'es';
+    location.pathname = otro === 'en' ? '/en/moves' : '/movimientos';
+    await setLang(otro);
     console.log(JSON.stringify({ antes, despues: [getLang(), urlDe('/moves')], guardado: almacen.pkutils_lang }));
   `;
   return JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', codigo], { cwd: RAIZ, encoding: 'utf8' }));
@@ -439,6 +442,29 @@ check('/ arranca en espanol aunque el guardado diga en', idiomaAlArrancar('/', '
   antes: ['es', 'INICIO', '/movimientos'], despues: ['en', '/en/moves'], guardado: 'en',
 });
 check('/english no es ingles', idiomaAlArrancar('/english', null).antes[0], 'es');
+
+// La carrera: desde /en/x se pulsa ES con el diccionario espanol sin bajar, y
+// antes de que llegue se vuelve atras a /en/x. El route() de la vuelta ve el
+// idioma en ingles y no llama a setLang; cuando el diccionario llega, el setLang
+// del clic no puede aplicar un idioma que ya no es el de la URL. Y al reves.
+function carrera(desde, hacia) {
+  const codigo = `
+    globalThis.location = { pathname: ${JSON.stringify(desde)} };
+    const { getLang, t, setLang, onLangChange } = await import('./js/i18n.js');
+    const { urlDe } = await import('./js/rutas.js');
+    let avisos = 0;
+    onLangChange(() => { avisos++; });
+    location.pathname = ${JSON.stringify(hacia)};
+    const pendiente = setLang(getLang() === 'es' ? 'en' : 'es');
+    location.pathname = ${JSON.stringify(desde)};
+    await pendiente;
+    console.log(JSON.stringify([getLang(), t('nav.home'), urlDe('/moves'), avisos]));
+  `;
+  return JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', codigo], { cwd: RAIZ, encoding: 'utf8' }));
+}
+check('un diccionario espanol que llega tarde no pisa una URL en ingles',
+  carrera('/en/moves', '/movimientos'), ['en', 'HOME', '/en/moves', 0]);
+check('ni uno ingles una URL en espanol', carrera('/movimientos', '/en/moves'), ['es', 'INICIO', '/movimientos', 0]);
 
 // Cables trampa de texto sobre app.js: el cambio de idioma ya no repinta por
 // su cuenta (lo hace route(), que es quien lo dispara: si lo repintara el
