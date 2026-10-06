@@ -1,7 +1,7 @@
 // ===== TYPE CHART PAGE =====
-import { TYPES, CHART } from './data.js';
-import { t, typeName } from './i18n.js';
-import { toolTabsHTML, wireToolTabs } from './ui.js';
+import { TYPES, CHART, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from './data.js';
+import { t, typeName, getLang } from './i18n.js';
+import { toolTabsHTML, wireToolTabs, titularFicha } from './ui.js';
 
 let selectedTypes = [];
 let activeTab = 'defense';
@@ -193,4 +193,29 @@ export function renderTypeChart(container) {
   };
 
   update();
+}
+
+// ===== LA PAGINA DE UN TIPO =====
+//
+// /tipos/fuego. De momento solo la cabecera con el nombre completo (typeName
+// abrevia: "Electr."), el mismo que pone el titulo del build; las secciones y
+// el texto llegan con contenido.js. Sin subtitulo: el de la tabla ("Selecciona
+// hasta 2 tipos") aqui seria mentira. Sin el selector: la pagina habla de un
+// tipo, y un selector que lo cambiara contradiria su h1.
+export function renderTipo(container, tipo) {
+  // logicaDe ya descarta un slug que no es un tipo, pero la ruta logica tambien
+  // llega a mano (navegar('/types/x')): sin esto se pintaria "undefined".
+  if (!TYPES.includes(tipo)) {
+    container.innerHTML = `<div class="no-results"><div class="icon">❓</div><p>${t('common.notfound')}</p></div>`;
+    return;
+  }
+  const nombre = (getLang() === 'en' ? TYPE_NAMES_FULL_EN : TYPE_NAMES_FULL)[tipo];
+  container.innerHTML = `
+    ${toolTabsHTML('data', 'types')}
+    <div class="page-header">
+      <h1>${nombre}</h1>
+    </div>
+  `;
+  wireToolTabs(container);
+  titularFicha(`/types/${tipo}`, nombre);
 }

@@ -308,6 +308,9 @@ function destinoDe(path, parts, query) {
   let destino;
   if (esRutaHome(path)) {
     destino = [() => import('./home.js'), m => m.renderHome(app)];
+  } else if (parts[0] === 'types' && parts[1]) {
+    // Una pagina por tipo, en el mismo modulo que la tabla: comparten CHART.
+    destino = [() => import('./type-chart.js'), m => m.renderTipo(app, parts[1])];
   } else if (path === '/types') {
     destino = [() => import('./type-chart.js'), m => m.renderTypeChart(app)];
   } else if (path === '/team') {

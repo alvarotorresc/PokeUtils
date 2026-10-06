@@ -32,7 +32,7 @@ import {
   literalesEspanol, ORIGEN, SCRIPTS_DE_LA_PORTADA,
 } from './pages.mjs';
 import {
-  TABLA_ESTATICA, GRUPOS_HUEVO_ES, SECCIONES_DE_FICHA, IDIOMAS, urlDe, logicaDe, idiomaDe,
+  TABLA_ESTATICA, GRUPOS_HUEVO_ES, TIPOS_ES, SECCIONES_DE_FICHA, IDIOMAS, urlDe, logicaDe, idiomaDe,
 } from '../js/rutas.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -255,7 +255,8 @@ async function generarPaginas(esqueleto) {
 
   // (c) Cada pagina a la que la app sabe ir tiene su fichero, en los dos
   // idiomas: todos los ids de Pokemon (las formas sin URL caen en su especie),
-  // movimientos, habilidades y grupos, y la tabla fija con las tres pestanas.
+  // movimientos, habilidades, grupos y tipos, y la tabla fija con las tres
+  // pestanas.
   // Sin query ni ancla, que es lo que pide el navegador al servidor.
   const enDisco = new Set(ficheros);
   const alcanzables = [
@@ -264,6 +265,7 @@ async function generarPaginas(esqueleto) {
     ...moves.map(m => `/moves/${m.id}`),
     ...abilities.map(a => `/abilities/${a.name}`),
     ...Object.keys(GRUPOS_HUEVO_ES).map(g => `/egg/${g}`),
+    ...Object.keys(TIPOS_ES).map(tipo => `/types/${tipo}`),
   ];
   for (const logica of alcanzables) {
     for (const l of IDIOMAS) {

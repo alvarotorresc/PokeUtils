@@ -43,11 +43,11 @@ const por = publica => rutas.find(r => r.publica === publica);
 const de = idioma => rutas.filter(r => r.idioma === idioma);
 
 // 22 fijas (portada, hubs, herramientas con las 3 pestanas, FAQ y legales) +
-// 1.025 especies + 157 formas propias + 15 grupos + 937 movimientos + 313
-// habilidades, en cada idioma. A mano a proposito: si cambia, que sea porque
-// alguien lo decide.
-check('4.938 paginas: 2.469 por idioma', [rutas.length, de('es').length, de('en').length], [4938, 2469, 2469]);
-check('y por idioma lo mismo contado desde los datos', paginasEsperadas({ pokemon, moves, abilities }), 2469);
+// 1.025 especies + 157 formas propias + 15 grupos + 18 tipos + 937 movimientos
+// + 313 habilidades, en cada idioma. A mano a proposito: si cambia, que sea
+// porque alguien lo decide.
+check('4.974 paginas: 2.487 por idioma', [rutas.length, de('es').length, de('en').length], [4974, 2487, 2487]);
+check('y por idioma lo mismo contado desde los datos', paginasEsperadas({ pokemon, moves, abilities }), 2487);
 check('especies + formas propias, en cada idioma',
   [rutas.filter(r => r.publica.startsWith('/pokedex/')).length, rutas.filter(r => r.publica.startsWith('/en/pokedex/')).length],
   Array(2).fill(pokemon.filter(p => !isForm(p)).length + pokemon.filter(tieneUrlPropia).length));
@@ -62,7 +62,8 @@ check('ninguna descripcion de mas de 160', rutas.filter(r => r.descripcion?.leng
 // D2: la portada en ingles es indexable, con su hreflang reciproco con /.
 check('noindex en todas salvo las dos portadas',
   rutas.filter(r => r.noindex === ['/', '/en'].includes(r.publica)).map(r => r.publica), []);
-check('sin /tipos/<tipo> (decision 1)', rutas.filter(r => /^(\/en)?\/(tipos|types)\//.test(r.publica)).length, 0);
+check('los 18 tipos en cada idioma',
+  ['es', 'en'].map(l => de(l).filter(r => /^(\/en)?\/(tipos|types)\//.test(r.publica)).length), [18, 18]);
 
 const alternas = { es: '/', en: '/en' };
 check('la portada', por('/'), {
@@ -95,6 +96,9 @@ check('un movimiento', [por('/movimientos/puno-trueno')?.titulo, por('/movimient
 check('su descripcion es la del juego', por('/movimientos/puno-trueno')?.descripcion.startsWith('Puño Trueno: '), true);
 check('una habilidad', por('/habilidades/hedor')?.titulo, 'Habilidad Hedor · PokeUtils');
 check('un grupo', por('/grupos-huevo/agua-1')?.titulo, 'Grupo huevo Agua 1 · PokeUtils');
+check('un tipo, con su nombre completo y noindex hasta que tenga contenido',
+  [por('/tipos/electrico')?.logica, por('/tipos/electrico')?.titulo, por('/tipos/electrico')?.noindex],
+  ['/types/electric', 'Tipo Eléctrico · PokeUtils', true]);
 check('una pestana de la calculadora', [por('/calculadora-de-dano')?.logica, por('/calculadora-de-dano')?.titulo],
   ['/calculator?tab=damage', 'Calculadora de daño · PokeUtils']);
 
@@ -117,6 +121,8 @@ check('una habilidad', [por('/en/abilities/stench')?.titulo, por('/en/abilities/
   ['Stench ability · PokeUtils', true]);
 check('un grupo', [por('/en/egg-groups/water-1')?.titulo, por('/en/egg-groups/water-1')?.descripcion],
   ['Water 1 egg group · PokeUtils', 'The Pokémon in the Water 1 egg group and who they can breed with.']);
+check('un tipo', [por('/en/types/electric')?.titulo, por('/en/types/electric')?.alternas.es],
+  ['Electric type · PokeUtils', '/tipos/electrico']);
 check('una pestana de la calculadora', [por('/en/damage-calculator')?.logica, por('/en/damage-calculator')?.titulo],
   ['/calculator?tab=damage', 'Damage calculator · PokeUtils']);
 check('la descripcion de una fija sale del diccionario ingles', por('/en/faq')?.descripcion, 'What PokeUtils is, and where each piece of data comes from.');
@@ -256,7 +262,7 @@ const prefijos = [...new Set(rutas.filter(r => r.publica !== '/').map(r => {
   const [, seccion, hijo] = r.publica.split('/');
   return hijo ? `/${seccion}/*` : r.publica;
 }))];
-check('27 bloques: 21 paginas fijas, 4 secciones con fichas, /en y /en/*', prefijos.length, 27);
+check('28 bloques: 21 paginas fijas, 5 secciones con fichas, /en y /en/*', prefijos.length, 28);
 check('cada una tiene el suyo en netlify.toml', prefijos.filter(f => !bloques.has(f)), []);
 check('y todos revalidan',
   prefijos.filter(f => !/Cache-Control = "public, max-age=0, must-revalidate"/.test(bloques.get(f) ?? '')), []);

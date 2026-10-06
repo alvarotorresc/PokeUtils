@@ -168,7 +168,7 @@
 #
 # Desde que hay rutas reales, build.mjs (scripts/pages.mjs) escribe una pagina
 # por ruta y por idioma: dist/pokedex.html, dist/pokedex/pikachu.html,
-# dist/en.html, dist/en/pokedex/pikachu.html... 4.937 mas la portada. Son el
+# dist/en.html, dist/en/pokedex/pikachu.html... 4.973 mas la portada. Son el
 # mismo index.html con otra cabecera, asi que llevan los mismos nombres
 # hasheados y la misma regla: revalidar siempre.
 #
@@ -298,6 +298,13 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
+# Las 18 de tipo (/tipos/fuego). /tipos a secas es la tabla y lleva el suyo
+# arriba: el splat no casa con ella.
+[[headers]]
+  for = "/tipos/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
 [[headers]]
   for = "/movimientos/*"
   [headers.values]
@@ -308,7 +315,7 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# Las paginas en ingles. /en/* cubre las 2.468 de debajo de /en, fijas y
+# Las paginas en ingles. /en/* cubre las 2.486 de debajo de /en, fijas y
 # fichas, pero no /en a secas (servida desde en.html), que lleva el suyo como
 # /pokedex. Que /en, /en/ y la carpeta en/ convivan con en.html sin que gane la
 # carpeta se mide en el deploy preview.

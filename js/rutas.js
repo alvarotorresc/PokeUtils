@@ -178,16 +178,50 @@ const GRUPOS_HUEVO = { es: GRUPOS_HUEVO_ES, en: GRUPOS_HUEVO_EN };
 const deSlugAGrupo = tabla => Object.fromEntries(Object.entries(tabla).map(([g, s]) => [s, g]));
 const GRUPO_DE_SLUG = { es: deSlugAGrupo(GRUPOS_HUEVO_ES), en: deSlugAGrupo(GRUPOS_HUEVO_EN) };
 
+// ===== Tipos =====
+//
+// Una pagina por tipo (/tipos/fuego, /en/types/fire), con la misma regla que los
+// grupos huevo: a mano, y check-rutas.mjs falla si un slug deja de ser el de su
+// nombre completo en data.js (TYPE_NAMES_FULL, no el abreviado de typeName,
+// que dice "Electr."). Sin importar data.js, que arrastraria la tabla de tipos
+// y las naturalezas al trozo de arranque para usar dieciocho palabras.
+export const TIPOS_ES = {
+  normal: 'normal',
+  fire: 'fuego',
+  water: 'agua',
+  electric: 'electrico',
+  grass: 'planta',
+  ice: 'hielo',
+  fighting: 'lucha',
+  poison: 'veneno',
+  ground: 'tierra',
+  flying: 'volador',
+  psychic: 'psiquico',
+  bug: 'bicho',
+  rock: 'roca',
+  ghost: 'fantasma',
+  dragon: 'dragon',
+  dark: 'siniestro',
+  steel: 'acero',
+  fairy: 'hada',
+};
+// En ingles la clave ya es el nombre que se busca.
+export const TIPOS_EN = Object.fromEntries(Object.keys(TIPOS_ES).map(tipo => [tipo, tipo]));
+const TIPOS = { es: TIPOS_ES, en: TIPOS_EN };
+const TIPO_DE_SLUG = { es: deSlugAGrupo(TIPOS_ES), en: deSlugAGrupo(TIPOS_EN) };
+
 // Las secciones logicas con ficha (/<seccion>/<id o nombre>): las que tienen una
 // rama `parts[0] === '<seccion>' && parts[1]` en destinoDe() de app.js, cosa
 // que vigila check-rutas.mjs. build.mjs la usa para comprobar que cada pagina
 // generada lleva a algo que el router sabe pintar, sin importar app.js.
-export const SECCIONES_DE_FICHA = ['pokedex', 'moves', 'abilities', 'egg'];
+export const SECCIONES_DE_FICHA = ['pokedex', 'moves', 'abilities', 'egg', 'types'];
 
-// Como se llama cada seccion con ficha en la direccion de cada idioma.
+// Como se llama cada seccion con ficha en la direccion de cada idioma. La de
+// tipos se llama como la tabla (/tipos y /tipos/fuego): logicaDe mira antes la
+// tabla fija, asi que /tipos sigue siendo la tabla y no una ficha sin slug.
 const SECCIONES = {
-  es: { pokedex: 'pokedex', moves: 'movimientos', abilities: 'habilidades', egg: 'grupos-huevo' },
-  en: { pokedex: 'pokedex', moves: 'moves', abilities: 'abilities', egg: 'egg-groups' },
+  es: { pokedex: 'pokedex', moves: 'movimientos', abilities: 'habilidades', egg: 'grupos-huevo', types: 'tipos' },
+  en: { pokedex: 'pokedex', moves: 'moves', abilities: 'abilities', egg: 'egg-groups', types: 'types' },
 };
 const SECCION_LOGICA = {
   es: Object.fromEntries(Object.entries(SECCIONES.es).map(([l, p]) => [p, l])),
@@ -491,6 +525,9 @@ export function urlDe(logica, idiomaDestino = idioma) {
       if (seccion === 'egg') {
         const grupo = decodificar(id);
         if (Object.hasOwn(GRUPOS_HUEVO[l], grupo)) ficha = GRUPOS_HUEVO[l][grupo];
+      } else if (seccion === 'types') {
+        // Por tabla, como los grupos: un tipo no necesita el indice.
+        if (Object.hasOwn(TIPOS[l], id)) ficha = TIPOS[l][id];
       } else if (['pokedex', 'moves', 'abilities'].includes(seccion)) {
         exigirIndice(texto);
         if (seccion === 'pokedex') {
@@ -562,6 +599,9 @@ export function logicaDe(pathname, search = '', hash = '') {
 
   if (seccion === 'egg') {
     return Object.hasOwn(GRUPO_DE_SLUG[l], slug) ? resultado(`/egg/${GRUPO_DE_SLUG[l][slug]}`) : null;
+  }
+  if (seccion === 'types') {
+    return Object.hasOwn(TIPO_DE_SLUG[l], slug) ? resultado(`/types/${TIPO_DE_SLUG[l][slug]}`) : null;
   }
   if (seccion === null) return null;
   exigirIndice(ruta);
@@ -725,17 +765,18 @@ const TITULOS_POR_IDIOMA = { es: TITULOS, en: TITULOS_EN };
 //     de estos sufijos; con el nombre del otro idioma no casa y no se pone nada.
 //     En ingles el sufijo sale del name (breakneck-blitz--physical), que es lo
 //     que lleva la URL.
-//   - Los grupos huevo y las habilidades dicen lo que son: Ditto es Pokemon y
-//     grupo huevo, y Competitivo es habilidad y el hub de herramientas. En
-//     espanol delante ("Habilidad Levitacion") y en ingles detras ("Levitate
-//     ability"), y siempre despues de la variante: "As One (Glastrier) ability".
+//   - Los grupos huevo, las habilidades y los tipos dicen lo que son: Ditto es
+//     Pokemon y grupo huevo, Competitivo es habilidad y el hub de herramientas,
+//     y Bicho es tipo y grupo huevo. En espanol delante ("Habilidad
+//     Levitacion") y en ingles detras ("Levitate ability"), y siempre despues
+//     de la variante: "As One (Glastrier) ability".
 const SUFIJOS_TITULO = {
   es: { fisico: 'físico', especial: 'especial', glastrier: 'Glastrier', spectrier: 'Spectrier' },
   en: { physical: 'physical', special: 'special', glastrier: 'Glastrier', spectrier: 'Spectrier' },
 };
 const TIPO_DE_FICHA = {
-  es: { egg: 'Grupo huevo', abilities: 'Habilidad' },
-  en: { egg: 'egg group', abilities: 'ability' },
+  es: { egg: 'Grupo huevo', abilities: 'Habilidad', types: 'Tipo' },
+  en: { egg: 'egg group', abilities: 'ability', types: 'type' },
 };
 
 // Dos fichas que en ingles se llaman igual en el dataset: las dos megas de

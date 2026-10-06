@@ -18,8 +18,9 @@
 // check-pages.mjs las comprueba contra el fuente antes de que haya build.
 
 import {
-  TABLA_ESTATICA, GRUPOS_HUEVO_ES, IDIOMAS, fijarIndice, urlDe, tituloDe, logicaDe,
+  TABLA_ESTATICA, GRUPOS_HUEVO_ES, TIPOS_ES, IDIOMAS, fijarIndice, urlDe, tituloDe, logicaDe,
 } from '../js/rutas.js';
+import { TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from '../js/data.js';
 import { isForm, tieneUrlPropia } from '../js/forms.js';
 import { TOOLS } from '../js/tools.js';
 // pokeName es la misma regla con la que las fichas ponen su nombre, asi que el
@@ -30,6 +31,8 @@ import es from '../js/i18n-es.js';
 import en from '../js/i18n-en.js';
 
 const DICCIONARIOS = { es, en };
+// El nombre completo de cada tipo, el mismo que pinta renderTipo en su h1.
+const NOMBRES_TIPO = { es: TYPE_NAMES_FULL, en: TYPE_NAMES_FULL_EN };
 
 export const ORIGEN = 'https://pokeutils.alvarotc.com';
 
@@ -58,12 +61,14 @@ const DESCRIPCIONES = {
   es: {
     especie: n => `${n} en la Pokédex: estadísticas base, tipos, debilidades, habilidades, evoluciones y movimientos que aprende.`,
     grupo: n => `Los Pokémon del grupo huevo ${n} y con quién pueden criar.`,
+    tipo: n => `El tipo ${n} en Pokémon: contra qué es débil, qué resiste y qué Pokémon lo tienen.`,
     movimiento: (n, m) => `${n}: ${m.descriptionEs || m.descriptionEn || 'tipo, categoría, potencia, precisión y PP.'}`,
     habilidad: (n, a) => `${n}: ${a.descriptionEs || a.descriptionEn || 'qué hace esta habilidad.'}`,
   },
   en: {
     especie: n => `${n} in the Pokédex: base stats, types, weaknesses, abilities, evolutions and the moves it learns.`,
     grupo: n => `The Pokémon in the ${n} egg group and who they can breed with.`,
+    tipo: n => `The ${n} type in Pokémon: what it is weak to, what it resists and which Pokémon have it.`,
     movimiento: (n, m) => `${n}: ${m.descriptionEn || 'type, category, power, accuracy and PP.'}`,
     habilidad: (n, a) => `${n}: ${a.descriptionEn || 'what this ability does.'}`,
   },
@@ -120,6 +125,10 @@ function fichas(l, { pokemon, moves, abilities }) {
     const nombre = DICCIONARIOS[l][`egg.group.${g}`];
     return ficha(`/egg/${g}`, nombre, d.grupo(nombre));
   });
+  const tipos = Object.keys(TIPOS_ES).map(tipo => {
+    const nombre = NOMBRES_TIPO[l][tipo];
+    return ficha(`/types/${tipo}`, nombre, d.tipo(nombre));
+  });
   const fichasMoves = [...moves].sort((a, b) => a.id - b.id).map(m => {
     const nombre = pokeName(m, l);
     return ficha(`/moves/${m.id}`, nombre, d.movimiento(nombre, m));
@@ -128,12 +137,12 @@ function fichas(l, { pokemon, moves, abilities }) {
     const nombre = pokeName(a, l);
     return ficha(`/abilities/${a.name}`, nombre, d.habilidad(nombre, a));
   });
-  return [...fichasPokemon, ...grupos, ...fichasMoves, ...fichasAbilities];
+  return [...fichasPokemon, ...grupos, ...tipos, ...fichasMoves, ...fichasAbilities];
 }
 
 // rutasPublicas({indice, pokemon, moves, abilities}) ->
 //   [{idioma, logica, publica, alternas: {es, en}, titulo, descripcion, noindex}]
-// Primero las 2.469 espanolas y luego las 2.469 inglesas, en el mismo orden.
+// Primero las 2.487 espanolas y luego las 2.487 inglesas, en el mismo orden.
 // `alternas` es la direccion de la misma pagina en cada idioma (la suya
 // incluida): de ahi salen los hreflang y el href del conmutador.
 // indice es data/rutas.json: se fija aqui para que urlDe sepa los slugs.
@@ -162,7 +171,8 @@ export function rutasPublicas({ indice, pokemon, moves, abilities }) {
 export function paginasEsperadas({ pokemon, moves, abilities }) {
   const fijas = new Set(Object.values(TABLA_ESTATICA)).size;
   const fichas = pokemon.filter(p => !isForm(p) || tieneUrlPropia(p)).length;
-  return fijas + fichas + Object.keys(GRUPOS_HUEVO_ES).length + moves.length + abilities.length;
+  return fijas + fichas + Object.keys(GRUPOS_HUEVO_ES).length + Object.keys(TIPOS_ES).length
+    + moves.length + abilities.length;
 }
 
 // '/pokedex' -> 'pokedex.html', '/pokedex/pikachu' -> 'pokedex/pikachu.html'.
