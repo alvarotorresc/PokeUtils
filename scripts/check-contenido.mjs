@@ -1,0 +1,186 @@
+// Comprueba js/contenido.js en node, en los dos idiomas: la lista de paginas
+// indexables, la miga de pan (D8 del plan de la PR 3), la cabecera, las
+// pestanas, la rejilla y el bloque de texto. Y que toolTabsHTML de ui.js es la
+// misma tira, porque si el cliente y el build pintaran cada uno la suya, la
+// pagina cambiaria al hidratar sin que lo viera nadie.
+// Run with: node scripts/check-contenido.mjs
+import { readFileSync } from 'node:fs';
+
+// ui.js lee `location` al importar i18n.js; como en check-router-url, uno de
+// mentira antes de importar nada.
+globalThis.location = { pathname: '/', search: '', hash: '', href: 'http://localhost/', origin: 'http://localhost' };
+
+const { fijarIndice, urlDe, logicaDe, idiomaDe } = await import('../js/rutas.js');
+fijarIndice(JSON.parse(readFileSync(new URL('../data/rutas.json', import.meta.url), 'utf8')));
+const {
+  INDEXABLES, nombreDe, breadcrumbItems, breadcrumbHTML, cabeceraHTML, pestanasHTML,
+  rejillaHerramientasHTML, idsDeCategoria, introHTML,
+} = await import('../js/contenido.js');
+const { TITULOS_SEO } = await import('../js/titulos.js');
+const { TOOLS, CATEGORIES, toolsIn } = await import('../js/tools.js');
+const { toolTabsHTML } = await import('../js/ui.js');
+const { setLang } = await import('../js/i18n.js');
+const es = (await import('../js/i18n-es.js')).default;
+const en = (await import('../js/i18n-en.js')).default;
+
+const CTX = { es: { l: 'es', dic: es }, en: { l: 'en', dic: en } };
+
+let failed = 0;
+function check(label, actual, expected) {
+  const ok = JSON.stringify(actual) === JSON.stringify(expected);
+  if (!ok) failed++;
+  console.log(`${ok ? '  ok  ' : '  FAIL'} ${label}: ${JSON.stringify(actual)}${ok ? '' : ` (expected ${JSON.stringify(expected)})`}`);
+}
+const lanza = fn => {
+  try {
+    fn();
+    return false;
+  } catch {
+    return true;
+  }
+};
+const cuenta = (html, re) => (html.match(re) || []).length;
+
+console.log('\nLas paginas indexables\n');
+
+check('53 por idioma, sin repetir', [INDEXABLES.length, new Set(INDEXABLES).size], [53, 53]);
+check('las mismas que titulos.js, en los dos idiomas',
+  ['es', 'en'].map(l => [...Object.keys(TITULOS_SEO[l])].sort()), Array(2).fill([...INDEXABLES].sort()));
+check('los dos hubs y las 16 herramientas estan dentro',
+  [...CATEGORIES.filter(c => !c.direct).map(c => c.route), ...TOOLS.map(x => x.route)].filter(r => !INDEXABLES.includes(r)), []);
+
+console.log('\nNombres\n');
+
+check('cada pagina tiene nombre en los dos idiomas',
+  ['es', 'en'].flatMap(l => INDEXABLES.filter(k => !nombreDe(k, CTX[l])).map(k => `${l} ${k}`)), []);
+// Las etiquetas del nav van en mayusculas (TIPOS); en una miga quedarian mal.
+check('ninguno en mayusculas', ['es', 'en'].flatMap(l => INDEXABLES.map(k => nombreDe(k, CTX[l])))
+  .filter(n => n.length > 3 && n === n.toUpperCase()), []);
+check('el nombre de un tipo es el completo, no el abreviado',
+  [nombreDe('/types/electric', CTX.es), nombreDe('/types/electric', CTX.en)], ['Eléctrico', 'Electric']);
+check('ninguno en espanol en ingles (Pokédex es la excepcion)',
+  INDEXABLES.map(k => nombreDe(k, CTX.en)).filter(n => n !== 'Pokédex' && /[áéíóúñ¿¡]/i.test(n)), []);
+check('una pagina que no se indexa lanza', [lanza(() => nombreDe('/privacy', CTX.es)), lanza(() => nombreDe('/pokedex/25', CTX.es))],
+  [true, true]);
+
+console.log('\nMiga de pan (D8)\n');
+
+const miga = (logica, l = 'es') => breadcrumbItems(logica, CTX[l]).map(i => `${i.nombre} ${i.url}`);
+check('la portada', miga('/'), ['Inicio /']);
+check('un hub', miga('/data'), ['Inicio /', 'Datos /datos']);
+check('una herramienta de un hub', miga('/team'), ['Inicio /', 'Competitivo /competitivo', 'Equipo /equipo']);
+check('un tipo cuelga de la tabla', miga('/types/fire'),
+  ['Inicio /', 'Datos /datos', 'Tabla de tipos /tipos', 'Fuego /tipos/fuego']);
+check('Pokedex no tiene hub: la Pokedex es su padre', [miga('/pokedex'), miga('/compare')],
+  [['Inicio /', 'Pokédex /pokedex'], ['Inicio /', 'Pokédex /pokedex', 'Comparador /comparador']]);
+check('un grupo huevo', miga('/egg/ground'),
+  ['Inicio /', 'Pokédex /pokedex', 'Grupos huevo /grupos-huevo', 'Campo /grupos-huevo/campo']);
+check('las calculadoras cuelgan de la portada', [miga('/calculator?tab=damage'), miga('/calculator')],
+  [['Inicio /', 'Calculadora de daño /calculadora-de-dano'], ['Inicio /', 'Calculadora de IVs y EVs /calculadora-ivs-evs']]);
+check('la FAQ', miga('/faq'), ['Inicio /', 'Preguntas frecuentes /faq']);
+check('en ingles', miga('/types/fire', 'en'), ['Home /en', 'Data /en/data', 'Type chart /en/types', 'Fire /en/types/fire']);
+check('en ingles, un grupo', miga('/egg/no-eggs', 'en'),
+  ['Home /en', 'Pokédex /en/pokedex', 'Egg groups /en/egg-groups', 'No Eggs /en/egg-groups/no-eggs']);
+
+const malas = [];
+for (const l of ['es', 'en']) {
+  for (const logica of INDEXABLES) {
+    const items = breadcrumbItems(logica, CTX[l]);
+    const ultima = items[items.length - 1];
+    const vuelta = items.map(i => logicaDe(...i.url.split('?')));
+    if (items[0].logica !== '/' || ultima.logica !== logica || items.length > 4) malas.push(`${l} ${logica}: forma`);
+    if (items.some(i => idiomaDe(i.url) !== l)) malas.push(`${l} ${logica}: idioma`);
+    if (vuelta.some((v, i) => !v || v.path + (v.query.get('tab') ? `?tab=${v.query.get('tab')}` : '') !== items[i].logica)) {
+      malas.push(`${l} ${logica}: url`);
+    }
+  }
+}
+check('las 106: de la portada a la pagina, en su idioma, como mucho 4 pasos y cada url vuelve a su ruta', malas, []);
+
+const htmlFuego = breadcrumbHTML('/types/fire', CTX.es);
+check('el HTML: la portada no lleva', breadcrumbHTML('/', CTX.es), '');
+check('el HTML: un enlace por paso menos el ultimo, que es la pagina', [
+  cuenta(htmlFuego, /<li>/g), cuenta(htmlFuego, /<a /g), cuenta(htmlFuego, /aria-current="page"/g),
+  htmlFuego.includes('<li aria-current="page">Fuego</li>'), htmlFuego.startsWith('<nav class="migas" aria-label="Miga de pan"><ol>'),
+], [3, 3, 1, true, true]);
+check('y en ingles', breadcrumbHTML('/types/fire', CTX.en).includes('aria-label="Breadcrumb"'), true);
+
+console.log('\nCabecera\n');
+
+check('una herramienta, con su titulo y su subtitulo del diccionario', cabeceraHTML('/moves', CTX.es),
+  `<div class="page-header"><h1>${es['moves.title']}</h1><p>${es['moves.subtitle']}</p></div>`);
+check('las pestanas de la calculadora llevan las suyas, como en calculator.js',
+  ['/calculator', '/calculator?tab=damage', '/calculator?tab=catch'].map(k => cabeceraHTML(k, CTX.en).match(/<h1>([^<]*)/)[1]),
+  [en['calc.title'], en['dmg.title'], en['capture.title']]);
+check('un hub y la FAQ', [cabeceraHTML('/competitive', CTX.es), cabeceraHTML('/faq', CTX.en)], [
+  `<div class="page-header"><h1>${es['hub.competitive.title']}</h1><p>${es['hub.competitive.subtitle']}</p></div>`,
+  `<div class="page-header"><h1>${en['faq.title']}</h1><p>${en['faq.subtitle']}</p></div>`]);
+check('un tipo y un grupo: el nombre, sin subtitulo', [cabeceraHTML('/types/dark', CTX.es), cabeceraHTML('/egg/ground', CTX.en)],
+  ['<div class="page-header"><h1>Siniestro</h1></div>', '<div class="page-header"><h1>Field</h1></div>']);
+check('los textos mandan sobre el diccionario, y lo que se pase sobre los textos', [
+  cabeceraHTML('/moves', { ...CTX.es, textos: { '/moves': { h1: 'Movimientos Pokémon', subtitulo: 'Los 937' } } }),
+  cabeceraHTML('/moves', { ...CTX.es, textos: { '/moves': { h1: 'A' } } }, { h1: 'B' }),
+], ['<div class="page-header"><h1>Movimientos Pokémon</h1><p>Los 937</p></div>',
+  `<div class="page-header"><h1>B</h1><p>${es['moves.subtitle']}</p></div>`]);
+check('se escapa', cabeceraHTML('/moves', CTX.es, { h1: 'a <b> & "c"', subtitulo: '' }),
+  '<div class="page-header"><h1>a &lt;b&gt; &amp; &quot;c&quot;</h1></div>');
+check('la portada no tiene (su h1 es el del hero)', lanza(() => cabeceraHTML('/', CTX.es)), true);
+check('las 104 que no son portada salen con un h1', ['es', 'en'].flatMap(l => INDEXABLES.filter(k => k !== '/')
+  .filter(k => cuenta(cabeceraHTML(k, CTX[l]), /<h1>/g) !== 1).map(k => `${l} ${k}`)), []);
+
+console.log('\nPestanas\n');
+
+const malasPestanas = [];
+for (const l of ['es', 'en']) {
+  for (const tool of TOOLS) {
+    const html = pestanasHTML(tool.category, tool.id, CTX[l]);
+    const hermanas = toolsIn(tool.category);
+    const enlaces = [...html.matchAll(/<a href="([^"]*)" class="tab( active)?">([^<]*)<\/a>/g)];
+    const esperados = hermanas.map(x => [urlDe(x.route, l), x.id === tool.id, CTX[l].dic[x.tab || x.label]]);
+    if (JSON.stringify(enlaces.map(m => [m[1], Boolean(m[2]), m[3]])) !== JSON.stringify(esperados)) malasPestanas.push(`${l} ${tool.id}`);
+    // Con mas de tres no caben a 360 px: van en el envoltorio con fade (ids y
+    // clases de los que dependen el CSS y wireToolTabs).
+    if (html.includes('id="toolTabsWrap"') !== (hermanas.length > 3)) malasPestanas.push(`${l} ${tool.id}: envoltorio`);
+  }
+}
+check('una por hermana, en su idioma, con la activa marcada y el envoltorio solo con mas de tres', malasPestanas, []);
+
+// toolTabsHTML es la misma tira con el idioma activo: en espanol y, tras
+// cambiar la direccion a /en y el idioma, en ingles.
+const distintasEs = TOOLS.filter(x => toolTabsHTML(x.category, x.id) !== pestanasHTML(x.category, x.id, CTX.es)).map(x => x.id);
+globalThis.location.pathname = '/en';
+await setLang('en');
+const distintasEn = TOOLS.filter(x => toolTabsHTML(x.category, x.id) !== pestanasHTML(x.category, x.id, CTX.en)).map(x => x.id);
+check('toolTabsHTML de ui.js es pestanasHTML con el idioma activo', [distintasEs, distintasEn], [[], []]);
+
+console.log('\nRejilla de herramientas\n');
+
+const rejilla = rejillaHerramientasHTML(CTX.en);
+check('sin ids, las 16, con sus enlaces en ingles',
+  [...rejilla.matchAll(/<a href="([^"]*)" class="home-card">/g)].map(m => m[1]), TOOLS.map(x => urlDe(x.route, 'en')));
+check('cada tarjeta: icono, nombre y descripcion', cuenta(rejilla, /<img class="icon" src="\/sprites\/pokemon\/\d+\.png" alt="" loading="lazy"><div class="label">[^<]+<\/div><div class="desc">[^<]+<\/div><\/a>/g), 16);
+check('las de una categoria, en el orden de tools.js', idsDeCategoria('data'), ['moves', 'abilities', 'items', 'natures', 'types']);
+check('con ids, solo esas', cuenta(rejillaHerramientasHTML(CTX.es, idsDeCategoria('competitive')), /class="home-card"/g), 5);
+check('un id que no existe lanza', lanza(() => rejillaHerramientasHTML(CTX.es, ['nada'])), true);
+
+console.log('\nBloque de texto\n');
+
+const textos = {
+  '/types': { h2: 'Cómo leer la tabla', intro: ['Uno & dos.', 'Tres <cuatro>.'], relacionadas: ['/team', '/types/fire'] },
+  '/moves': { h2: 'Sin relacionadas', intro: ['A.', 'B.'] },
+};
+check('sin textos no pinta nada', [introHTML('/types', CTX.es), introHTML('/data', { ...CTX.es, textos })], ['', '']);
+check('h2, los dos parrafos escapados y las relacionadas con su nombre', introHTML('/types', { ...CTX.es, textos }),
+  '<section class="intro"><h2>Cómo leer la tabla</h2><p>Uno &amp; dos.</p><p>Tres &lt;cuatro&gt;.</p>'
+  + '<h3>Relacionadas</h3><ul class="relacionadas"><li><a href="/equipo">Equipo</a></li><li><a href="/tipos/fuego">Fuego</a></li></ul></section>');
+check('en ingles, enlaces y nombres en ingles', introHTML('/types', { ...CTX.en, textos }).match(/<li>.*<\/ul>/)[0],
+  '<li><a href="/en/team">Team</a></li><li><a href="/en/types/fire">Fire</a></li></ul>');
+check('sin relacionadas, sin su h3', introHTML('/moves', { ...CTX.es, textos }),
+  '<section class="intro"><h2>Sin relacionadas</h2><p>A.</p><p>B.</p></section>');
+check('sin h2, o con una relacionada que no se indexa, lanza', [
+  lanza(() => introHTML('/moves', { ...CTX.es, textos: { '/moves': { intro: ['A.'] } } })),
+  lanza(() => introHTML('/moves', { ...CTX.es, textos: { '/moves': { h2: 'x', intro: ['A.'], relacionadas: ['/privacy'] } } })),
+], [true, true]);
+
+console.log(failed ? `\n${failed} FAILED\n` : '\nAll checks passed\n');
+process.exit(failed ? 1 : 0);

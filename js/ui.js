@@ -4,10 +4,14 @@
 // importaban app.js solo por estos cuatro helpers, asi que app.js volvia a
 // arrastrar las otras diecisiete. Con el ciclo cerrado, cargar una ruta bajo
 // siempre las cuarenta y seis. Aqui no dependen de nadie mas que de i18n.
-import { t } from './i18n.js';
+import { t, getLang, diccionarioActivo } from './i18n.js';
 import { ErrorKind } from './api.js';
-import { toolsIn } from './tools.js';
 import { urlDe, logicaDe, tituloDe } from './rutas.js';
+import { pestanasHTML } from './contenido.js';
+
+// El contexto que piden las piezas de contenido.js (que no usan t() para poder
+// servir tambien al build): el idioma activo y su diccionario.
+export const contextoActivo = () => ({ l: getLang(), dic: diccionarioActivo() });
 
 // ===== HELPER: un nodo propio para lo que pinta la ruta =====
 //
@@ -216,11 +220,9 @@ export const esc = s => String(s ?? '').replace(/[&<>"']/g,
 
 // ===== HELPER: las pestanas de una herramienta =====
 //
-// Vivian en hub.js, que ademas pinta el hub de una categoria y por eso importa
-// data.js entero. Estas dos no necesitan nada de eso --toolsIn, i18n y el
-// wireScrollFade de aqui al lado-- y en cambio si las necesita el router, que
-// pinta la cascara de la ruta antes de bajar su modulo. Dejarlas en hub.js
-// habria metido data.js en el arranque para usar veinte lineas.
+// Vivian en hub.js, y las necesita el router, que pinta la cascara de la ruta
+// antes de bajar su modulo. El marcado esta ahora en contenido.js, que trae
+// data.js; no pesa de mas en el arranque porque search-index.js ya lo traia.
 
 // The strip every tool page shows above its title, so a sibling tool is one
 // click away instead of a trip back through the hub. At every width it is the
@@ -231,18 +233,11 @@ export const esc = s => String(s ?? '').replace(/[&<>"']/g,
 // `.tool-tabs-scroll` under its max-width: 639px query). Above that width the
 // wrapper and its fade sit there unused: nothing overflows, so JS never sets
 // `.more-left`/`.more-right` and the pseudo-elements stay at opacity 0.
+//
+// El marcado vive en contenido.js (pestanasHTML), que es el que usara tambien
+// el build: esta es la misma tira con el idioma activo.
 export function toolTabsHTML(categoryId, activeToolId) {
-  const tools = toolsIn(categoryId);
-  const scrolls = tools.length > 3;
-  const tabs = tools.map(tool => `
-    <a href="${urlDe(tool.route)}" class="tab${tool.id === activeToolId ? ' active' : ''}">${t(tool.tab || tool.label)}</a>
-  `).join('');
-  if (!scrolls) return `<div class="tabs tool-tabs">${tabs}</div>`;
-  return `
-    <div class="form-tabs-wrap" id="toolTabsWrap">
-      <div class="tabs tool-tabs tool-tabs-scroll" id="toolTabsStrip">${tabs}</div>
-    </div>
-  `;
+  return pestanasHTML(categoryId, activeToolId, contextoActivo());
 }
 
 // Called once after a tool page paints its strip. Finds nothing -- and does

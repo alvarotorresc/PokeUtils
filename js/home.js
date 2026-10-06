@@ -4,10 +4,11 @@
 // the app reads the same from the top as from the menu. The cards come from
 // tools.js: this file decides how they look, not which ones there are.
 import { spriteUrl } from './data.js';
-import { CATEGORIES, TOOLS, toolsIn } from './tools.js';
+import { CATEGORIES, TOOLS } from './tools.js';
 import { t, getLang } from './i18n.js';
-import { esc } from './ui.js';
+import { esc, contextoActivo } from './ui.js';
 import { urlDe } from './rutas.js';
+import { rejillaHerramientasHTML, idsDeCategoria } from './contenido.js';
 import { attachGlobalSearch, leerHistorial } from './global-search.js';
 
 // The background is made of real sprites from the app, not an illustration: 100
@@ -119,20 +120,15 @@ const wantedHTML = () => WANTED.map((id, i) => {
 }).join('');
 
 export function renderHome(container) {
+  // Cada rejilla es la de contenido.js, la misma de los hubs. El rotulo va justo
+  // delante, sin envoltorio: el CSS casa `.home-group + .home-grid`.
+  const ctx = contextoActivo();
   const groups = CATEGORIES.map(category => {
-    const tools = toolsIn(category.id);
-    if (!tools.length) return '';
+    const ids = idsDeCategoria(category.id);
+    if (!ids.length) return '';
     return `
-      ${groupHeaderHTML(t(`hub.${category.id}.title`), tools.length)}
-      <div class="home-grid">
-        ${tools.map(tool => `
-          <a href="${urlDe(tool.route)}" class="home-card">
-            <img class="icon" src="${spriteUrl(tool.icon)}" alt="" loading="lazy">
-            <div class="label">${t(tool.label)}</div>
-            <div class="desc">${t(tool.desc)}</div>
-          </a>
-        `).join('')}
-      </div>
+      ${groupHeaderHTML(t(`hub.${category.id}.title`), ids.length)}
+      ${rejillaHerramientasHTML(ctx, ids)}
     `;
   }).join('');
 

@@ -557,6 +557,10 @@ export default {
 
     'faq.title': 'FAQ',
     'faq.subtitle': 'What PokeUtils is, and where each piece of data comes from',
+    // Las piezas de contenido.js: miga de pan y bloque de texto de las paginas indexables.
+    'contenido.inicio': 'Home',
+    'contenido.migas': 'Breadcrumb',
+    'contenido.relacionadas': 'Related',
     'faq.what.q': 'What is PokeUtils?',
     'faq.what.a': 'An unofficial, free Pokemon guide, in Spanish and English: the complete Pokedex —1025 species and 326 forms—, data for moves, abilities, items, natures and types, plus a handful of competitive tools and calculators for building a team.',
     'faq.data.q': 'Where does the data come from?',
