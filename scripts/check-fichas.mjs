@@ -22,6 +22,12 @@
 //   muestras               Pikachu, Ditto y Eevee salen palabra por palabra como
 //                          las aprobo Alvaro (con D12 y la frase de Ditto en
 //                          ingles del §8).
+//   casos                  las ramas de los ajustes de tono: la coma de "y
+//                          resiste" tras una lista de debilidades, la linea
+//                          evolutiva sin hermanos y los empates de tres o mas.
+//   undiscovered           ningun "No Eggs" en ingles: el grupo se llama
+//                          Undiscovered (el slug no-eggs no cambia). Con
+//                          mayusculas: "they lay no eggs" vale.
 //
 // Las reglas de lenguaje (espanol-en-en, plural, articulo, cero) miran solo lo
 // derivado (p2, p3 y la description): p1 es el texto de PokeAPI, se publica tal
@@ -101,10 +107,47 @@ const MUESTRAS = {
   },
 };
 
+// ===== Los casos de los ajustes de tono =====
+//
+// Una frase por rama, en los dos idiomas: [parrafo, frase que debe contener].
+//   - Pheromosa: debilidades en lista y x2 + x4, asi que "y resiste" va tras coma.
+//   - Perrserker, Runerigus y Beautifly: "junto a" nombra solo antecesores y
+//     descendientes, no a Persian, Cofagrigus ni a la rama de Cascoon.
+//   - Pecharunt: cinco empatadas en la mas baja; Flutter Mane, tres y tres.
+const CASOS = {
+  795: {
+    es: [2, 'Recibe el doble de daño de Fuego, Psíquico y Hada, el cuádruple de Volador, y resiste cinco tipos.'],
+    en: [2, 'It takes double damage from Fire, Psychic and Fairy, quadruple damage from Flying, and resists five types.'],
+  },
+  863: {
+    es: [3, 'Es la segunda fase de su línea evolutiva, junto a Meowth.'],
+    en: [3, 'It is the second stage of its evolution line, along with Meowth.'],
+  },
+  867: {
+    es: [3, 'Es la segunda fase de su línea evolutiva, junto a Yamask.'],
+    en: [3, 'It is the second stage of its evolution line, along with Yamask.'],
+  },
+  267: {
+    es: [3, 'Es la tercera fase de su línea evolutiva, junto a Wurmple y Silcoon.'],
+    en: [3, 'It is the third stage of its evolution line, along with Wurmple and Silcoon.'],
+  },
+  1025: {
+    es: [2, 'Sus estadísticas base suman 600: la más alta es Defensa (160) y cinco de sus estadísticas valen 88.'],
+    en: [2, 'Its base stats add up to 600: the highest is Defense (160) and five of its base stats are 88.'],
+  },
+  987: {
+    es: [2, 'Sus estadísticas base suman 570: tres de sus estadísticas valen 135 y las otras tres, 55.'],
+    en: [2, 'Its base stats add up to 570: three of its base stats are 135 and the other three are 55.'],
+  },
+};
+
+// Los ficheros en ingles que nombran grupos huevo, leidos como texto.
+const FUENTES_EN = ['js/i18n-en.js', 'js/textos-en.js', 'js/titulos.js'];
+
 // ===== Las reglas =====
 
 const REGLAS = ['lanza', 'descripcion-pokedex', 'palabras-total', 'palabras-derivado', 'familias', 'solo-cambia-el-nombre',
-  'descripcion', 'espanol-en-en', 'plural', 'articulo', 'cero', 'como-la-ficha', 'muestras'];
+  'descripcion', 'espanol-en-en', 'plural', 'articulo', 'cero', 'como-la-ficha', 'muestras', 'casos', 'undiscovered'];
 const fallos = new Map(REGLAS.map(regla => [regla, []]));
 const falla = (regla, que) => fallos.get(regla).push(que);
 const largo = texto => [...texto].length;
@@ -163,6 +206,7 @@ for (const l of IDIOMAS) {
       }
       if (PLURAL.test(texto)) falla('plural', `${donde}: "${texto.match(PLURAL)[0]}"`);
       if (CERO.test(texto)) falla('cero', `${donde}: "${texto.match(CERO)[0]}"`);
+      if (l === 'en' && /No Eggs/.test(texto)) falla('undiscovered', `${donde}: "${texto}"`);
     }
 
     // Lo que pinta la ficha: la pestana abierta del panel de movimientos y el
@@ -182,6 +226,12 @@ for (const l of IDIOMAS) {
       });
     }
 
+    if (CASOS[id]) {
+      const [n, frase] = CASOS[id][l];
+      const parrafo = [p1, p2, p3][n - 1];
+      if (!parrafo.includes(frase)) falla('casos', `${donde} p${n}:\n      sale   "${parrafo}"\n      espera "${frase}"`);
+    }
+
     if (l === 'es') {
       if (h.sinHuevos) ramas.desconocido++;
       else if (h.esDitto) ramas.ditto++;
@@ -198,6 +248,12 @@ for (const l of IDIOMAS) {
   }
   const repetidas = [...descripciones.values()].filter(n => n > 1);
   cifras[l].descripcionesRepetidas = `${repetidas.length} plantillas compartidas por ${repetidas.reduce((s, n) => s + n, 0)} especies`;
+}
+
+for (const ruta of FUENTES_EN) {
+  readFileSync(new URL(`../${ruta}`, import.meta.url), 'utf8').split('\n').forEach((linea, i) => {
+    if (/No Eggs/.test(linea)) falla('undiscovered', `${ruta}:${i + 1}`);
+  });
 }
 
 // ===== Modo muestra =====

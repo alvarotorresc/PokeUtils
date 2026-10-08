@@ -136,6 +136,6 @@ export const TITULOS_SEO = {
     '/egg/indeterminate': 'Amorphous egg group: its Pokémon and partners · PokeUtils',
     '/egg/dragon': 'Dragon egg group: Pokémon and breeding partners · PokeUtils',
     '/egg/ditto': 'Ditto egg group: breeds with almost any Pokémon · PokeUtils',
-    '/egg/no-eggs': 'No Eggs group: the Pokémon that cannot breed · PokeUtils',
+    '/egg/no-eggs': 'Undiscovered egg group: Pokémon unable to breed · PokeUtils',
   },
 };

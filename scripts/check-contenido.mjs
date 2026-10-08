@@ -82,7 +82,7 @@ check('las calculadoras cuelgan de la portada', [miga('/calculator?tab=damage'),
 check('la FAQ', miga('/faq'), ['Inicio /', 'Preguntas frecuentes /faq']);
 check('en ingles', miga('/types/fire', 'en'), ['Home /en', 'Data /en/data', 'Type chart /en/types', 'Fire /en/types/fire']);
 check('en ingles, un grupo', miga('/egg/no-eggs', 'en'),
-  ['Home /en', 'Pokédex /en/pokedex', 'Egg groups /en/egg-groups', 'No Eggs /en/egg-groups/no-eggs']);
+  ['Home /en', 'Pokédex /en/pokedex', 'Egg groups /en/egg-groups', 'Undiscovered /en/egg-groups/no-eggs']);
 
 const malas = [];
 for (const l of ['es', 'en']) {
@@ -234,7 +234,7 @@ check('Ditto: el unico de su grupo, cria con todos menos Desconocido y otro Ditt
 ], [true, true]);
 check('Desconocido no cria con nadie, ni con Ditto', [
   derivadoGrupo('no-eggs', DATOS.es).startsWith('Las 151 especies del grupo Desconocido, de las 1025 de la Pokédex, no pueden criar con ninguna otra, ni siquiera con Ditto'),
-  derivadoGrupo('no-eggs', DATOS.en).startsWith('The 151 species in the No Eggs group, out of 1025 in the Pokédex, cannot breed with anything, not even Ditto'),
+  derivadoGrupo('no-eggs', DATOS.en).startsWith('The 151 species in the Undiscovered group, out of 1025 in the Pokédex, cannot breed with anything, not even Ditto'),
 ], [true, true]);
 check('Volador (10-4-4) nombra un solo grupo compartido', derivadoGrupo('flying', DATOS.es).includes('El grupo con el que más especies comparte es Agua 1, con 10.'), true);
 check('todos los derivados salen, sin "undefined" ni "NaN"', ['es', 'en'].flatMap(l => [

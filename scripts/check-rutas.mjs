@@ -270,8 +270,12 @@ check('las pestanas de la calculadora', ['/calculator', '/calculator?tab=damage&
   .map(l => urlDe(l, 'en')), ['/en/iv-ev-calculator', '/en/damage-calculator?a=6&m=53', '/en/catch-calculator']);
 check('logicaDe dice el idioma', [logicaDe('/pokedex').idioma, logicaDe('/en/pokedex').idioma], ['es', 'en']);
 
+// Salvo no-eggs: la etiqueta paso a Undiscovered y la URL se quedo como estaba.
+const SLUG_EN_A_PROPOSITO = { 'no-eggs': 'no-eggs' };
 check('cada grupo huevo en ingles es el slug de su etiqueta en ingles',
-  EGG_GROUPS.filter(g => GRUPOS_HUEVO_EN[g] !== slugEs(en[`egg.group.${g}`])), []);
+  EGG_GROUPS.filter(g => GRUPOS_HUEVO_EN[g] !== (SLUG_EN_A_PROPOSITO[g] ?? slugEs(en[`egg.group.${g}`]))), []);
+check('y la etiqueta de no-eggs es Undiscovered, con su URL de siempre',
+  [en['egg.group.no-eggs'], urlDe('/egg/no-eggs', 'en')], ['Undiscovered', '/en/egg-groups/no-eggs']);
 check('ida y vuelta de los 15 en ingles', EGG_GROUPS.filter(g => idaYVueltaEn(`/egg/${g}`) !== `/egg/${g}`), []);
 check('ida y vuelta de los 18 tipos en ingles', TYPES.filter(t => idaYVueltaEn(`/types/${t}`) !== `/types/${t}`), []);
 check('fire', urlDe('/types/fire', 'en'), '/en/types/fire');

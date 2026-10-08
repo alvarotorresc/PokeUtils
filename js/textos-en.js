@@ -107,7 +107,7 @@ export default {
     descripcion: 'All 15 Pokémon egg groups and how many species each one holds, from Field with 278 down to Ditto, plus the rules that decide whether two can breed.',
     h2: 'Egg groups and breeding',
     intro: [
-      'This page lists the 15 egg groups and how many species belong to each. Field is the largest, with 278, followed by Water 1 with 114 and Bug with 91. No Eggs holds the 151 species that never breed, not even with Ditto, and Ditto sits in a group of its own. Each group links to its own page with every member species. Alternate forms are not counted separately, since they breed exactly like their species.',
+      'This page lists the 15 egg groups and how many species belong to each. Field is the largest, with 278, followed by Water 1 with 114 and Bug with 91. Undiscovered holds the 151 species that never breed, not even with Ditto, and Ditto sits in a group of its own. Each group links to its own page with every member species. Alternate forms are not counted separately, since they breed exactly like their species.',
       'Sharing a group is required, but it is not enough. The 155 genderless species have no possible partner other than Ditto, and 116 of them cannot breed even with it. Ditto breeds with anything that can breed except another Ditto, and two species that are always the same gender never breed together, shared group or not. Every Pokémon\'s page lists the species it can breed with once these rules are applied.',
     ],
     relacionadas: [
@@ -414,7 +414,7 @@ export default {
     mano: 'When a Pokémon breeds with Ditto, the egg is always the partner\'s species, so no Ditto ever hatches from one. And since it pairs with almost anything, a Ditto from a game in another language is the usual way to run the Masuda method for more shinies.',
   },
   '/egg/no-eggs': {
-    descripcion: 'No Eggs group in Pokémon: the 151 species that cannot breed at all, not even with Ditto, from legendaries to baby Pokémon such as Pichu and Togepi.',
+    descripcion: 'Undiscovered group in Pokémon: the 151 species that cannot breed at all, not even with Ditto, from legendaries to baby Pokémon such as Pichu and Togepi.',
     mano: 'Baby Pokémon such as Pichu, Togepi and Happiny are here, yet they still hatch from eggs: their evolved forms lay them. So are Nidorina and Nidoqueen, even though Nidoran♀ can breed, and every Ultra Beast and Paradox Pokémon.',
   },
 };

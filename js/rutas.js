@@ -173,6 +173,8 @@ export const GRUPOS_HUEVO_EN = {
   indeterminate: 'amorphous',
   dragon: 'dragon',
   ditto: 'ditto',
+  // La etiqueta es Undiscovered, el nombre oficial, pero la URL se queda en
+  // no-eggs: se decidio no mover una URL ya publicada por un cambio de nombre.
   'no-eggs': 'no-eggs',
 };
 const GRUPOS_HUEVO = { es: GRUPOS_HUEVO_ES, en: GRUPOS_HUEVO_EN };

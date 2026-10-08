@@ -129,7 +129,16 @@ export function hechosEspecie(id, ctx) {
   const yo = miembros.find(m => m.id === id);
   if (!yo) throw new Error(`ficha-texto.js: #${id} no esta en su propia cadena`);
   if (miembros.some(m => m.fase >= ORDINAL.es.length)) throw new Error(`ficha-texto.js: la cadena de #${id} tiene mas de tres fases`);
-  const resto = miembros.filter(m => m.id !== id).sort((a, b) => a.fase - b.fase || a.id - b.id);
+  // "Junto a" nombra la linea propia: los antecesores y los descendientes de la
+  // especie, no los hermanos ni las otras ramas. Perrserker va con Meowth, no
+  // con Persian; Beautifly, con Wurmple y Silcoon, no con Cascoon y Dustox.
+  const porEspecie = new Map(miembros.map(m => [m.id, m]));
+  const linea = new Set();
+  for (let m = yo; m.padre != null; m = porEspecie.get(m.padre)) linea.add(m.padre);
+  (function bajar(m) {
+    m.hijos.forEach(hijo => { linea.add(hijo); bajar(porEspecie.get(hijo)); });
+  })(yo);
+  const resto = miembros.filter(m => linea.has(m.id)).sort((a, b) => a.fase - b.fase || a.id - b.id);
 
   // Habilidades, con su nombre en el idioma.
   const habilidad = slug => {
@@ -194,7 +203,7 @@ const FRASES = {
     tipo: h => `${h.nombre} es un Pokémon de tipo ${lista(nombresTipo(h.tipos, 'es'), 'es')}.`,
     defensa(h) {
       const n = tipos => lista(nombresTipo(tipos, 'es'), 'es');
-      const recibe = h.x2.length && h.x4.length ? `Recibe el doble de daño de ${n(h.x2)} y el cuádruple de ${n(h.x4)}`
+      const recibe = h.x2.length && h.x4.length ? `Recibe el doble de daño de ${n(h.x2)}, el cuádruple de ${n(h.x4)}`
         : h.x2.length ? `Recibe el doble de daño de ${n(h.x2)}`
           : h.x4.length ? `Recibe el cuádruple de daño de ${n(h.x4)}`
             : 'No recibe el doble de daño de ningún tipo';
@@ -203,13 +212,17 @@ const FRASES = {
           : `resiste ${enLetra(h.resiste.length, 'es')} tipos`;
       const partes = [recibe, resiste];
       if (h.inmune.length) partes.push(`es inmune a ${n(h.inmune)}`);
-      return `${lista(partes, 'es')}.`;
+      return `${clausulas(partes, recibeEnLista(h), 'es')}.`;
     },
     stats(h) {
       if (h.seisIguales) return `Sus seis estadísticas base valen ${h.max} y suman ${h.total}.`;
       const s = ks => lista(ks.map(k => NOMBRES_STAT.es[k]), 'es');
-      const alta = h.altas.length === 1 ? `la más alta es ${s(h.altas)} (${h.max})` : `las más altas son ${s(h.altas)} (${h.max})`;
-      const baja = h.bajas.length === 1 ? `la más baja, ${s(h.bajas)} (${h.min})` : `las más bajas, ${s(h.bajas)} (${h.min})`;
+      const empate = (ks, v) => `${enLetra(ks.length, 'es')} de sus estadísticas valen ${v}`;
+      const alta = h.altas.length >= EMPATE ? empate(h.altas, h.max)
+        : h.altas.length === 1 ? `la más alta es ${s(h.altas)} (${h.max})` : `las más altas son ${s(h.altas)} (${h.max})`;
+      const baja = h.altas.length >= EMPATE && h.bajas.length >= EMPATE ? `las otras ${enLetra(h.bajas.length, 'es')}, ${h.min}`
+        : h.bajas.length >= EMPATE ? empate(h.bajas, h.min)
+          : h.bajas.length === 1 ? `la más baja, ${s(h.bajas)} (${h.min})` : `las más bajas, ${s(h.bajas)} (${h.min})`;
       return `Sus estadísticas base suman ${h.total}: ${alta} y ${baja}.`;
     },
     evolucion: h => (h.evoluciona
@@ -241,7 +254,7 @@ const FRASES = {
     tipo: h => `${h.nombre} is ${tipoEn(h.tipos)} Pokémon.`,
     defensa(h) {
       const n = tipos => lista(nombresTipo(tipos, 'en'), 'en');
-      const recibe = h.x2.length && h.x4.length ? `It takes double damage from ${n(h.x2)} and quadruple damage from ${n(h.x4)}`
+      const recibe = h.x2.length && h.x4.length ? `It takes double damage from ${n(h.x2)}, quadruple damage from ${n(h.x4)}`
         : h.x2.length ? `It takes double damage from ${n(h.x2)}`
           : h.x4.length ? `It takes quadruple damage from ${n(h.x4)}`
             : 'It takes double damage from no type';
@@ -250,13 +263,17 @@ const FRASES = {
           : `resists ${enLetra(h.resiste.length, 'en')} types`;
       const partes = [recibe, resiste];
       if (h.inmune.length) partes.push(`is immune to ${n(h.inmune)}`);
-      return `${lista(partes, 'en')}.`;
+      return `${clausulas(partes, recibeEnLista(h), 'en')}.`;
     },
     stats(h) {
       if (h.seisIguales) return `All six of its base stats are ${h.max}, for a total of ${h.total}.`;
       const s = ks => lista(ks.map(k => NOMBRES_STAT.en[k]), 'en');
-      const alta = h.altas.length === 1 ? `the highest is ${s(h.altas)} (${h.max})` : `the highest are ${s(h.altas)} (${h.max})`;
-      const baja = h.bajas.length === 1 ? `the lowest is ${s(h.bajas)} (${h.min})` : `the lowest are ${s(h.bajas)} (${h.min})`;
+      const empate = (ks, v) => `${enLetra(ks.length, 'en')} of its base stats are ${v}`;
+      const alta = h.altas.length >= EMPATE ? empate(h.altas, h.max)
+        : h.altas.length === 1 ? `the highest is ${s(h.altas)} (${h.max})` : `the highest are ${s(h.altas)} (${h.max})`;
+      const baja = h.altas.length >= EMPATE && h.bajas.length >= EMPATE ? `the other ${enLetra(h.bajas.length, 'en')} are ${h.min}`
+        : h.bajas.length >= EMPATE ? empate(h.bajas, h.min)
+          : h.bajas.length === 1 ? `the lowest is ${s(h.bajas)} (${h.min})` : `the lowest are ${s(h.bajas)} (${h.min})`;
       return `Its base stats add up to ${h.total}: ${alta} and ${baja}.`;
     },
     evolucion: h => (h.evoluciona
@@ -283,6 +300,22 @@ const FRASES = {
         : `Its ${lista(h.formas, 'en')} forms have their own pages.`),
   },
 };
+
+// Las debilidades son ya una lista ("de Fuego, Psíquico y Hada") o dos
+// clausulas (x2 y x4): unir el resto con otra "y" daria "y ... y ... y". En
+// esos casos la ultima clausula va tras coma: "..., el cuádruple de Volador, y
+// resiste cinco tipos". Con una sola debilidad se queda la lista de siempre.
+const recibeEnLista = h => h.x2.length + h.x4.length > 1;
+function clausulas(partes, enLista, l) {
+  if (!enLista) return lista(partes, l);
+  return `${partes.slice(0, -1).join(', ')}, ${l === 'en' ? 'and' : 'y'} ${partes[partes.length - 1]}`;
+}
+
+// Con tres o mas empatadas en la mas alta o la mas baja, la frase las cuenta en
+// vez de enumerarlas: "cinco de sus estadísticas valen 88" y no "PS, Ataque,
+// Ataque Especial, Defensa Especial y Velocidad (88)". Con tres y tres, la
+// segunda es "las otras tres". Con dos, se enumeran.
+const EMPATE = 3;
 
 // Las regionales ya llevan la palabra en el nombre ("Raichu Forma de Alola",
 // "Tauros Paldean Form (Combat Breed)"), y "su forma Raichu Forma de Alola" la
