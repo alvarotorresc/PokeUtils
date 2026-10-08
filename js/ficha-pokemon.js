@@ -18,12 +18,13 @@
 // (formLabels), el meta (que se rellena despues: aqui solo va su hueco), el
 // error con reintento de evolucion y movimientos, y los listeners.
 
-import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN } from './data.js';
+import { spriteUrl, STAT_KEYS, STAT_COLORS, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN } from './data.js';
 import { urlDe } from './rutas.js';
 import { tr, nombrePokemon, breadcrumbHTML } from './contenido.js';
 import { rangeAt100 } from './stats.js';
 import { partnersOf, hasEggData } from './egg-groups.js';
-import { spriteIdFor, tieneUrlPropia, formsOf } from './forms.js';
+import { spriteIdFor, formaEnlazable, formsOf } from './forms.js';
+import { enfrentamientos } from './ficha-texto.js';
 import { evolutionText, ramasResueltas, textoDeRama, nodoActual } from './evolution.js';
 
 // El mismo esc que ui.js, que aqui no se puede importar: tambien escapa la
@@ -274,38 +275,11 @@ export function catchRateLabel(rate, ctx) {
   return tr(ctx, 'pokedex.catchrate.veryhard');
 }
 
-// Debilidades, resistencias e inmunidades de una combinacion de tipos.
-function enfrentamientos(types) {
-  const matchups = {};
-  TYPES.forEach(atkType => {
-    let mult = 1;
-    types.forEach(defType => {
-      mult *= CHART[atkType][TYPES.indexOf(defType)];
-    });
-    matchups[atkType] = mult;
-  });
-
-  const weak = [], resist = [], immune = [];
-  Object.entries(matchups).forEach(([tp, m]) => {
-    if (m === 0) immune.push({ t: tp, m });
-    else if (m > 1) weak.push({ t: tp, m });
-    else if (m < 1) resist.push({ t: tp, m });
-  });
-  weak.sort((a, b) => b.m - a.m);
-  resist.sort((a, b) => a.m - b.m);
-  return { weak, resist, immune };
-}
-
 const fmtMult = m => m === 4 ? 'x4' : m === 2 ? 'x2' : m === 0.5 ? 'x½' : m === 0.25 ? 'x¼' : 'x0';
 
 // Cada insignia de tipo lleva a la pagina de su tipo, con la misma clase: el
 // aspecto lo pone el CSS, que a un <a> le quita el subrayado.
 const urlTipo = (tipo, ctx) => urlDe(`/types/${tipo}`, ctx.l);
-
-// D12 del plan: la gorra de Pikachu y los dominantes son regionales para
-// tieneUrlPropia (pikachu-alola-cap, raticate-totem-alola), pero no son la
-// forma que alguien busca por su nombre. Tienen URL, no un enlace desde aqui.
-const formaEnlazable = v => tieneUrlPropia(v) && !/-(cap|totem)(-|$)/.test(v.name);
 
 // Las formas de la especie con pagina propia, menos la que se esta mirando. Si
 // no hay ninguna, no se pinta: Pikachu tiene 17 formas y solo la gorra de
