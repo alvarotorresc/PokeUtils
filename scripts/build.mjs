@@ -39,7 +39,7 @@ import {
 import { TITULOS_SEO } from '../js/titulos.js';
 import { TOOLS } from '../js/tools.js';
 import { readPngSize, pngLooksFlat } from './build-icons.mjs';
-import { INDEXABLES, esIndexable, contarPalabras, nombrePokemon } from '../js/contenido.js';
+import { INDEXABLES, esIndexable, esFichaEspecie, ULTIMA_ESPECIE, contarPalabras, nombrePokemon } from '../js/contenido.js';
 import { textoEspecie } from '../js/ficha-texto.js';
 import { isForm, tieneUrlPropia, formaEnlazable, formsOf } from '../js/forms.js';
 import { TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from '../js/data.js';
@@ -318,12 +318,52 @@ async function htmlDe(dir, base = dir) {
 //
 // La fecha del ultimo commit que toco alguna de las dependencias de la pagina
 // (depsDe en pages.mjs), con caché por conjunto: las 18 de tipo de un idioma
-// comparten deps y preguntan una vez. En un clon superficial git log devuelve
-// la fecha del unico commit que hay para todo, una fecha falsa que nadie ve:
-// mejor parar. netlify.toml y ci.yml traen la historia entera antes del build.
-const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
+// comparten deps y preguntan una vez. Las 2.050 fichas de especie comparten el
+// conjunto comun y cada una suma su data/dex/<id>.json: la fecha de los 1025
+// dex sale de una sola pasada de git log (fechasDex), no de 1025 llamadas, y la
+// de la ficha es la mayor de las dos. Que cada dependencia tenga historia se
+// pregunta una vez por fichero, no una por conjunto. En un clon superficial git
+// log devuelve la fecha del unico commit que hay para todo, una fecha falsa que
+// nadie ve: mejor parar. netlify.toml y ci.yml traen la historia entera antes
+// del build.
+const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).trim();
+const DEX = 'data/dex/';
 const cacheLastmod = new Map();
+const conHistoria = new Set();
 let historiaComprobada = false;
+let fechasDex = null;
+
+// {fichero -> fecha} de todo data/dex, de una pasada: git log saca cada commit
+// con su fecha y debajo los ficheros que toco. Se queda la mayor de cada uno,
+// sin fiarse del orden de la salida.
+function fechaDeDex(dep) {
+  if (!fechasDex) {
+    fechasDex = new Map();
+    let fecha = null;
+    for (const linea of git('log', '--format=%cI', '--name-only', '--', DEX).split('\n')) {
+      if (/^\d{4}-\d{2}-\d{2}T/.test(linea)) fecha = linea;
+      else if (linea && (!fechasDex.has(linea) || Date.parse(fecha) > Date.parse(fechasDex.get(linea)))) fechasDex.set(linea, fecha);
+    }
+  }
+  const fecha = fechasDex.get(dep);
+  if (!fecha) throw new Error(`${dep} no tiene historia en git: mira depsDe en pages.mjs`);
+  return fecha;
+}
+
+function fechaDeConjunto(deps) {
+  const clave = [...deps].sort().join('\n');
+  if (!cacheLastmod.has(clave)) {
+    const fecha = git('log', '-1', '--format=%cI', '--', ...deps);
+    if (!fecha) throw new Error(`Ningun commit toca ${deps.join(', ')}: mira depsDe en pages.mjs`);
+    for (const dep of deps.filter(d => !conHistoria.has(d))) {
+      if (!git('log', '-1', '--format=%H', '--', dep)) throw new Error(`${dep} no tiene historia en git: mira depsDe en pages.mjs`);
+      conHistoria.add(dep);
+    }
+    cacheLastmod.set(clave, fecha);
+  }
+  return cacheLastmod.get(clave);
+}
+
 function lastmodDe(deps) {
   if (!historiaComprobada) {
     if (git('rev-parse', '--is-shallow-repository') !== 'false') {
@@ -331,16 +371,11 @@ function lastmodDe(deps) {
     }
     historiaComprobada = true;
   }
-  const clave = [...deps].sort().join('\n');
-  if (!cacheLastmod.has(clave)) {
-    const fecha = git('log', '-1', '--format=%cI', '--', ...deps);
-    if (!fecha) throw new Error(`Ningun commit toca ${deps.join(', ')}: mira depsDe en pages.mjs`);
-    for (const dep of deps) {
-      if (!git('log', '-1', '--format=%H', '--', dep)) throw new Error(`${dep} no tiene historia en git: mira depsDe en pages.mjs`);
-    }
-    cacheLastmod.set(clave, fecha);
-  }
-  return cacheLastmod.get(clave);
+  const fechas = [
+    fechaDeConjunto(deps.filter(d => !d.startsWith(DEX))),
+    ...deps.filter(d => d.startsWith(DEX)).map(fechaDeDex),
+  ];
+  return fechas.reduce((mayor, f) => (Date.parse(f) > Date.parse(mayor) ? f : mayor));
 }
 
 // ===== Una pagina por ruta =====
@@ -468,11 +503,23 @@ async function generarPaginas(esqueleto) {
       if (indexables.has(ficheroDe(urlDe(legal, l)))) throw new Error(`${urlDe(legal, l)} es una pagina legal y no puede indexarse`);
     }
   }
-  // Las rutas ya traen los dos idiomas: no se multiplica por IDIOMAS.
+  // Las rutas ya traen los dos idiomas: no se multiplica por IDIOMAS. Y la
+  // cuenta sale tambien de fuera de esIndexable: las 53 de INDEXABLES y las
+  // 1025 especies, por idioma (2.156). Las formas, los movimientos y las
+  // habilidades siguen con noindex.
   const indexablesEsperadas = rutas.filter(r => esIndexable(r.logica)).length;
-  if (indexables.size !== indexablesEsperadas) {
-    throw new Error(`${indexables.size} paginas indexables en dist/ y tendrian que ser ${indexablesEsperadas}`);
+  const indexablesContadas = (INDEXABLES.length + ULTIMA_ESPECIE) * IDIOMAS.length;
+  if (indexables.size !== indexablesEsperadas || indexables.size !== indexablesContadas) {
+    throw new Error(`${indexables.size} paginas indexables en dist/ y tendrian que ser ${indexablesEsperadas} (esIndexable) `
+      + `y ${indexablesContadas} ((${INDEXABLES.length} + ${ULTIMA_ESPECIE}) x ${IDIOMAS.length})`);
   }
+  const fichasIndexables = [...indexables].filter(f => esFichaEspecie(rutaDeFichero.get(f).logica));
+  if (fichasIndexables.length !== ULTIMA_ESPECIE * IDIOMAS.length) {
+    throw new Error(`${fichasIndexables.length} fichas de especie indexables y tienen que ser ${ULTIMA_ESPECIE * IDIOMAS.length}`);
+  }
+  const fichaIndexableDeMas = [...indexables].find(f => /^\/(pokedex|moves|abilities)\/[^/]+$/.test(rutaDeFichero.get(f).logica)
+    && !esFichaEspecie(rutaDeFichero.get(f).logica));
+  if (fichaIndexableDeMas) throw new Error(`dist/${fichaIndexableDeMas} (${rutaDeFichero.get(fichaIndexableDeMas).logica}) es una forma, un movimiento o una habilidad y no puede indexarse`);
 
   // El shell de una indexable: lo que hay desde <div ... data-shell ...> hasta
   // el </main>. Es lo que el cliente conserva al hidratar, y lo que lee un
@@ -503,15 +550,25 @@ async function generarPaginas(esqueleto) {
   // tipos y grupos, escapado como lo escribe contenido.js.
   const textos = textosConDerivados({ pokemon, moves });
   const escHtml = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  // Una ficha de especie no tiene textos a mano: su texto es el derivado de
+  // .intro-ficha, que (v) compara con textoEspecie; aqui, que esta en el shell
+  // y las 80 palabras.
   for (const f of indexables) {
     const { logica, idioma } = rutaDeFichero.get(f);
     const shell = shellDe(f, porFichero.get(f));
-    const texto = textos[idioma][logica];
     if (!/<h1\b/.test(shell)) throw new Error(`dist/${f}: el h1 no esta dentro del shell`);
+    const palabrasDe = () => contarPalabras(textosVisibles(shell).join(' '));
+    if (esFichaEspecie(logica)) {
+      if (!shell.includes('<section class="intro intro-ficha">')) throw new Error(`dist/${f}: el shell de la ficha no lleva su .intro-ficha`);
+      const palabras = palabrasDe();
+      if (palabras < 80) throw new Error(`dist/${f}: el shell de la ficha tiene ${palabras} palabras visibles y tienen que ser 80 como minimo`);
+      continue;
+    }
+    const texto = textos[idioma][logica];
     const parrafos = texto.mano ? [texto.mano, texto.derivado] : [texto.h2, ...texto.intro];
     const falta = parrafos.find(p => !p || !shell.includes(escHtml(p)));
     if (falta !== undefined) throw new Error(`dist/${f}: el shell no lleva el texto de ${logica} (${idioma}): ${JSON.stringify(String(falta).slice(0, 60))}`);
-    const palabras = contarPalabras(textosVisibles(shell).join(' '));
+    const palabras = palabrasDe();
     if (palabras < 80) throw new Error(`dist/${f}: el shell tiene ${palabras} palabras visibles y tienen que ser 80 como minimo`);
   }
 
@@ -588,9 +645,11 @@ async function generarPaginas(esqueleto) {
     .filter(Boolean);
   const cadenasEs = new Set(Object.values(textos.es).flatMap(cadenas));
   for (const ingles of Object.values(textos.en).flatMap(cadenas)) cadenasEs.delete(ingles);
+  // Normalizadas una vez: con las 1025 fichas son 1.078 paginas inglesas.
+  const cadenasNormalizadas = [...cadenasEs].map(c => c.replace(/\s+/g, ' ').trim());
   for (const f of [...indexables].filter(x => idiomaDeFichero(x) === 'en')) {
     const visibles = textosVisibles(porFichero.get(f)).join('\n');
-    const colada = [...cadenasEs].find(c => visibles.includes(c.replace(/\s+/g, ' ').trim()));
+    const colada = cadenasNormalizadas.find(c => visibles.includes(c));
     if (colada) throw new Error(`dist/${f} lleva un texto de textos-es.js: ${JSON.stringify(colada.slice(0, 80))}`);
   }
 
@@ -651,6 +710,24 @@ async function generarPaginas(esqueleto) {
     const corta = [...descripcion].length;
     if (descripcion !== textos[ruta.idioma][ruta.logica].descripcion) throw new Error(`dist/${f}: su description no es la de los textos`);
     if (corta < 120 || corta > 155) throw new Error(`dist/${f}: su description tiene ${corta} caracteres (de 120 a 155)`);
+  }
+  // (o) Y las 2.050 fichas de especie, que no estan en titulos.js: su titulo
+  // (tituloDe) de 50 a 60 e igual al og:title, y su description
+  // (descripcionEspecie) de 120 a 155, la misma que la de pages.mjs.
+  const fichasConTitulo = rutas.filter(r => esFichaEspecie(r.logica));
+  if (fichasConTitulo.length !== ULTIMA_ESPECIE * IDIOMAS.length) throw new Error(`(o) ${fichasConTitulo.length} fichas de especie y tienen que ser ${ULTIMA_ESPECIE * IDIOMAS.length}`);
+  for (const ruta of fichasConTitulo) {
+    const f = ficheroDe(ruta.publica);
+    const html = porFichero.get(f);
+    const [titulo] = unico(html, /<title>([^<]*)<\/title>/g).map(desescapar);
+    const og = unico(html, /<meta property="og:title" content="([^"]*)">/g).map(desescapar);
+    const [descripcion] = unico(html, /<meta name="description" content="([^"]*)">/g).map(desescapar);
+    const largo = [...titulo].length;
+    const corta = [...descripcion].length;
+    if (largo < 50 || largo > 60) throw new Error(`(o) dist/${f}: su titulo "${titulo}" tiene ${largo} caracteres (de 50 a 60)`);
+    if (JSON.stringify(og) !== JSON.stringify([titulo])) throw new Error(`(o) dist/${f}: og:title ${JSON.stringify(og)} y title "${titulo}"`);
+    if (descripcion !== ruta.descripcion) throw new Error(`(o) dist/${f}: su description no es la de descripcionEspecie`);
+    if (corta < 120 || corta > 155) throw new Error(`(o) dist/${f}: su description tiene ${corta} caracteres (de 120 a 155)`);
   }
 
   // (q) JSON-LD, leido del disco. Un solo bloque en cada indexable y ninguno en
@@ -724,6 +801,11 @@ async function generarPaginas(esqueleto) {
       const enHtml = visible.map(paso => `${paso.nombre} ${paso.item}`);
       if (JSON.stringify(enLd) !== JSON.stringify(enHtml)) throw new Error(`dist/${f}: el BreadcrumbList dice ${JSON.stringify(enLd)} y la miga visible ${JSON.stringify(enHtml)}`);
     }
+    // Una ficha de especie lleva el BreadcrumbList y nada mas, de 3 pasos:
+    // Inicio > Pokedex > su nombre (que ya es la miga visible, comparada arriba).
+    if (esFichaEspecie(logica) && (JSON.stringify(tipos) !== '["BreadcrumbList"]' || migas[0].itemListElement.length !== 3)) {
+      throw new Error(`dist/${f}: el JSON-LD de una ficha es un BreadcrumbList de 3 pasos y lleva ${JSON.stringify(tipos)}`);
+    }
     const debeApp = herramientas.has(logica);
     if (tipos.includes('WebApplication') !== debeApp) throw new Error(`dist/${f} (${logica}) ${debeApp ? 'es una herramienta y no lleva' : 'no es una herramienta y lleva'} WebApplication`);
   }
@@ -748,6 +830,7 @@ async function generarPaginas(esqueleto) {
     resto = resto.slice(m[0].length);
   }
   const locs = entradas.map(e => e.loc);
+  if (locs.length !== indexablesContadas) throw new Error(`dist/sitemap.xml lleva ${locs.length} <loc> y las indexables son ${indexablesContadas}`);
   const canonicals = [...indexables].map(f => unico(porFichero.get(f), /<link rel="canonical" href="([^"]*)"/g)[0]);
   const ordenar = lista => JSON.stringify([...lista].sort());
   if (new Set(locs).size !== locs.length || ordenar(locs) !== ordenar(canonicals)) {
@@ -782,6 +865,7 @@ async function generarPaginas(esqueleto) {
   const entrantes = new Map([...indexables].map(f => [f, new Set()]));
   for (const f of indexables) for (const destino of enlacesDe(porFichero.get(f))) if (destino !== f) entrantes.get(destino).add(f);
   const lejos = [];
+  const profundidad = {};
   for (const [l, raiz] of [['es', 'index.html'], ['en', 'en.html']]) {
     const distancia = new Map([[raiz, 0]]);
     const cola = [raiz];
@@ -793,6 +877,8 @@ async function generarPaginas(esqueleto) {
         cola.push(destino);
       }
     }
+    // La profundidad de las fichas, para el resumen del build.
+    profundidad[l] = Math.max(...fichasIndexables.filter(x => idiomaDeFichero(x) === l).map(x => distancia.get(x) ?? Infinity));
     for (const f of [...indexables].filter(x => idiomaDeFichero(x) === l)) {
       if (!(distancia.get(f) <= 3)) lejos.push(`${f} (${distancia.has(f) ? `${distancia.get(f)} clics` : 'inalcanzable'})`);
     }
@@ -867,13 +953,13 @@ async function generarPaginas(esqueleto) {
   }
 
   comprobarFichasDeEspecie({ pokemon, abilities, evolutions, dex, porFichero, enDisco, shellDe, unico });
-  return ficheros.length;
+  return { nPaginas: ficheros.length, nIndexables: indexables.size, profundidad };
 }
 
 // ===== Las fichas de especie, prerenderizadas =====
 //
-// Las 1025 de cada idioma llegan con la ficha entera en el shell, aunque aun
-// lleven noindex: lo que lee un rastreador sin ejecutar nada. Se mira el HTML de
+// Las 1025 de cada idioma llegan con la ficha entera en el shell y se indexan:
+// lo que lee un rastreador sin ejecutar nada. Se mira el HTML de
 // disco contra los datos, no contra fichaHTML: si la plantilla perdiera un
 // enlace, compararla consigo misma no lo veria.
 const escFicha = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1129,7 +1215,7 @@ async function main() {
 
   // ===== una pagina por ruta =====
   // Sobre el index.html ya reescrito: cada pagina lleva los nombres con hash.
-  const nPaginas = await generarPaginas(html);
+  const { nPaginas, nIndexables, profundidad } = await generarPaginas(html);
 
   // ===== cuentas =====
   const jsFuente = (await Promise.all(
@@ -1144,7 +1230,8 @@ async function main() {
   console.log(`\n  JS:   ${jsFuente.length} modulos, ${kb(gzFuente)} gz -> ${jsSalida.length} ficheros, ${kb(gzSalida)} gz`);
   console.log(`        arranque (app y sus import estaticos): ${arranque.length} ficheros, ${kb(arranque.reduce((s, b) => s + gz(b), 0))} gz`);
   console.log(`  CSS:  ${kb(gz(cssFuente))} gz -> ${kb(gz(cssBuf))} gz  (${cssNombre})`);
-  console.log(`  HTML: ${nPaginas} paginas y dist/_redirects`);
+  console.log(`  HTML: ${nPaginas} paginas y dist/_redirects; ${nIndexables} indexables, `
+    + `las fichas a ${IDIOMAS.map(l => `${profundidad[l]} clics (${l})`).join(' y ')} de su portada como mucho`);
   console.log(`  dist: ${kb(await pesoDe(OUT))} en disco, con data/, sprites/ y fonts/`);
   console.log(`  en ${((Date.now() - inicio) / 1000).toFixed(1)} s\n`);
 }

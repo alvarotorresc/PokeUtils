@@ -61,10 +61,12 @@ check('ficha de especie: /pokedex/1 y /pokedex/1025 si',
 check('ficha de especie: /pokedex/0, /pokedex/1026, /pokedex/10001 y /pokedex no',
   ['/pokedex/0', '/pokedex/1026', '/pokedex/10001', '/pokedex'].map(esFichaEspecie), [false, false, false, false]);
 check('las 53 son indexables', INDEXABLES.filter(k => !esIndexable(k)), []);
-// Hasta que el build prerenderice las fichas enteras, la bandera esta apagada
-// y una ficha no se indexa.
-check('con FICHAS_INDEXABLES apagada, /pokedex/25 no es indexable',
-  [FICHAS_INDEXABLES, esIndexable('/pokedex/25')], [false, false]);
+// El build ya prerenderiza las fichas enteras: la bandera esta encendida y las
+// 1025 especies se indexan; las formas y el resto de fichas, no.
+check('con FICHAS_INDEXABLES encendida, /pokedex/1, /pokedex/25 y /pokedex/1025 son indexables',
+  [FICHAS_INDEXABLES, ...['/pokedex/1', '/pokedex/25', '/pokedex/1025'].map(esIndexable)], [true, true, true, true]);
+check('y /pokedex/10001, /moves/1 y /abilities/static no',
+  ['/pokedex/10001', '/moves/1', '/abilities/static'].map(esIndexable), [false, false, false]);
 
 console.log('\nNombres\n');
 

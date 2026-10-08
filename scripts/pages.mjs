@@ -11,11 +11,10 @@
 // Cada pagina existe en espanol y en ingles (/en/...), con su <html lang>, sus
 // textos fijos ya traducidos y los tres hreflang que la emparejan con la otra.
 // Se indexan las que dice esIndexable (js/contenido.js): las 53 por idioma de
-// INDEXABLES (portada, hubs, FAQ, herramientas, tipos y grupos) y, cuando se
-// encienda FICHAS_INDEXABLES, las 1025 fichas de especie. Las 53 y las 1025
-// fichas de especie (estas aunque sigan con noindex) llegan ademas con su
-// contenido en el HTML (contenidoDe, abajo), el mismo que pinta el cliente.
-// Las demas llevan noindex. La portada espanola no
+// INDEXABLES (portada, hubs, FAQ, herramientas, tipos y grupos) y las 1025
+// fichas de especie. Todas llegan ademas con su contenido en el HTML
+// (contenidoDe, abajo), el mismo que pinta el cliente. Las demas llevan
+// noindex. La portada espanola no
 // se regenera: es el index.html tal cual, con su canonical y sus hreflang
 // escritos a mano, y el build le mete dentro del hero su contenido
 // (rellenarPortada).
@@ -31,7 +30,7 @@ import { isForm, tieneUrlPropia, formsOf } from '../js/forms.js';
 import { TOOLS, CATEGORIES, toolsIn } from '../js/tools.js';
 import {
   INDEXABLES, esIndexable, encabezadoHTML, introHTML, tipoHTML, grupoHTML, faqHTML, listaGruposHTML,
-  rejillaHerramientasHTML, idsDeCategoria, tiposTodosHTML, portadaHTML, chipsInicialesHTML, breadcrumbItems, nombreDe,
+  rejillaHerramientasHTML, idsDeCategoria, tiposTodosHTML, portadaHTML, chipsInicialesHTML, breadcrumbItems, nombreDe, nombrePokemon,
 } from '../js/contenido.js';
 import { conDerivados } from '../js/derivados.js';
 import { reservaDe } from '../js/cascaras.js';
@@ -150,8 +149,12 @@ function fichas(l, { pokemon, moves, abilities, evolutions, dex }) {
       const nombre = pokeName(p, l);
       if (isForm(p)) return ficha(`/pokedex/${p.id}`, nombre, d.especie(nombre));
       // Sin recortar: ya sale de 120 a 155, y si no, que lo vea check-pages en
-      // vez de cortarla aqui con unos puntos suspensivos.
-      return { logica: `/pokedex/${p.id}`, titulo: tituloDe(`/pokedex/${p.id}`, nombre, l), descripcion: descripcionEspecie(p.id, ctxEspecie(p.id)), especie: true };
+      // vez de cortarla aqui con unos puntos suspensivos. `nombre` es el de la
+      // miga (nombrePokemon, como displayName en la ficha), que pide el JSON-LD.
+      return {
+        logica: `/pokedex/${p.id}`, titulo: tituloDe(`/pokedex/${p.id}`, nombre, l),
+        descripcion: descripcionEspecie(p.id, ctxEspecie(p.id)), especie: true, nombre: nombrePokemon(p, l),
+      };
     });
   const grupos = Object.keys(GRUPOS_HUEVO_ES).map(g => {
     const nombre = DICCIONARIOS[l][`egg.group.${g}`];
@@ -191,8 +194,8 @@ export async function leerDex(pokemon, leer) {
 //
 // `contenido` (lo que va en el shell) va con la plantilla y no con la
 // indexabilidad: las 53 por idioma de INDEXABLES y las 1025 fichas de especie lo
-// llevan, y las fichas aunque sigan con noindex mientras FICHAS_INDEXABLES este
-// apagada. El noindex, el JSON-LD y el lastmod si dependen de esIndexable.
+// llevan, y las fichas aunque se apagara FICHAS_INDEXABLES. El noindex, el
+// JSON-LD y el lastmod si dependen de esIndexable.
 export function rutasPublicas({ indice, pokemon, moves, abilities, evolutions, dex }) {
   fijarIndice(indice);
   const textos = textosConDerivados({ pokemon, moves });
@@ -216,7 +219,10 @@ export function rutasPublicas({ indice, pokemon, moves, abilities, evolutions, d
     const ctx = { l, dic: DICCIONARIOS[l], textos: textos[l], pokemon, abilities, evolutions, dex };
     const conContenido = fila.especie ? { ...fija, contenido: contenidoDe(fila.logica, ctx) } : fija;
     if (!indexable) return conContenido;
-    const conLd = { ...conContenido, jsonLd: jsonLdDe(fila.logica, ctx, fija.descripcion), deps: depsDe(fila.logica, l) };
+    // La ficha no tiene su nombre en ninguna tabla: la miga lo pide en ctx.
+    const ctxLd = fila.especie ? { ...ctx, nombre: fila.nombre } : ctx;
+    const conLd = { ...conContenido, jsonLd: jsonLdDe(fila.logica, ctxLd, fija.descripcion), deps: depsDe(fila.logica, l) };
+    if (fila.especie) return conLd;
     return fila.logica === '/'
       ? { ...conLd, contenido: portadaHTML(ctx), chips: chipsInicialesHTML(ctx) }
       : { ...conLd, contenido: contenidoDe(fila.logica, ctx) };
@@ -297,7 +303,9 @@ export function ogDe(logica, l, origen = ORIGEN) {
 //    level"), asi que la url es la raiz tambien en /en; lo que cambia es
 //    inLanguage.
 //  - BreadcrumbList, con la misma lista que la miga visible (breadcrumbItems):
-//    en todas menos la portada, que no tiene miga (un solo paso).
+//    en todas menos la portada, que no tiene miga (un solo paso). En una ficha
+//    de especie es lo unico que va (Inicio > Pokedex > nombre), con el nombre
+//    en ctx.nombre.
 //  - WebApplication, en las 16 herramientas. Sin aggregateRating ni review
 //    (D3): no hay valoraciones de verdad que poner, y el Rich Results Test lo
 //    marca por eso. FAQPage no (D4): Google lo retiro en mayo de 2026.
@@ -349,7 +357,10 @@ export function conJsonLd(html, ruta) {
 // textos. Sin el chrome -- index.html, style.css, pages.mjs, ui.js, i18n.js,
 // app.js --, que cambia a menudo y diria que todo el sitio cambio cada vez. El
 // diccionario solo cuenta en la FAQ, cuyas preguntas viven en el. contenido.js
-// cuenta donde es el que pinta el cuerpo: portada, hubs, FAQ, tipos y grupos.
+// cuenta donde es el que pinta el cuerpo: portada, hubs, FAQ, tipos, grupos y
+// la miga de las fichas. Las fichas de especie comparten `ficha` (sin textos de
+// idioma: su texto sale de los datos, asi que el conjunto es el mismo en los
+// dos) y cada una suma su data/dex/<id>.json.
 // Rutas desde la raiz del repo; build.mjs lanza si una no tiene historia en git.
 const MODULOS = {
   '/': ['js/home.js', 'js/contenido.js', 'js/tools.js'],
@@ -375,10 +386,14 @@ const MODULOS = {
   '/calculator?tab=catch': ['js/calculator.js', 'js/calc-capture.js', 'js/capture.js', 'js/battle-data.js', 'data/pokemon.json'],
   tipo: ['js/type-chart.js', 'js/contenido.js', 'js/data.js', 'data/pokemon.json', 'data/moves.json'],
   grupo: ['js/egg-pages.js', 'js/egg-groups.js', 'js/contenido.js', 'data/pokemon.json'],
+  ficha: ['js/pokedex-detail.js', 'js/ficha-pokemon.js', 'js/ficha-texto.js', 'js/frases.js', 'js/redaccion.js',
+    'js/evolution.js', 'js/egg-groups.js', 'js/forms.js', 'js/api.js', 'js/contenido.js', 'js/data.js', 'js/stats.js',
+    'data/pokemon.json', 'data/abilities.json', 'data/evolutions.json'],
 };
 
 export function depsDe(logica, l) {
   const [seccion, id] = logica.split('/').filter(Boolean);
+  if (seccion === 'pokedex' && id) return [...MODULOS.ficha, `data/dex/${id}.json`];
   const clave = seccion === 'types' && id ? 'tipo' : seccion === 'egg' && id ? 'grupo' : logica;
   const modulos = MODULOS[clave];
   if (!modulos) throw new Error(`pages.mjs: ${logica} es indexable y no tiene deps en MODULOS`);

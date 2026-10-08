@@ -107,10 +107,9 @@ export function esFichaEspecie(logica) {
   return id >= 1 && id <= ULTIMA_ESPECIE;
 }
 
-// Apagada hasta que el build prerenderice las fichas enteras (contenido,
-// JSON-LD y sitemap): asi ningun commit intermedio publica una ficha a medias
-// con index. La enciende el commit del build.
-export const FICHAS_INDEXABLES = false;
+// Encendida desde que el build prerenderiza las fichas enteras (contenido,
+// JSON-LD y sitemap). Apagarla devuelve las 1025 al noindex sin tocar nada mas.
+export const FICHAS_INDEXABLES = true;
 
 export const esIndexable = logica => INDEXABLES.includes(logica) || (FICHAS_INDEXABLES && esFichaEspecie(logica));
 
@@ -142,8 +141,8 @@ const toolDe = logica => TOOLS.find(tool => tool.route === logica);
 
 // ===== Nombres y miga de pan =====
 
-// La ficha de un Pokemon (/pokedex/25, o /pokedex/10034 de una forma): no es
-// indexable todavia, pero lleva miga. Su nombre no esta en ninguna tabla, asi
+// La ficha de un Pokemon (/pokedex/25, o /pokedex/10034 de una forma): la de
+// una especie es indexable y la de una forma no, pero las dos llevan miga. Su nombre no esta en ninguna tabla, asi
 // que llega en el contexto como `nombre`, ya en el idioma de la pagina.
 const esFichaPokemon = logica => /^\/pokedex\/\d+$/.test(logica);
 

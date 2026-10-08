@@ -440,7 +440,7 @@ async function route() {
   // buscador visible se reserva ese hueco explicitamente; en la home, sin
   // buscador, el margen que ya habia de sobra sigue intacto.
   nav.classList.toggle('nav-has-search', !esHome);
-  // Una pagina indexable, y la ficha de una especie aunque aun no lo sea, llega
+  // Una pagina indexable (las 53 con textos y las fichas de especie) llega
   // pintada en el HTML, dentro de <div data-shell data-ruta="<logica>">. Si el
   // shell es el de esta ruta, se queda donde esta y el renderizador lo
   // sustituye o lo adopta: vaciarlo aqui devolveria el salto que vino a quitar.
