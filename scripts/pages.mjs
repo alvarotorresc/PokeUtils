@@ -26,7 +26,7 @@ import {
 } from '../js/rutas.js';
 import { TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from '../js/data.js';
 import { isForm, tieneUrlPropia } from '../js/forms.js';
-import { TOOLS, CATEGORIES } from '../js/tools.js';
+import { TOOLS, CATEGORIES, toolsIn } from '../js/tools.js';
 import {
   INDEXABLES, conDerivados, encabezadoHTML, introHTML, tipoHTML, grupoHTML, faqHTML, listaGruposHTML,
   rejillaHerramientasHTML, idsDeCategoria, tiposTodosHTML, portadaHTML, chipsInicialesHTML, breadcrumbItems, nombreDe,
@@ -193,6 +193,72 @@ export function rutasPublicas({ indice, pokemon, moves, abilities }) {
       ? { ...conLd, contenido: portadaHTML(ctx), chips: chipsInicialesHTML(ctx) }
       : { ...conLd, contenido: contenidoDe(fila.logica, ctx) };
   }));
+}
+
+// ===== La imagen al compartir (og:image) =====
+//
+// Una por categoria y por idioma (D11): icons/og/<categoria>-<idioma>.png, que
+// genera scripts/build-og.mjs con el nombre de la categoria escrito en ese
+// idioma. Cada pagina lleva la de su categoria: las herramientas, la de la suya
+// en tools.js; los hubs de Datos y Competitivo, la de su categoria (1.7); las
+// fichas, la de su seccion (tipos, movimientos y habilidades son Datos; especies
+// y grupos huevo, Pokedex). La portada, la FAQ y las legales no son de ninguna
+// categoria y llevan la general, og-image.png, la misma en los dos idiomas.
+const OG_GENERAL = '/icons/og-image.png';
+const SIN_CATEGORIA = ['/', '/faq', '/privacy', '/terms'];
+const CATEGORIA_DE_FICHA = { pokedex: 'pokedex', egg: 'pokedex', types: 'data', moves: 'data', abilities: 'data' };
+
+export const ogFichero = (categoria, l) => `/icons/og/${categoria}-${l}.png`;
+
+export function categoriaOgDe(logica) {
+  if (SIN_CATEGORIA.includes(logica)) return null;
+  const hub = CATEGORIES.find(c => c.route === logica && !c.direct);
+  if (hub) return hub.id;
+  const tool = TOOLS.find(t => t.route === logica);
+  if (tool) return tool.category;
+  const [seccion, id] = logica.split('/').filter(Boolean);
+  if (id && CATEGORIA_DE_FICHA[seccion]) return CATEGORIA_DE_FICHA[seccion];
+  throw new Error(`pages.mjs: no se que og:image lleva ${logica} -- mira categoriaOgDe`);
+}
+
+// Lo que se escribe en cada imagen y su texto alternativo: el nombre de la
+// categoria (el del nav) y sus herramientas, con el nombre corto de la miga. En
+// las calculadoras sobra el "Calculadora de" de cada una: ya lo dice el titulo.
+const Y = { es: 'y', en: 'and' };
+const capitalizar = texto => texto.charAt(0).toUpperCase() + texto.slice(1);
+
+export function textoOg(categoria, l) {
+  const cat = CATEGORIES.find(c => c.id === categoria);
+  if (!cat) throw new Error(`pages.mjs: no hay categoria ${categoria}`);
+  const ctx = { l, dic: DICCIONARIOS[l] };
+  const herramientas = toolsIn(categoria).map(t => capitalizar(nombreDe(t.route, ctx)
+    .replace(/^Calculadora de /, '').replace(/ calculator$/, '')));
+  const nombre = DICCIONARIOS[l][cat.label];
+  const lista = `${herramientas.slice(0, -1).join(', ')} ${Y[l]} ${herramientas.at(-1)}`;
+  return {
+    nombre,
+    herramientas,
+    url: `pokeutils.alvarotc.com${urlDe(cat.route, l)}`,
+    alt: `PokeUtils · ${capitalizar(nombre.toLowerCase())}: ${lista}`,
+  };
+}
+
+const ALT_GENERAL = {
+  es: 'El logo de PokeUtils: una Poké Ball y el nombre POKEUTILS',
+  en: 'The PokeUtils logo: a Poké Ball and the POKEUTILS wordmark',
+};
+const LOCALE = { es: 'es_ES', en: 'en_US' };
+
+// {imagen, alt, locale, alterno} de una pagina. imagen es absoluta: una
+// etiqueta og no resuelve rutas relativas.
+export function ogDe(logica, l, origen = ORIGEN) {
+  const categoria = categoriaOgDe(logica);
+  return {
+    imagen: `${origen}${categoria ? ogFichero(categoria, l) : OG_GENERAL}`,
+    alt: categoria ? textoOg(categoria, l).alt : ALT_GENERAL[l],
+    locale: LOCALE[l],
+    alterno: LOCALE[l === 'es' ? 'en' : 'es'],
+  };
 }
 
 // ===== Datos estructurados (JSON-LD) =====
@@ -499,6 +565,17 @@ export function paginaHtml(esqueleto, ruta, origen = ORIGEN) {
     () => `<meta property="og:description" content="${descripcion}">`, 'og:description');
   html = sustituir(html, /<meta property="og:url" content="[^"]*">/,
     () => `<meta property="og:url" content="${url}">`, 'og:url');
+  // La imagen de su categoria en su idioma, y el idioma de la pagina. og:site_name
+  // es el mismo en todas y ya viene escrito en index.html.
+  const og = ogDe(ruta.logica, l, origen);
+  html = sustituir(html, /<meta property="og:image" content="[^"]*">/,
+    () => `<meta property="og:image" content="${og.imagen}">`, 'og:image');
+  html = sustituir(html, /<meta property="og:image:alt" content="[^"]*">/,
+    () => `<meta property="og:image:alt" content="${esc(og.alt)}">`, 'og:image:alt');
+  html = sustituir(html, /<meta property="og:locale" content="[^"]*">/,
+    () => `<meta property="og:locale" content="${og.locale}">`, 'og:locale');
+  html = sustituir(html, /<meta property="og:locale:alternate" content="[^"]*">/,
+    () => `<meta property="og:locale:alternate" content="${og.alterno}">`, 'og:locale:alternate');
   html = sustituir(html, /<link rel="canonical" href="[^"]*">/,
     () => `<link rel="canonical" href="${url}">${ruta.noindex ? '\n  <meta name="robots" content="noindex">' : ''}`,
     'la canonical');
@@ -541,7 +618,7 @@ export function paginaHtml(esqueleto, ruta, origen = ORIGEN) {
 //
 // Las cadenas que una persona o un buscador leen: nodos de texto, y los
 // atributos title, placeholder, aria-label y alt. De content, solo los de
-// description, og:title y og:description, que son texto; los demas (viewport,
+// description, og:title, og:description y og:image:alt, que son texto; los demas (viewport,
 // el color del tema, la URL de la og:image, 1200) son valores tecnicos que no
 // tienen idioma. Sin <script> ni <style>, que no se leen.
 const ENTIDADES = { amp: '&', quot: '"', lt: '<', gt: '>', eacute: 'é', middot: '·', copy: '©', nbsp: ' ' };
@@ -554,7 +631,7 @@ export function textosVisibles(html) {
   const textos = [
     ...[...sinCodigo.matchAll(/>([^<]+)</g)].map(m => m[1]),
     ...[...sinCodigo.matchAll(/\s(?:title|placeholder|aria-label|alt)="([^"]*)"/g)].map(m => m[1]),
-    ...[...sinCodigo.matchAll(/<meta (?:name="description"|property="og:(?:title|description)") content="([^"]*)"/g)].map(m => m[1]),
+    ...[...sinCodigo.matchAll(/<meta (?:name="description"|property="og:(?:title|description|image:alt)") content="([^"]*)"/g)].map(m => m[1]),
   ];
   return textos.map(t => decodificar(t).replace(/\s+/g, ' ').trim()).filter(t => /\p{L}/u.test(t));
 }

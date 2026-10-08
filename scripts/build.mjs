@@ -38,6 +38,7 @@ import {
 } from '../js/rutas.js';
 import { TITULOS_SEO } from '../js/titulos.js';
 import { TOOLS } from '../js/tools.js';
+import { readPngSize, pngLooksFlat } from './build-icons.mjs';
 import { INDEXABLES, contarPalabras } from '../js/contenido.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -762,6 +763,58 @@ async function generarPaginas(esqueleto) {
   const huerfanas = [...entrantes].filter(([, desde]) => desde.size === 0).map(([f]) => f);
   if (lejos.length || huerfanas.length) {
     throw new Error(`Recorrido de enlaces: a mas de 3 clics ${JSON.stringify(lejos)}; sin enlace entrante desde otra indexable ${JSON.stringify(huerfanas)}`);
+  }
+
+  // (t) La imagen al compartir (D11). Cada pagina lleva un og:image, un
+  // og:image:alt, su og:locale con el del otro idioma de alternativo y
+  // og:site_name. La imagen es la de su categoria en su idioma, sacada aqui de
+  // una tabla propia y no de ogDe (pages.mjs), que es lo que se comprueba; la
+  // general solo en la portada, la FAQ y las legales. Y cada imagen esta en
+  // dist/, es un PNG de 1200x630 (lo que dicen sus meta), no es plana y pesa
+  // 200 KB como mucho.
+  const CATEGORIA_ESPERADA = { pokedex: 'pokedex', egg: 'pokedex', compare: 'pokedex', data: 'data', types: 'data',
+    moves: 'data', abilities: 'data', items: 'data', natures: 'data', competitive: 'competitive', team: 'competitive',
+    counter: 'competitive', speed: 'competitive', survive: 'competitive', meta: 'competitive', calculator: 'calculator' };
+  const GENERAL = ['/', '/faq', '/privacy', '/terms'];
+  const LOCALES = { es: 'es_ES', en: 'en_US' };
+  const imagenes = new Map();
+  const comprobarImagen = async url => {
+    if (imagenes.has(url)) return imagenes.get(url);
+    if (!url.startsWith(`${ORIGEN}/icons/`)) throw new Error(`og:image ${url} no esta en ${ORIGEN}/icons/`);
+    const fichero = url.slice(ORIGEN.length + 1);
+    const buf = await readFile(join(OUT, fichero)).catch(() => { throw new Error(`og:image ${url}: dist/${fichero} no existe`); });
+    const { width, height } = readPngSize(buf);
+    if (width !== 1200 || height !== 630) throw new Error(`dist/${fichero} mide ${width}x${height} y una og:image tiene que medir 1200x630`);
+    if (buf.length > 200 * 1024) throw new Error(`dist/${fichero} pesa ${kb(buf.length)}, por encima de los 200 KB`);
+    if (pngLooksFlat(buf)) throw new Error(`dist/${fichero} sale practicamente de un solo color`);
+    imagenes.set(url, buf);
+    return buf;
+  };
+  for (const { f, html } of paginas) {
+    const { logica } = rutaDeFichero.get(f);
+    const l = idiomaDeFichero(f);
+    const meta = prop => {
+      const valores = unico(html, new RegExp(`<meta property="${prop}" content="([^"]*)">`, 'g'));
+      if (valores.length !== 1) throw new Error(`dist/${f} lleva ${valores.length} ${prop} (tiene que ser 1)`);
+      return valores[0];
+    };
+    const categoria = GENERAL.includes(logica) ? null : CATEGORIA_ESPERADA[logica.split(/[/?]/)[1]];
+    if (categoria === undefined) throw new Error(`dist/${f} (${logica}): no se que og:image le toca -- anadela a CATEGORIA_ESPERADA`);
+    const esperada = `${ORIGEN}/icons/${categoria ? `og/${categoria}-${l}.png` : 'og-image.png'}`;
+    const imagen = meta('og:image');
+    if (imagen !== esperada) throw new Error(`dist/${f} (${logica}, ${l}) lleva la og:image ${imagen} y le toca ${esperada}`);
+    await comprobarImagen(imagen);
+    if (meta('og:image:width') !== '1200' || meta('og:image:height') !== '630') throw new Error(`dist/${f}: og:image:width/height no dicen 1200x630`);
+    if (!meta('og:image:alt').trim()) throw new Error(`dist/${f} lleva un og:image:alt vacio`);
+    if (meta('og:locale') !== LOCALES[l]) throw new Error(`dist/${f} es ${l} y lleva og:locale ${meta('og:locale')}`);
+    if (meta('og:locale:alternate') !== LOCALES[l === 'es' ? 'en' : 'es']) throw new Error(`dist/${f} lleva og:locale:alternate ${meta('og:locale:alternate')}`);
+    if (meta('og:site_name') !== 'PokeUtils') throw new Error(`dist/${f} lleva og:site_name ${meta('og:site_name')}`);
+  }
+  // Las ocho de categoria se usan, y el par ES/EN de cada una es distinto.
+  for (const categoria of new Set(Object.values(CATEGORIA_ESPERADA))) {
+    const [es, en] = IDIOMAS.map(l => imagenes.get(`${ORIGEN}/icons/og/${categoria}-${l}.png`));
+    if (!es || !en) throw new Error(`Ninguna pagina lleva la og:image de ${categoria} en algun idioma`);
+    if (es.equals(en)) throw new Error(`icons/og/${categoria}: la imagen espanola y la inglesa son la misma (D11)`);
   }
   return ficheros.length;
 }

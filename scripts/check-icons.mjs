@@ -19,6 +19,9 @@
 //
 // Run with: node scripts/check-icons.mjs
 import { readFile, readdir } from 'node:fs/promises';
+import { ogFichero } from './pages.mjs';
+import { CATEGORIES } from '../js/tools.js';
+import { IDIOMAS } from '../js/rutas.js';
 
 const raiz = new URL('../', import.meta.url);
 const leer = async f => readFile(new URL(f, raiz), 'utf8');
@@ -74,8 +77,14 @@ check('index.html sigue enlazando manifest.webmanifest',
 
 console.log('\nNada de sobra\n');
 
-const huerfanos = [...enDisco].filter(f => !referenciadas.includes(`icons/${f}`));
+// icons/og/ son las imagenes por categoria (D11 de la PR 3): no las nombra
+// ningun HTML del fuente sino pages.mjs (ogFichero), una por categoria y por
+// idioma. Que cada pagina lleve la suya lo comprueba el aserto (t) de build.mjs.
+const huerfanos = [...enDisco].filter(f => f !== 'og' && !referenciadas.includes(`icons/${f}`));
 check('ningun fichero de icons/ sin nadie que lo referencie', huerfanos, []);
+const ogEsperadas = CATEGORIES.flatMap(c => IDIOMAS.map(l => ogFichero(c.id, l).replace(/^\/icons\/og\//, ''))).sort();
+check('icons/og/ lleva una imagen por categoria e idioma, y nada mas',
+  (await readdir(new URL('icons/og/', raiz))).sort(), ogEsperadas);
 
 console.log('\nY el tamano que declaran es el que miden\n');
 
