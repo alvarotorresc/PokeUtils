@@ -55,3 +55,10 @@ export const spriteIdFor = p => (p.noSprite && p.speciesId ? p.speciesId : p.id)
 const MEGA = /-mega(-|$)/;
 const REGIONAL = /-(alola|galar|hisui|paldea)(-|$)/;
 export const tieneUrlPropia = p => isForm(p) && (MEGA.test(p.name) || REGIONAL.test(p.name));
+
+// D12 del plan de la PR 4: la gorra de Pikachu y los dominantes son regionales
+// para tieneUrlPropia (pikachu-alola-cap, raticate-totem-alola), pero no son la
+// forma que alguien busca por su nombre. Tienen URL, pero ni el bloque de formas
+// de la ficha las enlaza ni el texto de la ficha las nombra: los dos preguntan
+// aqui.
+export const formaEnlazable = p => tieneUrlPropia(p) && !/-(cap|totem)(-|$)/.test(p.name);

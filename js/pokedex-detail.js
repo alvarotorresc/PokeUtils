@@ -1,130 +1,32 @@
 // ===== POKEMON DETAIL =====
-import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, NATURES } from './data.js';
-import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchDex } from './api.js';
-import { skeletonHTML, renderError, hostDeRuta, wireScrollFade, esc, titularFicha } from './ui.js';
+import { TYPES, STAT_KEYS, NATURES } from './data.js';
+import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchAbilities, fetchDex, fetchMeta, fetchMetaNames } from './api.js';
+import { skeletonHTML, renderError, hostDeRuta, seguimosEn, wireScrollFade, titularFicha, contextoActivo } from './ui.js';
 import { urlDe } from './rutas.js';
 import { esqueletoDeFicha } from './cascaras.js';
-import { evolutionText, ramasResueltas, textoDeRama, nodoActual } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
-import { rangeAt100 } from './stats.js';
-import { partnersOf, hasEggData } from './egg-groups.js';
-import { formsOf, spriteIdFor } from './forms.js';
-import { fetchMeta, fetchMetaNames } from './api.js';
+import { formsOf } from './forms.js';
 import { metaSetOf, defaultFormat, prettySlug, metaName, metaLink, FORMATS, MONTH } from './meta.js';
 import { getLevel } from './level.js';
+import { fichaHTML, evoSectionHTML, movesPanelHTML, formLabels } from './ficha-pokemon.js';
+// Estatico y no import(): esto ya es el trozo de la ficha, que solo baja quien
+// abre una. El aserto (w) de scripts/build.mjs vigila que no suba al arranque.
+import { textoEspecie } from './ficha-texto.js';
 
-// Spanish names are missing for 616 of the 2187 items, and the build falls back
-// to the slug. Prefer English over a raw slug before giving up.
-function displayName(entry) {
-  if (!entry) return '';
-  if (getLang() === 'en') return entry.nameEn || entry.name;
-  return entry.nameEs !== entry.name ? entry.nameEs : (entry.nameEn || entry.name);
-}
-
-// `dex` va aparte porque una forma tiene id propio para el sprite y el enlace
-// (10126 es Lycanroc Nocturno) pero NO tiene numero de Pokedex: ese lo posee la
-// especie, igual que en la cabecera de la ficha. Sin esto salia "#10126", que
-// no es un numero que exista en ninguna Pokedex.
-function evoNodeHTML(species, currentId, nameOf, dex = species) {
-  const isCurrent = species === currentId;
-  const inner = `
-    <img src="${spriteUrl(species)}" alt="${esc(nameOf(species))}" loading="lazy">
-    <span class="evo-dex">#${String(dex).padStart(4, '0')}</span>
-    <span class="evo-name">${nameOf(species)}</span>
-  `;
-  return isCurrent
-    ? `<span class="evo-node current">${inner}</span>`
-    : `<a class="evo-node" href="${urlDe(`/pokedex/${species}`)}">${inner}</a>`;
-}
-
-const evoBranchHTML = (condicion, destino) => `
-  <div class="evo-branch">
-    <span class="evo-arrow">
-      <span class="evo-cond">${condicion || '&nbsp;'}</span>
-      <span class="evo-tip">▶</span>
-    </span>
-    ${destino}
-  </div>
-`;
-
-// Una rama por forma cuando las alternativas llevan a formas distintas de la
-// misma especie: Sandshrew sube de nivel al Sandslash de Kanto y con Piedra
-// Hielo al de Alola, pero PokeAPI mete los dos por el mismo hueco. Sin esto la
-// ficha dice que hay dos maneras de evolucionar y apunta las dos al mismo
-// sprite.
+// Evolucion y movimientos llegan pintados dentro de fichaHTML. Lo de aqui es
+// solo su camino de error: un fallo cargando uno de los dos no tumba la ficha,
+// la seccion ensena su propio error con reintento y el resto sigue en pie.
 //
-// Se divide solo si el destino no evoluciona mas: una rama que se coma un
-// subarbol seria peor que dejarlo como estaba. Lo que se sabe de las formas no
-// se tira por eso -- si no se parte, va al texto de la rama unica.
-function evoBranchesHTML(node, child, currentId, nameOf, lang, lookups, formaDe) {
-  const resueltas = ramasResueltas(node, child, formaDe);
-
-  if (!resueltas || child.evolvesTo.length > 0) {
-    return evoBranchHTML(
-      textoDeRama(child, resueltas, nameOf, lang, lookups),
-      evoTreeHTML(child, currentId, nameOf, lang, lookups, formaDe),
-    );
-  }
-  return resueltas.map(r => evoBranchHTML(
-    evolutionText(r.details, lang, lookups),
-    evoNodeHTML(r.id, currentId, nameOf, child.species),
-  )).join('');
-}
-
-function evoTreeHTML(node, currentId, nameOf, lang, lookups, formaDe) {
-  const children = node.evolvesTo;
-  if (children.length === 0) return evoNodeHTML(node.species, currentId, nameOf);
-  return `
-    <div class="evo-step">
-      ${evoNodeHTML(node.species, currentId, nameOf)}
-      <div class="evo-branches">
-        ${children.map(child =>
-          evoBranchesHTML(node, child, currentId, nameOf, lang, lookups, formaDe)).join('')}
-      </div>
-    </div>
-  `;
-}
-
-// A failure loading evolutions must not take down the whole detail page: this
-// section shows its own error with a retry and the rest stays up.
-async function renderEvolutionSection(host, dexId, formId = dexId) {
+// `fallo` es el error de la primera carga, la de renderPokedexDetail: con el,
+// se va directo al error sin volver a pedir nada. El reintento entra sin el.
+async function renderEvolutionSection(host, dexId, formId = dexId, fallo = null) {
   host.innerHTML = skeletonHTML({ shape: 'blocks', rows: 3 });
   try {
-    // Only two datasets: item and move names are already resolved inside
-    // evolutions.json, so the page never pulls items.json (595 KB) or
-    // moves.json (343 KB) just to read a few names.
+    if (fallo) throw fallo;
     const [evolutions, allPokemon] = await Promise.all([
       fetchEvolutions(), fetchPokemonList(),
     ]);
-
-    // La cadena es la de la especie: una forma no tiene linea evolutiva propia.
-    const chainId = evolutions.bySpecies[dexId];
-    const root = chainId != null ? evolutions.chains[chainId] : null;
-    if (!root || root.evolvesTo.length === 0) {
-      host.innerHTML = `<p class="evo-none">${t('evo.none')}</p>`;
-      return;
-    }
-
-    const pokeBySlug = new Map(allPokemon.map(x => [x.name, x]));
-    const byId = new Map(allPokemon.map(p => [p.id, p]));
-    const nameOf = id => displayName(byId.get(id)) || `#${id}`;
-
-    const lookups = {
-      species: slug => displayName(pokeBySlug.get(slug)) || slug,
-    };
-
-    // Por el sufijo del slug y no por una tabla de ids: la especie 745 ya se
-    // llama `lycanroc-midday`, asi que la forma diurna se encuentra igual que
-    // las otras dos y no hay ningun numero que mantener a mano.
-    const formaDe = (species, sufijo) => {
-      const entrada = byId.get(species);
-      if (!entrada) return null;
-      const candidatos = [entrada, ...formsOf(species, allPokemon)];
-      return candidatos.find(p => p.name.endsWith(`-${sufijo}`))?.id || null;
-    };
-
-    const currentId = nodoActual(root, dexId, formId, formaDe);
-    host.innerHTML = `<div class="evo-line">${evoTreeHTML(root, currentId, nameOf, getLang(), lookups, formaDe)}</div>`;
+    host.innerHTML = evoSectionHTML(contextoActivo(), { evolutions, allPokemon, dexId, formId });
   } catch (err) {
     // Sin enlace de vuelta: la ficha sigue entera encima, esto es una seccion
     // suya. Ver renderError.
@@ -140,117 +42,28 @@ async function renderEvolutionSection(host, dexId, formId = dexId) {
 // mismo data/dex/{id}.json que la cabecera ya ha pedido para la descripcion:
 // mediana 1,7 KB gz y cero peticiones nuevas.
 //
-// La lista tiene alto fijo y scroll propio, asi que la tarjeta ocupa lo mismo
-// con 15 movimientos que con 150, y no salta al cambiar de pestana.
-const METHOD_ORDER = ['level', 'machine', 'egg', 'tutor'];
-
-function moveRowHTML(move, level) {
-  const dash = '—';
-  return `
-    <div class="mv-row">
-      <span class="mv-level">${level === null ? '' : (level === 0 ? t('learn.start') : `${t('learn.col.level')} ${level}`)}</span>
-      <a class="mv-name" href="${urlDe(`/moves/${move.id}`)}">${move.nameEs && getLang() === 'es' ? move.nameEs : move.nameEn}</a>
-      <span class="type-badge sm" data-type="${esc(move.type)}" style="cursor:default">${typeName(move.type)}</span>
-      <span class="move-category ${esc(move.category)}">${t('cat.' + move.category)}</span>
-      <span class="mv-num">${move.power ?? dash}</span>
-      <span class="mv-num">${move.accuracy != null ? move.accuracy + '%' : dash}</span>
-      <span class="mv-num">${move.pp ?? dash}</span>
-    </div>
-  `;
+// La primera pestana la pinta fichaHTML; aqui se escucha el cambio de pestana,
+// que repinta el panel con la elegida. Un solo listener en el hueco, que no se
+// sustituye: el innerHTML cambia, el listener se queda.
+function wireMovesPanel(host, dex) {
+  host.addEventListener('click', (e) => {
+    const btn = e.target.closest('.mv-tabs .tab');
+    if (!btn) return;
+    host.innerHTML = movesPanelHTML(contextoActivo(), dex, btn.dataset.method);
+  });
 }
 
-function renderMovesPanel(host, entry, byId, versionGroups) {
-  const methods = METHOD_ORDER.filter(m => entry[m]);
-  let active = methods[0];
-
-  const paint = () => {
-    const [vgIdx, list] = entry[active];
-    const vgSlug = versionGroups[vgIdx];
-    const game = (getLang() === 'es' ? VERSION_GROUP_NAMES : VERSION_GROUP_NAMES_EN)[vgSlug] || vgSlug;
-    const rows = list.map(item => {
-      const isLevel = Array.isArray(item);
-      const move = byId.get(isLevel ? item[0] : item);
-      return move ? moveRowHTML(move, isLevel ? item[1] : null) : '';
-    }).join('');
-
-    host.innerHTML = `
-      <div class="tabs mv-tabs">
-        ${methods.map(m => `<button class="tab${m === active ? ' active' : ''}" data-method="${m}">${t('learn.tab.' + m)}</button>`).join('')}
-      </div>
-      <div class="mv-meta">
-        <span>${t('learn.from', { game })}</span>
-        <span>${list.length === 1 ? t('learn.count.one') : t('learn.count', { n: list.length })}</span>
-      </div>
-      <div class="mv-list">${rows}</div>
-    `;
-
-    host.querySelector('.mv-tabs').addEventListener('click', (e) => {
-      const btn = e.target.closest('.tab');
-      if (!btn) return;
-      active = btn.dataset.method;
-      paint();
-    });
-  };
-
-  paint();
-}
-
-async function loadMovesSection(host, currentId) {
+// `fallo`, como en renderEvolutionSection.
+async function loadMovesSection(host, dexId, fallo = null) {
   host.innerHTML = skeletonHTML({ shape: 'blocks', rows: 4 });
   try {
-    // Un solo fichero con el learnset de esta especie y los movimientos que
-    // aparecen en el, ya con nombre y numeros. Antes eran learnsets.json y
-    // moves.json enteros -- 155,6 KB gz por abrir una ficha para leer los ~100
-    // movimientos de uno. Y ya esta pedido: la cabecera saco de aqui la
-    // descripcion, asi que esto no cuesta ni una peticion mas.
-    const ficha = await fetchDex(currentId);
-    const entry = ficha.learnset;
-    if (!entry || Object.keys(entry).length === 0) {
-      host.innerHTML = `<p class="evo-none">${t('learn.none')}</p>`;
-      return;
-    }
-    renderMovesPanel(host, entry, new Map(ficha.moves.map(m => [m.id, m])), ficha.versionGroups);
+    if (fallo) throw fallo;
+    const dex = await fetchDex(dexId);
+    host.innerHTML = movesPanelHTML(contextoActivo(), dex);
+    wireMovesPanel(host, dex);
   } catch (err) {
-    renderError(host, err, () => loadMovesSection(host, currentId), { backHome: false });
+    renderError(host, err, () => loadMovesSection(host, dexId), { backHome: false });
   }
-}
-
-// The capture rate runs 0 (Chansey and friends) to 255 (Caterpie and friends).
-// The cut-offs are for reading, not a formula from the games.
-// Groups, gender split and how many species it can breed with. The count is a
-// number and a link on purpose: for a Field group Pokemon the list itself is
-// 278 names inside a page that is already long.
-//
-// The breeding fields are read from the raw dataset entry, not from `pokemon`:
-// fetchPokemonDetail builds its own object with the fields the page needed
-// before this feature, and eggGroups is not one of them.
-// Three species label two or more of their forms identically -- Minior repeats
-// "Forma Meteorito" six times, one per core colour, and Zygarde and Darmanitan
-// repeat one each: 10 tabs where the label alone cannot say which is which.
-// PokeAPI really does give them the same name, so rather than invent a
-// translation the repeated ones fall back to the slug's own suffix, which is
-// what actually distinguishes them.
-// The root cannot be sliced off with the species' slug, because that slug often
-// carries a suffix of its own: species 774 is `minior-red-meteor` and 718 is
-// `zygarde-50`. It is the segments the two share from the start, which also
-// keeps Kommo-o's own hyphen intact (`kommo-o` vs `kommo-o-totem`).
-function slugSuffix(formSlug, speciesSlug) {
-  const form = formSlug.split('-');
-  const species = speciesSlug.split('-');
-  let i = 0;
-  while (i < form.length && i < species.length && form[i] === species[i]) i++;
-  return form.slice(i).join(' ') || formSlug.replace(/-/g, ' ');
-}
-
-function formLabels(variants, speciesSlug, lang) {
-  const nameOf = v => v.speciesId ? (lang === 'es' ? v.formEs : v.formEn) : t('form.base');
-  const seen = {};
-  variants.forEach(v => { seen[nameOf(v)] = (seen[nameOf(v)] || 0) + 1; });
-
-  return variants.map(v => {
-    const label = nameOf(v);
-    return seen[label] < 2 ? label : slugSuffix(v.name, speciesSlug);
-  });
 }
 
 // El set mas jugado. Solo 201 de los 1025 estan en OU o en VGC, asi que la
@@ -345,9 +158,8 @@ function metaSetHTML(found, owner, names) {
 
 // Se pinta aparte porque puede tener que pedir el otro formato. Falla suave: si
 // algo no carga, la ficha se queda sin esta seccion y con todo lo demas.
-async function renderMetaSection(host, dexId, format, meta, allPokemon) {
+async function renderMetaSection(host, dexId, format, meta, allPokemon, evolutions) {
   try {
-    const evolutions = await fetchEvolutions().catch(() => null);
     const found = await findMetaSet(dexId, format, meta, evolutions);
     if (!found) return;
 
@@ -356,8 +168,9 @@ async function renderMetaSection(host, dexId, format, meta, allPokemon) {
     const names = await fetchMetaNames().catch(() => null);
 
     const owner = allPokemon.find(p => p.id === found.ownerId);
+    host.hidden = false;
     host.innerHTML = `
-      <h3 class="section-title">${t('meta.section')}</h3>
+      <h2 class="section-title">${t('meta.section')}</h2>
       ${found.own ? '' : `<p class="meta-family">${t('meta.family', { name: `<a href="${urlDe(`/pokedex/${found.ownerId}`)}">${owner ? pokeName(owner) : '#' + found.ownerId}</a>` })}</p>`}
       ${metaSetHTML(found, owner, names)}
     `;
@@ -366,68 +179,99 @@ async function renderMetaSection(host, dexId, format, meta, allPokemon) {
   }
 }
 
-function eggSectionHTML(pokemon, all) {
-  // Breeding is the species'. A form inherits eggGroups, so reading it off the
-  // form would give the same answer today, but partnersOf already counts
-  // species only and the two should be asking about the same Pokemon.
-  const entry = all.find(p => p.id === (pokemon.speciesId || pokemon.id));
-  if (!hasEggData(all) || !entry?.eggGroups) return '';
-
-  const groups = entry.eggGroups
-    .map(g => `<a class="egg-chip" href="${urlDe(`/egg/${g}`)}">${t('egg.group.' + g)}</a>`)
-    .join('');
-
-  // -1 is genderless, 0 always male, 8 always female; anything between is a
-  // ratio in eighths. None of these collapse into each other.
-  //
-  // Only one side is rounded and the other is the remainder: rounding both
-  // independently prints 88% / 13% for a 7:1 split, which adds up to 101.
-  const female = Math.round(entry.genderRate / 8 * 100);
-  const gender = entry.genderRate === -1 ? t('egg.gender.none')
-    : entry.genderRate === 0 ? t('egg.gender.male')
-    : entry.genderRate === 8 ? t('egg.gender.female')
-    : `${100 - female}% ♂ / ${female}% ♀`;
-
-  const partners = partnersOf(entry, all).length;
-
-  return `
-    <h3 class="section-title">${t('egg.section')}</h3>
-    <div class="egg-section">
-      <div class="egg-row"><span class="egg-key">${t('egg.groups')}</span><span>${groups}</span></div>
-      <div class="egg-row"><span class="egg-key">${t('egg.gender')}</span><span>${gender}</span></div>
-      <div class="egg-row"><span class="egg-key">${t('egg.partners')}</span><span>${partners}</span></div>
-    </div>
-  `;
+// El texto derivado de la especie, con lo que la ficha ya tiene en memoria. Solo
+// en la especie: una forma ensena la descripcion sola (D8). Falla suave: sin
+// evoluciones o sin el dex el texto diria "no evoluciona" o "0 movimientos",
+// y sin descripcion se queda en cifras, asi que textoEspecie lanza y la ficha
+// sale sin la seccion, como antes.
+function textoDe(dexId, pokemon, ctx, { allPokemon, abilities, evolutions, dex }) {
+  if (pokemon.id !== dexId || !evolutions || !dex) return null;
+  try {
+    return textoEspecie(dexId, { ...ctx, pokemon: allPokemon, abilities, evolutions, dex });
+  } catch {
+    return null;
+  }
 }
 
-function catchRateLabel(rate) {
-  if (rate >= 200) return t('pokedex.catchrate.veryeasy');
-  if (rate >= 120) return t('pokedex.catchrate.easy');
-  if (rate >= 60) return t('pokedex.catchrate.medium');
-  if (rate >= 20) return t('pokedex.catchrate.hard');
-  return t('pokedex.catchrate.veryhard');
+// ===== La ficha que llega en el HTML =====
+//
+// En la primera carga de una especie el build ya ha pintado la ficha entera
+// dentro de <div data-shell data-ruta="/pokedex/<id>">, y route() la conserva
+// (logicaDeShell). Aqui no se pinta el esqueleto encima: se cargan los datos y
+// se adopta. Una forma no llega con shell, ni una pestana de forma, que repinta
+// sin pasar por el router.
+function shellDeFicha(container, id) {
+  const shell = container.querySelector(':scope > [data-shell]');
+  return shell?.dataset.ruta === `/pokedex/${id}` ? shell : null;
+}
+
+// D1: en esa primera carga el texto derivado es el del shell, tal cual. El HTML
+// se revalida en cada visita y /data/* puede venir de una cache de hasta una
+// semana: recalcularlo podria cambiar una frase delante del lector, o dejar el
+// cliente diciendo otra cosa que lo que leyo el buscador. En una navegacion
+// SPA no hay shell y se calcula con textoEspecie. parrafos[0] es la
+// descripcion, que fichaHTML pinta aparte y no lee de aqui.
+function textoDelShell(shell) {
+  const parrafos = [...shell.querySelectorAll('.intro-ficha p')].map(p => p.textContent);
+  return parrafos.length ? { parrafos: [null, ...parrafos] } : null;
+}
+
+// Adopta el shell o lo sustituye, de una vez. Si la ficha del cliente es
+// identica nodo a nodo (lo normal: los mismos datos y la misma plantilla) se
+// quedan los nodos que ya estan, sin volver a crear un solo <img>. Si no (un
+// /data/* de cache vieja, una seccion que no cargo), se cambia el contenido
+// entero en un solo paso. isEqualNode y no comparar cadenas: el navegador
+// serializa a su manera (&#39; vuelve como ').
+function adoptarShell(shell, html) {
+  const nueva = document.createElement('div');
+  nueva.innerHTML = html;
+  if (!nueva.isEqualNode(shell)) shell.replaceChildren(...nueva.childNodes);
 }
 
 export async function renderPokedexDetail(container, id) {
-  // hostDeRuta y no `container` a secas: la ficha espera a la descripcion de
-  // pokeapi.co, que es red real a un tercero, asi que abrirla y volver atras
-  // antes de que conteste dejaba la ficha entera encima de la lista con la URL
-  // diciendo #/pokedex. Ahora ese render tardio escribe en un nodo que el router
-  // ya ha desconectado. Cubre tambien el cambio de pestana de forma, que
-  // repinta sin pasar por el router.
-  const host = hostDeRuta(container);
-  host.innerHTML = skeletonHTML(esqueletoDeFicha('pokedex'));
+  const shell = shellDeFicha(container, id);
+  let host, vigente;
+  if (shell) {
+    // Sin la marca, como la portada al adoptarla: un segundo route() a esta
+    // misma ruta ya no lo conservaria, y una pestana de forma que vuelva a la
+    // especie no lo confunde con el suyo. Y el shell es el host: la ficha del
+    // cliente lo ocupa tal cual estaba, sin un nivel mas de <div>. Lo que
+    // protege del render tardio es seguimosEn, como en las paginas de tipo.
+    shell.removeAttribute('data-shell');
+    shell.removeAttribute('data-ruta');
+    host = shell;
+    vigente = seguimosEn(container);
+  } else {
+    // hostDeRuta y no `container` a secas: la ficha espera a la descripcion de
+    // pokeapi.co, que es red real a un tercero, asi que abrirla y volver atras
+    // antes de que conteste dejaba la ficha entera encima de la lista con la URL
+    // diciendo #/pokedex. Ahora ese render tardio escribe en un nodo que el router
+    // ya ha desconectado. Cubre tambien el cambio de pestana de forma, que
+    // repinta sin pasar por el router.
+    host = hostDeRuta(container);
+    host.innerHTML = skeletonHTML(esqueletoDeFicha('pokedex'));
+    vigente = () => true;
+  }
 
-  // In parallel: fetchPokemonList is already memoised by api.js, so the full
-  // list the breeding section needs costs no extra request.
+  // Todo a la vez, y se pinta una sola vez cuando esta todo: la ficha ya no
+  // llega a trozos. Los cinco (el dex, justo debajo) estan memorizados en
+  // api.js, asi que lo que otra parte de la pagina ya pidio no se pide dos
+  // veces.
+  //
+  // Evoluciones y meta fallan suave: sin ellos la ficha se pinta entera, la
+  // evolucion con su error y reintento, y sin seccion de meta, que es
+  // informacion de mas y no la razon de estar en la pagina.
   const format = defaultFormat(getLevel());
-  const [pokemon, allPokemon, meta] = await Promise.all([
+  let errorEvo = null;
+  const [pokemon, allPokemon, abilities, meta, evolutions] = await Promise.all([
     fetchPokemonDetail(id),
     fetchPokemonList(),
-    // Falla suave: si el fichero del meta no carga, la ficha se pinta entera sin
-    // su seccion. Es informacion de mas, no la razon de estar en la pagina.
+    // Para el texto. fetchPokemonDetail ya lo ha pedido: es la misma promesa.
+    fetchAbilities(),
     fetchMeta(format).catch(() => null),
+    fetchEvolutions().catch((err) => { errorEvo = err; return null; }),
   ]);
+  if (!vigente()) return;
   if (!pokemon) {
     host.innerHTML = `
       <div class="no-results">
@@ -445,238 +289,36 @@ export async function renderPokedexDetail(container, id) {
   // species keeps owning the dex number, the neighbours, evolution, the
   // learnset and breeding. Only what the header shows changes.
   const dexId = pokemon.speciesId || pokemon.id;
+  // El dex de la especie ya lo ha pedido fetchPokemonDetail para la
+  // descripcion, a la vez que todo lo de arriba: esto es la promesa memorizada,
+  // no una peticion mas. Si fallo alli, aqui se reintenta una vez.
+  let errorDex = null;
+  const dex = await fetchDex(dexId).catch((err) => { errorDex = err; return null; });
+  if (!vigente()) return;
   const speciesEntry = allPokemon.find(p => p.id === dexId);
   const variants = [speciesEntry, ...formsOf(dexId, allPokemon)].filter(Boolean);
-  const variantLabels = formLabels(variants, speciesEntry?.name || '', getLang());
+  const variantLabels = formLabels(variants, speciesEntry?.name || '', contextoActivo());
 
-  // Calculate defensive matchups
-  const matchups = {};
-  TYPES.forEach(atkType => {
-    let mult = 1;
-    pokemon.types.forEach(defType => {
-      mult *= CHART[atkType][TYPES.indexOf(defType)];
-    });
-    matchups[atkType] = mult;
+  // titularFicha con pokeName: el nombre del idioma activo, igual que el h1.
+  titularFicha(`/pokedex/${id}`, pokeName(pokemon));
+  const ctx = contextoActivo();
+  // Con shell, sin la entrada animada: ya esta a la vista, y asi la ficha del
+  // cliente es la misma que la del build.
+  const html = fichaHTML(ctx, {
+    pokemon, allPokemon, variants, variantLabels, evolutions, dex,
+    texto: shell ? textoDelShell(shell) : textoDe(dexId, pokemon, ctx, { allPokemon, abilities, evolutions, dex }),
+    animar: !shell,
   });
+  if (shell) adoptarShell(shell, html);
+  else host.innerHTML = html;
 
-  const weak = [], resist = [], immune = [];
-  Object.entries(matchups).forEach(([tp, m]) => {
-    if (m === 0) immune.push({ t: tp, m });
-    else if (m > 1) weak.push({ t: tp, m });
-    else if (m < 1) resist.push({ t: tp, m });
-  });
-  weak.sort((a, b) => b.m - a.m);
-  resist.sort((a, b) => a.m - b.m);
-
-  const fmtMult = m => m === 4 ? 'x4' : m === 2 ? 'x2' : m === 0.5 ? 'x\u00BD' : m === 0.25 ? 'x\u00BC' : 'x0';
-
-  const statTotal = STAT_KEYS.reduce((sum, k) => sum + (pokemon.stats[k] || 0), 0);
-
-  // Every one of the 1025 yields at least one EV, so this never renders empty.
-  // Ordered by STAT_KEYS rather than by the object's own key order, to match the
-  // rows of the table right above it.
-  const evYieldEntries = STAT_KEYS
-    .filter(k => pokemon.evYield?.[k])
-    .map(k => [k, pokemon.evYield[k]]);
-  const maxStat = 255;
-
-  const displayName = pokeName(pokemon);
-  titularFicha(`/pokedex/${id}`, displayName);
-  const altName = getLang() === 'es' ? (pokemon.nameEn || pokemon.name) : pokemon.nameEs;
-  // La descripcion viaja en los dos idiomas desde que se hornea en build: antes
-  // se pedia a pokeapi solo en espanol y la ficha en ingles la ensenaba asi.
-  //
-  // Y con el otro idioma como red: PokeAPI no tiene texto en espanol para las
-  // 127 especies de la 899 a la 1025 -- Hisui y Paldea enteras -- que hasta
-  // ahora salian sin ninguna descripcion. El ingles se entiende; el hueco no.
-  const flavour = getLang() === 'es'
-    ? (pokemon.descriptionEs || pokemon.descriptionEn)
-    : (pokemon.descriptionEn || pokemon.descriptionEs);
-
-  host.innerHTML = `
-    <div class="poke-detail fade-in">
-      <button class="back-btn" onclick="history.back()">◀ ${t('pokedex.back')}</button>
-
-      <div class="bento">
-      <section class="b b-id">
-      <div class="poke-detail-header">
-        <img class="poke-detail-sprite" src="${spriteUrl(spriteIdFor(pokemon))}" alt="${esc(displayName)}"
-             onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><text x=%2248%22 y=%2260%22 text-anchor=%22middle%22 font-size=%2240%22>?</text></svg>'">
-        <div class="poke-detail-info">
-          <div class="dex-number">#${String(dexId).padStart(4, '0')}</div>
-          <h2>${displayName}</h2>
-          <div class="name-en">${altName}</div>
-          <div class="types">
-            ${pokemon.types.map(tp => `<span class="type-badge" data-type="${esc(tp)}" style="cursor:default">${typeName(tp)}</span>`).join('')}
-          </div>
-          <div class="meta">
-            <span>📏 ${pokemon.height} m</span>
-            <span>⚖️ ${pokemon.weight} kg</span>
-            <span>🎯 ${pokemon.captureRate == null
-              ? t('capture.rate.unknown')
-              : `${pokemon.captureRate} · ${catchRateLabel(pokemon.captureRate)}`}</span>
-          </div>
-        </div>
-      </div>
-
-      ${variants.length > 1 ? `
-        <div class="form-tabs-wrap" id="formTabsWrap">
-          <div class="tabs form-tabs" id="formTabs">
-            ${variants.map((v, i) => `
-              <button class="tab${v.id === pokemon.id ? ' active' : ''}" data-form="${v.id}">
-                ${variantLabels[i]}
-              </button>
-            `).join('')}
-          </div>
-        </div>
-      ` : ''}
-
-      ${flavour ? `<p class="poke-flavour">${flavour}</p>` : ''}
-      </section>
-
-      <section class="b">
-      <h3 class="section-title">${t('pokedex.stats')}</h3>
-      <div>
-        <div class="stat-bars">
-          <div class="stat-row stat-head">
-            <span></span><span></span><span></span>
-            <span class="stat-range-head">${t('pokedex.range100')}</span>
-          </div>
-          ${STAT_KEYS.map(k => {
-            const val = pokemon.stats[k] || 0;
-            const pct = Math.min((val / maxStat) * 100, 100);
-            // The range is text, not a second bar: base stats are scaled to 255
-            // while level 100 values reach 714, and drawing both on one track
-            // would be a dual axis.
-            const { min, max } = rangeAt100(val, k);
-            return `
-              <div class="stat-row">
-                <span class="stat-label">${statName(k)}</span>
-                <span class="stat-value">${val}</span>
-                <div class="stat-bar-bg">
-                  <div class="stat-bar-fill" style="width:${pct}%;background:${STAT_COLORS[k]}"></div>
-                </div>
-                <span class="stat-range">${min}-${max}</span>
-              </div>
-            `;
-          }).join('')}
-          <div class="stat-row" style="margin-top:6px;border-top:2px solid var(--border);padding-top:10px">
-            <span class="stat-label">${t('common.total')}</span>
-            <span class="stat-value stat-total">${statTotal}</span>
-            <div></div>
-            <span></span>
-          </div>
-        </div>
-        <div class="ev-yield">
-          <span class="ev-yield-label">${t('pokedex.evyield')}</span>
-          ${evYieldEntries.map(([k, v]) => `
-            <span class="ev-yield-item">
-              <span class="ev-yield-dot" style="background:${STAT_COLORS[k]}"></span>${statName(k)} +${v}
-            </span>
-          `).join('')}
-        </div>
-      </div>
-
-      </section>
-
-      <section class="b">
-      <h3 class="section-title">${t('pokedex.abilities')}</h3>
-      <!-- La descripcion va escrita, no en una burbuja: dos nombres sueltos
-           dejaban 168px de caja practicamente vacia, y lo que se quiere saber
-           de una habilidad es justo lo que hace. El enlace a su pagina sigue
-           donde estaba. -->
-      <div class="ability-list">
-        ${pokemon.abilities.map(a => {
-          // a.nameEn es el name de PokeAPI ('pressure'), que es lo que lleva la
-          // ruta; el nombre visible en ingles es displayEn.
-          const desc = getLang() === 'es'
-            ? (a.descriptionEs || a.effect)
-            : (a.descriptionEn || a.effect);
-          return `
-            <div class="ability-item">
-              <div class="ability-head">
-                <a class="ability-link" href="${urlDe(`/abilities/${encodeURIComponent(a.nameEn)}`)}">${getLang() === 'es' ? a.nameEs : a.displayEn}</a>
-                ${a.isHidden ? `<span class="ability-tag">${t('pokedex.hidden')}</span>` : ''}
-              </div>
-              ${desc ? `<p class="ability-desc">${esc(desc)}</p>` : ''}
-            </div>
-          `;
-        }).join('')}
-      </div>
-
-      </section>
-
-      <section class="b">${eggSectionHTML(pokemon, allPokemon)}</section>
-
-      <section class="b" id="metaSection"></section>
-
-      <section class="b">
-      <h3 class="section-title">${t('learn.title')}</h3>
-      <div class="mv-section" id="mvSection"></div>
-      </section>
-
-      <section class="b">
-      <h3 class="section-title">${t('pokedex.matchups')}</h3>
-      <div style="display:flex;flex-direction:column;gap:12px">
-        ${weak.length ? `
-          <div class="result-section weakness">
-            <h3><span class="result-icon">💥</span> ${t('pokedex.weak')} <span class="result-hint">x2 / x4</span></h3>
-            <div class="result-badges">${weak.map(w => `<span class="result-badge" data-type="${w.t}">${typeName(w.t)}<span class="multiplier">${fmtMult(w.m)}</span></span>`).join('')}</div>
-          </div>
-        ` : ''}
-        ${resist.length ? `
-          <div class="result-section resistance">
-            <h3><span class="result-icon">🛡️</span> ${t('pokedex.resist')} <span class="result-hint">x0.5 / x0.25</span></h3>
-            <div class="result-badges">${resist.map(r => `<span class="result-badge" data-type="${r.t}">${typeName(r.t)}<span class="multiplier">${fmtMult(r.m)}</span></span>`).join('')}</div>
-          </div>
-        ` : ''}
-        ${immune.length ? `
-          <div class="result-section immunity">
-            <h3><span class="result-icon">🚫</span> ${t('pokedex.immune')}</h3>
-            <div class="result-badges">${immune.map(i => `<span class="result-badge" data-type="${i.t}">${typeName(i.t)}</span>`).join('')}</div>
-          </div>
-        ` : ''}
-      </div>
-
-      </section>
-
-      <!-- The evolution line reads across, not down: in a masonry column it only
-           had 539px for the 674px Pikachu needs, and Raichu fell outside the
-           card. It closes the bento as a full-width band instead. -->
-      <section class="b b-wide">
-      <h3 class="section-title">${t('evo.title')}</h3>
-      <div id="evoSection"></div>
-      </section>
-      </div>
-
-      <div class="poke-nav">
-        ${dexId > 1 ? `<a href="${urlDe(`/pokedex/${dexId - 1}`)}" class="page-btn poke-nav-btn">
-          <span class="poke-nav-arrow">◀</span>
-          <img src="${spriteUrl(dexId - 1)}" alt="" onerror="this.style.display='none'">
-          <span class="poke-nav-label">
-            <span class="poke-nav-dex">#${String(dexId - 1).padStart(4, '0')}</span>
-            <span class="poke-nav-name">${pokemon.prevName || ''}</span>
-          </span>
-        </a>` : '<div></div>'}
-        ${dexId < 1025 ? `<a href="${urlDe(`/pokedex/${dexId + 1}`)}" class="page-btn poke-nav-btn next">
-          <span class="poke-nav-label">
-            <span class="poke-nav-dex">#${String(dexId + 1).padStart(4, '0')}</span>
-            <span class="poke-nav-name">${pokemon.nextName || ''}</span>
-          </span>
-          <img src="${spriteUrl(dexId + 1)}" alt="" onerror="this.style.display='none'">
-          <span class="poke-nav-arrow">▶</span>
-        </a>` : '<div></div>'}
-      </div>
-    </div>
-  `;
-
-  // The species owns both: Mega Charizard X evolves and learns exactly as
-  // Charizard does, and the learnsets were built for the 1025 species only. La
-  // evolucion recibe ademas la forma abierta, que es la unica que sabe cual de
-  // las tres ramas de Lycanroc es la pestana que se esta mirando.
-  renderEvolutionSection(host.querySelector('#evoSection'), dexId, pokemon.id);
-  loadMovesSection(host.querySelector('#mvSection'), dexId);
-  renderMetaSection(host.querySelector('#metaSection'), dexId, format, meta, allPokemon);
+  // Lo que no pudo cargar se queda con su error y su reintento, en su hueco.
+  const evoHost = host.querySelector('#evoSection');
+  if (errorEvo) renderEvolutionSection(evoHost, dexId, pokemon.id, errorEvo);
+  const mvHost = host.querySelector('#mvSection');
+  if (dex) wireMovesPanel(mvHost, dex);
+  else loadMovesSection(mvHost, dexId, errorDex);
+  renderMetaSection(host.querySelector('#metaSection'), dexId, format, meta, allPokemon, evolutions);
 
   // Pikachu carries 17 forms and the strip only shows five of them at a time.
   // wireScrollFade (js/ui.js) lights a fade on whichever side has more; the

@@ -7,22 +7,17 @@
 // Trueno en alola". El texto se lee bien y esta mal, que es justo lo que no
 // caza mirar el codigo.
 //
-// evolution.js importa i18n.js, que lee el idioma de localStorage. Con el shim
-// de abajo el modulo real corre en Node sin tocarlo.
+// evolution.js traduce con el diccionario que se le pasa en `ctx`, no con el
+// idioma global de i18n.js: se importan los dos diccionarios y se elige en cada
+// llamada, sin shim de localStorage ni setLang.
 // Run with: node scripts/check-evolution.mjs
 import { readFile } from 'node:fs/promises';
 
-globalThis.localStorage = {
-  _d: {},
-  getItem(k) { return k in this._d ? this._d[k] : null; },
-  setItem(k, v) { this._d[k] = String(v); },
-  removeItem(k) { delete this._d[k]; },
-};
-
 const { evolutionText } = await import('../js/evolution.js');
-// triggerText traduce con t(), que lee el idioma global, no el argumento `lang`.
-// En la app van siempre juntos; aqui hay que moverlos a la vez.
-const { setLang } = await import('../js/i18n.js');
+const CTX = {
+  es: { l: 'es', dic: (await import('../js/i18n-es.js')).default },
+  en: { l: 'en', dic: (await import('../js/i18n-en.js')).default },
+};
 
 const read = async name =>
   JSON.parse(await readFile(new URL(`../data/${name}.json`, import.meta.url), 'utf8'));
@@ -54,15 +49,9 @@ function check(label, actual, expected) {
   console.log(`${ok ? '  ok  ' : '  FAIL'} ${label}: ${JSON.stringify(actual)}${ok ? '' : ` (expected ${JSON.stringify(expected)})`}`);
 }
 
-// setLang es asincrona desde perf(i18n): baja el diccionario del idioma antes de
-// cambiarlo. Sin el await, t() seguia respondiendo en espanol y "Lv. 26" salia
-// como "Nv. 26" -- un fallo del check, no de la app.
-const texto = async (de, a, lang = 'es') => {
-  await setLang(lang);
+const texto = (de, a, lang = 'es') => {
   const t = transiciones.find(x => x.de === de && x.a === a);
-  const out = t ? evolutionText(t.details, lang, lookups) : '(no existe)';
-  await setLang('es');
-  return out;
+  return t ? evolutionText(t.details, CTX[lang], lookups) : '(no existe)';
 };
 
 console.log(`\n${transiciones.length} transiciones en el dataset\n`);
@@ -74,7 +63,7 @@ console.log('Ninguna frase repite una alternativa\n');
 const partes = s => (s.includes(' o ') ? s.split(' o ') : [s]).map(x => x.trim());
 const repetidas = [];
 for (const tr of transiciones) {
-  const s = evolutionText(tr.details, 'es', lookups);
+  const s = evolutionText(tr.details, CTX.es, lookups);
   const p = partes(s);
   if (p.length < 2) continue;
   for (let i = 0; i < p.length; i++) {
@@ -90,26 +79,26 @@ check('frases con una alternativa repetida', [...new Set(repetidas)], []);
 
 console.log('\nLos casos que lo destaparon\n');
 
-check('Diglett a Dugtrio', await texto(50, 51), 'Nv. 26');
-check('Pikachu a Raichu', await texto(25, 26), 'Piedra Trueno');
-check('Pichu a Pikachu no lleva condicion rara', (await texto(172, 25)).includes(' o '), false);
-check('Growlithe a Arcanine', await texto(58, 59), 'Piedra Fuego');
-check('Graveler a Golem', await texto(75, 76), 'Intercambio');
-check('Rattata a Raticate', await texto(19, 20), 'Nv. 20');
-check('Koffing a Weezing', await texto(109, 110), 'Nv. 35');
+check('Diglett a Dugtrio', texto(50, 51), 'Nv. 26');
+check('Pikachu a Raichu', texto(25, 26), 'Piedra Trueno');
+check('Pichu a Pikachu no lleva condicion rara', (texto(172, 25)).includes(' o '), false);
+check('Growlithe a Arcanine', texto(58, 59), 'Piedra Fuego');
+check('Graveler a Golem', texto(75, 76), 'Intercambio');
+check('Rattata a Raticate', texto(19, 20), 'Nv. 20');
+check('Koffing a Weezing', texto(109, 110), 'Nv. 35');
 
 console.log('\nLas alternativas de verdad se quedan las dos\n');
 
-check('Sandshrew: nivel o piedra', await texto(27, 28), 'Nv. 22 o Piedra Hielo');
-check('Vulpix: dos piedras distintas', await texto(37, 38), 'Piedra Fuego o Piedra Hielo');
-check('Slowpoke: nivel u objeto', await texto(79, 80), 'Nv. 37 o Brazal Galanuez');
-check('Golbat: felicidad', await texto(42, 169), 'Subir de nivel con amistad alta');
+check('Sandshrew: nivel o piedra', texto(27, 28), 'Nv. 22 o Piedra Hielo');
+check('Vulpix: dos piedras distintas', texto(37, 38), 'Piedra Fuego o Piedra Hielo');
+check('Slowpoke: nivel u objeto', texto(79, 80), 'Nv. 37 o Brazal Galanuez');
+check('Golbat: felicidad', texto(42, 169), 'Subir de nivel con amistad alta');
 
 console.log('\nY en ingles igual\n');
 
-check('Diglett', await texto(50, 51, 'en'), 'Lv. 26');
-check('Pikachu', await texto(25, 26, 'en'), 'Thunder Stone');
-check('Sandshrew mantiene las dos', (await texto(27, 28, 'en')).includes(' or '), true);
+check('Diglett', texto(50, 51, 'en'), 'Lv. 26');
+check('Pikachu', texto(25, 26, 'en'), 'Thunder Stone');
+check('Sandshrew mantiene las dos', (texto(27, 28, 'en')).includes(' or '), true);
 
 console.log('\nCada alternativa lleva a su forma, no todas a la misma\n');
 
@@ -134,30 +123,26 @@ check('Sandshrew se parte en dos', sandshrew?.length, 2);
 check('nivel al de Kanto, piedra al de Alola',
   sandshrew?.map(r => idDe(28, r)), [28, 10102]);
 check('y cada rama dice su condicion',
-  sandshrew?.map(r => evolutionText(r.details, 'es', lookups)),
+  sandshrew?.map(r => evolutionText(r.details, CTX.es, lookups)),
   ['Nv. 22', 'Piedra Hielo']);
 
 // Grupo 1, el que ya estaba en los datos: la region la tiraba `anade`.
 const pikachu = ramasDe(25, 26);
 check('Pikachu se parte por region', pikachu?.map(r => idDe(26, r)), [26, 10100]);
 check('y la rama de Alola lo dice',
-  pikachu?.map(r => evolutionText(r.details, 'es', lookups)),
+  pikachu?.map(r => evolutionText(r.details, CTX.es, lookups)),
   ['Piedra Trueno', 'Piedra Trueno en Alola']);
 
 // Lycanroc, que fue el que destapo todo esto.
 const rockruff = ramasDe(744, 745);
 check('las tres formas de Lycanroc', rockruff?.map(r => idDe(745, r)), [745, 10126, 10152]);
 check('cada hora con su texto',
-  rockruff?.map(r => evolutionText(r.details, 'es', lookups)),
+  rockruff?.map(r => evolutionText(r.details, CTX.es, lookups)),
   ['Nv. 25 de dia'.replace('dia', 'día'), 'Nv. 25 de noche', 'Nv. 25 al anochecer']);
 
-// Con setLang y no solo con el argumento: t() lee el idioma global, que es la
-// misma trampa que documenta `texto()` mas arriba.
-await setLang('en');
 check('y en ingles igual',
-  rockruff?.map(r => evolutionText(r.details, 'en', lookups)),
+  rockruff?.map(r => evolutionText(r.details, CTX.en, lookups)),
   ['Lv. 25 during the day', 'Lv. 25 at night', 'Lv. 25 at dusk']);
-await setLang('es');
 
 console.log('\nLa tabla escrita a mano no se pudre en silencio\n');
 
@@ -192,7 +177,7 @@ check('se parten 22 transiciones', todasLasRamas.length, 22);
 console.log('\nNinguna transicion se queda sin texto por el filtro\n');
 
 const conDetallesYSinTexto = transiciones
-  .filter(t => t.details.length > 0 && !evolutionText(t.details, 'es', lookups))
+  .filter(t => t.details.length > 0 && !evolutionText(t.details, CTX.es, lookups))
   .map(t => `${nombreDe.get(t.de)} -> ${nombreDe.get(t.a)}`);
 check('transiciones con condiciones que no dicen nada', conDetallesYSinTexto, []);
 
@@ -238,33 +223,30 @@ check('una forma que no es nodo cae en su especie',
 // otra forma, y `anade` lo borraba.
 const [goomy, sliggoo] = hijoDe(cadenaDe(704), 704, 705);
 check('Goomy dice a donde lleva la variante de Hisui',
-  textoDeRama(sliggoo, ramasResueltas(goomy, sliggoo, formaDe), nameOf, 'es', lookups),
+  textoDeRama(sliggoo, ramasResueltas(goomy, sliggoo, formaDe), nameOf, CTX.es, lookups),
   'Nv. 40 o Nv. 40 en Hisui (a Sliggoo Forma de Hisui)');
 const [mimeJr, mrMime] = hijoDe(cadenaDe(439), 439, 122);
 check('y Mime Jr. la de Galar',
-  textoDeRama(mrMime, ramasResueltas(mimeJr, mrMime, formaDe), nameOf, 'es', lookups),
+  textoDeRama(mrMime, ramasResueltas(mimeJr, mrMime, formaDe), nameOf, CTX.es, lookups),
   'Subir de nivel sabiendo Mimético o Subir de nivel en Galar sabiendo Mimético (a Mr. Mime Forma de Galar)');
 
-// Y en ingles igual, que es donde se cuela este fallo: `t()` lee el idioma
-// global y no el argumento `lang`, la misma trampa que documenta `texto()` mas
-// arriba. `nameOf` tambien tiene que elegir por idioma, como hace la ficha.
+// Y en ingles igual: el diccionario es el de `ctx`, y `nameOf` tambien tiene
+// que elegir por idioma, como hace la ficha.
 const objetoPorSlug = new Map(pokemon.map(p => [p.name, p]));
 const nameOfEn = id => byId.get(id)?.nameEn || `#${id}`;
 const lookupsEn = { species: slug => objetoPorSlug.get(slug)?.nameEn || slug };
-await setLang('en');
 check('en ingles dice a donde lleva la de Hisui',
-  textoDeRama(sliggoo, ramasResueltas(goomy, sliggoo, formaDe), nameOfEn, 'en', lookupsEn),
+  textoDeRama(sliggoo, ramasResueltas(goomy, sliggoo, formaDe), nameOfEn, CTX.en, lookupsEn),
   'Lv. 40 or Lv. 40 at Hisui (to Sliggoo Hisuian Form)');
 check('y la de Galar',
-  textoDeRama(mrMime, ramasResueltas(mimeJr, mrMime, formaDe), nameOfEn, 'en', lookupsEn),
+  textoDeRama(mrMime, ramasResueltas(mimeJr, mrMime, formaDe), nameOfEn, CTX.en, lookupsEn),
   'Level up knowing Mimic or Level up at Galar knowing Mimic (to Mr. Mime Galarian Form)');
-await setLang('es');
 
 // Y lo que no elige forma se queda exactamente como estaba: el texto de siempre.
 const [charmeleon, charizard] = hijoDe(cadenaDe(4), 5, 6);
 check('una transicion normal no cambia de texto',
-  textoDeRama(charizard, ramasResueltas(charmeleon, charizard, formaDe), nameOf, 'es', lookups),
-  evolutionText(charizard.details, 'es', lookups));
+  textoDeRama(charizard, ramasResueltas(charmeleon, charizard, formaDe), nameOf, CTX.es, lookups),
+  evolutionText(charizard.details, CTX.es, lookups));
 
 console.log(`\n${failed ? `${failed} fallos` : 'All checks passed'}\n`);
 process.exit(failed ? 1 : 0);

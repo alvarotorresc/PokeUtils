@@ -17,7 +17,10 @@
 //   trade_species, party_species -> slug (resolved from pokemon.json, which
 //     the detail page already loads)
 
-import { t } from './i18n.js';
+// El idioma llega explicito en `ctx = { l, dic }`, como en contenido.js, y no
+// por t() de i18n.js: asi la ficha la pinta igual el cliente que el build, en
+// node y en los dos idiomas. Por eso tampoco importa ui.js ni i18n.js.
+import { tr } from './contenido.js';
 import { TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from './data.js';
 
 const TIME_KEYS = { day: 'evo.day', night: 'evo.night', dusk: 'evo.dusk' };
@@ -31,75 +34,77 @@ function named(value, lang) {
   return (value.es && value.es !== value.name) ? value.es : (value.en || value.name || '');
 }
 
-// TYPE_NAMES_FULL only has Spanish names; conditionTexts() gets `lang` as a
-// parameter (not from getLang()) so it stays testable, so the type lookup
-// has to switch tables the same way instead of calling typeName() from
-// i18n.js, which returns the abbreviated badge form ("Electr."), not this
-// full one.
+// TYPE_NAMES_FULL only has Spanish names; conditionTexts() gets the language
+// in `ctx` (not from getLang()) so it stays testable, so the type lookup has
+// to switch tables the same way instead of reading `type.*` from the
+// dictionary, which is the abbreviated badge form ("Electr."), not this full
+// one.
 function typeFullName(type, lang) {
   return (lang === 'en' ? TYPE_NAMES_FULL_EN : TYPE_NAMES_FULL)[type] || type;
 }
 
-function triggerText(d, lang, lookups) {
+function triggerText(d, ctx, lookups) {
+  const lang = ctx.l;
   switch (d.trigger) {
     case 'level-up':
-      return d.min_level ? t('evo.level', { n: d.min_level }) : t('evo.levelup');
+      return d.min_level ? tr(ctx, 'evo.level', { n: d.min_level }) : tr(ctx, 'evo.levelup');
     case 'use-item':
       return named(d.item, lang);
     case 'trade':
       return d.trade_species
-        ? t('evo.trade.for', { species: lookups.species(d.trade_species) })
-        : t('evo.trade');
+        ? tr(ctx, 'evo.trade.for', { species: lookups.species(d.trade_species) })
+        : tr(ctx, 'evo.trade');
     case 'use-move':
-      return t('evo.usemove', { move: named(d.used_move, lang), n: d.min_move_count || 1 });
+      return tr(ctx, 'evo.usemove', { move: named(d.used_move, lang), n: d.min_move_count || 1 });
     case 'agile-style-move':
-      return t('evo.agile', { move: named(d.used_move, lang), n: d.min_move_count || 1 });
+      return tr(ctx, 'evo.agile', { move: named(d.used_move, lang), n: d.min_move_count || 1 });
     case 'strong-style-move':
-      return t('evo.strong', { move: named(d.used_move, lang), n: d.min_move_count || 1 });
-    case 'shed': return t('evo.shed');
-    case 'spin': return t('evo.spin');
-    case 'tower-of-darkness': return t('evo.tower.dark');
-    case 'tower-of-waters': return t('evo.tower.water');
-    case 'three-critical-hits': return t('evo.crits');
-    case 'recoil-damage': return t('evo.recoil', { n: d.min_damage_taken || 0 });
-    case 'take-damage': return t('evo.damage');
-    case 'three-defeated-bisharp': return t('evo.bisharp');
-    case 'gimmighoul-coins': return t('evo.coins');
-    default: return t('evo.other');
+      return tr(ctx, 'evo.strong', { move: named(d.used_move, lang), n: d.min_move_count || 1 });
+    case 'shed': return tr(ctx, 'evo.shed');
+    case 'spin': return tr(ctx, 'evo.spin');
+    case 'tower-of-darkness': return tr(ctx, 'evo.tower.dark');
+    case 'tower-of-waters': return tr(ctx, 'evo.tower.water');
+    case 'three-critical-hits': return tr(ctx, 'evo.crits');
+    case 'recoil-damage': return tr(ctx, 'evo.recoil', { n: d.min_damage_taken || 0 });
+    case 'take-damage': return tr(ctx, 'evo.damage');
+    case 'three-defeated-bisharp': return tr(ctx, 'evo.bisharp');
+    case 'gimmighoul-coins': return tr(ctx, 'evo.coins');
+    default: return tr(ctx, 'evo.other');
   }
 }
 
-function conditionTexts(d, lang, lookups) {
+function conditionTexts(d, ctx, lookups) {
+  const lang = ctx.l;
   const out = [];
   // The use-item object is already the trigger; only shown here when it joins
   // a different trigger.
-  if (d.item && d.trigger !== 'use-item') out.push(t('evo.with.item', { item: named(d.item, lang) }));
-  if (d.held_item) out.push(t('evo.held', { item: named(d.held_item, lang) }));
-  if (d.min_happiness) out.push(t('evo.happiness'));
-  if (d.min_affection) out.push(t('evo.affection', { n: d.min_affection }));
-  if (d.min_beauty) out.push(t('evo.beauty', { n: d.min_beauty }));
-  if (d.time_of_day && TIME_KEYS[d.time_of_day]) out.push(t(TIME_KEYS[d.time_of_day]));
+  if (d.item && d.trigger !== 'use-item') out.push(tr(ctx, 'evo.with.item', { item: named(d.item, lang) }));
+  if (d.held_item) out.push(tr(ctx, 'evo.held', { item: named(d.held_item, lang) }));
+  if (d.min_happiness) out.push(tr(ctx, 'evo.happiness'));
+  if (d.min_affection) out.push(tr(ctx, 'evo.affection', { n: d.min_affection }));
+  if (d.min_beauty) out.push(tr(ctx, 'evo.beauty', { n: d.min_beauty }));
+  if (d.time_of_day && TIME_KEYS[d.time_of_day]) out.push(tr(ctx, TIME_KEYS[d.time_of_day]));
   // Por `named` y no por `d.region[lang]`: PokeAPI no traduce los nombres de
   // region y devuelve `es: "alola"` en minuscula, asi que salia "en alola".
   // `named` ya sabe caer al ingles cuando el español es el slug crudo.
-  if (d.location) out.push(t('evo.at', { place: named(d.location, lang) }));
-  else if (d.region) out.push(t('evo.at', { place: named(d.region, lang) }));
-  if (d.known_move) out.push(t('evo.knowing', { move: named(d.known_move, lang) }));
-  if (d.known_move_type) out.push(t('evo.knowingtype', { type: typeFullName(d.known_move_type, lang) }));
-  if (d.gender === 1) out.push(t('evo.female'));
-  if (d.gender === 2) out.push(t('evo.male'));
+  if (d.location) out.push(tr(ctx, 'evo.at', { place: named(d.location, lang) }));
+  else if (d.region) out.push(tr(ctx, 'evo.at', { place: named(d.region, lang) }));
+  if (d.known_move) out.push(tr(ctx, 'evo.knowing', { move: named(d.known_move, lang) }));
+  if (d.known_move_type) out.push(tr(ctx, 'evo.knowingtype', { type: typeFullName(d.known_move_type, lang) }));
+  if (d.gender === 1) out.push(tr(ctx, 'evo.female'));
+  if (d.gender === 2) out.push(tr(ctx, 'evo.male'));
   // 0 is meaningful here (Attack equals Defense, i.e. Hitmontop), so each
   // value is compared explicitly instead of testing for truthiness.
-  if (d.relative_physical_stats === 1) out.push(t('evo.atkgtdef'));
-  if (d.relative_physical_stats === 0) out.push(t('evo.atkeqdef'));
-  if (d.relative_physical_stats === -1) out.push(t('evo.atkltdef'));
-  if (d.needs_overworld_rain) out.push(t('evo.rain'));
-  if (d.party_species) out.push(t('evo.party', { species: lookups.species(d.party_species) }));
-  if (d.party_type) out.push(t('evo.partytype', { type: typeFullName(d.party_type, lang) }));
-  if (d.turn_upside_down) out.push(t('evo.upsidedown'));
-  if (d.min_steps) out.push(t('evo.steps', { n: d.min_steps }));
-  if (d.near_special_rock) out.push(t('evo.rock'));
-  if (d.needs_multiplayer) out.push(t('evo.multiplayer'));
+  if (d.relative_physical_stats === 1) out.push(tr(ctx, 'evo.atkgtdef'));
+  if (d.relative_physical_stats === 0) out.push(tr(ctx, 'evo.atkeqdef'));
+  if (d.relative_physical_stats === -1) out.push(tr(ctx, 'evo.atkltdef'));
+  if (d.needs_overworld_rain) out.push(tr(ctx, 'evo.rain'));
+  if (d.party_species) out.push(tr(ctx, 'evo.party', { species: lookups.species(d.party_species) }));
+  if (d.party_type) out.push(tr(ctx, 'evo.partytype', { type: typeFullName(d.party_type, lang) }));
+  if (d.turn_upside_down) out.push(tr(ctx, 'evo.upsidedown'));
+  if (d.min_steps) out.push(tr(ctx, 'evo.steps', { n: d.min_steps }));
+  if (d.near_special_rock) out.push(tr(ctx, 'evo.rock'));
+  if (d.needs_multiplayer) out.push(tr(ctx, 'evo.multiplayer'));
   return out;
 }
 
@@ -253,14 +258,14 @@ export function ramasResueltas(node, child, formaDe) {
 // quedaba con la mas general y tiraba la region: Goomy salia con un "Nv. 40" a
 // secas y la ficha no daba ninguna pista de que en Hisui eso lleva a otra forma.
 // Son 2 de las 22 transiciones que eligen forma -- la otra es Mime Jr.
-export function textoDeRama(child, resueltas, nameOf, lang, lookups) {
-  if (!resueltas) return evolutionText(child.details, lang, lookups);
-  const separador = lang === 'es' ? ' o ' : ' or ';
+export function textoDeRama(child, resueltas, nameOf, ctx, lookups) {
+  if (!resueltas) return evolutionText(child.details, ctx, lookups);
+  const separador = ctx.l === 'es' ? ' o ' : ' or ';
   return resueltas.map(r => {
-    const texto = evolutionText(r.details, lang, lookups);
+    const texto = evolutionText(r.details, ctx, lookups);
     // La rama que lleva a la especie base ya se explica sola: nombrarla seria
     // repetir el nodo al que la propia rama esta apuntando.
-    return r.id === child.species ? texto : `${texto} ${t('evo.toform', { form: nameOf(r.id) })}`;
+    return r.id === child.species ? texto : `${texto} ${tr(ctx, 'evo.toform', { form: nameOf(r.id) })}`;
   }).join(separador);
 }
 
@@ -282,11 +287,11 @@ export function nodoActual(root, dexId, formId, formaDe) {
 
 // details: array of alternative conditions. Returns '' when empty, which in
 // the whole dataset happens only for Manaphy.
-export function evolutionText(details, lang, lookups) {
+export function evolutionText(details, ctx, lookups) {
   if (!details || details.length === 0) return '';
-  const separator = lang === 'es' ? ' o ' : ' or ';
+  const separator = ctx.l === 'es' ? ' o ' : ' or ';
   return alternativasUtiles(details)
-    .map(d => [triggerText(d, lang, lookups), ...conditionTexts(d, lang, lookups)].filter(Boolean).join(' '))
+    .map(d => [triggerText(d, ctx, lookups), ...conditionTexts(d, ctx, lookups)].filter(Boolean).join(' '))
     .filter(Boolean)
     .join(separator);
 }

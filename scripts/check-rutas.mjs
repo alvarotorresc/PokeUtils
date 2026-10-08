@@ -19,11 +19,13 @@ import {
   urlDe, logicaDe, legadoALogica, TITULOS, tituloDe, SECCIONES_DE_FICHA,
   TABLA_ESTATICA_EN, GRUPOS_HUEVO_EN, idiomaDe, esPortada, fijarIdioma,
   legadoAPublica, urlEquivalente, TITULOS_EN, DESAMBIGUAR_EN, TIPOS_ES, TIPOS_EN,
+  TITULO_ESPECIE_MIN, TITULO_ESPECIE_MAX,
 } from '../js/rutas.js';
 import { TYPES, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN, CHART } from '../js/data.js';
 import { TITULOS_SEO } from '../js/titulos.js';
 import { TOOLS } from '../js/tools.js';
-import { tieneUrlPropia } from '../js/forms.js';
+import { tieneUrlPropia, isForm } from '../js/forms.js';
+import { pokeName } from '../js/i18n.js';
 import { EGG_GROUPS } from '../js/egg-groups.js';
 import es from '../js/i18n-es.js';
 import en from '../js/i18n-en.js';
@@ -180,7 +182,8 @@ check('ida y vuelta de los 1351, con o sin URL propia',
   pokemon.filter(p => idaYVuelta(`/pokedex/${p.id}`) !== `/pokedex/${p.id}`).map(p => p.name), []);
 check('pikachu', urlDe('/pokedex/25'), '/pokedex/pikachu');
 check('una ficha sin nombre todavia lleva el de su seccion', tituloDe('/pokedex/25'), 'Pokédex · PokeUtils');
-check('y con nombre, el suyo', tituloDe('/pokedex/25', 'Pikachu'), 'Pikachu · PokeUtils');
+check('y con nombre, el suyo', tituloDe('/pokedex/25', 'Pikachu'), 'Pikachu: tipo, debilidades, stats y habilidades · PokeUtils');
+check('una forma con URL propia, solo su nombre', tituloDe('/pokedex/10034', 'Mega Charizard X'), 'Mega Charizard X · PokeUtils');
 check('mr-mime y farfetchd conservan su nombre', [urlDe('/pokedex/122'), urlDe('/pokedex/83')],
   ['/pokedex/mr-mime', '/pokedex/farfetchd']);
 // El nombre de PokeAPI de la forma por defecto (deoxys-normal) no es el de la
@@ -270,8 +273,12 @@ check('las pestanas de la calculadora', ['/calculator', '/calculator?tab=damage&
   .map(l => urlDe(l, 'en')), ['/en/iv-ev-calculator', '/en/damage-calculator?a=6&m=53', '/en/catch-calculator']);
 check('logicaDe dice el idioma', [logicaDe('/pokedex').idioma, logicaDe('/en/pokedex').idioma], ['es', 'en']);
 
+// Salvo no-eggs: la etiqueta paso a Undiscovered y la URL se quedo como estaba.
+const SLUG_EN_A_PROPOSITO = { 'no-eggs': 'no-eggs' };
 check('cada grupo huevo en ingles es el slug de su etiqueta en ingles',
-  EGG_GROUPS.filter(g => GRUPOS_HUEVO_EN[g] !== slugEs(en[`egg.group.${g}`])), []);
+  EGG_GROUPS.filter(g => GRUPOS_HUEVO_EN[g] !== (SLUG_EN_A_PROPOSITO[g] ?? slugEs(en[`egg.group.${g}`]))), []);
+check('y la etiqueta de no-eggs es Undiscovered, con su URL de siempre',
+  [en['egg.group.no-eggs'], urlDe('/egg/no-eggs', 'en')], ['Undiscovered', '/en/egg-groups/no-eggs']);
 check('ida y vuelta de los 15 en ingles', EGG_GROUPS.filter(g => idaYVueltaEn(`/egg/${g}`) !== `/egg/${g}`), []);
 check('ida y vuelta de los 18 tipos en ingles', TYPES.filter(t => idaYVueltaEn(`/types/${t}`) !== `/types/${t}`), []);
 check('fire', urlDe('/types/fire', 'en'), '/en/types/fire');
@@ -443,6 +450,18 @@ const enReadme = [...(await leerTexto('README.md')).matchAll(/#\/[^\s)`]*/g)].ma
 check('el README no enlaza ningun #/ que no este en la lista',
   enReadme.filter(h => !(h in README)), []);
 
+console.log('\nTitulos de las especies\n');
+
+// PR 4: las fichas de especie se indexan, y su titulo lleva el primer sufijo
+// que lo deje en 50-60 caracteres (tituloEspecie). Si ninguno cabe, tituloDe se
+// queda el ultimo y falla aqui. Con el nombre que pone el build (pokeName).
+const titulosEspecie = pokemon.filter(p => !isForm(p))
+  .flatMap(p => ['es', 'en'].map(l => [l, p.id, tituloDe(`/pokedex/${p.id}`, pokeName(p, l), l)]));
+check('las 2050 fichas de especie tienen titulo', titulosEspecie.length, 2050);
+check(`todas de ${TITULO_ESPECIE_MIN} a ${TITULO_ESPECIE_MAX} caracteres`,
+  titulosEspecie.filter(([, , t]) => t.length < TITULO_ESPECIE_MIN || t.length > TITULO_ESPECIE_MAX), []);
+check('y todas con un sufijo', titulosEspecie.filter(([, , t]) => !t.includes(': ')).length, 0);
+
 console.log('\nTitulos unicos\n');
 
 // El build genera una pagina por ficha y cada una necesita un <title> propio.
@@ -459,7 +478,7 @@ check('las dos Unidad Ecuestre',
   ['Habilidad Unidad Ecuestre (Glastrier) · PokeUtils', 'Habilidad Unidad Ecuestre (Spectrier) · PokeUtils']);
 check('Ditto el grupo no es Ditto el Pokemon',
   [tituloDe('/pokedex/132', 'Ditto'), tituloDe('/egg/ditto', 'Ditto')],
-  ['Ditto · PokeUtils', 'Grupo huevo Ditto: cría con casi cualquiera · PokeUtils']);
+  ['Ditto: tipo, debilidades, stats y habilidades · PokeUtils', 'Grupo huevo Ditto: cría con casi cualquiera · PokeUtils']);
 check('Competitivo la habilidad no es el hub',
   [tituloDe('/abilities/defiant', 'Competitivo'), tituloDe('/competitive')],
   ['Habilidad Competitivo · PokeUtils', 'Herramientas competitivas para tu equipo Pokémon · PokeUtils']);
@@ -494,7 +513,7 @@ check('las dos As One',
   ['As One (Glastrier) ability · PokeUtils', 'As One (Spectrier) ability · PokeUtils']);
 check('Ditto el grupo no es Ditto el Pokemon, en ingles',
   [tituloDe('/pokedex/132', 'Ditto', 'en'), tituloDe('/egg/ditto', 'Ditto', 'en')],
-  ['Ditto · PokeUtils', 'Ditto egg group: breeds with almost any Pokémon · PokeUtils']);
+  ['Ditto: type, weaknesses, stats and abilities · PokeUtils', 'Ditto egg group: breeds with almost any Pokémon · PokeUtils']);
 // D6: la herramienta es "Counters" para no chocar con el movimiento Counter, y
 // la habilidad Competitive lleva "ability" detras.
 check('Counter el movimiento no es la herramienta',

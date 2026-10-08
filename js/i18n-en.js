@@ -91,11 +91,11 @@ export default {
     'egg.group.indeterminate': 'Amorphous',
     'egg.group.dragon': 'Dragon',
     'egg.group.ditto': 'Ditto',
-    'egg.group.no-eggs': 'No Eggs',
+    'egg.group.no-eggs': 'Undiscovered',
     'egg.title': 'Egg groups',
     'egg.subtitle': 'The 15 breeding groups and how many Pokemon each holds',
     'egg.back': '◀ All groups',
-    'egg.rules': 'Sharing a group is not enough: genderless Pokemon breed only with Ditto, Ditto breeds with everything except the No Eggs group, and two Pokemon of the same single gender never breed.',
+    'egg.rules': 'Sharing a group is not enough: genderless Pokemon breed only with Ditto, Ditto breeds with everything except the Undiscovered group, and two Pokemon of the same single gender never breed.',
     'egg.stale': 'The breeding data has not reached this browser yet. Reload the page.',
     'egg.section': 'BREEDING',
     'form.base': 'Base',
@@ -334,6 +334,7 @@ export default {
     'pokedex.stats': 'BASE STATS',
     'pokedex.abilities': 'ABILITIES',
     'pokedex.matchups': 'WEAKNESSES & RESISTANCES',
+    'pokedex.forms': 'FORMS WITH THEIR OWN PAGE',
     'pokedex.hidden': '(hidden)',
     'pokedex.weak': 'WEAK',
     'pokedex.resist': 'RESISTS',
@@ -631,6 +632,9 @@ export default {
     'type.flying': 'Flying', 'type.psychic': 'Psychic', 'type.bug': 'Bug',
     'type.rock': 'Rock', 'type.ghost': 'Ghost', 'type.dragon': 'Dragon',
     'type.dark': 'Dark', 'type.steel': 'Steel', 'type.fairy': 'Fairy',
+    // Los 18 movimientos oscuros de Colosseum y XD (data/moves.json). No es
+    // uno de los 18 tipos, pero sin clave su fila de movimiento no se pinta.
+    'type.shadow': 'Shadow',
 
     'stat.hp': 'HP', 'stat.atk': 'Attack', 'stat.def': 'Defense',
     'stat.spa': 'Sp. Atk', 'stat.spd': 'Sp. Def', 'stat.spe': 'Speed',

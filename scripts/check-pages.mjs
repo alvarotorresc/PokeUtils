@@ -9,19 +9,20 @@
 // Run with: node scripts/check-pages.mjs
 import { readFile } from 'node:fs/promises';
 import {
-  ORIGEN, rutasPublicas, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas,
+  ORIGEN, rutasPublicas, leerDex, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas,
   bloqueHreflang, literalesEspanol, sinComentarios, sitemapDe, robotsDe,
 } from './pages.mjs';
 import { existsSync } from 'node:fs';
 import { tieneUrlPropia, isForm } from '../js/forms.js';
 import { pokeName } from '../js/i18n.js';
-import { INDEXABLES } from '../js/contenido.js';
+import { INDEXABLES, esIndexable, esFichaEspecie, FICHAS_INDEXABLES, ULTIMA_ESPECIE } from '../js/contenido.js';
 import textosEn from '../js/textos-en.js';
 
 const leerTexto = ruta => readFile(new URL(`../${ruta}`, import.meta.url), 'utf8');
 const leer = async nombre => JSON.parse(await leerTexto(`data/${nombre}.json`));
 
-const [pokemon, moves, abilities, indice] = await Promise.all(['pokemon', 'moves', 'abilities', 'rutas'].map(leer));
+const [pokemon, moves, abilities, indice, evolutions] = await Promise.all(['pokemon', 'moves', 'abilities', 'rutas', 'evolutions'].map(leer));
+const dex = await leerDex(pokemon, leer);
 const esqueleto = await leerTexto('index.html');
 
 let failed = 0;
@@ -41,7 +42,7 @@ const lanza = fn => {
 
 console.log('\nQue paginas hay\n');
 
-const rutas = rutasPublicas({ indice, pokemon, moves, abilities });
+const rutas = rutasPublicas({ indice, pokemon, moves, abilities, evolutions, dex });
 const por = publica => rutas.find(r => r.publica === publica);
 const de = idioma => rutas.filter(r => r.idioma === idioma);
 
@@ -62,11 +63,19 @@ check('el idioma de cada fila es el de su prefijo',
   rutas.filter(r => r.idioma !== (r.publica === '/en' || r.publica.startsWith('/en/') ? 'en' : 'es')).map(r => r.publica), []);
 check('todas con descripcion', rutas.filter(r => !r.descripcion).map(r => r.publica), []);
 check('ninguna descripcion de mas de 160', rutas.filter(r => r.descripcion?.length > 160).map(r => r.publica), []);
+// PR 4: la de cada ficha de especie sale de descripcionEspecie, de 120 a 155
+// (el titulo, de 50 a 60, lo mira check-rutas). Las formas no: son de plantilla.
+const especies = rutas.filter(r => esFichaEspecie(r.logica));
+check('2050 fichas de especie, 1025 por idioma', ['es', 'en'].map(l => especies.filter(r => r.idioma === l).length), [1025, 1025]);
+check('su description, de 120 a 155',
+  especies.filter(r => r.descripcion.length < 120 || r.descripcion.length > 155).map(r => `${r.publica} ${r.descripcion.length}`), []);
 // PR 3: se indexan las 53 por idioma de INDEXABLES, en los dos idiomas a la
 // vez; el resto, con noindex. D2: la portada en ingles tambien.
-check('noindex en todas salvo las de INDEXABLES',
-  rutas.filter(r => r.noindex === INDEXABLES.includes(r.logica) || r.indexable === r.noindex).map(r => r.publica), []);
-check('106 indexables, 53 por idioma', ['es', 'en'].map(l => de(l).filter(r => r.indexable).length), [53, 53]);
+// PR 4: y las 1025 fichas de especie, con FICHAS_INDEXABLES encendida.
+check('noindex en todas salvo las indexables (esIndexable)',
+  rutas.filter(r => r.noindex === esIndexable(r.logica) || r.indexable === r.noindex).map(r => r.publica), []);
+const porIdioma = INDEXABLES.length + (FICHAS_INDEXABLES ? ULTIMA_ESPECIE : 0);
+check(`${porIdioma * 2} indexables, ${porIdioma} por idioma`, ['es', 'en'].map(l => de(l).filter(r => r.indexable).length), [porIdioma, porIdioma]);
 check('y las legales no', rutas.filter(r => /privac|terminos|terms/.test(r.publica)).map(r => r.noindex), [true, true, true, true]);
 check('los 18 tipos en cada idioma',
   ['es', 'en'].map(l => de(l).filter(r => /^(\/en)?\/(tipos|types)\//.test(r.publica)).length), [18, 18]);
@@ -76,15 +85,29 @@ const alternas = { es: '/', en: '/en' };
 const sinContenido = ({ contenido, chips, jsonLd, deps, ...resto }) => resto;
 // Las deps del lastmod (depsDe): las llevan las indexables y solo ellas, y cada
 // fichero existe. Que tenga historia en git lo mira el build.
-check('deps: en las 106 indexables y en ninguna mas', [rutas.filter(r => r.deps).length, rutas.filter(r => r.indexable && r.deps?.length).length], [106, 106]);
+check('deps: en las 2156 indexables y en ninguna mas', [rutas.filter(r => r.deps).length, rutas.filter(r => r.indexable && r.deps?.length).length], [2156, 2156]);
 check('deps que no existen en disco', [...new Set(rutas.flatMap(r => r.deps ?? []))].filter(d => !existsSync(new URL(`../${d}`, import.meta.url))), []);
 check('deps: el fichero de textos de su idioma', [por('/tipos/fuego').deps.includes('js/textos-es.js'), por('/en/types/fire').deps.includes('js/textos-en.js'), por('/en/types/fire').deps.includes('js/textos-es.js')], [true, true, false]);
+// Una ficha de especie: el conjunto comun, el mismo en los dos idiomas y sin
+// textos, y al final su dex.
+const depsPika = por('/pokedex/pikachu').deps;
+check('deps de una ficha: las mismas en los dos idiomas, sin textos y con su dex al final',
+  [JSON.stringify(depsPika) === JSON.stringify(por('/en/pokedex/pikachu').deps), depsPika.some(d => d.includes('textos-')), depsPika.at(-1),
+    depsPika.filter(d => d.startsWith('data/dex/')).length], [true, false, 'data/dex/25.json', 1]);
 check('sitemapDe: loc y lastmod, escapados, sin hreflang', sitemapDe([{ publica: '/a&b', lastmod: '2026-10-08T10:00:00+02:00' }], 'https://x.test'),
   '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>https://x.test/a&amp;b</loc>\n    <lastmod>2026-10-08T10:00:00+02:00</lastmod>\n  </url>\n</urlset>\n');
 check('robotsDe apunta al sitemap', robotsDe('https://x.test').split('\n').includes('Sitemap: https://x.test/sitemap.xml'), true);
 const tiposLd = ruta => ruta.jsonLd['@graph'].map(nodo => nodo['@type']);
-check('JSON-LD de la portada, una herramienta, un tipo y una ficha', [tiposLd(por('/')), tiposLd(por('/en/damage-calculator')), tiposLd(por('/tipos/fuego')), por('/pokedex/pikachu').jsonLd],
-  [['WebSite'], ['BreadcrumbList', 'WebApplication'], ['BreadcrumbList'], undefined]);
+check('JSON-LD de la portada, una herramienta, un tipo y una ficha', [tiposLd(por('/')), tiposLd(por('/en/damage-calculator')), tiposLd(por('/tipos/fuego')), tiposLd(por('/pokedex/pikachu'))],
+  [['WebSite'], ['BreadcrumbList', 'WebApplication'], ['BreadcrumbList'], ['BreadcrumbList']]);
+const pasosLd = ruta => ruta.jsonLd['@graph'][0].itemListElement.map(paso => [paso.position, paso.name, paso.item]);
+check('el BreadcrumbList de una ficha: Inicio, Pokedex y su nombre, absolutos y en su idioma',
+  [pasosLd(por('/pokedex/pikachu')), pasosLd(por('/en/pokedex/eevee'))],
+  [[[1, 'Inicio', `${ORIGEN}/`], [2, 'Pokédex', `${ORIGEN}/pokedex`], [3, 'Pikachu', `${ORIGEN}/pokedex/pikachu`]],
+    [[1, 'Home', `${ORIGEN}/en`], [2, 'Pokédex', `${ORIGEN}/en/pokedex`], [3, 'Eevee', `${ORIGEN}/en/pokedex/eevee`]]]);
+check('una forma, un movimiento y una habilidad, sin JSON-LD ni deps',
+  ['/pokedex/charizard-mega-x', '/movimientos/impactrueno', '/en/abilities/static'].map(u => [por(u)?.noindex, por(u)?.jsonLd, por(u)?.deps]),
+  Array(3).fill([true, undefined, undefined]));
 check('la portada', sinContenido(por('/')), {
   idioma: 'es', logica: '/', publica: '/', alternas, titulo: 'Pokédex, tabla de tipos y calculadoras Pokémon · PokeUtils',
   descripcion: 'Pokédex con los 1025 Pokémon, tabla de tipos, grupos huevo, calculadoras de daño, captura e IVs y herramientas para montar tu equipo competitivo.',
@@ -110,7 +133,7 @@ check('y el par la tiene a ella', rutas.filter(r => {
   return JSON.stringify(par.alternas) !== JSON.stringify(r.alternas) || par.logica !== r.logica;
 }).map(r => r.publica), []);
 
-check('una especie', [por('/pokedex/pikachu')?.logica, por('/pokedex/pikachu')?.titulo], ['/pokedex/25', 'Pikachu · PokeUtils']);
+check('una especie', [por('/pokedex/pikachu')?.logica, por('/pokedex/pikachu')?.titulo], ['/pokedex/25', 'Pikachu: tipo, debilidades, stats y habilidades · PokeUtils']);
 check('una especie con slug limpio (decision 7)', por('/pokedex/deoxys')?.logica, '/pokedex/386');
 check('una forma propia', por('/pokedex/charizard-mega-x')?.titulo, 'Mega-Charizard X · PokeUtils');
 check('una forma sin URL no tiene pagina', por('/pokedex/deoxys-attack'), undefined);
@@ -128,9 +151,13 @@ check('una pestana de la calculadora', [por('/calculadora-de-dano')?.logica, por
 console.log('\nLas paginas en ingles\n');
 
 check('una especie', [por('/en/pokedex/pikachu')?.logica, por('/en/pokedex/pikachu')?.titulo, por('/en/pokedex/pikachu')?.alternas],
-  ['/pokedex/25', 'Pikachu · PokeUtils', { es: '/pokedex/pikachu', en: '/en/pokedex/pikachu' }]);
+  ['/pokedex/25', 'Pikachu: type, weaknesses, stats and abilities · PokeUtils', { es: '/pokedex/pikachu', en: '/en/pokedex/pikachu' }]);
+// La de una especie sale de sus datos (descripcionEspecie); la de una forma,
+// de la plantilla corta.
 check('su descripcion', por('/en/pokedex/pikachu')?.descripcion,
-  'Pikachu in the Pokédex: base stats, types, weaknesses, abilities, evolutions and the moves it learns.');
+  'Pikachu, an Electric-type Pokémon: weak to Ground, 320 base stat total, evolves into Raichu. Its abilities, who it breeds with and the moves it learns.');
+check('la de una forma propia, de plantilla', por('/en/pokedex/charizard-mega-x')?.descripcion,
+  'Mega Charizard X in the Pokédex: base stats, types, weaknesses, abilities, evolutions and the moves it learns.');
 check('una forma propia, con su nombre en ingles', por('/en/pokedex/charizard-mega-x')?.titulo, 'Mega Charizard X · PokeUtils');
 check('un movimiento', [por('/en/moves/thunder-punch')?.titulo, por('/en/moves/thunder-punch')?.alternas.es],
   ['Thunder Punch · PokeUtils', '/movimientos/puno-trueno']);
@@ -168,17 +195,21 @@ console.log('\nEl HTML de una pagina\n');
 
 const pika = paginaHtml(esqueleto, por('/pokedex/pikachu'));
 const uno = (html, re) => [...html.matchAll(re)].map(m => m[1]);
-check('su <title>', uno(pika, /<title>([^<]*)<\/title>/g), ['Pikachu · PokeUtils']);
+check('su <title>', uno(pika, /<title>([^<]*)<\/title>/g), ['Pikachu: tipo, debilidades, stats y habilidades · PokeUtils']);
 check('su canonical, absoluta y sin barra final',
   uno(pika, /<link rel="canonical" href="([^"]*)"/g), [`${ORIGEN}/pokedex/pikachu`]);
 check('og:url igual que la canonical', uno(pika, /<meta property="og:url" content="([^"]*)"/g), [`${ORIGEN}/pokedex/pikachu`]);
-check('og:title', uno(pika, /<meta property="og:title" content="([^"]*)"/g), ['Pikachu · PokeUtils']);
+check('og:title', uno(pika, /<meta property="og:title" content="([^"]*)"/g), ['Pikachu: tipo, debilidades, stats y habilidades · PokeUtils']);
 check('description y og:description, la misma',
   [...uno(pika, /<meta name="description" content="([^"]*)"/g), ...uno(pika, /<meta property="og:description" content="([^"]*)"/g)],
   [por('/pokedex/pikachu').descripcion, por('/pokedex/pikachu').descripcion]);
-check('un robots noindex', uno(pika, /<meta name="robots" content="([^"]*)"/g), ['noindex']);
+check('sin robots noindex: la ficha de una especie se indexa', uno(pika, /<meta name="robots" content="([^"]*)"/g), []);
 check('no-hero ya en el <html>', /<html lang="es" class="no-hero">/.test(pika), true);
-check('sin el hero de la portada', [pika.includes('data-shell'), pika.includes('<h1>')], [false, false]);
+// La ficha de una especie lleva su contenido: su shell y su h1, el suyo y no
+// el del hero.
+check('sin el hero de la portada, con el shell de la ficha',
+  [pika.includes('class="portada"'), pika.includes('<div data-shell data-ruta="/pokedex/25">'), uno(pika, /<h1>([^<]*)<\/h1>/g)],
+  [false, true, ['Pikachu']]);
 check('sin comentarios HTML', pika.includes('<!--'), false);
 // D9: la migracion de los #/, el no-hero y los dos swaps de idioma solo hacen
 // algo en la portada espanola, que es el index.html tal cual. En las generadas
@@ -191,8 +222,9 @@ check('y una pagina generada, cuatro <script> menos', [scripts(pika), scripts(pa
   Array(2).fill(scripts(sinComentarios(esqueleto)) - 4));
 check('ninguno de los cuatro', [pika, paginaHtml(esqueleto, por('/en/pokedex/pikachu')), paginaHtml(esqueleto, por('/en'))]
   .map(html => MUERTOS.filter(m => html.includes(m))), [[], [], []]);
-check('JSON-LD: uno en /en (WebSite) y ninguno en la ficha con noindex',
-  [paginaHtml(esqueleto, por('/en')).match(/application\/ld\+json/g)?.length, pika.includes('application/ld+json')], [1, false]);
+check('JSON-LD: uno en /en (WebSite), uno en la ficha y ninguno en una forma con noindex',
+  [paginaHtml(esqueleto, por('/en')).match(/application\/ld\+json/g)?.length, pika.match(/application\/ld\+json/g)?.length,
+    paginaHtml(esqueleto, por('/pokedex/charizard-mega-x')).includes('application/ld+json')], [1, 1, false]);
 check('el tema y el modulepreload siguen', [pika.includes("'pkutils_theme'"), pika.includes("l.rel = 'modulepreload'")], [true, true]);
 // Sin el atributo, cada filtro (replaceState con ?q=) cuenta como una visita
 // en Umami: 1 pageview de mas por filtro, medido en el preview de la PR #21.
@@ -200,7 +232,10 @@ const umami = html => html.replace(/<!--[\s\S]*?-->/g, '').match(/<script\b[^>]*
 check('Umami ignora la query en el esqueleto',
   umami(esqueleto).map(t => /\sdata-exclude-search="true"/.test(t)), [true]);
 check('y en las paginas generadas', umami(pika).map(t => /\sdata-exclude-search="true"/.test(t)), [true]);
-check('el <main> sigue ahi, vacio', /<main class="main" id="app" data-reservando><\/main>/.test(pika), true);
+// Sin plantilla (una forma, un movimiento), el <main> se queda vacio.
+check('el <main> sigue ahi, vacio, en una pagina sin plantilla',
+  ['/pokedex/charizard-mega-x', '/movimientos/impactrueno'].map(u => /<main class="main" id="app" data-reservando><\/main>/.test(paginaHtml(esqueleto, por(u)))),
+  [true, true]);
 
 // Una indexable lleva su contenido dentro de <div data-shell data-ruta>, en el
 // <main>: el mismo que pinta el cliente, con su h1 y su texto.
@@ -246,8 +281,9 @@ const bloque = html => (html.match(/<link rel="alternate" hreflang[\s\S]*hreflan
 check('el mismo bloque de hreflang que su par, byte a byte', [bloque(enPika) === bloque(pika), bloque(enPika) !== ''], [true, true]);
 check('y la portada en ingles, el mismo que index.html', bloque(enInicio) === bloque(esqueleto), true);
 check('su canonical, la suya en ingles', uno(enPika, /<link rel="canonical" href="([^"]*)"/g), [`${ORIGEN}/en/pokedex/pikachu`]);
-check('<html lang="en"> y sin hero', [/<html lang="en" class="no-hero">/.test(enPika), enPika.includes('data-shell')], [true, false]);
-check('noindex', uno(enPika, /<meta name="robots" content="([^"]*)"/g), ['noindex']);
+check('<html lang="en">, sin hero y con el shell de su ficha',
+  [/<html lang="en" class="no-hero">/.test(enPika), enPika.includes('class="portada"'), enPika.includes('<div data-shell data-ruta="/pokedex/25">')], [true, false, true]);
+check('sin noindex', uno(enPika, /<meta name="robots" content="([^"]*)"/g), []);
 check('el nav en ingles', uno(enPika, /data-page="\w+">([^<]*)</g), ['HOME', 'POKEDEX', 'DATA', 'COMPETITIVE', 'CALCULATOR']);
 check('y sus enlaces a /en', uno(enPika, /<a href="([^"]*)" class="nav-(?:logo|link)"/g),
   ['/en', '/en', '/en/pokedex', '/en/data', '/en/competitive', '/en/iv-ev-calculator']);

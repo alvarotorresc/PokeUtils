@@ -29,7 +29,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { execFileSync } from 'node:child_process';
 import {
-  rutasPublicas, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas, sinComentarios,
+  rutasPublicas, leerDex, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas, sinComentarios,
   literalesEspanol, ORIGEN, SCRIPTS_DE_LA_PORTADA, rellenarPortada, textosVisibles, textosConDerivados, conJsonLd,
   sitemapDe, robotsDe,
 } from './pages.mjs';
@@ -39,7 +39,13 @@ import {
 import { TITULOS_SEO } from '../js/titulos.js';
 import { TOOLS } from '../js/tools.js';
 import { readPngSize, pngLooksFlat } from './build-icons.mjs';
-import { INDEXABLES, contarPalabras } from '../js/contenido.js';
+import { INDEXABLES, esIndexable, esFichaEspecie, ULTIMA_ESPECIE, contarPalabras, nombrePokemon } from '../js/contenido.js';
+import { textoEspecie } from '../js/ficha-texto.js';
+import { isForm, tieneUrlPropia, formaEnlazable, formsOf } from '../js/forms.js';
+import { TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from '../js/data.js';
+import { pokeName } from '../js/i18n.js';
+import diccionarioEs from '../js/i18n-es.js';
+import diccionarioEn from '../js/i18n-en.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'dist');
@@ -181,7 +187,7 @@ function versionarIndice(version) {
 // ===== Los derivados de tipos y grupos, hechos en el build =====
 //
 // El parrafo derivado de /types/<t> y /egg/<g> sale de CHART, pokemon.json y
-// moves.json (derivadoTipo y derivadoGrupo en js/contenido.js). Calcularlo en
+// moves.json (derivadoTipo y derivadoGrupo en js/derivados.js). Calcularlo en
 // el cliente costaba ~4 KB gz mas en el arranque y bajar moves.json (404 KB)
 // para leer un parrafo que no cambia hasta el siguiente deploy. Asi que se
 // calcula aqui: al empaquetar js/textos-<l>.js, el plugin lo importa en node,
@@ -195,7 +201,7 @@ function derivadosEnTextos({ pokemon, moves }) {
     setup(b) {
       b.onLoad({ filter: /[\\/]js[\\/]textos-(es|en)\.js$/ }, async ({ path }) => {
         const l = path.match(/textos-(es|en)\.js$/)[1];
-        const { conDerivados } = await import(pathToFileURL(join(ROOT, 'js', 'contenido.js')));
+        const { conDerivados } = await import(pathToFileURL(join(ROOT, 'js', 'derivados.js')));
         const { default: textos } = await import(pathToFileURL(path));
         const { default: dic } = await import(pathToFileURL(join(ROOT, 'js', `i18n-${l}.js`)));
         const hechos = conDerivados(textos, { l, dic, pokemon, moves });
@@ -251,6 +257,32 @@ async function comprobarTextos(metafile, salidas, appJs) {
   }
 }
 
+// (w) La plantilla y el texto de la ficha de un Pokemon van en el trozo de la
+// ficha, que solo baja quien abre una, y nunca en el arranque. Como arriba, se
+// mira la salida y por marcas de texto: ficha-pokemon.js ya importaba
+// enfrentamientos de ficha-texto.js, y esbuild deja solo esa funcion si nadie
+// llama a textoEspecie, asi que la marca del texto es una cadena suya.
+async function comprobarFicha(metafile, salidas, appJs) {
+  const marcas = { 'ficha-texto.js': 'no tiene descripcion de la Pokedex', 'ficha-pokemon.js': 'poke-flavour' };
+  const detalle = salidas.find(p => /js\/pokedex-detail-[A-Z0-9]+\.js$/.test(p));
+  if (!detalle) throw new Error('js/pokedex-detail.js no ha salido como trozo propio: mira su import() en app.js');
+  const codigoDe = async cierre => (await Promise.all(cierre.map(p => readFile(join(OUT, p), 'utf8')))).join('\n');
+  const arranque = await codigoDe(cierreEstatico(metafile, appJs));
+  const ficha = await codigoDe(cierreEstatico(metafile, detalle));
+  for (const [modulo, marca] of Object.entries(marcas)) {
+    if (arranque.includes(marca)) throw new Error(`${modulo} ("${marca}") entra en el arranque: tiene que llegar con el trozo de la ficha`);
+    if (!ficha.includes(marca)) throw new Error(`${modulo} ("${marca}") no esta en el trozo de la ficha (${detalle}): la ficha saldria sin el`);
+  }
+  // Las piezas de redaccion (lista, enLetra, cuantos) las usan la ficha y el
+  // build, no el arranque. esbuild reparte por fichero: si un modulo del
+  // arranque importa redaccion.js, viajan en el arranque aunque alli nadie las
+  // llame (+0,32 KB gz el 2026-10-08, cuando las importaba contenido.js).
+  for (const marca of ['"cuatro"', 'lista vacia']) {
+    if (arranque.includes(marca)) throw new Error(`redaccion.js (${marca}) entra en el arranque: ningun modulo del arranque debe importarlo`);
+    if (!ficha.includes(marca)) throw new Error(`redaccion.js (${marca}) no esta en el trozo de la ficha (${detalle})`);
+  }
+}
+
 // El indice de rutas no lleva hash en el nombre y /data/* se sirve con una hora
 // de max-age y una semana de stale-while-revalidate (netlify.toml): sin version
 // en la URL, un JS recien desplegado podia leer el rutas.json de antes, y
@@ -286,12 +318,52 @@ async function htmlDe(dir, base = dir) {
 //
 // La fecha del ultimo commit que toco alguna de las dependencias de la pagina
 // (depsDe en pages.mjs), con caché por conjunto: las 18 de tipo de un idioma
-// comparten deps y preguntan una vez. En un clon superficial git log devuelve
-// la fecha del unico commit que hay para todo, una fecha falsa que nadie ve:
-// mejor parar. netlify.toml y ci.yml traen la historia entera antes del build.
-const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
+// comparten deps y preguntan una vez. Las 2.050 fichas de especie comparten el
+// conjunto comun y cada una suma su data/dex/<id>.json: la fecha de los 1025
+// dex sale de una sola pasada de git log (fechasDex), no de 1025 llamadas, y la
+// de la ficha es la mayor de las dos. Que cada dependencia tenga historia se
+// pregunta una vez por fichero, no una por conjunto. En un clon superficial git
+// log devuelve la fecha del unico commit que hay para todo, una fecha falsa que
+// nadie ve: mejor parar. netlify.toml y ci.yml traen la historia entera antes
+// del build.
+const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }).trim();
+const DEX = 'data/dex/';
 const cacheLastmod = new Map();
+const conHistoria = new Set();
 let historiaComprobada = false;
+let fechasDex = null;
+
+// {fichero -> fecha} de todo data/dex, de una pasada: git log saca cada commit
+// con su fecha y debajo los ficheros que toco. Se queda la mayor de cada uno,
+// sin fiarse del orden de la salida.
+function fechaDeDex(dep) {
+  if (!fechasDex) {
+    fechasDex = new Map();
+    let fecha = null;
+    for (const linea of git('log', '--format=%cI', '--name-only', '--', DEX).split('\n')) {
+      if (/^\d{4}-\d{2}-\d{2}T/.test(linea)) fecha = linea;
+      else if (linea && (!fechasDex.has(linea) || Date.parse(fecha) > Date.parse(fechasDex.get(linea)))) fechasDex.set(linea, fecha);
+    }
+  }
+  const fecha = fechasDex.get(dep);
+  if (!fecha) throw new Error(`${dep} no tiene historia en git: mira depsDe en pages.mjs`);
+  return fecha;
+}
+
+function fechaDeConjunto(deps) {
+  const clave = [...deps].sort().join('\n');
+  if (!cacheLastmod.has(clave)) {
+    const fecha = git('log', '-1', '--format=%cI', '--', ...deps);
+    if (!fecha) throw new Error(`Ningun commit toca ${deps.join(', ')}: mira depsDe en pages.mjs`);
+    for (const dep of deps.filter(d => !conHistoria.has(d))) {
+      if (!git('log', '-1', '--format=%H', '--', dep)) throw new Error(`${dep} no tiene historia en git: mira depsDe en pages.mjs`);
+      conHistoria.add(dep);
+    }
+    cacheLastmod.set(clave, fecha);
+  }
+  return cacheLastmod.get(clave);
+}
+
 function lastmodDe(deps) {
   if (!historiaComprobada) {
     if (git('rev-parse', '--is-shallow-repository') !== 'false') {
@@ -299,16 +371,11 @@ function lastmodDe(deps) {
     }
     historiaComprobada = true;
   }
-  const clave = [...deps].sort().join('\n');
-  if (!cacheLastmod.has(clave)) {
-    const fecha = git('log', '-1', '--format=%cI', '--', ...deps);
-    if (!fecha) throw new Error(`Ningun commit toca ${deps.join(', ')}: mira depsDe en pages.mjs`);
-    for (const dep of deps) {
-      if (!git('log', '-1', '--format=%H', '--', dep)) throw new Error(`${dep} no tiene historia en git: mira depsDe en pages.mjs`);
-    }
-    cacheLastmod.set(clave, fecha);
-  }
-  return cacheLastmod.get(clave);
+  const fechas = [
+    fechaDeConjunto(deps.filter(d => !d.startsWith(DEX))),
+    ...deps.filter(d => d.startsWith(DEX)).map(fechaDeDex),
+  ];
+  return fechas.reduce((mayor, f) => (Date.parse(f) > Date.parse(mayor) ? f : mayor));
 }
 
 // ===== Una pagina por ruta =====
@@ -320,8 +387,20 @@ function lastmodDe(deps) {
 async function generarPaginas(esqueleto) {
   // esqueleto: el index.html ya construido, que es tambien la portada espanola.
   const leerDato = async nombre => JSON.parse(await readFile(join(ROOT, 'data', `${nombre}.json`), 'utf8'));
-  const [indice, pokemon, moves, abilities] = await Promise.all(['rutas', 'pokemon', 'moves', 'abilities'].map(leerDato));
-  const rutas = rutasPublicas({ indice, pokemon, moves, abilities });
+  const [indice, pokemon, moves, abilities, evolutions] = await Promise.all(['rutas', 'pokemon', 'moves', 'abilities', 'evolutions'].map(leerDato));
+  // ULTIMA_ESPECIE sale de GENERATIONS (js/data.js), no de los datos, y de ella
+  // cuelgan esFichaEspecie y las cuentas de abajo. Si pokemon.json trae una
+  // especie que GENERATIONS no tiene (o al reves), las fichas nuevas saldrian
+  // con noindex sin que nada fallara: se exige que coincidan, del 1 a la ultima
+  // y sin huecos. Las formas (id >= 10001) no cuentan.
+  const especies = pokemon.map(p => p.id).filter(id => id < 10001).sort((a, b) => a - b);
+  if (especies.length !== ULTIMA_ESPECIE || especies.some((id, i) => id !== i + 1)) {
+    throw new Error(`data/pokemon.json trae ${especies.length} especies (de la ${especies[0]} a la ${especies.at(-1)}) `
+      + `y ULTIMA_ESPECIE (js/contenido.js) es ${ULTIMA_ESPECIE}, de la 1 a la ${ULTIMA_ESPECIE} sin huecos. Con una especie `
+      + 'nueva, amplia el range de la ultima generacion (o anade una) en GENERATIONS de js/data.js');
+  }
+  const dex = await leerDex(pokemon, leerDato);
+  const rutas = rutasPublicas({ indice, pokemon, moves, abilities, evolutions, dex });
 
   for (const ruta of rutas) {
     if (ruta.publica === '/') {
@@ -410,7 +489,7 @@ async function generarPaginas(esqueleto) {
     if (html.includes('<!--')) throw new Error(`dist/${f} conserva un comentario HTML (<!--): pasa por sinComentarios`);
   }
 
-  // (f) noindex en todas salvo las 53 por idioma de INDEXABLES, y sale de ahi:
+  // (f) noindex en todas salvo las que dice esIndexable, y sale de ahi:
   // de la ruta logica, que es la misma en los dos idiomas, asi que una pagina
   // espanola es indexable si y solo si lo es su par inglesa. Las legales nunca.
   const rutaDeFichero = new Map(rutas.map(r => [ficheroDe(r.publica), r]));
@@ -419,10 +498,10 @@ async function generarPaginas(esqueleto) {
     const ruta = rutaDeFichero.get(f);
     if (!ruta) throw new Error(`dist/${f} no es ninguna de las rutas de pages.mjs`);
     const robots = unico(html, /<meta name="robots" content="([^"]*)"/g);
-    const indexable = INDEXABLES.includes(ruta.logica);
+    const indexable = esIndexable(ruta.logica);
     if (JSON.stringify(robots) !== JSON.stringify(indexable ? [] : ['noindex'])) {
       throw new Error(`dist/${f} (${ruta.logica}) lleva robots ${JSON.stringify(robots)} y `
-        + `${indexable ? 'es' : 'no es'} de INDEXABLES (js/contenido.js)`);
+        + `${indexable ? 'es' : 'no es'} indexable (esIndexable, js/contenido.js)`);
     }
     if (indexable) indexables.add(f);
   }
@@ -435,9 +514,23 @@ async function generarPaginas(esqueleto) {
       if (indexables.has(ficheroDe(urlDe(legal, l)))) throw new Error(`${urlDe(legal, l)} es una pagina legal y no puede indexarse`);
     }
   }
-  if (indexables.size !== INDEXABLES.length * IDIOMAS.length) {
-    throw new Error(`${indexables.size} paginas indexables en dist/ y tendrian que ser ${INDEXABLES.length * IDIOMAS.length}`);
+  // Las rutas ya traen los dos idiomas: no se multiplica por IDIOMAS. Y la
+  // cuenta sale tambien de fuera de esIndexable: las 53 de INDEXABLES y las
+  // 1025 especies, por idioma (2.156). Las formas, los movimientos y las
+  // habilidades siguen con noindex.
+  const indexablesEsperadas = rutas.filter(r => esIndexable(r.logica)).length;
+  const indexablesContadas = (INDEXABLES.length + ULTIMA_ESPECIE) * IDIOMAS.length;
+  if (indexables.size !== indexablesEsperadas || indexables.size !== indexablesContadas) {
+    throw new Error(`${indexables.size} paginas indexables en dist/ y tendrian que ser ${indexablesEsperadas} (esIndexable) `
+      + `y ${indexablesContadas} ((${INDEXABLES.length} + ${ULTIMA_ESPECIE}) x ${IDIOMAS.length})`);
   }
+  const fichasIndexables = [...indexables].filter(f => esFichaEspecie(rutaDeFichero.get(f).logica));
+  if (fichasIndexables.length !== ULTIMA_ESPECIE * IDIOMAS.length) {
+    throw new Error(`${fichasIndexables.length} fichas de especie indexables y tienen que ser ${ULTIMA_ESPECIE * IDIOMAS.length}`);
+  }
+  const fichaIndexableDeMas = [...indexables].find(f => /^\/(pokedex|moves|abilities)\/[^/]+$/.test(rutaDeFichero.get(f).logica)
+    && !esFichaEspecie(rutaDeFichero.get(f).logica));
+  if (fichaIndexableDeMas) throw new Error(`dist/${fichaIndexableDeMas} (${rutaDeFichero.get(fichaIndexableDeMas).logica}) es una forma, un movimiento o una habilidad y no puede indexarse`);
 
   // El shell de una indexable: lo que hay desde <div ... data-shell ...> hasta
   // el </main>. Es lo que el cliente conserva al hidratar, y lo que lee un
@@ -468,15 +561,25 @@ async function generarPaginas(esqueleto) {
   // tipos y grupos, escapado como lo escribe contenido.js.
   const textos = textosConDerivados({ pokemon, moves });
   const escHtml = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  // Una ficha de especie no tiene textos a mano: su texto es el derivado de
+  // .intro-ficha, que (v) compara con textoEspecie; aqui, que esta en el shell
+  // y las 80 palabras.
   for (const f of indexables) {
     const { logica, idioma } = rutaDeFichero.get(f);
     const shell = shellDe(f, porFichero.get(f));
-    const texto = textos[idioma][logica];
     if (!/<h1\b/.test(shell)) throw new Error(`dist/${f}: el h1 no esta dentro del shell`);
+    const palabrasDe = () => contarPalabras(textosVisibles(shell).join(' '));
+    if (esFichaEspecie(logica)) {
+      if (!shell.includes('<section class="intro intro-ficha">')) throw new Error(`dist/${f}: el shell de la ficha no lleva su .intro-ficha`);
+      const palabras = palabrasDe();
+      if (palabras < 80) throw new Error(`dist/${f}: el shell de la ficha tiene ${palabras} palabras visibles y tienen que ser 80 como minimo`);
+      continue;
+    }
+    const texto = textos[idioma][logica];
     const parrafos = texto.mano ? [texto.mano, texto.derivado] : [texto.h2, ...texto.intro];
     const falta = parrafos.find(p => !p || !shell.includes(escHtml(p)));
     if (falta !== undefined) throw new Error(`dist/${f}: el shell no lleva el texto de ${logica} (${idioma}): ${JSON.stringify(String(falta).slice(0, 60))}`);
-    const palabras = contarPalabras(textosVisibles(shell).join(' '));
+    const palabras = palabrasDe();
     if (palabras < 80) throw new Error(`dist/${f}: el shell tiene ${palabras} palabras visibles y tienen que ser 80 como minimo`);
   }
 
@@ -553,9 +656,11 @@ async function generarPaginas(esqueleto) {
     .filter(Boolean);
   const cadenasEs = new Set(Object.values(textos.es).flatMap(cadenas));
   for (const ingles of Object.values(textos.en).flatMap(cadenas)) cadenasEs.delete(ingles);
+  // Normalizadas una vez: con las 1025 fichas son 1.078 paginas inglesas.
+  const cadenasNormalizadas = [...cadenasEs].map(c => c.replace(/\s+/g, ' ').trim());
   for (const f of [...indexables].filter(x => idiomaDeFichero(x) === 'en')) {
     const visibles = textosVisibles(porFichero.get(f)).join('\n');
-    const colada = [...cadenasEs].find(c => visibles.includes(c.replace(/\s+/g, ' ').trim()));
+    const colada = cadenasNormalizadas.find(c => visibles.includes(c));
     if (colada) throw new Error(`dist/${f} lleva un texto de textos-es.js: ${JSON.stringify(colada.slice(0, 80))}`);
   }
 
@@ -564,7 +669,9 @@ async function generarPaginas(esqueleto) {
     const l = idiomaDeFichero(f);
     const otro = l === 'es' ? 'en' : 'es';
     for (const [etiqueta, href] of [...html.matchAll(/(<a [^>]*?href="(\/[^"]*)"[^>]*>)/g)].map(m => [m[1], m[2]])) {
-      const [path, search = ''] = href.split('?');
+      // Sin el ancla: la linea evolutiva de una ficha enlaza la forma sin URL
+      // propia en la pagina de su especie (/pokedex/urshifu#forma-...).
+      const [path, search = ''] = href.split('#')[0].split('?');
       const ruta = logicaDe(path, search);
       if (!ruta) throw new Error(`dist/${f} enlaza ${href}, que no es una pagina de la app`);
       const esperado = etiqueta.includes('id="langToggle"') ? otro : l;
@@ -614,6 +721,24 @@ async function generarPaginas(esqueleto) {
     const corta = [...descripcion].length;
     if (descripcion !== textos[ruta.idioma][ruta.logica].descripcion) throw new Error(`dist/${f}: su description no es la de los textos`);
     if (corta < 120 || corta > 155) throw new Error(`dist/${f}: su description tiene ${corta} caracteres (de 120 a 155)`);
+  }
+  // (o) Y las 2.050 fichas de especie, que no estan en titulos.js: su titulo
+  // (tituloDe) de 50 a 60 e igual al og:title, y su description
+  // (descripcionEspecie) de 120 a 155, la misma que la de pages.mjs.
+  const fichasConTitulo = rutas.filter(r => esFichaEspecie(r.logica));
+  if (fichasConTitulo.length !== ULTIMA_ESPECIE * IDIOMAS.length) throw new Error(`(o) ${fichasConTitulo.length} fichas de especie y tienen que ser ${ULTIMA_ESPECIE * IDIOMAS.length}`);
+  for (const ruta of fichasConTitulo) {
+    const f = ficheroDe(ruta.publica);
+    const html = porFichero.get(f);
+    const [titulo] = unico(html, /<title>([^<]*)<\/title>/g).map(desescapar);
+    const og = unico(html, /<meta property="og:title" content="([^"]*)">/g).map(desescapar);
+    const [descripcion] = unico(html, /<meta name="description" content="([^"]*)">/g).map(desescapar);
+    const largo = [...titulo].length;
+    const corta = [...descripcion].length;
+    if (largo < 50 || largo > 60) throw new Error(`(o) dist/${f}: su titulo "${titulo}" tiene ${largo} caracteres (de 50 a 60)`);
+    if (JSON.stringify(og) !== JSON.stringify([titulo])) throw new Error(`(o) dist/${f}: og:title ${JSON.stringify(og)} y title "${titulo}"`);
+    if (descripcion !== ruta.descripcion) throw new Error(`(o) dist/${f}: su description no es la de descripcionEspecie`);
+    if (corta < 120 || corta > 155) throw new Error(`(o) dist/${f}: su description tiene ${corta} caracteres (de 120 a 155)`);
   }
 
   // (q) JSON-LD, leido del disco. Un solo bloque en cada indexable y ninguno en
@@ -687,6 +812,11 @@ async function generarPaginas(esqueleto) {
       const enHtml = visible.map(paso => `${paso.nombre} ${paso.item}`);
       if (JSON.stringify(enLd) !== JSON.stringify(enHtml)) throw new Error(`dist/${f}: el BreadcrumbList dice ${JSON.stringify(enLd)} y la miga visible ${JSON.stringify(enHtml)}`);
     }
+    // Una ficha de especie lleva el BreadcrumbList y nada mas, de 3 pasos:
+    // Inicio > Pokedex > su nombre (que ya es la miga visible, comparada arriba).
+    if (esFichaEspecie(logica) && (JSON.stringify(tipos) !== '["BreadcrumbList"]' || migas[0].itemListElement.length !== 3)) {
+      throw new Error(`dist/${f}: el JSON-LD de una ficha es un BreadcrumbList de 3 pasos y lleva ${JSON.stringify(tipos)}`);
+    }
     const debeApp = herramientas.has(logica);
     if (tipos.includes('WebApplication') !== debeApp) throw new Error(`dist/${f} (${logica}) ${debeApp ? 'es una herramienta y no lleva' : 'no es una herramienta y lleva'} WebApplication`);
   }
@@ -711,6 +841,7 @@ async function generarPaginas(esqueleto) {
     resto = resto.slice(m[0].length);
   }
   const locs = entradas.map(e => e.loc);
+  if (locs.length !== indexablesContadas) throw new Error(`dist/sitemap.xml lleva ${locs.length} <loc> y las indexables son ${indexablesContadas}`);
   const canonicals = [...indexables].map(f => unico(porFichero.get(f), /<link rel="canonical" href="([^"]*)"/g)[0]);
   const ordenar = lista => JSON.stringify([...lista].sort());
   if (new Set(locs).size !== locs.length || ordenar(locs) !== ordenar(canonicals)) {
@@ -745,6 +876,7 @@ async function generarPaginas(esqueleto) {
   const entrantes = new Map([...indexables].map(f => [f, new Set()]));
   for (const f of indexables) for (const destino of enlacesDe(porFichero.get(f))) if (destino !== f) entrantes.get(destino).add(f);
   const lejos = [];
+  const profundidad = {};
   for (const [l, raiz] of [['es', 'index.html'], ['en', 'en.html']]) {
     const distancia = new Map([[raiz, 0]]);
     const cola = [raiz];
@@ -756,6 +888,8 @@ async function generarPaginas(esqueleto) {
         cola.push(destino);
       }
     }
+    // La profundidad de las fichas, para el resumen del build.
+    profundidad[l] = Math.max(...fichasIndexables.filter(x => idiomaDeFichero(x) === l).map(x => distancia.get(x) ?? Infinity));
     for (const f of [...indexables].filter(x => idiomaDeFichero(x) === l)) {
       if (!(distancia.get(f) <= 3)) lejos.push(`${f} (${distancia.has(f) ? `${distancia.get(f)} clics` : 'inalcanzable'})`);
     }
@@ -828,7 +962,157 @@ async function generarPaginas(esqueleto) {
       throw new Error(`dist/${f} (${l}) lleva la firma del pie hacia ${JSON.stringify(firmas)} y tiene que ir a ${FIRMA[l]}`);
     }
   }
-  return ficheros.length;
+
+  comprobarFichasDeEspecie({ pokemon, abilities, evolutions, dex, porFichero, enDisco, shellDe, unico });
+  return { nPaginas: ficheros.length, nIndexables: indexables.size, profundidad };
+}
+
+// ===== Las fichas de especie, prerenderizadas =====
+//
+// Las 1025 de cada idioma llegan con la ficha entera en el shell y se indexan:
+// lo que lee un rastreador sin ejecutar nada. Se mira el HTML de
+// disco contra los datos, no contra fichaHTML: si la plantilla perdiera un
+// enlace, compararla consigo misma no lo veria.
+const escFicha = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function comprobarFichasDeEspecie({ pokemon, abilities, evolutions, dex, porFichero, enDisco, shellDe, unico }) {
+  const especies = pokemon.filter(p => !isForm(p)).sort((a, b) => a.id - b.id);
+  const porId = new Map(pokemon.map(p => [p.id, p]));
+  const ultima = especies.at(-1).id;
+  const DIC = { es: diccionarioEs, en: diccionarioEn };
+  // Los href de un trozo de HTML, y la especie a la que lleva cada uno que sea
+  // una ficha (la de una forma cuenta como su especie: la linea evolutiva de
+  // Sandshrew enlaza los dos Sandslash, el de Kanto y el de Alola).
+  const hrefs = html => unico(html, /<a [^>]*?href="([^"]*)"/g);
+  const logicaDeHref = href => {
+    const [path, search = ''] = href.split('#')[0].split('?');
+    return { path, ruta: logicaDe(path, search) };
+  };
+  const derivados = { es: new Map(), en: new Map() };
+
+  for (const p of especies) {
+    const id = p.id;
+    const cadena = evolutions.bySpecies[id] != null ? evolutions.chains[evolutions.bySpecies[id]] : null;
+    const linea = [];
+    (function recorrer(nodo) {
+      if (!nodo) return;
+      if (nodo.species !== id) linea.push(nodo.species);
+      nodo.evolvesTo.forEach(recorrer);
+    })(cadena?.evolvesTo.length ? cadena : null);
+    const formas = formsOf(id, pokemon).filter(formaEnlazable);
+
+    for (const l of IDIOMAS) {
+      const f = ficheroDe(urlDe(`/pokedex/${id}`, l));
+      const html = porFichero.get(f);
+      if (!html) throw new Error(`(v) dist/${f} no existe`);
+      const shell = shellDe(f, html);
+      const falla = (que, aserto = 'v') => { throw new Error(`(${aserto}) dist/${f} (#${id}, ${l}): ${que}`); };
+
+      // (v) Contenido de ficha. Un h1, el del nombre en su idioma, y en la
+      // pagina entera: el nav y el pie no llevan encabezados.
+      const nombre = nombrePokemon(p, l);
+      const h1s = unico(html.replace(/<script\b[\s\S]*?<\/script>/g, ''), /<h1\b[^>]*>([\s\S]*?)<\/h1>/g);
+      if (JSON.stringify(h1s) !== JSON.stringify([nombre])) falla(`lleva los h1 ${JSON.stringify(h1s)} y tiene que llevar uno, ${JSON.stringify(nombre)}`);
+
+      // La miga: portada, Pokedex y la ficha, sin enlace en el ultimo paso.
+      const miga = shell.match(/<nav class="migas"[^>]*><ol>([\s\S]*?)<\/ol><\/nav>/)?.[1];
+      if (!miga) falla('no lleva miga');
+      const pasos = unico(miga, /<li\b[^>]*>([\s\S]*?)<\/li>/g);
+      const enlacesMiga = hrefs(miga);
+      if (pasos.length !== 3 || JSON.stringify(enlacesMiga) !== JSON.stringify([urlDe('/', l), urlDe('/pokedex', l)])
+        || pasos[2] !== escFicha(nombre)) {
+        falla(`la miga es ${JSON.stringify(pasos)} con enlaces ${JSON.stringify(enlacesMiga)}`);
+      }
+
+      // El texto derivado (p2 y p3), escapado, en .intro-ficha.
+      const texto = textoEspecie(id, { l, dic: DIC[l], pokemon, abilities, evolutions, dex: dex.get(id) });
+      const [, p2, p3] = texto.parrafos;
+      if (!p2?.trim() || !p3?.trim()) falla('textoEspecie no da p2 y p3');
+      const intro = unico(shell, /<section class="intro intro-ficha">([\s\S]*?)<\/section>/g);
+      if (JSON.stringify(intro) !== JSON.stringify([`<p>${escFicha(p2)}</p><p>${escFicha(p3)}</p>`])) {
+        falla(`.intro-ficha no lleva p2 y p3 escapados: ${JSON.stringify(intro.map(t => t.slice(0, 80)))}`);
+      }
+
+      // Los enlaces que tiene que llevar.
+      const todos = hrefs(shell);
+      const presentes = new Set(todos);
+      const exigidos = [
+        ...p.types.map(t => [`el tipo ${t}`, urlDe(`/types/${t}`, l)]),
+        ...(p.eggGroups ?? []).filter(g => g in GRUPOS_HUEVO_ES).map(g => [`el grupo ${g}`, urlDe(`/egg/${g}`, l)]),
+        ...formas.map(v => [`la forma ${v.name}`, urlDe(`/pokedex/${v.id}`, l)]),
+        ...p.abilities.map(a => [`la habilidad ${a.nameEn}`, urlDe(`/abilities/${encodeURIComponent(a.nameEn)}`, l)]),
+        ...(id > 1 ? [['el anterior', urlDe(`/pokedex/${id - 1}`, l)]] : []),
+        ...(id < ultima ? [['el siguiente', urlDe(`/pokedex/${id + 1}`, l)]] : []),
+      ];
+      const falta = exigidos.find(([, href]) => !presentes.has(href));
+      if (falta) falla(`no enlaza ${falta[0]} (${falta[1]})`);
+      const rutas = todos.map(logicaDeHref);
+      const especiesEnlazadas = new Set(rutas.filter(r => r.ruta?.parts[0] === 'pokedex' && r.ruta.parts[1])
+        .map(r => { const q = porId.get(Number(r.ruta.parts[1])); return q?.speciesId || q?.id; }));
+      const sinEnlace = linea.find(s => !especiesEnlazadas.has(s));
+      if (sinEnlace) falla(`no enlaza a #${sinEnlace}, de su linea evolutiva`);
+      if (!rutas.some(r => r.ruta?.parts[0] === 'moves' && r.ruta.parts[1])) falla('no enlaza ningun movimiento');
+      // Sin anterior en la primera y sin siguiente en la ultima.
+      const nav = [/class="page-btn poke-nav-btn"/.test(shell), /class="page-btn poke-nav-btn next"/.test(shell)];
+      if (JSON.stringify(nav) !== JSON.stringify([id > 1, id < ultima])) falla(`anterior/siguiente ${JSON.stringify(nav)}`);
+      // Todos los internos llevan a un fichero de dist/ en el idioma de la pagina.
+      for (const { path, ruta } of rutas) {
+        if (!path.startsWith('/')) continue;
+        if (!ruta || ruta.idioma !== l || !enDisco.has(ficheroDe(path))) falla(`enlaza ${path}, que no es una pagina ${l} de dist/`);
+      }
+
+      // (x) Regla de riesgo: el texto derivado no es una plantilla con el
+      // nombre cambiado. Unico entre las 1025 con el nombre tapado.
+      if (texto.familias.length < 3) falla(`su texto usa ${texto.familias.length} familias de datos y tienen que ser 3 como minimo`, 'x');
+      const tapado = `${p2} ${p3}`.split(nombre).join('@');
+      if (derivados[l].has(tapado)) falla(`su texto derivado es el de #${derivados[l].get(tapado)} con otro nombre`, 'x');
+      derivados[l].set(tapado, id);
+    }
+  }
+
+  // (x) Las paginas de forma no llevan texto derivado (habla de la especie,
+  // D8) ni shell, y siguen con noindex.
+  const formasConPagina = pokemon.filter(p => isForm(p) && tieneUrlPropia(p));
+  for (const p of formasConPagina) {
+    for (const l of IDIOMAS) {
+      const f = ficheroDe(urlDe(`/pokedex/${p.id}`, l));
+      const html = porFichero.get(f);
+      if (html.includes('intro-ficha') || html.includes('data-shell')) throw new Error(`(x) dist/${f} es de una forma y lleva texto derivado o shell`);
+      if (!/<meta name="robots" content="noindex">/.test(html)) throw new Error(`(x) dist/${f} es de una forma y no lleva noindex`);
+    }
+  }
+
+  // (k) ampliado a las fichas: ninguna cadena espanola en una ficha inglesa.
+  // Las espanolas salen de los datos y del diccionario, no de las paginas
+  // (restar las de las paginas inglesas a las de las espanolas daria, por
+  // definicion, un conjunto que no esta en ninguna inglesa): los nombres de
+  // especies, formas, movimientos, habilidades, tipos y grupos, las claves del
+  // diccionario y el texto de la Pokedex y de las habilidades. Menos las que
+  // tambien son inglesas ("Normal" es la pestana de la especie en espanol y un
+  // tipo en ingles, y Pikachu se llama igual). Por cadena entera y no por
+  // trozo: "Ataque" esta dentro de "Ataque Rapido" y "Fuego" no es un error
+  // dentro de nada ingles, pero un trozo corto daria falsos positivos. Exento el
+  // .name-en, que es el nombre en el otro idioma a proposito.
+  const limpiar = t => String(t ?? '').replace(/\s+/g, ' ').trim();
+  const espanolas = new Set();
+  const inglesas = new Set();
+  const anadir = (conjunto, ...textos) => textos.forEach(t => { const c = limpiar(t); if (/\p{L}/u.test(c)) conjunto.add(c); });
+  for (const [k, v] of Object.entries(diccionarioEs)) if (typeof v === 'string' && !v.includes('{')) anadir(espanolas, v), anadir(inglesas, diccionarioEn[k]);
+  for (const v of Object.values(diccionarioEn)) if (typeof v === 'string') anadir(inglesas, v);
+  for (const p of pokemon) anadir(espanolas, pokeName(p, 'es'), p.formEs), anadir(inglesas, pokeName(p, 'en'), p.formEn);
+  for (const a of abilities) anadir(espanolas, a.nameEs, a.descriptionEs), anadir(inglesas, a.nameEn, a.descriptionEn, a.effect);
+  anadir(espanolas, ...Object.values(TYPE_NAMES_FULL)); anadir(inglesas, ...Object.values(TYPE_NAMES_FULL_EN));
+  for (const ficha of dex.values()) {
+    anadir(espanolas, ficha.descriptionEs); anadir(inglesas, ficha.descriptionEn);
+    for (const m of ficha.moves ?? []) anadir(espanolas, m.nameEs), anadir(inglesas, m.nameEn);
+  }
+  for (const t of inglesas) espanolas.delete(t);
+  for (const p of especies) {
+    const f = ficheroDe(urlDe(`/pokedex/${p.id}`, 'en'));
+    const shell = shellDe(f, porFichero.get(f)).replace(/<div class="name-en">[^<]*<\/div>/, '');
+    const colada = textosVisibles(shell).find(t => espanolas.has(t));
+    if (colada) throw new Error(`(k) dist/${f} lleva texto en espanol: ${JSON.stringify(colada.slice(0, 80))}`);
+  }
 }
 
 async function main() {
@@ -869,6 +1153,7 @@ async function main() {
   const appJs = salidas.find(p => /js\/app-[A-Z0-9]+\.js$/.test(p));
   if (!appJs) throw new Error('No encuentro el fichero de entrada de la app en la salida');
   await comprobarTextos(resultado.metafile, salidas, appJs);
+  await comprobarFicha(resultado.metafile, salidas, appJs);
 
   // Los dos diccionarios son trozos por su import() dinamico. index.html precarga
   // el del idioma guardado, asi que necesita el nombre real de cada uno.
@@ -941,7 +1226,7 @@ async function main() {
 
   // ===== una pagina por ruta =====
   // Sobre el index.html ya reescrito: cada pagina lleva los nombres con hash.
-  const nPaginas = await generarPaginas(html);
+  const { nPaginas, nIndexables, profundidad } = await generarPaginas(html);
 
   // ===== cuentas =====
   const jsFuente = (await Promise.all(
@@ -956,7 +1241,8 @@ async function main() {
   console.log(`\n  JS:   ${jsFuente.length} modulos, ${kb(gzFuente)} gz -> ${jsSalida.length} ficheros, ${kb(gzSalida)} gz`);
   console.log(`        arranque (app y sus import estaticos): ${arranque.length} ficheros, ${kb(arranque.reduce((s, b) => s + gz(b), 0))} gz`);
   console.log(`  CSS:  ${kb(gz(cssFuente))} gz -> ${kb(gz(cssBuf))} gz  (${cssNombre})`);
-  console.log(`  HTML: ${nPaginas} paginas y dist/_redirects`);
+  console.log(`  HTML: ${nPaginas} paginas y dist/_redirects; ${nIndexables} indexables, `
+    + `las fichas a ${IDIOMAS.map(l => `${profundidad[l]} clics (${l})`).join(' y ')} de su portada como mucho`);
   console.log(`  dist: ${kb(await pesoDe(OUT))} en disco, con data/, sprites/ y fonts/`);
   console.log(`  en ${((Date.now() - inicio) / 1000).toFixed(1)} s\n`);
 }

@@ -2206,6 +2206,21 @@ html.no-hero [data-shell][data-ruta="/"] {
   text-align: left;
 }
 
+/* El texto derivado de la especie, debajo de la descripcion y dentro de la
+   misma tarjeta: se lee como su continuacion, con su letra y su interlinea.
+   .intro-ficha de los tipos y los grupos va centrada y con su propio ancho;
+   aqui manda la tarjeta. Una raya de puntos lo separa de la descripcion, que
+   es una cita de la Pokedex y esto no. */
+.b-id .intro.intro-ficha {
+  max-width: none;
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 2px dashed var(--border);
+  font-size: 0.48rem;
+  line-height: 2;
+  text-align: left;
+}
+
 /* Dos columnas y no tres a partir de 1500. Con tres, un Pokemon sin set del
    meta dejaba la del medio en 457px contra 1030 la de la derecha: 573px de
    hueco a media pagina. Y no es cosa del reparto, es que las seis tarjetas no
@@ -2264,7 +2279,7 @@ html.no-hero [data-shell][data-ruta="/"] {
   margin-bottom: 6px;
 }
 
-.poke-detail-info h2 {
+.poke-detail-info h1 {
   font-size: 1rem;
   color: var(--accent-text);
   margin-bottom: 4px;
@@ -2369,6 +2384,35 @@ html.no-hero [data-shell][data-ruta="/"] {
   .poke-detail-info .meta {
     justify-content: flex-start;
   }
+}
+
+/* La miga ocupa el sitio del boton de volver (D11), con el mismo aire debajo.
+   Arriba no lleva el margen de las otras paginas: alli va detras de las
+   pestanas, y aqui es lo primero. */
+.poke-detail > .migas {
+  margin-bottom: 16px;
+}
+
+.poke-detail > .migas ol {
+  margin-top: 0;
+}
+
+/* Las insignias de tipo de la ficha son enlaces a la pagina de su tipo. Se
+   tienen que ver igual que cuando eran un <span>: sin el subrayado que el <a>
+   gana al pasar por encima, y con el foco visible al llegar con el teclado. */
+.poke-detail a.type-badge:hover,
+.poke-detail a.result-badge:hover {
+  text-decoration: none;
+}
+
+.poke-detail a.result-badge:hover {
+  filter: brightness(1.1);
+}
+
+.poke-detail a.type-badge:focus-visible,
+.poke-detail a.result-badge:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .back-btn {

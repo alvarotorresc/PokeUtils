@@ -491,7 +491,7 @@ check('i18n.js ya no lee el idioma guardado',
 // el path a secas, la de dano y la de IV/EV serian la misma.
 console.log('\nEl shell del prerender y los textos\n');
 
-const { logicaIndexable, conservaShell } = await import('../js/contenido.js');
+const { logicaIndexable, logicaDeShell, conservaShell } = await import('../js/contenido.js');
 const logicaDeUrl = url => { ponerBarra(url); const r = parseRuta(); return logicaIndexable(r.path, r.query); };
 check('la clave de cada direccion', [
   '/', '/en', '/calculadora-ivs-evs', '/calculadora-de-dano?a=6', '/en/catch-calculator', '/tipos/fuego', '/en/types/fire',
@@ -501,6 +501,12 @@ check('la clave de cada direccion', [
   '/egg/ground', '/data', '/faq', null, null, null,
 ]);
 check('una pestana que no existe es la de IV/EV', logicaIndexable('/calculator', new URLSearchParams('tab=x')), '/calculator');
+// La ficha de una especie llega con shell sin ser indexable: su clave de shell
+// es su ruta logica, y la de textos sigue siendo null.
+const shellDeUrl = url => { ponerBarra(url); const r = parseRuta(); return logicaDeShell(r.path, r.query); };
+check('la clave del shell: la indexable o la ficha', [
+  '/', '/calculadora-de-dano', '/pokedex/pikachu', '/en/pokedex/ditto', '/pokedex', '/habilidades/levitacion', '/privacidad',
+].map(shellDeUrl), ['/', '/calculator?tab=damage', '/pokedex/25', '/pokedex/132', '/pokedex', null, null]);
 check('el shell se conserva solo con su misma ruta', [
   conservaShell('/', '/'), conservaShell('/types/fire', '/types/fire'), conservaShell(undefined, '/'),
   conservaShell('/', '/types/fire'), conservaShell('/calculator', '/calculator?tab=damage'), conservaShell(undefined, null),
@@ -509,7 +515,7 @@ check('el shell se conserva solo con su misma ruta', [
 const fuenteDe = fichero => fuentes.find(f => f.fichero === fichero).src;
 const appRoute = fuenteDe('app.js');
 check('route() decide con conservaShell y el data-ruta del shell',
-  /conservaShell\(shell\.dataset\.ruta, logica\)/.test(appRoute) && !/\[data-shell\]'\) && esHome/.test(appRoute), true);
+  /conservaShell\(shell\.dataset\.ruta, logicaDeShell\(path, query\)\)/.test(appRoute) && !/\[data-shell\]'\) && esHome/.test(appRoute), true);
 // El shell de la portada envuelve el hero y, en el build, lo mas buscado, las
 // rejillas y el texto (PR 3, commit 6): por eso no es .swarm-wrap, cuyo fondo
 // absoluto cubriria todo lo que llevara dentro.
@@ -527,7 +533,7 @@ check('route() espera los textos junto al modulo',
 // Los derivados de tipos y grupos los calcula el build (conDerivados) y llegan
 // hechos en los textos. Que ningun modulo del cliente los llame: llamarlos
 // metia en el arranque sus ~4 KB gz y moves.json (404 KB) en /tipos/<t>.
-const llamanDerivados = fuentes.filter(f => f.fichero !== 'contenido.js'
+const llamanDerivados = fuentes.filter(f => f.fichero !== 'derivados.js'
   && /\b(derivadoTipo|derivadoGrupo|hechosTipo|hechosGrupo|conDerivados)\b/.test(f.src)).map(f => f.fichero);
 check('ningun modulo del cliente calcula los derivados', llamanDerivados, []);
 check('type-chart.js no baja moves.json', /fetchMoves/.test(fuenteDe('type-chart.js')), false);

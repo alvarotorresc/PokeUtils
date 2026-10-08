@@ -173,6 +173,8 @@ export const GRUPOS_HUEVO_EN = {
   indeterminate: 'amorphous',
   dragon: 'dragon',
   ditto: 'ditto',
+  // La etiqueta es Undiscovered, el nombre oficial, pero la URL se queda en
+  // no-eggs: se decidio no mover una URL ya publicada por un cambio de nombre.
   'no-eggs': 'no-eggs',
 };
 const GRUPOS_HUEVO = { es: GRUPOS_HUEVO_ES, en: GRUPOS_HUEVO_EN };
@@ -780,6 +782,22 @@ const TIPO_DE_FICHA = {
   en: { egg: 'egg group', abilities: 'ability', types: 'type' },
 };
 
+// Las fichas de especie se indexan (PR 4), y su titulo dice que hay dentro:
+// el primer sufijo que deje el titulo entero, con " · PokeUtils", entre 50 y
+// 60 caracteres. Solo el nombre, porque titularFicha y route() lo piden antes
+// de tener datos. Si ninguno cabe se queda el ultimo, y check-rutas lo dice.
+// Las formas siguen con su nombre solo: no se indexan.
+export const TITULO_ESPECIE_MIN = 50;
+export const TITULO_ESPECIE_MAX = 60;
+const SUFIJOS_ESPECIE = {
+  es: [': tipo, debilidades, stats y habilidades', ': debilidades, stats y habilidades'],
+  en: [': type, weaknesses, stats and abilities', ': weaknesses, stats and abilities'],
+};
+function tituloEspecie(nombre, l) {
+  const titulos = SUFIJOS_ESPECIE[l].map(sufijo => `${nombre}${sufijo} · PokeUtils`);
+  return titulos.find(t => t.length >= TITULO_ESPECIE_MIN && t.length <= TITULO_ESPECIE_MAX) ?? titulos.at(-1);
+}
+
 // Dos fichas que en ingles se llaman igual en el dataset: las dos megas de
 // Meowstic son "Mega Meowstic" (en espanol ya dicen macho y hembra). Por slug,
 // y solo en el titulo (D7): el dato lo arregla la PR 5, y check-rutas falla si
@@ -801,6 +819,7 @@ function tituloSeo(publica, l) {
 
 // tituloDe('/moves')                     -> 'Movimientos Pokémon: potencia, precisión y PP · PokeUtils'
 // tituloDe('/moves/9', 'Puño Trueno')    -> 'Puño Trueno · PokeUtils'
+// tituloDe('/pokedex/25', 'Pikachu')     -> 'Pikachu: tipo, debilidades, stats y habilidades · PokeUtils'
 // tituloDe('/abilities/levitate', 'Levitación') -> 'Habilidad Levitación · PokeUtils'
 // tituloDe('/egg/ditto', 'Ditto')        -> 'Grupo huevo Ditto: cría con casi cualquiera · PokeUtils'
 // Sin idioma, el activo, como urlDe. Lo que no tiene pagina se queda en
@@ -825,6 +844,8 @@ export function tituloDe(logica, nombre, idiomaDestino = idioma) {
   if (seo) return seo;
   if (nombre) {
     const seccion = Object.hasOwn(SECCION_LOGICA[l], seccionPublica) ? SECCION_LOGICA[l][seccionPublica] : null;
+    // Una especie, y no una forma con pagina propia: su slug es de especies.
+    if (seccion === 'pokedex' && slug && inverso?.especie.has(slug)) return tituloEspecie(nombre, l);
     let titulo = nombre;
     if (slug) {
       const base = slugEs(nombre);
