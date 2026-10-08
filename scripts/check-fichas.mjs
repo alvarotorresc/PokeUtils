@@ -269,9 +269,31 @@ const CASOS_FORMA = {
     ],
   },
   // Seis stats: cuatro enumeradas y el resto contado.
+  'samurott-hisui': {
+    es: [[2, 'PS pasa de 95 a 90, Ataque de 100 a 108, Defensa de 85 a 80, Ataque Especial de 108 a 100 y cambian dos más.']],
+    en: [[2, 'HP goes from 95 to 90, Attack from 100 to 108, Defense from 85 to 80, Special Attack from 108 to 100 and two more change.']],
+  },
+  // Mega-Zygarde se cuenta frente a la Forma Completa, no frente al 50 %: los
+  // PS no cambian y el total sube 70.
   'zygarde-mega': {
-    es: [[2, 'PS pasa de 108 a 216, Ataque de 100 a 70, Defensa de 121 a 91, Ataque Especial de 81 a 216 y cambian dos más.']],
-    en: [[2, 'HP goes from 108 to 216, Attack from 100 to 70, Defense from 121 to 91, Special Attack from 81 to 216 and two more change.']],
+    es: [
+      [1, 'Zygarde Forma Completa megaevoluciona en combate si lleva la Zygardita'],
+      [2, 'Sus estadísticas base suman 778, 70 más que Zygarde Forma Completa: Ataque pasa de 100 a 70,'],
+    ],
+    en: [
+      [1, 'Zygarde Complete Forme Mega Evolves in battle while holding the Zygardite'],
+      [2, 'Its base stats total 778, 70 more than Zygarde Complete Forme: Attack goes from 100 to 70,'],
+    ],
+  },
+  'floette-mega': {
+    es: [
+      [1, 'Floette Flor Eterna megaevoluciona en combate si lleva la Floettita'],
+      [2, 'Sus estadísticas base suman 651, 100 más que Floette Flor Eterna'],
+    ],
+    en: [
+      [1, 'Floette Eternal Flower Mega Evolves in battle while holding the Floettite'],
+      [2, 'Its base stats total 651, 100 more than Floette Eternal Flower'],
+    ],
   },
   // Mega sin habilidad en los datos: la cola de la description.
   'zeraora-mega': {
@@ -297,12 +319,18 @@ const CASOS_FORMA = {
 // Los ficheros en ingles que nombran grupos huevo, leidos como texto.
 const FUENTES_EN = ['js/i18n-en.js', 'js/textos-en.js', 'js/titulos.js'];
 
+// Una mega conserva los PS de la forma de la que sale y le suma 100 al total.
+// Si el texto la compara con otra (Mega-Floette con Floette en vez de con
+// Floette Flor Eterna), los PS cambian o la suma no da 100. Medidas, las que no
+// suman 100 a su base: Mega-Zygarde sale de la Forma Completa (708) y suma 778.
+const MEGA_NO_SUMA_100 = { 'zygarde-mega': 70 };
+
 // ===== Las reglas =====
 
 const REGLAS = ['lanza', 'descripcion-pokedex', 'palabras-total', 'palabras-derivado', 'familias', 'solo-cambia-el-nombre',
   'descripcion', 'espanol-en-en', 'plural', 'articulo', 'cero', 'como-la-ficha', 'muestras', 'casos', 'undiscovered',
   'forma-lanza', 'forma-palabras', 'forma-familias', 'forma-cambios', 'forma-solo-cambia-el-nombre', 'forma-descripcion',
-  'forma-muestras', 'forma-casos'];
+  'forma-muestras', 'forma-casos', 'mega-base'];
 const fallos = new Map(REGLAS.map(regla => [regla, []]));
 const falla = (regla, que) => fallos.get(regla).push(que);
 const largo = texto => [...texto].length;
@@ -450,6 +478,11 @@ for (const l of IDIOMAS) {
       const tapado = taparTodos(texto, [h.nombre, h.especie, ...h.hermanas, ...h.otrasRegiones, ...h.gemelas, h.piedra, h.sinPiedra]);
       if (tapados.has(tapado)) falla('forma-solo-cambia-el-nombre', `${donde} = ${tapados.get(tapado)}`);
       else tapados.set(tapado, forma.name);
+    }
+    if (h.mega) {
+      const suma = MEGA_NO_SUMA_100[forma.name] ?? 100;
+      if (h.cambios.some(c => c.k === 'hp')) falla('mega-base', `${donde}: los PS cambian frente a ${h.especie}`);
+      if (h.total - h.totalEspecie !== suma) falla('mega-base', `${donde}: suma ${h.total - h.totalEspecie} a ${h.especie}, no ${suma}`);
     }
     // La "Y" de Mega-Charizard Y es la letra de la mega, no la conjuncion: la
     // heuristica la contaria como palabra espanola. Se quita solo esa letra

@@ -423,11 +423,17 @@ export function descripcionEspecie(id, ctx) {
 // forma: "mega charizard x" quiere saber en que se distingue de Charizard.
 // Salvo las de FORMA_DE_FORMA, que se cuentan frente a otra forma.
 
-// Las formas cuya base natural es otra forma con URL, no la especie: el Modo
-// Daruma de Darmanitan de Galar se distingue de Darmanitan de Galar, no del de
-// Teselia. `modo` es como se presenta en p1 y en la description.
+// Las formas cuya base natural es otra forma, no la especie: el Modo Daruma de
+// Darmanitan de Galar se distingue de Darmanitan de Galar, no del de Teselia.
+// `modo` es como se presenta en p1 y en la description. Las megas no lo llevan:
+// Mega-Floette sale de Floette Flor Eterna (74 PS, no los 54 de Floette) y
+// Mega-Zygarde de la Forma Completa (216, no los 108 del 50 %), y frente a la
+// especie el texto contaria PS que no cambian y un total que no es el suyo.
+// check-fichas lo mide en la regla mega-base.
 const FORMA_DE_FORMA = {
   'darmanitan-galar-zen': { base: 'darmanitan-galar-standard', modo: { es: 'Modo Daruma', en: 'Zen Mode' } },
+  'floette-mega': { base: 'floette-eternal' },
+  'zygarde-mega': { base: 'zygarde-complete' },
 };
 
 const mismosTipos = (a, b) => a.length === b.length && a.every(t => b.includes(t));
@@ -509,7 +515,7 @@ export function hechosForma(id, ctx) {
     f,
     nombre: nombre(f),
     especie: nombre(e),
-    modo: deForma ? deForma.modo[l] : null,
+    modo: deForma?.modo?.[l] ?? null,
     // La especie de verdad, para la frase de region de FORMA_DE_FORMA.
     raiz: nombre(pokemon.find(x => x.id === f.speciesId) ?? e),
     mega,
