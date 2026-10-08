@@ -253,7 +253,9 @@ function adoptarShell(shell, html) {
   if (!nueva.isEqualNode(shell)) shell.replaceChildren(...nueva.childNodes);
 }
 
-export async function renderPokedexDetail(container, id) {
+// `saltar` en false no baja al ancla #forma-<name>: lo pide el cambio de
+// pestana, que ya ha puesto ese ancla en la URL y no debe mover la pagina.
+export async function renderPokedexDetail(container, id, { saltar = true } = {}) {
   const shell = shellDeFicha(container, id);
   let host, vigente;
   if (shell) {
@@ -347,9 +349,9 @@ export async function renderPokedexDetail(container, id) {
 
   // #forma-<name>: rutas.js ya ha abierto la pestana de esa forma (la ficha se
   // pinta con ella); ademas se baja a su seccion de la especie, donde dice que
-  // cambia. Solo si el ancla es la de la forma que se ensena: el hash se queda
-  // al cambiar de pestana, y otra pestana no debe volver a saltar alli.
-  const ancla = location.hash.startsWith('#forma-')
+  // cambia. Solo al llegar a la pagina: el cambio de pestana tambien escribe el
+  // ancla, y no salta.
+  const ancla = saltar && location.hash.startsWith('#forma-')
     && location.hash === `#forma-${allPokemon.find(p => p.id === pokemon.id)?.name}`
     ? host.querySelector(`[id="${CSS.escape(location.hash.slice(1))}"]`) : null;
   ancla?.scrollIntoView({ block: 'start' });
@@ -368,7 +370,13 @@ export async function renderPokedexDetail(container, id) {
     if (next === pokemon.id) return;
     // Repaint in place. Navigating would run route(), reload the page and lose
     // the scroll position for a change of four numbers.
-    renderPokedexDetail(container, next);
+    //
+    // Pero el ancla sigue a la pestana: con #forma-deoxys-attack puesto, pulsar
+    // Normal y recargar (o cambiar de idioma, que lee location) volvia a Ataque.
+    // replaceState no dispara el router ni hashchange.
+    const forma = allPokemon.find(p => p.id === next);
+    history.replaceState(null, '', location.pathname + location.search + (forma?.speciesId ? `#forma-${forma.name}` : ''));
+    renderPokedexDetail(container, next, { saltar: false });
   });
 
 }
