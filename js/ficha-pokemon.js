@@ -19,10 +19,10 @@
 
 import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART } from './data.js';
 import { urlDe } from './rutas.js';
-import { tr, nombrePokemon } from './contenido.js';
+import { tr, nombrePokemon, breadcrumbHTML } from './contenido.js';
 import { rangeAt100 } from './stats.js';
 import { partnersOf, hasEggData } from './egg-groups.js';
-import { spriteIdFor } from './forms.js';
+import { spriteIdFor, tieneUrlPropia } from './forms.js';
 
 // El mismo esc que ui.js, que aqui no se puede importar: tambien escapa la
 // comilla simple y deja '' para null, y el HTML del build tiene que ser el que
@@ -168,7 +168,7 @@ export function eggSectionHTML(pokemon, all, ctx) {
   const partners = partnersOf(entry, all).length;
 
   return `
-    <h3 class="section-title">${tr(ctx, 'egg.section')}</h3>
+    <h2 class="section-title">${tr(ctx, 'egg.section')}</h2>
     <div class="egg-section">
       <div class="egg-row"><span class="egg-key">${tr(ctx, 'egg.groups')}</span><span>${groups}</span></div>
       <div class="egg-row"><span class="egg-key">${tr(ctx, 'egg.gender')}</span><span>${gender}</span></div>
@@ -213,12 +213,37 @@ function enfrentamientos(types) {
 
 const fmtMult = m => m === 4 ? 'x4' : m === 2 ? 'x2' : m === 0.5 ? 'x½' : m === 0.25 ? 'x¼' : 'x0';
 
+// Cada insignia de tipo lleva a la pagina de su tipo, con la misma clase: el
+// aspecto lo pone el CSS, que a un <a> le quita el subrayado.
+const urlTipo = (tipo, ctx) => urlDe(`/types/${tipo}`, ctx.l);
+
+// D12 del plan: la gorra de Pikachu y los dominantes son regionales para
+// tieneUrlPropia (pikachu-alola-cap, raticate-totem-alola), pero no son la
+// forma que alguien busca por su nombre. Tienen URL, no un enlace desde aqui.
+const formaEnlazable = v => tieneUrlPropia(v) && !/-(cap|totem)(-|$)/.test(v.name);
+
+// Las formas de la especie con pagina propia, menos la que se esta mirando. Si
+// no hay ninguna, no se pinta: Pikachu tiene 17 formas y solo la gorra de
+// Alola tiene URL.
+function formasPropiasHTML(pokemon, variants, ctx) {
+  const formas = variants.filter(v => v.id !== pokemon.id && formaEnlazable(v));
+  if (formas.length === 0) return '';
+  return `
+      <section class="b">
+      <h2 class="section-title">${tr(ctx, 'pokedex.forms')}</h2>
+      <ul class="relacionadas">
+        ${formas.map(v => `<li><a href="${urlDe(`/pokedex/${v.id}`, ctx.l)}">${esc(nombrePokemon(v, ctx.l))}</a></li>`).join('')}
+      </ul>
+      </section>
+  `;
+}
+
 // La ficha entera, con los huecos de evolucion (#evoSection), movimientos
 // (#mvSection) y meta (#metaSection) vacios: los rellena pokedex-detail.js.
 //
 // datos = { pokemon, allPokemon, variants, variantLabels }
 //   pokemon        lo que devuelve fetchPokemonDetail (api.js)
-//   allPokemon     pokemon.json entero (cria y nada mas)
+//   allPokemon     pokemon.json entero (cria y los nombres de anterior/siguiente)
 //   variants       la especie y sus formas, en el orden de las pestanas
 //   variantLabels  el texto de cada pestana (formLabels, en pokedex-detail.js)
 export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels }) {
@@ -236,6 +261,13 @@ export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels })
   const maxStat = 255;
 
   const nombre = displayName(pokemon, ctx);
+  // Anterior y siguiente, en el idioma de la pagina. api.js los daba ya
+  // nombrados, siempre en espanol: la ficha inglesa de Kingambit ofrecia
+  // "Colmilargo" en vez de Great Tusk.
+  const vecino = id => {
+    const p = allPokemon.find(x => x.id === id);
+    return p ? esc(nombrePokemon(p, ctx.l)) : '';
+  };
   const altName = ctx.l === 'es' ? (pokemon.nameEn || pokemon.name) : pokemon.nameEs;
   // La descripcion viaja en los dos idiomas desde que se hornea en build: antes
   // se pedia a pokeapi solo en espanol y la ficha en ingles la ensenaba asi.
@@ -249,7 +281,7 @@ export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels })
 
   return `
     <div class="poke-detail fade-in">
-      <button class="back-btn" onclick="history.back()">◀ ${tr(ctx, 'pokedex.back')}</button>
+      ${breadcrumbHTML(`/pokedex/${pokemon.id}`, { ...ctx, nombre })}
 
       <div class="bento">
       <section class="b b-id">
@@ -258,10 +290,10 @@ export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels })
              onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 96 96%22><text x=%2248%22 y=%2260%22 text-anchor=%22middle%22 font-size=%2240%22>?</text></svg>'">
         <div class="poke-detail-info">
           <div class="dex-number">#${String(dexId).padStart(4, '0')}</div>
-          <h2>${nombre}</h2>
+          <h1>${nombre}</h1>
           <div class="name-en">${altName}</div>
           <div class="types">
-            ${pokemon.types.map(tp => `<span class="type-badge" data-type="${esc(tp)}" style="cursor:default">${nombreTipo(tp, ctx)}</span>`).join('')}
+            ${pokemon.types.map(tp => `<a class="type-badge" data-type="${esc(tp)}" href="${urlTipo(tp, ctx)}">${nombreTipo(tp, ctx)}</a>`).join('')}
           </div>
           <div class="meta">
             <span>📏 ${pokemon.height} m</span>
@@ -287,9 +319,9 @@ export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels })
 
       ${flavour ? `<p class="poke-flavour">${flavour}</p>` : ''}
       </section>
-
+${formasPropiasHTML(pokemon, variants, ctx)}
       <section class="b">
-      <h3 class="section-title">${tr(ctx, 'pokedex.stats')}</h3>
+      <h2 class="section-title">${tr(ctx, 'pokedex.stats')}</h2>
       <div>
         <div class="stat-bars">
           <div class="stat-row stat-head">
@@ -334,7 +366,7 @@ export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels })
       </section>
 
       <section class="b">
-      <h3 class="section-title">${tr(ctx, 'pokedex.abilities')}</h3>
+      <h2 class="section-title">${tr(ctx, 'pokedex.abilities')}</h2>
       <!-- La descripcion va escrita, no en una burbuja: dos nombres sueltos
            dejaban 168px de caja practicamente vacia, y lo que se quiere saber
            de una habilidad es justo lo que hace. El enlace a su pagina sigue
@@ -362,32 +394,30 @@ export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels })
 
       <section class="b">${eggSectionHTML(pokemon, allPokemon, ctx)}</section>
 
-      <section class="b" id="metaSection"></section>
-
       <section class="b">
-      <h3 class="section-title">${tr(ctx, 'learn.title')}</h3>
+      <h2 class="section-title">${tr(ctx, 'learn.title')}</h2>
       <div class="mv-section" id="mvSection"></div>
       </section>
 
       <section class="b">
-      <h3 class="section-title">${tr(ctx, 'pokedex.matchups')}</h3>
+      <h2 class="section-title">${tr(ctx, 'pokedex.matchups')}</h2>
       <div style="display:flex;flex-direction:column;gap:12px">
         ${weak.length ? `
           <div class="result-section weakness">
             <h3><span class="result-icon">💥</span> ${tr(ctx, 'pokedex.weak')} <span class="result-hint">x2 / x4</span></h3>
-            <div class="result-badges">${weak.map(w => `<span class="result-badge" data-type="${w.t}">${nombreTipo(w.t, ctx)}<span class="multiplier">${fmtMult(w.m)}</span></span>`).join('')}</div>
+            <div class="result-badges">${weak.map(w => `<a class="result-badge" data-type="${w.t}" href="${urlTipo(w.t, ctx)}">${nombreTipo(w.t, ctx)}<span class="multiplier">${fmtMult(w.m)}</span></a>`).join('')}</div>
           </div>
         ` : ''}
         ${resist.length ? `
           <div class="result-section resistance">
             <h3><span class="result-icon">🛡️</span> ${tr(ctx, 'pokedex.resist')} <span class="result-hint">x0.5 / x0.25</span></h3>
-            <div class="result-badges">${resist.map(r => `<span class="result-badge" data-type="${r.t}">${nombreTipo(r.t, ctx)}<span class="multiplier">${fmtMult(r.m)}</span></span>`).join('')}</div>
+            <div class="result-badges">${resist.map(r => `<a class="result-badge" data-type="${r.t}" href="${urlTipo(r.t, ctx)}">${nombreTipo(r.t, ctx)}<span class="multiplier">${fmtMult(r.m)}</span></a>`).join('')}</div>
           </div>
         ` : ''}
         ${immune.length ? `
           <div class="result-section immunity">
             <h3><span class="result-icon">🚫</span> ${tr(ctx, 'pokedex.immune')}</h3>
-            <div class="result-badges">${immune.map(i => `<span class="result-badge" data-type="${i.t}">${nombreTipo(i.t, ctx)}</span>`).join('')}</div>
+            <div class="result-badges">${immune.map(i => `<a class="result-badge" data-type="${i.t}" href="${urlTipo(i.t, ctx)}">${nombreTipo(i.t, ctx)}</a>`).join('')}</div>
           </div>
         ` : ''}
       </div>
@@ -398,10 +428,16 @@ export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels })
            had 539px for the 674px Pikachu needs, and Raichu fell outside the
            card. It closes the bento as a full-width band instead. -->
       <section class="b b-wide">
-      <h3 class="section-title">${tr(ctx, 'evo.title')}</h3>
+      <h2 class="section-title">${tr(ctx, 'evo.title')}</h2>
       <div id="evoSection"></div>
       </section>
       </div>
+
+      <!-- Fuera del bento: llega tarde (pide el meta y las evoluciones), y dentro
+           de las columnas su alto reequilibraba las dos y movia las tarjetas ya
+           pintadas. Detras de la banda de evolucion no empuja nada mas que la
+           navegacion de abajo. -->
+      <section class="b" id="metaSection"></section>
 
       <div class="poke-nav">
         ${dexId > 1 ? `<a href="${urlDe(`/pokedex/${dexId - 1}`, ctx.l)}" class="page-btn poke-nav-btn">
@@ -409,13 +445,13 @@ export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels })
           <img src="${spriteUrl(dexId - 1)}" alt="" onerror="this.style.display='none'">
           <span class="poke-nav-label">
             <span class="poke-nav-dex">#${String(dexId - 1).padStart(4, '0')}</span>
-            <span class="poke-nav-name">${pokemon.prevName || ''}</span>
+            <span class="poke-nav-name">${vecino(dexId - 1)}</span>
           </span>
         </a>` : '<div></div>'}
         ${dexId < 1025 ? `<a href="${urlDe(`/pokedex/${dexId + 1}`, ctx.l)}" class="page-btn poke-nav-btn next">
           <span class="poke-nav-label">
             <span class="poke-nav-dex">#${String(dexId + 1).padStart(4, '0')}</span>
-            <span class="poke-nav-name">${pokemon.nextName || ''}</span>
+            <span class="poke-nav-name">${vecino(dexId + 1)}</span>
           </span>
           <img src="${spriteUrl(dexId + 1)}" alt="" onerror="this.style.display='none'">
           <span class="poke-nav-arrow">▶</span>

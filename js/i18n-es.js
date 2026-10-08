@@ -344,6 +344,7 @@ export default {
     'pokedex.stats': 'ESTADÍSTICAS BASE',
     'pokedex.abilities': 'HABILIDADES',
     'pokedex.matchups': 'DEBILIDADES Y RESISTENCIAS',
+    'pokedex.forms': 'FORMAS CON PÁGINA PROPIA',
     'pokedex.hidden': '(oculta)',
     'pokedex.weak': 'DEBIL',
     'pokedex.resist': 'RESISTE',

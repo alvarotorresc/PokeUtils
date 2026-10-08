@@ -334,6 +334,7 @@ export default {
     'pokedex.stats': 'BASE STATS',
     'pokedex.abilities': 'ABILITIES',
     'pokedex.matchups': 'WEAKNESSES & RESISTANCES',
+    'pokedex.forms': 'FORMS WITH THEIR OWN PAGE',
     'pokedex.hidden': '(hidden)',
     'pokedex.weak': 'WEAK',
     'pokedex.resist': 'RESISTS',

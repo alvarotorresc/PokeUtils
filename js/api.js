@@ -131,7 +131,6 @@ export async function fetchPokemonDetail(id) {
   const ficha = await fetchDex(dexId).catch(() => null);
 
   const abilityInfo = new Map(abilities.map(a => [a.name, a]));
-  const speciesName = other => pokemon.find(x => x.id === other)?.nameEs || null;
 
   return {
     id: p.id,
@@ -174,14 +173,13 @@ export async function fetchPokemonDetail(id) {
     // here, isForm() on this object would answer false for every form.
     ...(p.speciesId ? { speciesId: p.speciesId, formEs: p.formEs, formEn: p.formEn } : {}),
     ...(p.noSprite ? { noSprite: true } : {}),
-    // dexId, not id: #10034 has no description of its own and no neighbours
-    // worth showing -- asking for 10033 would offer an unrelated form. Los dos
-    // idiomas, y elige la pagina: pokeapi solo se pedia en espanol, asi que la
-    // ficha en ingles ensenaba la descripcion en espanol.
+    // dexId, not id: #10034 has no description of its own. Los dos idiomas, y
+    // elige la pagina: pokeapi solo se pedia en espanol, asi que la ficha en
+    // ingles ensenaba la descripcion en espanol. Los vecinos ya no van aqui: los
+    // nombra fichaHTML (ficha-pokemon.js) en el idioma de la pagina, y aqui
+    // salian siempre en espanol.
     descriptionEs: ficha?.descriptionEs || '',
     descriptionEn: ficha?.descriptionEn || '',
-    prevName: dexId > 1 ? speciesName(dexId - 1) : null,
-    nextName: speciesName(dexId + 1),
   };
 }
 

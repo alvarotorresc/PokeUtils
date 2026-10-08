@@ -106,9 +106,18 @@ const toolDe = logica => TOOLS.find(tool => tool.route === logica);
 
 // ===== Nombres y miga de pan =====
 
+// La ficha de un Pokemon (/pokedex/25, o /pokedex/10034 de una forma): no es
+// indexable todavia, pero lleva miga. Su nombre no esta en ninguna tabla, asi
+// que llega en el contexto como `nombre`, ya en el idioma de la pagina.
+const esFichaPokemon = logica => /^\/pokedex\/\d+$/.test(logica);
+
 // El nombre corto de una pagina: el de la miga de pan y el de los enlaces de
 // "Relacionadas".
 export function nombreDe(logica, ctx) {
+  if (esFichaPokemon(logica)) {
+    if (!ctx.nombre) throw new Error(`contenido.js: la miga de "${logica}" necesita ctx.nombre`);
+    return ctx.nombre;
+  }
   exigirIndexable(logica);
   if (logica === '/') return tr(ctx, 'contenido.inicio');
   const [seccion, id] = logica.split('/').filter(Boolean);
@@ -128,6 +137,7 @@ function padreDe(logica) {
   const [seccion, id] = logica.split('/').filter(Boolean);
   if (seccion === 'types' && id) return '/types';
   if (seccion === 'egg' && id) return '/egg';
+  if (esFichaPokemon(logica)) return '/pokedex';
   const tool = toolDe(logica);
   if (tool) {
     const padre = PADRE_DE_CATEGORIA[tool.category];

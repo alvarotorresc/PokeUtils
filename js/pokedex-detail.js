@@ -271,7 +271,7 @@ async function renderMetaSection(host, dexId, format, meta, allPokemon) {
 
     const owner = allPokemon.find(p => p.id === found.ownerId);
     host.innerHTML = `
-      <h3 class="section-title">${t('meta.section')}</h3>
+      <h2 class="section-title">${t('meta.section')}</h2>
       ${found.own ? '' : `<p class="meta-family">${t('meta.family', { name: `<a href="${urlDe(`/pokedex/${found.ownerId}`)}">${owner ? pokeName(owner) : '#' + found.ownerId}</a>` })}</p>`}
       ${metaSetHTML(found, owner, names)}
     `;
@@ -321,7 +321,7 @@ export async function renderPokedexDetail(container, id) {
   const variants = [speciesEntry, ...formsOf(dexId, allPokemon)].filter(Boolean);
   const variantLabels = formLabels(variants, speciesEntry?.name || '', getLang());
 
-  // titularFicha con pokeName: el nombre del idioma activo, igual que el h2.
+  // titularFicha con pokeName: el nombre del idioma activo, igual que el h1.
   titularFicha(`/pokedex/${id}`, pokeName(pokemon));
   host.innerHTML = fichaHTML(contextoActivo(), { pokemon, allPokemon, variants, variantLabels });
 

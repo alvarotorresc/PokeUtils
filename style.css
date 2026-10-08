@@ -2264,7 +2264,7 @@ html.no-hero [data-shell][data-ruta="/"] {
   margin-bottom: 6px;
 }
 
-.poke-detail-info h2 {
+.poke-detail-info h1 {
   font-size: 1rem;
   color: var(--accent-text);
   margin-bottom: 4px;
@@ -2369,6 +2369,35 @@ html.no-hero [data-shell][data-ruta="/"] {
   .poke-detail-info .meta {
     justify-content: flex-start;
   }
+}
+
+/* La miga ocupa el sitio del boton de volver (D11), con el mismo aire debajo.
+   Arriba no lleva el margen de las otras paginas: alli va detras de las
+   pestanas, y aqui es lo primero. */
+.poke-detail > .migas {
+  margin-bottom: 16px;
+}
+
+.poke-detail > .migas ol {
+  margin-top: 0;
+}
+
+/* Las insignias de tipo de la ficha son enlaces a la pagina de su tipo. Se
+   tienen que ver igual que cuando eran un <span>: sin el subrayado que el <a>
+   gana al pasar por encima, y con el foco visible al llegar con el teclado. */
+.poke-detail a.type-badge:hover,
+.poke-detail a.result-badge:hover {
+  text-decoration: none;
+}
+
+.poke-detail a.result-badge:hover {
+  filter: brightness(1.1);
+}
+
+.poke-detail a.type-badge:focus-visible,
+.poke-detail a.result-badge:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .back-btn {

@@ -97,15 +97,15 @@ const CLAVE_CRUDA = /\b(pokedex|detail|egg|learn|evo|stat|type|cat|common|captur
 // contener ninguno de los espanoles, ni al reves. Los cuatro los ensenan todos
 // salvo "Resiste", que el tipo Normal no tiene (Ditto y Eevee).
 const TEXTOS = ['pokedex.stats', 'pokedex.abilities', 'pokedex.matchups', 'pokedex.weak',
-  'pokedex.resist', 'pokedex.hidden', 'pokedex.back', 'pokedex.evyield', 'learn.title', 'evo.title', 'egg.section'];
+  'pokedex.resist', 'pokedex.hidden', 'pokedex.evyield', 'learn.title', 'evo.title', 'egg.section'];
 const OPCIONALES = new Set(['pokedex.resist']);
 const TIPOS_DISTINTOS = TYPES.filter(tp => es['type.' + tp] !== en['type.' + tp]);
 
 // Lo que cada uno tiene que decir, por idioma.
 const ESPERADO = {
   25: { es: ['Electricidad', 'Tierra<span class="multiplier">x2'], en: ['Electric', 'Ground<span class="multiplier">x2'] },
-  132: { es: ['Lucha<span class="multiplier">x2', 'Fantas.</span>'], en: ['Fighting<span class="multiplier">x2', 'Ghost</span>'] },
-  133: { es: ['Lucha<span class="multiplier">x2', 'Fantas.</span>'], en: ['Fighting<span class="multiplier">x2', 'Ghost</span>'] },
+  132: { es: ['Lucha<span class="multiplier">x2', 'Fantas.</a>'], en: ['Fighting<span class="multiplier">x2', 'Ghost</a>'] },
+  133: { es: ['Lucha<span class="multiplier">x2', 'Fantas.</a>'], en: ['Fighting<span class="multiplier">x2', 'Ghost</a>'] },
   6: { es: ['Fuego', 'Volador', 'Roca<span class="multiplier">x4'], en: ['Fire', 'Flying', 'Rock<span class="multiplier">x4'] },
 };
 
@@ -116,7 +116,28 @@ for (const id of [25, 132, 133, 6]) {
     const { pokemon, html } = await pintar(id, ctx);
     const etiqueta = `#${id} ${l}`;
 
-    check(`${etiqueta}: h2 con el nombre`, html.includes(`<h2>${nombrePokemon(pokemon, l)}</h2>`));
+    // Un h1 y uno solo, con el nombre: el resto de titulos son h2 y h3.
+    const h1s = [...html.matchAll(/<h1[\s>][^]*?<\/h1>/g)].map(m => m[0]);
+    check(`${etiqueta}: un unico h1, con el nombre`,
+      h1s.length === 1 && h1s[0] === `<h1>${nombrePokemon(pokemon, l)}</h1>`, h1s.join(' '));
+
+    // La miga, en lugar del boton de volver: Inicio y Pokedex enlazados en el
+    // idioma, y el nombre al final, sin enlace.
+    const miga = html.match(/<nav class="migas"[^]*?<\/nav>/)?.[0] ?? '';
+    check(`${etiqueta}: miga Inicio > Pokedex > nombre`,
+      miga.includes(`<a href="${urlDe('/', l)}">${ctx.dic['contenido.inicio']}</a>`)
+      && miga.includes(`<a href="${urlDe('/pokedex', l)}">`)
+      && miga.includes(`<li aria-current="page">${nombrePokemon(pokemon, l)}</li>`), miga);
+    check(`${etiqueta}: sin el boton de volver`, !html.includes('back-btn'));
+
+    // Las insignias de tipo, de la cabecera y de los enfrentamientos, llevan a
+    // la pagina del tipo en el idioma: /tipos/fuego y /en/types/fire.
+    const insignias = [...html.matchAll(/<(\w+) class="(?:type|result)-badge" data-type="(\w+)"(?: href="([^"]*)")?/g)];
+    const sinEnlace = insignias.filter(([, tag, tp, href]) => tag !== 'a' || href !== urlDe(`/types/${tp}`, l));
+    check(`${etiqueta}: las ${insignias.length} insignias de tipo enlazan a su tipo`,
+      insignias.length > pokemon.types.length && sinEnlace.length === 0
+      && insignias.every(([, , , href]) => href.startsWith(l === 'es' ? '/tipos/' : '/en/types/')),
+      sinEnlace.map(m => m[0]).join(' '));
     for (const texto of ESPERADO[id][l]) check(`${etiqueta}: dice "${texto}"`, html.includes(texto));
 
     // Las habilidades si cambian de nombre: Flexibilidad/Limber, Adaptable/Adaptability.
@@ -140,8 +161,52 @@ for (const id of [25, 132, 133, 6]) {
 
     // Los enlaces van al idioma del contexto, no al activo del modulo.
     const hrefs = [...html.matchAll(/href="([^"]+)"/g)].map(m => m[1]);
-    const mal = hrefs.filter(h => (l === 'en') !== h.startsWith('/en/'));
+    const mal = hrefs.filter(h => (l === 'en') !== (h === '/en' || h.startsWith('/en/')));
     check(`${etiqueta}: los ${hrefs.length} enlaces en ${l}`, hrefs.length > 0 && mal.length === 0, mal.join(' '));
+  }
+}
+
+// ===== Formas con pagina propia =====
+//
+// Charizard enlaza sus dos megas; Pikachu no enlaza nada, porque su unica forma
+// con URL es la gorra de Alola, y la gorra y los dominantes no se enlazan (D12);
+// Tauros, las tres de Paldea, si tieneUrlPropia las da por regionales.
+const { tieneUrlPropia } = await import('../js/forms.js');
+const bloqueFormas = html => html.match(/<h2 class="section-title">[^<]*<\/h2>\s*<ul class="relacionadas">[^]*?<\/ul>/)?.[0] ?? '';
+const porNombre = name => allPokemon.find(p => p.name === name);
+for (const l of ['es', 'en']) {
+  const ctx = CTX[l];
+  const enlaza = (html, name) => html.includes(`href="${urlDe(`/pokedex/${porNombre(name).id}`, l)}"`);
+
+  const charizard = bloqueFormas((await pintar(6, ctx)).html);
+  check(`formas ${l}: Charizard enlaza sus 2 megas`,
+    enlaza(charizard, 'charizard-mega-x') && enlaza(charizard, 'charizard-mega-y')
+    && (charizard.match(/<li>/g) || []).length === 2, charizard);
+
+  const pikachu = (await pintar(25, ctx)).html;
+  check(`formas ${l}: Pikachu no enlaza pikachu-alola-cap`,
+    tieneUrlPropia(porNombre('pikachu-alola-cap')) && !enlaza(pikachu, 'pikachu-alola-cap')
+    && !pikachu.includes(ctx.dic['pokedex.forms']));
+
+  const paldea = formsOf(128, allPokemon).filter(tieneUrlPropia);
+  const tauros = bloqueFormas((await pintar(128, ctx)).html);
+  check(`formas ${l}: Tauros enlaza sus ${paldea.length} formas de Paldea`,
+    paldea.length === 3 && paldea.every(f => enlaza(tauros, f.name)), tauros);
+}
+
+// ===== Anterior y siguiente, en el idioma de la pagina =====
+//
+// api.js los nombraba siempre en espanol: la ficha inglesa de Kingambit (983)
+// ofrecia "Colmilargo". 983 y 984 tienen vecinos con nombre distinto en cada
+// idioma.
+for (const id of [983, 984]) {
+  for (const l of ['es', 'en']) {
+    const { html } = await pintar(id, CTX[l]);
+    const nombres = [...html.matchAll(/<span class="poke-nav-name">([^<]*)<\/span>/g)].map(m => m[1]);
+    const esperados = [id - 1, id + 1].map(v => nombrePokemon(allPokemon.find(p => p.id === v), l));
+    const ajenos = [id - 1, id + 1].map(v => nombrePokemon(allPokemon.find(p => p.id === v), l === 'es' ? 'en' : 'es'));
+    check(`vecinos de #${id} ${l}: ${esperados.join(' / ')}`,
+      nombres.join('|') === esperados.join('|') && ajenos.some((a, i) => a !== esperados[i]), nombres.join(' / '));
   }
 }
 
