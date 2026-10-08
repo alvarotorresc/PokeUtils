@@ -72,7 +72,10 @@ check('los 18 tipos en cada idioma',
 
 const alternas = { es: '/', en: '/en' };
 // Sin el contenido, que se comprueba abajo en el HTML.
-const sinContenido = ({ contenido, chips, ...resto }) => resto;
+const sinContenido = ({ contenido, chips, jsonLd, ...resto }) => resto;
+const tiposLd = ruta => ruta.jsonLd['@graph'].map(nodo => nodo['@type']);
+check('JSON-LD de la portada, una herramienta, un tipo y una ficha', [tiposLd(por('/')), tiposLd(por('/en/damage-calculator')), tiposLd(por('/tipos/fuego')), por('/pokedex/pikachu').jsonLd],
+  [['WebSite'], ['BreadcrumbList', 'WebApplication'], ['BreadcrumbList'], undefined]);
 check('la portada', sinContenido(por('/')), {
   idioma: 'es', logica: '/', publica: '/', alternas, titulo: 'Pokédex, tabla de tipos y calculadoras Pokémon · PokeUtils',
   descripcion: 'Pokédex con los 1025 Pokémon, tabla de tipos, grupos huevo, calculadoras de daño, captura e IVs y herramientas para montar tu equipo competitivo.',
@@ -171,13 +174,16 @@ check('sin comentarios HTML', pika.includes('<!--'), false);
 // D9: la migracion de los #/, el no-hero y los dos swaps de idioma solo hacen
 // algo en la portada espanola, que es el index.html tal cual. En las generadas
 // ya esta todo en el HTML. Quedan Umami, el tema con el modulepreload y app.js.
-const scripts = html => (html.match(/<script\b/g) || []).length;
+// Sin contar el JSON-LD, que no es codigo: lo lleva /en y no la ficha.
+const scripts = html => (html.match(/<script\b(?! type="application\/ld\+json")/g) || []).length;
 const MUERTOS = ['var RUTAS_ESTATICAS', "classList.add('no-hero')", 'var EN_NAV', 'var EN_HERO'];
 check('el esqueleto lleva los cuatro scripts de la portada', MUERTOS.map(m => esqueleto.includes(m)), [true, true, true, true]);
 check('y una pagina generada, cuatro <script> menos', [scripts(pika), scripts(paginaHtml(esqueleto, por('/en')))],
   Array(2).fill(scripts(sinComentarios(esqueleto)) - 4));
 check('ninguno de los cuatro', [pika, paginaHtml(esqueleto, por('/en/pokedex/pikachu')), paginaHtml(esqueleto, por('/en'))]
   .map(html => MUERTOS.filter(m => html.includes(m))), [[], [], []]);
+check('JSON-LD: uno en /en (WebSite) y ninguno en la ficha con noindex',
+  [paginaHtml(esqueleto, por('/en')).match(/application\/ld\+json/g)?.length, pika.includes('application/ld+json')], [1, false]);
 check('el tema y el modulepreload siguen', [pika.includes("'pkutils_theme'"), pika.includes("l.rel = 'modulepreload'")], [true, true]);
 // Sin el atributo, cada filtro (replaceState con ?q=) cuenta como una visita
 // en Umami: 1 pageview de mas por filtro, medido en el preview de la PR #21.

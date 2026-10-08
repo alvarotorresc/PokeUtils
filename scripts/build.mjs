@@ -29,12 +29,13 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import {
   rutasPublicas, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas, sinComentarios,
-  literalesEspanol, ORIGEN, SCRIPTS_DE_LA_PORTADA, rellenarPortada, textosVisibles, textosConDerivados,
+  literalesEspanol, ORIGEN, SCRIPTS_DE_LA_PORTADA, rellenarPortada, textosVisibles, textosConDerivados, conJsonLd,
 } from './pages.mjs';
 import {
   TABLA_ESTATICA, GRUPOS_HUEVO_ES, TIPOS_ES, SECCIONES_DE_FICHA, IDIOMAS, urlDe, logicaDe, idiomaDe,
 } from '../js/rutas.js';
 import { TITULOS_SEO } from '../js/titulos.js';
+import { TOOLS } from '../js/tools.js';
 import { INDEXABLES, contarPalabras } from '../js/contenido.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -293,7 +294,7 @@ async function generarPaginas(esqueleto) {
   for (const ruta of rutas) {
     if (ruta.publica === '/') {
       // La portada es el index.html de arriba, con su contenido dentro del hero.
-      await writeFile(join(OUT, 'index.html'), rellenarPortada(esqueleto, ruta));
+      await writeFile(join(OUT, 'index.html'), conJsonLd(rellenarPortada(esqueleto, ruta), ruta));
       continue;
     }
     const destino = join(OUT, ficheroDe(ruta.publica));
@@ -577,6 +578,84 @@ async function generarPaginas(esqueleto) {
     if (descripcion !== textos[ruta.idioma][ruta.logica].descripcion) throw new Error(`dist/${f}: su description no es la de los textos`);
     if (corta < 120 || corta > 155) throw new Error(`dist/${f}: su description tiene ${corta} caracteres (de 120 a 155)`);
   }
+
+  // (q) JSON-LD, leido del disco. Un solo bloque en cada indexable y ninguno en
+  // las demas; parsea y su @context es schema.org; solo los tres tipos de
+  // jsonLdDe, cada uno con lo que Google exige; WebSite en las dos portadas y
+  // en ninguna otra, WebApplication en las 16 herramientas y BreadcrumbList
+  // donde hay miga visible, con sus mismos nombres y destinos y position de 1 a
+  // n; toda URL absoluta, en dist/ y sin noindex; y ni aggregateRating, ni
+  // review, ni FAQPage (D3 y D4).
+  const herramientas = new Set(TOOLS.map(tool => tool.route));
+  const PROHIBIDOS = /"(aggregateRating|review|reviews|FAQPage|Question)"/;
+  const urlIndexable = (f, url) => {
+    if (!/^https:\/\//.test(url) || !url.startsWith(`${ORIGEN}/`)) throw new Error(`dist/${f}: el JSON-LD lleva la URL ${url}, que no es absoluta del sitio`);
+    const destino = ficheroDeUrl(url);
+    if (!indexables.has(destino)) throw new Error(`dist/${f}: el JSON-LD apunta a ${url}, que no esta en dist/ o lleva noindex`);
+  };
+  const EXIGIDOS = {
+    WebSite: ['name', 'url'],
+    BreadcrumbList: ['itemListElement'],
+    WebApplication: ['name', 'url', 'applicationCategory', 'operatingSystem', 'offers'],
+  };
+  const vistosLd = { WebSite: [], WebApplication: [] };
+  for (const { f, html } of paginas) {
+    const bloques = unico(html, /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g);
+    const esperados = indexables.has(f) ? 1 : 0;
+    if (bloques.length !== esperados) throw new Error(`dist/${f} lleva ${bloques.length} bloques ld+json y tiene que llevar ${esperados}`);
+    if (!esperados) continue;
+    if (/<head>[\s\S]*<\/head>/.exec(html)[0].indexOf('application/ld+json') < 0) throw new Error(`dist/${f}: el JSON-LD no esta en el <head>`);
+    let datos;
+    try { datos = JSON.parse(bloques[0]); } catch (e) { throw new Error(`dist/${f}: el JSON-LD no parsea: ${e.message}`); }
+    if (datos['@context'] !== 'https://schema.org') throw new Error(`dist/${f}: el @context del JSON-LD es ${JSON.stringify(datos['@context'])}`);
+    const prohibido = bloques[0].match(PROHIBIDOS);
+    if (prohibido) throw new Error(`dist/${f}: el JSON-LD lleva ${prohibido[1]} (D3 y D4)`);
+    const { logica, idioma } = rutaDeFichero.get(f);
+    const tipos = datos['@graph'].map(nodo => nodo['@type']);
+    for (const nodo of datos['@graph']) {
+      const exigidos = EXIGIDOS[nodo['@type']];
+      if (!exigidos) throw new Error(`dist/${f}: @type ${JSON.stringify(nodo['@type'])} no es ninguno de ${Object.keys(EXIGIDOS).join(', ')}`);
+      const falta = exigidos.find(campo => nodo[campo] === undefined || nodo[campo] === '');
+      if (falta) throw new Error(`dist/${f}: su ${nodo['@type']} no lleva ${falta}`);
+      if (nodo.inLanguage !== undefined && nodo.inLanguage !== idioma) throw new Error(`dist/${f}: su ${nodo['@type']} dice inLanguage ${nodo.inLanguage}`);
+      if (nodo.url !== undefined) urlIndexable(f, nodo.url);
+      if (nodo['@type'] === 'WebSite') {
+        if (nodo.url !== `${ORIGEN}/`) throw new Error(`dist/${f}: la url del WebSite es ${nodo.url} y tiene que ser la raiz (Google no lee nombres de sitio por carpeta)`);
+        vistosLd.WebSite.push(f);
+      }
+      if (nodo['@type'] === 'WebApplication') {
+        const { offers } = nodo;
+        if (offers?.['@type'] !== 'Offer' || offers.price !== '0' || offers.priceCurrency !== 'EUR') throw new Error(`dist/${f}: offers ${JSON.stringify(offers)} y tiene que ser una Offer de 0 EUR`);
+        if (nodo.applicationCategory !== 'GameApplication') throw new Error(`dist/${f}: applicationCategory ${nodo.applicationCategory}`);
+        if (nodo.url !== `${ORIGEN}${publicaDe(f)}`) throw new Error(`dist/${f}: la url de su WebApplication es ${nodo.url}`);
+        vistosLd.WebApplication.push(f);
+      }
+    }
+    // La miga visible, leida del HTML: los <li> de nav.migas, con el href de
+    // cada paso salvo el ultimo, que es la pagina.
+    const nav = /<nav class="migas"[^>]*><ol>([\s\S]*?)<\/ol><\/nav>/.exec(html);
+    const visible = nav ? [...nav[1].matchAll(/<li[^>]*>(?:<a href="([^"]*)">)?([^<]*)/g)]
+      .map((m, i, todos) => ({ nombre: desescapar(m[2]), item: `${ORIGEN}${m[1] ?? (i === todos.length - 1 ? publicaDe(f) : '?')}` })) : [];
+    const migas = datos['@graph'].filter(nodo => nodo['@type'] === 'BreadcrumbList');
+    if (migas.length !== (visible.length >= 2 ? 1 : 0)) throw new Error(`dist/${f} lleva ${migas.length} BreadcrumbList y su miga visible tiene ${visible.length} pasos`);
+    if (migas.length) {
+      const pasos = migas[0].itemListElement;
+      if (!Array.isArray(pasos) || pasos.length < 2) throw new Error(`dist/${f}: el BreadcrumbList tiene que llevar 2 pasos como minimo`);
+      pasos.forEach((paso, i) => {
+        if (paso['@type'] !== 'ListItem' || paso.position !== i + 1) throw new Error(`dist/${f}: el paso ${i + 1} del BreadcrumbList lleva position ${paso.position}`);
+        if (!paso.name || !paso.item) throw new Error(`dist/${f}: el paso ${i + 1} del BreadcrumbList no lleva name o item`);
+        urlIndexable(f, paso.item);
+      });
+      const enLd = pasos.map(paso => `${paso.name} ${paso.item}`);
+      const enHtml = visible.map(paso => `${paso.nombre} ${paso.item}`);
+      if (JSON.stringify(enLd) !== JSON.stringify(enHtml)) throw new Error(`dist/${f}: el BreadcrumbList dice ${JSON.stringify(enLd)} y la miga visible ${JSON.stringify(enHtml)}`);
+    }
+    const debeApp = herramientas.has(logica);
+    if (tipos.includes('WebApplication') !== debeApp) throw new Error(`dist/${f} (${logica}) ${debeApp ? 'es una herramienta y no lleva' : 'no es una herramienta y lleva'} WebApplication`);
+  }
+  const portadas = ['en.html', 'index.html'];
+  if (JSON.stringify([...vistosLd.WebSite].sort()) !== JSON.stringify(portadas)) throw new Error(`WebSite en ${JSON.stringify(vistosLd.WebSite)} y tiene que estar solo en las dos portadas`);
+  if (vistosLd.WebApplication.length !== herramientas.size * IDIOMAS.length) throw new Error(`${vistosLd.WebApplication.length} WebApplication y las herramientas son ${herramientas.size} por idioma`);
 
   // (s) Todo indexable a 3 clics como mucho de su portada y con un enlace
   // entrante desde otra indexable, siguiendo los <a href> del HTML (sin JS) y

@@ -29,7 +29,7 @@ import { isForm, tieneUrlPropia } from '../js/forms.js';
 import { TOOLS, CATEGORIES } from '../js/tools.js';
 import {
   INDEXABLES, conDerivados, encabezadoHTML, introHTML, tipoHTML, grupoHTML, faqHTML, listaGruposHTML,
-  rejillaHerramientasHTML, idsDeCategoria, tiposTodosHTML, portadaHTML, chipsInicialesHTML,
+  rejillaHerramientasHTML, idsDeCategoria, tiposTodosHTML, portadaHTML, chipsInicialesHTML, breadcrumbItems, nombreDe,
 } from '../js/contenido.js';
 import { reservaDe } from '../js/cascaras.js';
 import textosEs from '../js/textos-es.js';
@@ -188,10 +188,64 @@ export function rutasPublicas({ indice, pokemon, moves, abilities }) {
     };
     if (!indexable) return fija;
     const ctx = { l, dic: DICCIONARIOS[l], textos: textos[l], pokemon };
+    const conLd = { ...fija, jsonLd: jsonLdDe(fila.logica, ctx, fija.descripcion) };
     return fila.logica === '/'
-      ? { ...fija, contenido: portadaHTML(ctx), chips: chipsInicialesHTML(ctx) }
-      : { ...fija, contenido: contenidoDe(fila.logica, ctx) };
+      ? { ...conLd, contenido: portadaHTML(ctx), chips: chipsInicialesHTML(ctx) }
+      : { ...conLd, contenido: contenidoDe(fila.logica, ctx) };
   }));
+}
+
+// ===== Datos estructurados (JSON-LD) =====
+//
+// Tres tipos y ninguno mas (aserto q de build.mjs):
+//  - WebSite, solo en las dos portadas. Google lee el nombre del sitio solo en
+//    la raiz del dominio ("does not support site names at the subdirectory
+//    level"), asi que la url es la raiz tambien en /en; lo que cambia es
+//    inLanguage.
+//  - BreadcrumbList, con la misma lista que la miga visible (breadcrumbItems):
+//    en todas menos la portada, que no tiene miga (un solo paso).
+//  - WebApplication, en las 16 herramientas. Sin aggregateRating ni review
+//    (D3): no hay valoraciones de verdad que poner, y el Rich Results Test lo
+//    marca por eso. FAQPage no (D4): Google lo retiro en mayo de 2026.
+// Un solo <script> por pagina, con @graph.
+const SITIO = { name: 'PokeUtils', alternateName: 'Poke Utils' };
+
+export function jsonLdDe(logica, ctx, descripcion) {
+  const grafo = [];
+  const absoluta = publica => `${ORIGEN}${publica}`;
+  if (logica === '/') {
+    grafo.push({ '@type': 'WebSite', ...SITIO, url: absoluta('/'), inLanguage: ctx.l });
+  }
+  const migas = breadcrumbItems(logica, ctx);
+  if (migas.length >= 2) {
+    grafo.push({
+      '@type': 'BreadcrumbList',
+      itemListElement: migas.map((miga, i) => ({ '@type': 'ListItem', position: i + 1, name: miga.nombre, item: absoluta(miga.url) })),
+    });
+  }
+  if (TOOLS.some(tool => tool.route === logica)) {
+    grafo.push({
+      '@type': 'WebApplication',
+      name: nombreDe(logica, ctx),
+      url: absoluta(urlDe(logica, ctx.l)),
+      description: descripcion,
+      applicationCategory: 'GameApplication',
+      operatingSystem: 'Web',
+      inLanguage: ctx.l,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+    });
+  }
+  return { '@context': 'https://schema.org', '@graph': grafo };
+}
+
+// El <script> que va antes de </head>. JSON.stringify no escapa "<", y un
+// "</script>" dentro de un texto cerraria el bloque: va como \u003c.
+export const jsonLdHTML = datos => `<script type="application/ld+json">${JSON.stringify(datos).replace(/</g, '\\u003c')}</script>`;
+
+export function conJsonLd(html, ruta) {
+  if (!ruta.indexable) return html;
+  if (!ruta.jsonLd) throw new Error(`pages.mjs: ${ruta.publica} es indexable y no lleva jsonLd`);
+  return sustituir(html, /<\/head>/, () => `  ${jsonLdHTML(ruta.jsonLd)}\n</head>`, 'el </head>');
 }
 
 // ===== El contenido de una pagina indexable =====
@@ -417,6 +471,7 @@ export function paginaHtml(esqueleto, ruta, origen = ORIGEN) {
       () => `<main class="main" id="app" data-reservando><div data-shell data-ruta="${esc(ruta.logica)}">${ruta.contenido}</div></main>`,
       'el <main> vacio');
   }
+  html = conJsonLd(html, ruta);
   // El conmutador lleva a la misma pagina en el otro idioma, y lo dice en su
   // texto, su hreflang y su lang. Despues de enlacesEnIngles, que no lo distingue
   // de los demas enlaces.
