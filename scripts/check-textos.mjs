@@ -32,7 +32,8 @@ import { pareceEspanol } from './espanol-en-en.mjs';
 // pages.mjs importa i18n.js, que lee `location` al cargarse.
 globalThis.location = { pathname: '/', search: '', hash: '', href: 'http://localhost/', origin: 'http://localhost' };
 
-const { INDEXABLES, contarPalabras, derivadoTipo, derivadoGrupo } = await import('../js/contenido.js');
+const { INDEXABLES, contarPalabras } = await import('../js/contenido.js');
+const { derivadoTipo, derivadoGrupo } = await import('../js/derivados.js');
 const { DESCRIPCION_PORTADA } = await import('./pages.mjs');
 const es = (await import('../js/i18n-es.js')).default;
 const en = (await import('../js/i18n-en.js')).default;

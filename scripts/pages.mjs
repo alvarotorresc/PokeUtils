@@ -29,9 +29,10 @@ import { TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from '../js/data.js';
 import { isForm, tieneUrlPropia } from '../js/forms.js';
 import { TOOLS, CATEGORIES, toolsIn } from '../js/tools.js';
 import {
-  INDEXABLES, esIndexable, conDerivados, encabezadoHTML, introHTML, tipoHTML, grupoHTML, faqHTML, listaGruposHTML,
+  INDEXABLES, esIndexable, encabezadoHTML, introHTML, tipoHTML, grupoHTML, faqHTML, listaGruposHTML,
   rejillaHerramientasHTML, idsDeCategoria, tiposTodosHTML, portadaHTML, chipsInicialesHTML, breadcrumbItems, nombreDe,
 } from '../js/contenido.js';
+import { conDerivados } from '../js/derivados.js';
 import { reservaDe } from '../js/cascaras.js';
 import { descripcionEspecie } from '../js/ficha-texto.js';
 import textosEs from '../js/textos-es.js';

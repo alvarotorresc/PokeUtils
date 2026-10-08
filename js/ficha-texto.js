@@ -36,7 +36,8 @@
 // scripts/check-fichas.mjs lo pasa por las 1025 especies en los dos idiomas.
 
 import { TYPES, CHART, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN, STAT_KEYS, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN } from './data.js';
-import { lista, enLetra, cuantos, nombrePokemon } from './frases.js';
+import { nombrePokemon } from './frases.js';
+import { lista, enLetra, cuantos } from './redaccion.js';
 import { membersOf, partnersOf } from './egg-groups.js';
 import { isForm, formsOf, formaEnlazable } from './forms.js';
 

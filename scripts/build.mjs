@@ -181,7 +181,7 @@ function versionarIndice(version) {
 // ===== Los derivados de tipos y grupos, hechos en el build =====
 //
 // El parrafo derivado de /types/<t> y /egg/<g> sale de CHART, pokemon.json y
-// moves.json (derivadoTipo y derivadoGrupo en js/contenido.js). Calcularlo en
+// moves.json (derivadoTipo y derivadoGrupo en js/derivados.js). Calcularlo en
 // el cliente costaba ~4 KB gz mas en el arranque y bajar moves.json (404 KB)
 // para leer un parrafo que no cambia hasta el siguiente deploy. Asi que se
 // calcula aqui: al empaquetar js/textos-<l>.js, el plugin lo importa en node,
@@ -195,7 +195,7 @@ function derivadosEnTextos({ pokemon, moves }) {
     setup(b) {
       b.onLoad({ filter: /[\\/]js[\\/]textos-(es|en)\.js$/ }, async ({ path }) => {
         const l = path.match(/textos-(es|en)\.js$/)[1];
-        const { conDerivados } = await import(pathToFileURL(join(ROOT, 'js', 'contenido.js')));
+        const { conDerivados } = await import(pathToFileURL(join(ROOT, 'js', 'derivados.js')));
         const { default: textos } = await import(pathToFileURL(path));
         const { default: dic } = await import(pathToFileURL(join(ROOT, 'js', `i18n-${l}.js`)));
         const hechos = conDerivados(textos, { l, dic, pokemon, moves });
@@ -266,6 +266,14 @@ async function comprobarFicha(metafile, salidas, appJs) {
   for (const [modulo, marca] of Object.entries(marcas)) {
     if (arranque.includes(marca)) throw new Error(`${modulo} ("${marca}") entra en el arranque: tiene que llegar con el trozo de la ficha`);
     if (!ficha.includes(marca)) throw new Error(`${modulo} ("${marca}") no esta en el trozo de la ficha (${detalle}): la ficha saldria sin el`);
+  }
+  // Las piezas de redaccion (lista, enLetra, cuantos) las usan la ficha y el
+  // build, no el arranque. esbuild reparte por fichero: si un modulo del
+  // arranque importa redaccion.js, viajan en el arranque aunque alli nadie las
+  // llame (+0,32 KB gz el 2026-10-08, cuando las importaba contenido.js).
+  for (const marca of ['"cuatro"', 'lista vacia']) {
+    if (arranque.includes(marca)) throw new Error(`redaccion.js (${marca}) entra en el arranque: ningun modulo del arranque debe importarlo`);
+    if (!ficha.includes(marca)) throw new Error(`redaccion.js (${marca}) no esta en el trozo de la ficha (${detalle})`);
   }
 }
 

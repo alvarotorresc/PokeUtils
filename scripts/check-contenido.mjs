@@ -14,8 +14,9 @@ const { fijarIndice, urlDe, logicaDe, idiomaDe } = await import('../js/rutas.js'
 fijarIndice(JSON.parse(readFileSync(new URL('../data/rutas.json', import.meta.url), 'utf8')));
 const {
   INDEXABLES, esFichaEspecie, esIndexable, FICHAS_INDEXABLES, ULTIMA_ESPECIE, nombreDe, breadcrumbItems, breadcrumbHTML, cabeceraHTML, pestanasHTML,
-  rejillaHerramientasHTML, idsDeCategoria, introHTML, contarPalabras, derivadoTipo, derivadoGrupo,
+  rejillaHerramientasHTML, idsDeCategoria, introHTML, contarPalabras,
 } = await import('../js/contenido.js');
+const { derivadoTipo, derivadoGrupo, conDerivados } = await import('../js/derivados.js');
 const { TITULOS_SEO } = await import('../js/titulos.js');
 const { TOOLS, CATEGORIES, toolsIn } = await import('../js/tools.js');
 const { CHART: CHART_TIPOS } = await import('../js/data.js');
@@ -263,7 +264,7 @@ check('sin datos, o sin genderRate, lanza', [
 
 // ===== Las piezas con datos de tipos y grupos (PR 3, commit 5) =====
 console.log('\nTipos y grupos, y los derivados en los textos\n');
-const { tipoHTML, grupoHTML, encabezadoHTML, nombrePokemon, conDerivados } = await import('../js/contenido.js');
+const { tipoHTML, grupoHTML, encabezadoHTML, nombrePokemon } = await import('../js/contenido.js');
 const { pokeName } = await import('../js/i18n.js');
 check('nombrePokemon es pokeName, en las 1351 entradas y los dos idiomas',
   ['es', 'en'].flatMap(l => pokemon.filter(p => nombrePokemon(p, l) !== pokeName(p, l)).map(p => `${l} ${p.name}`)), []);

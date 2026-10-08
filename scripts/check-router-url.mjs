@@ -527,7 +527,7 @@ check('route() espera los textos junto al modulo',
 // Los derivados de tipos y grupos los calcula el build (conDerivados) y llegan
 // hechos en los textos. Que ningun modulo del cliente los llame: llamarlos
 // metia en el arranque sus ~4 KB gz y moves.json (404 KB) en /tipos/<t>.
-const llamanDerivados = fuentes.filter(f => f.fichero !== 'contenido.js'
+const llamanDerivados = fuentes.filter(f => f.fichero !== 'derivados.js'
   && /\b(derivadoTipo|derivadoGrupo|hechosTipo|hechosGrupo|conDerivados)\b/.test(f.src)).map(f => f.fichero);
 check('ningun modulo del cliente calcula los derivados', llamanDerivados, []);
 check('type-chart.js no baja moves.json', /fetchMoves/.test(fuenteDe('type-chart.js')), false);
