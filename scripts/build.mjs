@@ -39,7 +39,7 @@ import {
 import { TITULOS_SEO } from '../js/titulos.js';
 import { TOOLS } from '../js/tools.js';
 import { readPngSize, pngLooksFlat } from './build-icons.mjs';
-import { INDEXABLES, contarPalabras } from '../js/contenido.js';
+import { INDEXABLES, esIndexable, contarPalabras } from '../js/contenido.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'dist');
@@ -410,7 +410,7 @@ async function generarPaginas(esqueleto) {
     if (html.includes('<!--')) throw new Error(`dist/${f} conserva un comentario HTML (<!--): pasa por sinComentarios`);
   }
 
-  // (f) noindex en todas salvo las 53 por idioma de INDEXABLES, y sale de ahi:
+  // (f) noindex en todas salvo las que dice esIndexable, y sale de ahi:
   // de la ruta logica, que es la misma en los dos idiomas, asi que una pagina
   // espanola es indexable si y solo si lo es su par inglesa. Las legales nunca.
   const rutaDeFichero = new Map(rutas.map(r => [ficheroDe(r.publica), r]));
@@ -419,10 +419,10 @@ async function generarPaginas(esqueleto) {
     const ruta = rutaDeFichero.get(f);
     if (!ruta) throw new Error(`dist/${f} no es ninguna de las rutas de pages.mjs`);
     const robots = unico(html, /<meta name="robots" content="([^"]*)"/g);
-    const indexable = INDEXABLES.includes(ruta.logica);
+    const indexable = esIndexable(ruta.logica);
     if (JSON.stringify(robots) !== JSON.stringify(indexable ? [] : ['noindex'])) {
       throw new Error(`dist/${f} (${ruta.logica}) lleva robots ${JSON.stringify(robots)} y `
-        + `${indexable ? 'es' : 'no es'} de INDEXABLES (js/contenido.js)`);
+        + `${indexable ? 'es' : 'no es'} indexable (esIndexable, js/contenido.js)`);
     }
     if (indexable) indexables.add(f);
   }
@@ -435,8 +435,10 @@ async function generarPaginas(esqueleto) {
       if (indexables.has(ficheroDe(urlDe(legal, l)))) throw new Error(`${urlDe(legal, l)} es una pagina legal y no puede indexarse`);
     }
   }
-  if (indexables.size !== INDEXABLES.length * IDIOMAS.length) {
-    throw new Error(`${indexables.size} paginas indexables en dist/ y tendrian que ser ${INDEXABLES.length * IDIOMAS.length}`);
+  // Las rutas ya traen los dos idiomas: no se multiplica por IDIOMAS.
+  const indexablesEsperadas = rutas.filter(r => esIndexable(r.logica)).length;
+  if (indexables.size !== indexablesEsperadas) {
+    throw new Error(`${indexables.size} paginas indexables en dist/ y tendrian que ser ${indexablesEsperadas}`);
   }
 
   // El shell de una indexable: lo que hay desde <div ... data-shell ...> hasta

@@ -10,10 +10,11 @@
 //
 // Cada pagina existe en espanol y en ingles (/en/...), con su <html lang>, sus
 // textos fijos ya traducidos y los tres hreflang que la emparejan con la otra.
-// Solo se indexan las 53 por idioma de INDEXABLES (js/contenido.js): portada,
-// hubs, FAQ, herramientas, tipos y grupos. Esas llegan ademas con su contenido
-// en el HTML (contenidoDe, abajo), el mismo que pinta el cliente. Las demas
-// llevan noindex: abrir las fichas al indice es la PR 4. La portada espanola no
+// Se indexan las que dice esIndexable (js/contenido.js): las 53 por idioma de
+// INDEXABLES (portada, hubs, FAQ, herramientas, tipos y grupos) y, cuando se
+// encienda FICHAS_INDEXABLES, las 1025 fichas de especie. Las 53 llegan ademas
+// con su contenido en el HTML (contenidoDe, abajo), el mismo que pinta el
+// cliente. Las demas llevan noindex. La portada espanola no
 // se regenera: es el index.html tal cual, con su canonical y sus hreflang
 // escritos a mano, y el build le mete dentro del hero su contenido
 // (rellenarPortada).
@@ -28,7 +29,7 @@ import { TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from '../js/data.js';
 import { isForm, tieneUrlPropia } from '../js/forms.js';
 import { TOOLS, CATEGORIES, toolsIn } from '../js/tools.js';
 import {
-  INDEXABLES, conDerivados, encabezadoHTML, introHTML, tipoHTML, grupoHTML, faqHTML, listaGruposHTML,
+  INDEXABLES, esIndexable, conDerivados, encabezadoHTML, introHTML, tipoHTML, grupoHTML, faqHTML, listaGruposHTML,
   rejillaHerramientasHTML, idsDeCategoria, tiposTodosHTML, portadaHTML, chipsInicialesHTML, breadcrumbItems, nombreDe,
 } from '../js/contenido.js';
 import { reservaDe } from '../js/cascaras.js';
@@ -174,7 +175,7 @@ export function rutasPublicas({ indice, pokemon, moves, abilities }) {
     const publica = alternas[l];
     // La misma ruta logica en los dos idiomas: ES es indexable si y solo si lo
     // es EN, y el hreflang nunca apunta a una pagina que no se deja indexar.
-    const indexable = INDEXABLES.includes(fila.logica);
+    const indexable = esIndexable(fila.logica);
     const fija = {
       idioma: l,
       logica: fila.logica,
@@ -182,7 +183,7 @@ export function rutasPublicas({ indice, pokemon, moves, abilities }) {
       alternas,
       titulo: fila.titulo,
       // La de una indexable es la escrita a mano en los textos, de 120 a 155.
-      descripcion: indexable ? textos[l][fila.logica].descripcion : fila.descripcion,
+      descripcion: INDEXABLES.includes(fila.logica) ? textos[l][fila.logica].descripcion : fila.descripcion,
       indexable,
       noindex: !indexable,
     };

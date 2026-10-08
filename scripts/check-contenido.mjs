@@ -13,7 +13,7 @@ globalThis.location = { pathname: '/', search: '', hash: '', href: 'http://local
 const { fijarIndice, urlDe, logicaDe, idiomaDe } = await import('../js/rutas.js');
 fijarIndice(JSON.parse(readFileSync(new URL('../data/rutas.json', import.meta.url), 'utf8')));
 const {
-  INDEXABLES, nombreDe, breadcrumbItems, breadcrumbHTML, cabeceraHTML, pestanasHTML,
+  INDEXABLES, esFichaEspecie, esIndexable, FICHAS_INDEXABLES, ULTIMA_ESPECIE, nombreDe, breadcrumbItems, breadcrumbHTML, cabeceraHTML, pestanasHTML,
   rejillaHerramientasHTML, idsDeCategoria, introHTML, contarPalabras, derivadoTipo, derivadoGrupo,
 } = await import('../js/contenido.js');
 const { TITULOS_SEO } = await import('../js/titulos.js');
@@ -50,6 +50,20 @@ check('las mismas que titulos.js, en los dos idiomas',
   ['es', 'en'].map(l => [...Object.keys(TITULOS_SEO[l])].sort()), Array(2).fill([...INDEXABLES].sort()));
 check('los dos hubs y las 16 herramientas estan dentro',
   [...CATEGORIES.filter(c => !c.direct).map(c => c.route), ...TOOLS.map(x => x.route)].filter(r => !INDEXABLES.includes(r)), []);
+
+console.log('\nLas fichas de especie\n');
+
+check('la ultima especie es la 1025', ULTIMA_ESPECIE, 1025);
+check('ficha de especie: /pokedex/1 y /pokedex/1025 si',
+  ['/pokedex/1', '/pokedex/1025'].map(esFichaEspecie), [true, true]);
+// 10001 es la primera forma: sigue con noindex aunque se abran las especies.
+check('ficha de especie: /pokedex/0, /pokedex/1026, /pokedex/10001 y /pokedex no',
+  ['/pokedex/0', '/pokedex/1026', '/pokedex/10001', '/pokedex'].map(esFichaEspecie), [false, false, false, false]);
+check('las 53 son indexables', INDEXABLES.filter(k => !esIndexable(k)), []);
+// Hasta que el build prerenderice las fichas enteras, la bandera esta apagada
+// y una ficha no se indexa.
+check('con FICHAS_INDEXABLES apagada, /pokedex/25 no es indexable',
+  [FICHAS_INDEXABLES, esIndexable('/pokedex/25')], [false, false]);
 
 console.log('\nNombres\n');
 

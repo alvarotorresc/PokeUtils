@@ -61,7 +61,7 @@
 // el build. tipoHTML y grupoHTML si van al cliente, con egg-groups.js: 1,1 KB gz
 // en el arranque, medido el 2026-10-08.
 import { urlDe, TITULOS, TITULOS_EN } from './rutas.js';
-import { TYPES, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN, CHART, spriteUrl } from './data.js';
+import { TYPES, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN, CHART, GENERATIONS, spriteUrl } from './data.js';
 import { TOOLS, CATEGORIES, toolsIn } from './tools.js';
 import { EGG_GROUPS, membersOf, canBreed, partnersOf, hasEggData, groupCounts } from './egg-groups.js';
 import { isForm } from './forms.js';
@@ -86,6 +86,34 @@ export const INDEXABLES = [
   ...EGG_GROUPS.map(grupo => `/egg/${grupo}`),
 ];
 
+// ===== Las fichas de especie =====
+//
+// La PR 4 abre al buscador las 1025 fichas de especie (/pokedex/1 a
+// /pokedex/1025) ademas de las 53: no tienen textos a mano, su texto sale de
+// los datos (ficha-texto.js). Las formas (/pokedex/10001 en adelante) siguen
+// con noindex. INDEXABLES sigue siendo la lista de las 53 con textos a mano, y
+// es lo que piden las funciones que los leen; esIndexable es lo que decide el
+// noindex, el sitemap y la cuenta del build.
+//
+// La ultima especie, la de la ultima generacion: con una nueva, entra sola.
+// Marcada como pura para que esbuild la quite del cliente, que no la usa: un
+// acceso a propiedad suelto en lo alto del modulo lo da por efecto y lo deja.
+export const ULTIMA_ESPECIE = /* @__PURE__ */ (() => GENERATIONS.at(-1).range[1])();
+
+export function esFichaEspecie(logica) {
+  const m = /^\/pokedex\/(\d+)$/.exec(logica);
+  if (!m) return false;
+  const id = Number(m[1]);
+  return id >= 1 && id <= ULTIMA_ESPECIE;
+}
+
+// Apagada hasta que el build prerenderice las fichas enteras (contenido,
+// JSON-LD y sitemap): asi ningun commit intermedio publica una ficha a medias
+// con index. La enciende el commit del build.
+export const FICHAS_INDEXABLES = false;
+
+export const esIndexable = logica => INDEXABLES.includes(logica) || (FICHAS_INDEXABLES && esFichaEspecie(logica));
+
 const NOMBRES_TIPO = { es: TYPE_NAMES_FULL, en: TYPE_NAMES_FULL_EN };
 // Los nombres cortos que ya usa tituloDe para las paginas fijas, con mayusculas
 // de frase ("Tabla de tipos"); las etiquetas del nav y de las pestanas van en
@@ -104,6 +132,8 @@ export function tr(ctx, clave, vars) {
   return crudo.replace(/\{(\w+)\}/g, (m, nombre) => (nombre in vars ? vars[nombre] : m));
 }
 
+// Con INDEXABLES y no con esIndexable: lo piden las funciones que leen los
+// textos a mano y los titulos de titulos.js, y una ficha de especie no los tiene.
 function exigirIndexable(logica) {
   if (!INDEXABLES.includes(logica)) throw new Error(`contenido.js: "${logica}" no es una pagina indexable`);
 }
@@ -612,7 +642,8 @@ export function conDerivados(textos, ctx) {
 // La clave de INDEXABLES (y de los textos y del data-ruta del shell) para lo
 // que devuelve parseRuta: la calculadora pliega su pestana en la ruta, porque
 // cada una es su pagina. null si la direccion no es indexable (una ficha, las
-// legales, una pestana que no existe sigue siendo la de IV/EV).
+// legales, una pestana que no existe sigue siendo la de IV/EV). Una ficha de
+// especie tambien da null aunque se indexe: no tiene textos a mano que cargar.
 export function logicaIndexable(path, query = new URLSearchParams()) {
   let logica = path === '/home' ? '/' : path;
   if (path === '/calculator') {

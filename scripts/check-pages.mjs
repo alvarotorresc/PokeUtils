@@ -15,7 +15,7 @@ import {
 import { existsSync } from 'node:fs';
 import { tieneUrlPropia, isForm } from '../js/forms.js';
 import { pokeName } from '../js/i18n.js';
-import { INDEXABLES } from '../js/contenido.js';
+import { INDEXABLES, esIndexable, FICHAS_INDEXABLES, ULTIMA_ESPECIE } from '../js/contenido.js';
 import textosEn from '../js/textos-en.js';
 
 const leerTexto = ruta => readFile(new URL(`../${ruta}`, import.meta.url), 'utf8');
@@ -64,9 +64,11 @@ check('todas con descripcion', rutas.filter(r => !r.descripcion).map(r => r.publ
 check('ninguna descripcion de mas de 160', rutas.filter(r => r.descripcion?.length > 160).map(r => r.publica), []);
 // PR 3: se indexan las 53 por idioma de INDEXABLES, en los dos idiomas a la
 // vez; el resto, con noindex. D2: la portada en ingles tambien.
-check('noindex en todas salvo las de INDEXABLES',
-  rutas.filter(r => r.noindex === INDEXABLES.includes(r.logica) || r.indexable === r.noindex).map(r => r.publica), []);
-check('106 indexables, 53 por idioma', ['es', 'en'].map(l => de(l).filter(r => r.indexable).length), [53, 53]);
+// PR 4: y las fichas de especie, cuando se encienda FICHAS_INDEXABLES.
+check('noindex en todas salvo las indexables (esIndexable)',
+  rutas.filter(r => r.noindex === esIndexable(r.logica) || r.indexable === r.noindex).map(r => r.publica), []);
+const porIdioma = INDEXABLES.length + (FICHAS_INDEXABLES ? ULTIMA_ESPECIE : 0);
+check(`${porIdioma * 2} indexables, ${porIdioma} por idioma`, ['es', 'en'].map(l => de(l).filter(r => r.indexable).length), [porIdioma, porIdioma]);
 check('y las legales no', rutas.filter(r => /privac|terminos|terms/.test(r.publica)).map(r => r.noindex), [true, true, true, true]);
 check('los 18 tipos en cada idioma',
   ['es', 'en'].map(l => de(l).filter(r => /^(\/en)?\/(tipos|types)\//.test(r.publica)).length), [18, 18]);
