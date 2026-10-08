@@ -19,6 +19,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        # La historia entera: el lastmod del sitemap sale de git log, y build.mjs
+        # se para en un clon superficial, que es lo que checkout trae por defecto.
+        with:
+          fetch-depth: 0
       # node-version-file y no node-version: el numero vive en .nvmrc, que es lo
       # que Netlify lee por su cuenta. Con el numero aqui habia dos fuentes y
       # solo una la miraba quien construye de verdad el sitio.

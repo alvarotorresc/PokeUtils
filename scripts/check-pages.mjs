@@ -10,8 +10,9 @@
 import { readFile } from 'node:fs/promises';
 import {
   ORIGEN, rutasPublicas, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas,
-  bloqueHreflang, literalesEspanol, sinComentarios,
+  bloqueHreflang, literalesEspanol, sinComentarios, sitemapDe, robotsDe,
 } from './pages.mjs';
+import { existsSync } from 'node:fs';
 import { tieneUrlPropia, isForm } from '../js/forms.js';
 import { pokeName } from '../js/i18n.js';
 import { INDEXABLES } from '../js/contenido.js';
@@ -72,7 +73,15 @@ check('los 18 tipos en cada idioma',
 
 const alternas = { es: '/', en: '/en' };
 // Sin el contenido, que se comprueba abajo en el HTML.
-const sinContenido = ({ contenido, chips, jsonLd, ...resto }) => resto;
+const sinContenido = ({ contenido, chips, jsonLd, deps, ...resto }) => resto;
+// Las deps del lastmod (depsDe): las llevan las indexables y solo ellas, y cada
+// fichero existe. Que tenga historia en git lo mira el build.
+check('deps: en las 106 indexables y en ninguna mas', [rutas.filter(r => r.deps).length, rutas.filter(r => r.indexable && r.deps?.length).length], [106, 106]);
+check('deps que no existen en disco', [...new Set(rutas.flatMap(r => r.deps ?? []))].filter(d => !existsSync(new URL(`../${d}`, import.meta.url))), []);
+check('deps: el fichero de textos de su idioma', [por('/tipos/fuego').deps.includes('js/textos-es.js'), por('/en/types/fire').deps.includes('js/textos-en.js'), por('/en/types/fire').deps.includes('js/textos-es.js')], [true, true, false]);
+check('sitemapDe: loc y lastmod, escapados, sin hreflang', sitemapDe([{ publica: '/a&b', lastmod: '2026-10-08T10:00:00+02:00' }], 'https://x.test'),
+  '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>https://x.test/a&amp;b</loc>\n    <lastmod>2026-10-08T10:00:00+02:00</lastmod>\n  </url>\n</urlset>\n');
+check('robotsDe apunta al sitemap', robotsDe('https://x.test').split('\n').includes('Sitemap: https://x.test/sitemap.xml'), true);
 const tiposLd = ruta => ruta.jsonLd['@graph'].map(nodo => nodo['@type']);
 check('JSON-LD de la portada, una herramienta, un tipo y una ficha', [tiposLd(por('/')), tiposLd(por('/en/damage-calculator')), tiposLd(por('/tipos/fuego')), por('/pokedex/pikachu').jsonLd],
   [['WebSite'], ['BreadcrumbList', 'WebApplication'], ['BreadcrumbList'], undefined]);

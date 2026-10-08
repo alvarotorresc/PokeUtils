@@ -27,9 +27,11 @@ import { createHash } from 'node:crypto';
 import { join, dirname, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
+import { execFileSync } from 'node:child_process';
 import {
   rutasPublicas, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas, sinComentarios,
   literalesEspanol, ORIGEN, SCRIPTS_DE_LA_PORTADA, rellenarPortada, textosVisibles, textosConDerivados, conJsonLd,
+  sitemapDe, robotsDe,
 } from './pages.mjs';
 import {
   TABLA_ESTATICA, GRUPOS_HUEVO_ES, TIPOS_ES, SECCIONES_DE_FICHA, IDIOMAS, urlDe, logicaDe, idiomaDe,
@@ -279,6 +281,35 @@ async function htmlDe(dir, base = dir) {
   return salida;
 }
 
+// ===== lastmod por commit (D9) =====
+//
+// La fecha del ultimo commit que toco alguna de las dependencias de la pagina
+// (depsDe en pages.mjs), con caché por conjunto: las 18 de tipo de un idioma
+// comparten deps y preguntan una vez. En un clon superficial git log devuelve
+// la fecha del unico commit que hay para todo, una fecha falsa que nadie ve:
+// mejor parar. netlify.toml y ci.yml traen la historia entera antes del build.
+const git = (...args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' }).trim();
+const cacheLastmod = new Map();
+let historiaComprobada = false;
+function lastmodDe(deps) {
+  if (!historiaComprobada) {
+    if (git('rev-parse', '--is-shallow-repository') !== 'false') {
+      throw new Error('El clon es superficial y el lastmod del sitemap saldria mal: git fetch --unshallow antes del build');
+    }
+    historiaComprobada = true;
+  }
+  const clave = [...deps].sort().join('\n');
+  if (!cacheLastmod.has(clave)) {
+    const fecha = git('log', '-1', '--format=%cI', '--', ...deps);
+    if (!fecha) throw new Error(`Ningun commit toca ${deps.join(', ')}: mira depsDe en pages.mjs`);
+    for (const dep of deps) {
+      if (!git('log', '-1', '--format=%H', '--', dep)) throw new Error(`${dep} no tiene historia en git: mira depsDe en pages.mjs`);
+    }
+    cacheLastmod.set(clave, fecha);
+  }
+  return cacheLastmod.get(clave);
+}
+
 // ===== Una pagina por ruta =====
 //
 // Escribe dist/<ruta>.html para cada ruta publica (ver scripts/pages.mjs) y
@@ -302,6 +333,11 @@ async function generarPaginas(esqueleto) {
     await writeFile(destino, paginaHtml(esqueleto, ruta));
   }
   await writeFile(join(OUT, '_redirects'), redirectsDe({ indice, pokemon }));
+  // El sitemap lista las indexables, con la fecha de sus dependencias, y
+  // robots.txt apunta a el. Los dos se generan: ya no hay copia en la raiz.
+  await writeFile(join(OUT, 'sitemap.xml'), sitemapDe(rutas.filter(r => r.indexable)
+    .map(r => ({ publica: r.publica, lastmod: lastmodDe(r.deps) }))));
+  await writeFile(join(OUT, 'robots.txt'), robotsDe());
 
   // ----- los asertos, contra lo escrito en disco -----
   const ficheros = (await htmlDe(OUT)).filter(f => f !== '404.html');
@@ -657,6 +693,46 @@ async function generarPaginas(esqueleto) {
   if (JSON.stringify([...vistosLd.WebSite].sort()) !== JSON.stringify(portadas)) throw new Error(`WebSite en ${JSON.stringify(vistosLd.WebSite)} y tiene que estar solo en las dos portadas`);
   if (vistosLd.WebApplication.length !== herramientas.size * IDIOMAS.length) throw new Error(`${vistosLd.WebApplication.length} WebApplication y las herramientas son ${herramientas.size} por idioma`);
 
+  // (r) El sitemap, leido de disco: XML bien formado (un urlset con <url> de
+  // un <loc> y un <lastmod> cada uno, nada mas); sus <loc> son exactamente las
+  // canonicals de las indexables, sin repetir, y cada una esta en dist/ sin
+  // noindex; cada lastmod es una fecha W3C valida y no posterior a HEAD; y
+  // robots.txt apunta a el.
+  const sitemap = await readFile(join(OUT, 'sitemap.xml'), 'utf8');
+  const cuerpo = /^<\?xml version="1\.0" encoding="UTF-8"\?>\n<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">\n([\s\S]*)<\/urlset>\n$/.exec(sitemap);
+  if (!cuerpo) throw new Error('dist/sitemap.xml no es un urlset bien formado');
+  const URL_SITEMAP = /^ {2}<url>\n {4}<loc>([^<&]+)<\/loc>\n {4}<lastmod>([^<]+)<\/lastmod>\n {2}<\/url>\n/;
+  const entradas = [];
+  for (let resto = cuerpo[1]; resto; ) {
+    const m = URL_SITEMAP.exec(resto);
+    if (!m) throw new Error(`dist/sitemap.xml: no entiendo ${JSON.stringify(resto.slice(0, 80))}`);
+    entradas.push({ loc: m[1], lastmod: m[2] });
+    resto = resto.slice(m[0].length);
+  }
+  const locs = entradas.map(e => e.loc);
+  const canonicals = [...indexables].map(f => unico(porFichero.get(f), /<link rel="canonical" href="([^"]*)"/g)[0]);
+  const ordenar = lista => JSON.stringify([...lista].sort());
+  if (new Set(locs).size !== locs.length || ordenar(locs) !== ordenar(canonicals)) {
+    const sobran = locs.filter(u => !canonicals.includes(u));
+    const faltan = canonicals.filter(u => !locs.includes(u));
+    throw new Error(`dist/sitemap.xml: ${locs.length} <loc> y ${canonicals.length} canonicals indexables; sobran ${JSON.stringify(sobran)}, faltan ${JSON.stringify(faltan)}`);
+  }
+  for (const loc of locs) {
+    const f = ficheroDeUrl(loc);
+    if (!enDisco.has(f) || !indexables.has(f)) throw new Error(`dist/sitemap.xml lista ${loc}, que no esta en dist/ o lleva noindex`);
+  }
+  const head = Date.parse(git('log', '-1', '--format=%cI', 'HEAD'));
+  for (const { loc, lastmod } of entradas) {
+    const fecha = Date.parse(lastmod);
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(Z|[+-]\d{2}:\d{2})$/.test(lastmod) || Number.isNaN(fecha)) {
+      throw new Error(`dist/sitemap.xml: el lastmod de ${loc} es ${lastmod}, que no es una fecha W3C`);
+    }
+    if (fecha > head) throw new Error(`dist/sitemap.xml: el lastmod de ${loc} (${lastmod}) es posterior a HEAD`);
+  }
+  const robots = await readFile(join(OUT, 'robots.txt'), 'utf8');
+  if (!robots.split('\n').includes(`Sitemap: ${ORIGEN}/sitemap.xml`)) throw new Error('dist/robots.txt no apunta a /sitemap.xml');
+  if (/^Disallow:\s*\/\s*$/m.test(robots)) throw new Error('dist/robots.txt prohibe el sitio entero');
+
   // (s) Todo indexable a 3 clics como mucho de su portada y con un enlace
   // entrante desde otra indexable, siguiendo los <a href> del HTML (sin JS) y
   // pasando solo por indexables de su idioma. El conmutador no cuenta: lleva al
@@ -785,16 +861,16 @@ async function main() {
   }
   await comprobarVersionIndice(salidas);
 
-  // manifest.webmanifest, robots.txt, sitemap.xml y 404.html son ficheros
-  // sueltos en la raiz, no una carpeta: el bucle de arriba no los toca. Como
-  // index.html, se sirven directo desde la raiz sin build en local
+  // manifest.webmanifest y 404.html son ficheros sueltos en la raiz, no una
+  // carpeta: el bucle de arriba no los toca (robots.txt y sitemap.xml ya no se
+  // copian, los escribe generarPaginas). Como index.html, se sirven directo desde la raiz sin build en local
   // (`scripts/serve.mjs`), asi que tampoco necesitan la reescritura de rutas
   // que si llevan el CSS y el JS -- 404.html en concreto no puede depender de
   // ningun nombre hasheado (ver el comentario de sus @font-face).
   const html404 = await readFile(join(ROOT, '404.html'), 'utf8');
   comprobarRutasAbsolutas(html404, '404.html');
   await comprobarBackHome404(html404);
-  for (const suelto of ['manifest.webmanifest', 'robots.txt', 'sitemap.xml', '404.html']) {
+  for (const suelto of ['manifest.webmanifest', '404.html']) {
     await cp(join(ROOT, suelto), join(OUT, suelto));
   }
 

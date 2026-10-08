@@ -188,7 +188,7 @@ export function rutasPublicas({ indice, pokemon, moves, abilities }) {
     };
     if (!indexable) return fija;
     const ctx = { l, dic: DICCIONARIOS[l], textos: textos[l], pokemon };
-    const conLd = { ...fija, jsonLd: jsonLdDe(fila.logica, ctx, fija.descripcion) };
+    const conLd = { ...fija, jsonLd: jsonLdDe(fila.logica, ctx, fija.descripcion), deps: depsDe(fila.logica, l) };
     return fila.logica === '/'
       ? { ...conLd, contenido: portadaHTML(ctx), chips: chipsInicialesHTML(ctx) }
       : { ...conLd, contenido: contenidoDe(fila.logica, ctx) };
@@ -247,6 +247,61 @@ export function conJsonLd(html, ruta) {
   if (!ruta.jsonLd) throw new Error(`pages.mjs: ${ruta.publica} es indexable y no lleva jsonLd`);
   return sustituir(html, /<\/head>/, () => `  ${jsonLdHTML(ruta.jsonLd)}\n</head>`, 'el </head>');
 }
+
+// ===== Sitemap y robots.txt =====
+//
+// De que ficheros sale cada pagina indexable, para su lastmod (D9): su modulo
+// (el que carga el router y los que solo usa el), sus datos y su fichero de
+// textos. Sin el chrome -- index.html, style.css, pages.mjs, ui.js, i18n.js,
+// app.js --, que cambia a menudo y diria que todo el sitio cambio cada vez. El
+// diccionario solo cuenta en la FAQ, cuyas preguntas viven en el. contenido.js
+// cuenta donde es el que pinta el cuerpo: portada, hubs, FAQ, tipos y grupos.
+// Rutas desde la raiz del repo; build.mjs lanza si una no tiene historia en git.
+const MODULOS = {
+  '/': ['js/home.js', 'js/contenido.js', 'js/tools.js'],
+  '/data': ['js/hub.js', 'js/contenido.js', 'js/tools.js'],
+  '/competitive': ['js/hub.js', 'js/contenido.js', 'js/tools.js'],
+  '/faq': ['js/faq.js', 'js/contenido.js'],
+  '/pokedex': ['js/pokedex.js', 'data/pokemon.json'],
+  '/compare': ['js/compare.js', 'js/team-analysis.js', 'data/pokemon.json', 'data/abilities.json'],
+  '/egg': ['js/egg-pages.js', 'js/egg-groups.js', 'js/contenido.js', 'data/pokemon.json'],
+  '/moves': ['js/moves.js', 'data/moves.json'],
+  '/abilities': ['js/abilities.js', 'data/abilities.json'],
+  '/items': ['js/items.js', 'data/items.json', 'data/items-desc.json'],
+  '/natures': ['js/natures.js'],
+  '/types': ['js/type-chart.js', 'js/data.js', 'data/pokemon.json'],
+  '/team': ['js/team.js', 'js/team-analysis.js', 'data/pokemon.json'],
+  '/counter': ['js/counter.js', 'js/threats.js', 'js/meta.js', 'data/pokemon.json', 'data/meta-ou.json', 'data/meta-vgc.json'],
+  '/speed': ['js/speed.js', 'js/speed-tiers.js', 'data/pokemon.json'],
+  '/survive': ['js/survive.js', 'js/survival.js', 'js/battle-data.js', 'data/pokemon.json', 'data/moves.json'],
+  '/meta': ['js/meta-page.js', 'js/meta.js', 'data/pokemon.json', 'data/meta-ou.json', 'data/meta-vgc.json', 'data/meta-names.json'],
+  '/calculator': ['js/calculator.js', 'js/calc-ivev.js', 'js/stats.js', 'data/pokemon.json'],
+  '/calculator?tab=damage': ['js/calculator.js', 'js/calc-damage.js', 'js/damage.js', 'js/stats.js',
+    'data/pokemon.json', 'data/moves.json', 'data/items.json', 'data/berries.json'],
+  '/calculator?tab=catch': ['js/calculator.js', 'js/calc-capture.js', 'js/capture.js', 'js/battle-data.js', 'data/pokemon.json'],
+  tipo: ['js/type-chart.js', 'js/contenido.js', 'js/data.js', 'data/pokemon.json', 'data/moves.json'],
+  grupo: ['js/egg-pages.js', 'js/egg-groups.js', 'js/contenido.js', 'data/pokemon.json'],
+};
+
+export function depsDe(logica, l) {
+  const [seccion, id] = logica.split('/').filter(Boolean);
+  const clave = seccion === 'types' && id ? 'tipo' : seccion === 'egg' && id ? 'grupo' : logica;
+  const modulos = MODULOS[clave];
+  if (!modulos) throw new Error(`pages.mjs: ${logica} es indexable y no tiene deps en MODULOS`);
+  return [...modulos, `js/textos-${l}.js`, ...(logica === '/faq' ? [`js/i18n-${l}.js`] : [])];
+}
+
+const escXml = texto => String(texto).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
+
+// [{publica, lastmod}] -> sitemap.xml. Solo loc y lastmod: sin hreflang (D10),
+// que ya va en el HTML de cada pagina con el aserto (h); sin changefreq ni
+// priority, que Google ignora.
+export function sitemapDe(entradas, origen = ORIGEN) {
+  const urls = entradas.map(({ publica, lastmod }) => `  <url>\n    <loc>${escXml(`${origen}${publica}`)}</loc>\n    <lastmod>${escXml(lastmod)}</lastmod>\n  </url>`);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`;
+}
+
+export const robotsDe = (origen = ORIGEN) => `User-agent: *\nAllow: /\n\nSitemap: ${origen}/sitemap.xml\n`;
 
 // ===== El contenido de una pagina indexable =====
 //
