@@ -13,7 +13,7 @@ import { esqueletoDe } from './cascaras.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
 import { t, pokeName } from './i18n.js';
-import { norm } from './normalize.js';
+import { pokemonFilter } from './normalize.js';
 
 const TEAM_SIZE = 6;
 
@@ -101,16 +101,15 @@ export async function renderCounter(container, query = new URLSearchParams()) {
     const search = body.querySelector('#ctSearch');
     const results = body.querySelector('#ctResults');
     search.addEventListener('input', () => {
-      const q = search.value.trim().toLowerCase();
-      if (q.length < 2) {
+      // Una cifra sola ya busca: es un numero de Pokedex. Ver pokemonFilter.
+      const match = pokemonFilter(search.value);
+      if (!match) {
         results.hidden = true;
         return;
       }
-      // El termino se pliega una vez, no una por Pokemon.
-      const nq = norm(q);
       const hits = all
         .filter(p => !ids.includes(p.id))
-        .filter(p => norm(p.nameEs).includes(nq) || norm(p.nameEn).includes(nq) || String(p.id) === q)
+        .filter(match)
         .slice(0, 8);
       results.hidden = hits.length === 0;
       results.innerHTML = hits.map(p => `

@@ -12,7 +12,7 @@ import { urlDe } from './rutas.js';
 import { esqueletoDe } from './cascaras.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
 import { attachTooltip } from './tooltip.js';
-import { norm } from './normalize.js';
+import { pokemonFilter } from './normalize.js';
 
 const MAX = 4;
 
@@ -180,15 +180,15 @@ export async function renderCompare(container, query = new URLSearchParams()) {
     if (full) return;
 
     search.addEventListener('input', () => {
-      const q = search.value.trim().toLowerCase();
-      if (q.length < 2) {
+      // Una cifra sola ya busca: es un numero de Pokedex. Ver pokemonFilter.
+      const match = pokemonFilter(search.value);
+      if (!match) {
         results.hidden = true;
         return;
       }
-      const nq = norm(q);
       const hits = all
         .filter(p => !ids.includes(p.id))
-        .filter(p => norm(p.nameEs).includes(nq) || norm(p.nameEn).includes(nq) || String(p.id) === q)
+        .filter(match)
         .slice(0, 8);
       results.hidden = hits.length === 0;
       results.innerHTML = hits.map(p => `
