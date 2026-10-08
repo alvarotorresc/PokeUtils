@@ -388,6 +388,17 @@ async function generarPaginas(esqueleto) {
   // esqueleto: el index.html ya construido, que es tambien la portada espanola.
   const leerDato = async nombre => JSON.parse(await readFile(join(ROOT, 'data', `${nombre}.json`), 'utf8'));
   const [indice, pokemon, moves, abilities, evolutions] = await Promise.all(['rutas', 'pokemon', 'moves', 'abilities', 'evolutions'].map(leerDato));
+  // ULTIMA_ESPECIE sale de GENERATIONS (js/data.js), no de los datos, y de ella
+  // cuelgan esFichaEspecie y las cuentas de abajo. Si pokemon.json trae una
+  // especie que GENERATIONS no tiene (o al reves), las fichas nuevas saldrian
+  // con noindex sin que nada fallara: se exige que coincidan, del 1 a la ultima
+  // y sin huecos. Las formas (id >= 10001) no cuentan.
+  const especies = pokemon.map(p => p.id).filter(id => id < 10001).sort((a, b) => a - b);
+  if (especies.length !== ULTIMA_ESPECIE || especies.some((id, i) => id !== i + 1)) {
+    throw new Error(`data/pokemon.json trae ${especies.length} especies (de la ${especies[0]} a la ${especies.at(-1)}) `
+      + `y ULTIMA_ESPECIE (js/contenido.js) es ${ULTIMA_ESPECIE}, de la 1 a la ${ULTIMA_ESPECIE} sin huecos. Con una especie `
+      + 'nueva, amplia el range de la ultima generacion (o anade una) en GENERATIONS de js/data.js');
+  }
   const dex = await leerDex(pokemon, leerDato);
   const rutas = rutasPublicas({ indice, pokemon, moves, abilities, evolutions, dex });
 

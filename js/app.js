@@ -421,8 +421,14 @@ async function route() {
   // null es una direccion que no es pagina de la app. Con path '' no casa con
   // ninguna ruta, ni con la home, y cae en el "no encontrado" de mas abajo.
   const { path, parts, query } = ruta ?? { path: '', parts: [], query: new URLSearchParams() };
-  // Las fichas lo cambian por su nombre en cuanto lo saben (tituloDe).
-  document.title = tituloDe(`${path}?${query}`);
+  // Si el shell prerenderizado es el de esta ruta (ver mas abajo), se conserva.
+  const shell = app.querySelector('[data-shell]');
+  const conservarShell = Boolean(shell) && conservaShell(shell.dataset.ruta, logicaDeShell(path, query));
+  // Las fichas lo cambian por su nombre en cuanto lo saben (tituloDe). Con el
+  // shell conservado el <title> ya es el del build, el largo con el nombre: el
+  // de la seccion lo pisaria hasta titularFicha, y para siempre si la carga
+  // falla.
+  if (!conservarShell) document.title = tituloDe(`${path}?${query}`);
   updateActiveNav(path);
   const esHome = esRutaHome(path);
   // El buscador del nav no existe en la home -- el central del enjambre
@@ -449,8 +455,6 @@ async function route() {
   // quitan la marca al adoptarlo. `logica` (la de los textos) es aparte: una
   // ficha conserva su shell y no baja textos.
   const logica = logicaIndexable(path, query);
-  const shell = app.querySelector('[data-shell]');
-  const conservarShell = Boolean(shell) && conservaShell(shell.dataset.ruta, logicaDeShell(path, query));
   if (!conservarShell) app.innerHTML = '';
   // El fade-in es para el contenido que se acaba de pintar de golpe. La
   // portada estatica ya esta visible desde el primer frame -- ponerselo aqui
