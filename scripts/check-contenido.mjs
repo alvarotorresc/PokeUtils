@@ -14,10 +14,12 @@ const { fijarIndice, urlDe, logicaDe, idiomaDe } = await import('../js/rutas.js'
 fijarIndice(JSON.parse(readFileSync(new URL('../data/rutas.json', import.meta.url), 'utf8')));
 const {
   INDEXABLES, nombreDe, breadcrumbItems, breadcrumbHTML, cabeceraHTML, pestanasHTML,
-  rejillaHerramientasHTML, idsDeCategoria, introHTML,
+  rejillaHerramientasHTML, idsDeCategoria, introHTML, contarPalabras, derivadoTipo, derivadoGrupo,
 } = await import('../js/contenido.js');
 const { TITULOS_SEO } = await import('../js/titulos.js');
 const { TOOLS, CATEGORIES, toolsIn } = await import('../js/tools.js');
+const { CHART: CHART_TIPOS } = await import('../js/data.js');
+const { EGG_GROUPS: GRUPOS } = await import('../js/egg-groups.js');
 const { toolTabsHTML } = await import('../js/ui.js');
 const { setLang } = await import('../js/i18n.js');
 const es = (await import('../js/i18n-es.js')).default;
@@ -181,6 +183,69 @@ check('sin h2, o con una relacionada que no se indexa, lanza', [
   lanza(() => introHTML('/moves', { ...CTX.es, textos: { '/moves': { intro: ['A.'] } } })),
   lanza(() => introHTML('/moves', { ...CTX.es, textos: { '/moves': { h2: 'x', intro: ['A.'], relacionadas: ['/privacy'] } } })),
 ], [true, true]);
+
+console.log('\nPalabras y parrafos derivados\n');
+
+// Las muestras aprobadas del plan (§ Textos de muestra) son la vara: el
+// contador tiene que dar sus cuentas, y el derivado de Fuego, su texto exacto.
+const FUEGO_MANO = {
+  es: 'Ningún Pokémon de tipo Fuego puede quedar quemado, y con el sol sus ataques pegan un 50 % más fuerte: es el tipo alrededor del que se montan los equipos de sol.',
+  en: 'No Fire-type Pokémon can be burned, and in sun its attacks hit 50% harder, which is why sun teams are built around it.',
+};
+const FUEGO_DERIVADO = {
+  es: 'Sus ataques son supereficaces contra Planta, Hielo, Bicho y Acero, y poco eficaces contra Fuego, Agua, Roca y Dragón. '
+    + 'En defensa recibe el doble de daño de Agua, Tierra y Roca, y resiste seis tipos: Fuego, Planta, Hielo, Bicho, Acero y Hada. '
+    + 'Hay 81 especies de tipo Fuego, 36 de ellas solo de Fuego; las combinaciones más repetidas son Fuego-Volador, Fuego-Lucha y Fuego-Fantasma, con seis cada una. '
+    + 'Tiene 47 movimientos: 18 físicos, 26 especiales y 3 de estado.',
+  en: 'Its attacks are super effective against Grass, Ice, Bug and Steel, and not very effective against Fire, Water, Rock and Dragon. '
+    + 'On defence it takes double damage from Water, Ground and Rock, and resists six types: Fire, Grass, Ice, Bug, Steel and Fairy. '
+    + 'There are 81 Fire-type species, 36 of them pure Fire; the most common pairings are Fire/Flying, Fire/Fighting and Fire/Ghost, with six each. '
+    + 'It has 47 moves: 18 physical, 26 special and 3 status.',
+};
+const DANO = {
+  es: 'Elige atacante, defensor y movimiento, y la calculadora te da los 16 valores de daño posibles, el porcentaje de PS que quita cada uno y cuántos golpes hacen falta para el KO, con la probabilidad de cada caso. Usa la fórmula de la quinta generación en adelante, la misma que siguen usando Escarlata y Púrpura, y redondea como lo hace el juego. '
+    + 'Cada lado tiene sus EVs, naturaleza, cambios de stats, objeto, habilidad y teratipo, y el campo añade clima, terreno, pantallas, golpe crítico, quemadura y combate doble. También resuelve movimientos Z, golpes múltiples, absorción y retroceso. Todo el cálculo viaja en la dirección de la página: copia el enlace y quien lo abra verá exactamente lo mismo.',
+  en: 'Pick an attacker, a defender and a move, and the calculator shows all 16 possible damage rolls, the share of HP each one takes and how many hits it needs for the KO, with the odds of each outcome. It uses the damage formula from Generation 5 onwards, which Scarlet and Violet still use, and rounds the way the games do. '
+    + 'Each side has its own EVs, nature, stat stages, item, ability and Tera Type, and the field adds weather, terrain, screens, critical hits, burn and doubles. Z-Moves, multi-hit moves, draining and recoil are handled too. The whole setup lives in the page address, so copying the link shares the exact calculation.',
+};
+const pokemon = JSON.parse(readFileSync(new URL('../data/pokemon.json', import.meta.url), 'utf8'));
+const moves = JSON.parse(readFileSync(new URL('../data/moves.json', import.meta.url), 'utf8'));
+const DATOS = { es: { ...CTX.es, pokemon, moves }, en: { ...CTX.en, pokemon, moves } };
+
+check('las cuentas de las muestras: Fuego 109 y 99, dano 118 y 112 ("50 %" es una palabra)',
+  [contarPalabras(`${FUEGO_MANO.es} ${FUEGO_DERIVADO.es}`), contarPalabras(`${FUEGO_MANO.en} ${FUEGO_DERIVADO.en}`),
+    contarPalabras(DANO.es), contarPalabras(DANO.en)], [109, 99, 118, 112]);
+check('el derivado de Fuego es el de la muestra, en espanol', derivadoTipo('fire', DATOS.es), FUEGO_DERIVADO.es);
+check('y en ingles', derivadoTipo('fire', DATOS.en), FUEGO_DERIVADO.en);
+check('Normal no es supereficaz contra nada, no resiste nada y tiene una debilidad', [
+  derivadoTipo('normal', DATOS.es).includes('no son supereficaces contra ningún tipo'),
+  derivadoTipo('normal', DATOS.es).includes('recibe el doble de daño de Lucha, y no resiste ningún tipo. Es inmune a Fantasma.'),
+  derivadoTipo('normal', DATOS.en).includes('takes double damage from Fighting, and resists no types. It is immune to Ghost.'),
+], [true, true, true]);
+check('Hielo resiste un solo tipo', [derivadoTipo('ice', DATOS.es).includes('resiste un solo tipo: Hielo.'),
+  derivadoTipo('ice', DATOS.en).includes('resists a single type: Ice.')], [true, true]);
+// Electrico: 5-4-4-4. Cortar en tres dejaria fuera un empatado.
+check('un empate en el corte no se calla: Electrico se queda en una combinacion',
+  [derivadoTipo('electric', DATOS.es).includes('la combinación más repetida es Eléctrico-Volador, con cinco especies'),
+    derivadoTipo('electric', DATOS.en).includes('the most common pairing is Electric/Flying, with five species')], [true, true]);
+check('Ditto: el unico de su grupo, cria con todos menos Desconocido y otro Ditto', [
+  derivadoGrupo('ditto', DATOS.es).startsWith('Ditto es la única especie de su grupo, y cría con 873 de las 1025 especies'),
+  derivadoGrupo('ditto', DATOS.en).startsWith('Ditto is the only species in its group, and it breeds with 873 of the 1025 species'),
+], [true, true]);
+check('Desconocido no cria con nadie, ni con Ditto', [
+  derivadoGrupo('no-eggs', DATOS.es).startsWith('Las 151 especies del grupo Desconocido, de las 1025 de la Pokédex, no pueden criar con ninguna otra, ni siquiera con Ditto'),
+  derivadoGrupo('no-eggs', DATOS.en).startsWith('The 151 species in the No Eggs group, out of 1025 in the Pokédex, cannot breed with anything, not even Ditto'),
+], [true, true]);
+check('Volador (10-4-4) nombra un solo grupo compartido', derivadoGrupo('flying', DATOS.es).includes('El grupo con el que más especies comparte es Agua 1, con 10.'), true);
+check('todos los derivados salen, sin "undefined" ni "NaN"', ['es', 'en'].flatMap(l => [
+  ...Object.keys(CHART_TIPOS).map(t => derivadoTipo(t, DATOS[l])), ...GRUPOS.map(g => derivadoGrupo(g, DATOS[l]))])
+  .filter(x => /undefined|NaN|\[object/.test(x)).length, 0);
+// Sin datos, o con un genderRate que falta, lanza: un "0 especies" o un `?? 0`
+// que convierte "no se sabe" en "siempre macho" serian falsos sin avisar.
+check('sin datos, o sin genderRate, lanza', [
+  lanza(() => derivadoTipo('fire', CTX.es)), lanza(() => derivadoGrupo('ground', CTX.es)),
+  lanza(() => derivadoGrupo('ground', { ...DATOS.es, pokemon: pokemon.map(p => (p.name === 'eevee' ? { ...p, genderRate: undefined } : p)) })),
+], [true, true, true]);
 
 console.log(failed ? `\n${failed} FAILED\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);

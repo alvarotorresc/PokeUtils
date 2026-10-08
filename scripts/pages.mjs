@@ -49,8 +49,9 @@ const SUBTITULOS = {
 // La de las portadas, que no sale del diccionario: ninguna clave dice esto. La
 // espanola es tambien la del index.html (D11), que se sirve sin build y no se
 // regenera; check-pages comprueba que siguen siendo la misma. De 120 a 155
-// caracteres, lo que muestra un resultado de Google sin cortar (PR 3).
-const DESCRIPCION_PORTADA = {
+// caracteres, lo que muestra un resultado de Google sin cortar (PR 3). Se
+// exporta para check-textos, que exige que la de '/' en los textos sea esta.
+export const DESCRIPCION_PORTADA = {
   es: 'Pokédex con los 1025 Pokémon, tabla de tipos, grupos huevo, calculadoras de daño, captura e IVs y herramientas para montar tu equipo competitivo.',
   en: 'Pokédex with all 1025 Pokémon, a type chart, egg groups, damage, catch and IV calculators, and tools to build your competitive team.',
 };
