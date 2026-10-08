@@ -281,6 +281,18 @@ for (const l of ['es', 'en']) {
       alola.includes(escHTML(tr(ctx, 'learn.of', { species: nombrePokemon(raichu, l) }))),
       alola.includes(`<a class="tab" href="${prefijo}/pokedex/raichu"`), alola.includes('data-form=')],
     [true, true, true, true, false]);
+
+  // En /pokedex/charizard-mega-x todas las pestanas son enlaces: Gigamax, que
+  // no tiene URL, va a su ancla en Charizard. Como boton se pintaba con la URL
+  // de la mega. En Charizard, Gigamax sigue siendo un boton.
+  const gmax = allPokemon.find(p => p.name === 'charizard-gmax');
+  const megaX = await pintarConTexto(allPokemon.find(p => p.name === 'charizard-mega-x').id, ctx, null);
+  const charizard = await pintarConTexto(6, ctx, null);
+  checkIgual(`pestanas ${l}: en Mega-Charizard X todas enlazan, Gigamax a su ancla; en Charizard, Gigamax es boton`,
+    [megaX.includes('data-form='), megaX.includes(`href="${prefijo}/pokedex/charizard#forma-charizard-gmax"`),
+      megaX.includes(`<a class="tab" href="${prefijo}/pokedex/charizard"`),
+      charizard.includes(`data-form="${gmax.id}"`), charizard.includes('#forma-charizard-gmax"')],
+    [false, true, true, true, false]);
 }
 
 // ===== Como se obtiene, en las megas =====

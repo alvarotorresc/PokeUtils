@@ -459,11 +459,14 @@ function formasAnclaHTML(ctx, { variants, abilities }) {
 
 // Una pestana de forma. Las que tienen URL propia son enlaces a su pagina, que
 // navega el router como cualquier otro (D6 de la PR 5): asi el enlace existe
-// para el buscador. Tambien la especie, vista desde una de esas paginas. Las
-// demas siguen siendo botones que repintan la ficha sin cambiar la URL.
+// para el buscador. Vista desde una de esas paginas, todas son enlaces: la
+// especie y las formas sin URL, a su ancla en la especie (urlDe da
+// /pokedex/deoxys#forma-deoxys-attack). Como boton, Gigamax se pintaria en
+// /pokedex/charizard-mega-x con la URL de la mega. En la especie, las formas
+// sin URL siguen siendo botones que repintan la ficha sin cambiar de pagina.
 function pestanaHTML(v, label, pokemon, propia, ctx) {
   const clase = `tab${v.id === pokemon.id ? ' active' : ''}`;
-  if (tieneUrlPropia(v) || (propia && !v.speciesId)) {
+  if (propia || tieneUrlPropia(v)) {
     return `
               <a class="${clase}" href="${urlDe(`/pokedex/${v.id}`, ctx.l)}"${v.id === pokemon.id ? ' aria-current="page"' : ''}>
                 ${label}
