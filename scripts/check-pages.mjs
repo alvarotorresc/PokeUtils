@@ -47,11 +47,11 @@ const por = publica => rutas.find(r => r.publica === publica);
 const de = idioma => rutas.filter(r => r.idioma === idioma);
 
 // 22 fijas (portada, hubs, herramientas con las 3 pestanas, FAQ y legales) +
-// 1.025 especies + 157 formas propias + 15 grupos + 18 tipos + 937 movimientos
+// 1.025 especies + 155 formas propias + 15 grupos + 18 tipos + 937 movimientos
 // + 313 habilidades, en cada idioma. A mano a proposito: si cambia, que sea
 // porque alguien lo decide.
-check('4.974 paginas: 2.487 por idioma', [rutas.length, de('es').length, de('en').length], [4974, 2487, 2487]);
-check('y por idioma lo mismo contado desde los datos', paginasEsperadas({ pokemon, moves, abilities }), 2487);
+check('4.970 paginas: 2.485 por idioma', [rutas.length, de('es').length, de('en').length], [4970, 2485, 2485]);
+check('y por idioma lo mismo contado desde los datos', paginasEsperadas({ pokemon, moves, abilities }), 2485);
 check('especies + formas propias, en cada idioma',
   [rutas.filter(r => r.publica.startsWith('/pokedex/')).length, rutas.filter(r => r.publica.startsWith('/en/pokedex/')).length],
   Array(2).fill(pokemon.filter(p => !isForm(p)).length + pokemon.filter(tieneUrlPropia).length));
@@ -318,7 +318,8 @@ console.log('\nLas 301 de los ids\n');
 const redirects = redirectsDe({ indice, pokemon });
 const lineas = redirects.split('\n').filter(l => l && !l.startsWith('#'));
 const regla = desde => lineas.find(l => l.split(/\s+/)[0] === desde)?.split(/\s+/);
-check('una por Pokemon y por idioma: 1.025 especies + 326 formas', lineas.length, 2 * pokemon.length);
+check('una por Pokemon y por idioma (1.025 especies + 326 formas) y las 2 retiradas en D1',
+  lineas.length, 2 * (pokemon.length + 2));
 check('una especie', regla('/pokedex/25'), ['/pokedex/25', '/pokedex/pikachu', '301']);
 check('una forma propia', regla('/pokedex/10034'), ['/pokedex/10034', '/pokedex/charizard-mega-x', '301']);
 // El ancla va tal cual: el parser de _redirects de Netlify solo toma por
@@ -327,7 +328,15 @@ check('una forma sin URL, a su especie con el ancla', regla('/pokedex/10001'),
   ['/pokedex/10001', '/pokedex/deoxys#forma-deoxys-attack', '301']);
 check('y en ingles, a su nombre en ingles', [regla('/en/pokedex/25'), regla('/en/pokedex/10001')],
   [['/en/pokedex/25', '/en/pokedex/pikachu', '301'], ['/en/pokedex/10001', '/en/pokedex/deoxys#forma-deoxys-attack', '301']]);
-check('ningun destino empieza por #', lineas.filter(l => l.split(/\s+/).some((t, i) => i > 0 && t.startsWith('#'))), []);
+// D1 de la PR 5: la gorra de Pikachu y el Raticate dominante tuvieron URL
+// propia hasta la PR 4; ahora son anclas, y su URL vieja lleva a ellas.
+check('las URLs retiradas en D1, al ancla de su especie, en los dos idiomas',
+  ['/pokedex/pikachu-alola-cap', '/en/pokedex/pikachu-alola-cap', '/pokedex/raticate-totem-alola', '/en/pokedex/raticate-totem-alola'].map(regla),
+  [['/pokedex/pikachu-alola-cap', '/pokedex/pikachu#forma-pikachu-alola-cap', '301'],
+    ['/en/pokedex/pikachu-alola-cap', '/en/pokedex/pikachu#forma-pikachu-alola-cap', '301'],
+    ['/pokedex/raticate-totem-alola', '/pokedex/raticate#forma-raticate-totem-alola', '301'],
+    ['/en/pokedex/raticate-totem-alola', '/en/pokedex/raticate#forma-raticate-totem-alola', '301']]);
+check('ningun destino empieza por #',lineas.filter(l => l.split(/\s+/).some((t, i) => i > 0 && t.startsWith('#'))), []);
 
 console.log('\nSus cabeceras en netlify.toml\n');
 

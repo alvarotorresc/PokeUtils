@@ -45,20 +45,23 @@ export function competitiveList(list) {
 export const spriteIdFor = p => (p.noSprite && p.speciesId ? p.speciesId : p.id);
 
 // Que formas tienen pagina (y URL) propia en vez de una pestana en la ficha de
-// su especie: las 97 megas y las 60 regionales, 157 en total. Son las que se
+// su especie: las 97 megas y las 58 regionales, 155 en total. Son las que se
 // buscan por su nombre ("charizard mega x", "raichu alola"); el resto --
 // gigamax, dominantes, gorras, los modos de Deoxys -- vive en su pestana, y su
 // id lleva a la especie con `#forma-<name>`.
 //
-// Las mismas dos regex con las que cuenta check-forms.mjs. Es una union, no una
-// suma: raticate-totem-alola y pikachu-alola-cap son regionales y algo mas.
+// Las mismas dos regex con las que cuenta check-forms.mjs, menos la gorra y los
+// dominantes: pikachu-alola-cap y raticate-totem-alola son regionales y algo
+// mas, pero no la forma que alguien busca por su nombre (D1 de la PR 5). Hasta
+// la PR 4 tuvieron URL; su URL vieja lleva con 301 al ancla (URLS_RETIRADAS).
 const MEGA = /-mega(-|$)/;
 const REGIONAL = /-(alola|galar|hisui|paldea)(-|$)/;
-export const tieneUrlPropia = p => isForm(p) && (MEGA.test(p.name) || REGIONAL.test(p.name));
+export const tieneUrlPropia = p => isForm(p) && (MEGA.test(p.name) || REGIONAL.test(p.name))
+  && !/-(cap|totem)(-|$)/.test(p.name);
 
-// D12 del plan de la PR 4: la gorra de Pikachu y los dominantes son regionales
-// para tieneUrlPropia (pikachu-alola-cap, raticate-totem-alola), pero no son la
-// forma que alguien busca por su nombre. Tienen URL, pero ni el bloque de formas
-// de la ficha las enlaza ni el texto de la ficha las nombra: los dos preguntan
-// aqui.
-export const formaEnlazable = p => tieneUrlPropia(p) && !/-(cap|totem)(-|$)/.test(p.name);
+// Las formas que tuvieron URL propia y ya no: _redirects las manda al ancla.
+export const URLS_RETIRADAS = ['pikachu-alola-cap', 'raticate-totem-alola'];
+
+// El bloque de formas de la ficha y su texto preguntan aqui. Desde D1 de la
+// PR 5 es lo mismo que tieneUrlPropia; el nombre se queda para sus usuarios.
+export const formaEnlazable = tieneUrlPropia;

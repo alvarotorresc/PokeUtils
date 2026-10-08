@@ -178,8 +178,8 @@ for (const id of [25, 132, 133, 6]) {
 
 // ===== Formas con pagina propia =====
 //
-// Charizard enlaza sus dos megas; Pikachu no enlaza nada, porque su unica forma
-// con URL es la gorra de Alola, y la gorra y los dominantes no se enlazan (D12);
+// Charizard enlaza sus dos megas; Pikachu no enlaza nada, porque no tiene
+// formas con URL: la gorra de Alola va en ancla desde D1 de la PR 5;
 // Tauros, las tres de Paldea, si tieneUrlPropia las da por regionales.
 const { tieneUrlPropia } = await import('../js/forms.js');
 const bloqueFormas = html => html.match(/<h2 class="section-title">[^<]*<\/h2>\s*<ul class="relacionadas">[^]*?<\/ul>/)?.[0] ?? '';
@@ -193,10 +193,15 @@ for (const l of ['es', 'en']) {
     enlaza(charizard, 'charizard-mega-x') && enlaza(charizard, 'charizard-mega-y')
     && (charizard.match(/<li>/g) || []).length === 2, charizard);
 
+  // D1 de la PR 5: la gorra ya no tiene URL, su id lleva al ancla y en la
+  // ficha es una pestana mas, como las otras 6 gorras.
   const pikachu = (await pintar(25, ctx)).html;
-  check(`formas ${l}: Pikachu no enlaza pikachu-alola-cap`,
-    tieneUrlPropia(porNombre('pikachu-alola-cap')) && !enlaza(pikachu, 'pikachu-alola-cap')
-    && !pikachu.includes(ctx.dic['pokedex.forms']));
+  const gorra = porNombre('pikachu-alola-cap');
+  const prefijo = l === 'en' ? '/en' : '';
+  check(`formas ${l}: la gorra de Alola de Pikachu es una pestana con ancla, sin pagina`,
+    [tieneUrlPropia(gorra), urlDe(`/pokedex/${gorra.id}`, l), pikachu.includes(`href="${prefijo}/pokedex/pikachu-alola-cap"`),
+      pikachu.includes(ctx.dic['pokedex.forms']), pikachu.includes(`data-form="${gorra.id}"`)],
+    [false, `${prefijo}/pokedex/pikachu#forma-pikachu-alola-cap`, false, false, true]);
 
   const paldea = formsOf(128, allPokemon).filter(tieneUrlPropia);
   const tauros = bloqueFormas((await pintar(128, ctx)).html);

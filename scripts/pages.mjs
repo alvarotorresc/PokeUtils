@@ -26,7 +26,7 @@ import {
   TABLA_ESTATICA, GRUPOS_HUEVO_ES, TIPOS_ES, IDIOMAS, fijarIndice, urlDe, tituloDe, logicaDe,
 } from '../js/rutas.js';
 import { TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from '../js/data.js';
-import { isForm, tieneUrlPropia, formsOf } from '../js/forms.js';
+import { isForm, tieneUrlPropia, formsOf, URLS_RETIRADAS } from '../js/forms.js';
 import { TOOLS, CATEGORIES, toolsIn } from '../js/tools.js';
 import {
   INDEXABLES, esIndexable, encabezadoHTML, introHTML, tipoHTML, grupoHTML, faqHTML, listaGruposHTML,
@@ -750,10 +750,23 @@ export function literalesEspanol(html, esqueleto) {
 // una pagina valida.
 //
 // Una por Pokemon y por idioma: /en/pokedex/25 va a /en/pokedex/pikachu.
+// Mas las URLs por slug de las formas que la perdieron (D1 de la PR 5), al
+// mismo ancla al que lleva su id: /pokedex/pikachu-alola-cap a
+// /pokedex/pikachu#forma-pikachu-alola-cap.
 export function redirectsDe({ indice, pokemon }) {
   fijarIndice(indice);
   const ordenados = [...pokemon].sort((a, b) => a.id - b.id);
-  const lineas = IDIOMAS.flatMap(l => ordenados
-    .map(p => `${l === 'en' ? '/en' : ''}/pokedex/${p.id}  ${urlDe(`/pokedex/${p.id}`, l)}  301`));
+  const retiradas = URLS_RETIRADAS.map(name => {
+    const p = pokemon.find(q => q.name === name);
+    if (!p || tieneUrlPropia(p)) throw new Error(`URLS_RETIRADAS: ${name} no existe o sigue teniendo URL propia`);
+    return p;
+  });
+  const lineas = IDIOMAS.flatMap(l => {
+    const prefijo = l === 'en' ? '/en' : '';
+    return [
+      ...ordenados.map(p => `${prefijo}/pokedex/${p.id}  ${urlDe(`/pokedex/${p.id}`, l)}  301`),
+      ...retiradas.map(p => `${prefijo}/pokedex/${p.name}  ${urlDe(`/pokedex/${p.id}`, l)}  301`),
+    ];
+  });
   return `# Generado por scripts/build.mjs (pages.mjs). No editar a mano.\n${lineas.join('\n')}\n`;
 }

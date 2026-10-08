@@ -173,9 +173,11 @@ console.log('\nPokemon\n');
 
 const formas = pokemon.filter(p => p.speciesId);
 const propias = formas.filter(tieneUrlPropia);
-check('formas con URL propia: 97 megas + 60 regionales', propias.length, 157);
-check('las que son regionales y algo mas tambien la tienen',
-  ['pikachu-alola-cap', 'raticate-totem-alola'].filter(n => !propias.some(p => p.name === n)), []);
+check('formas con URL propia: 97 megas + 58 regionales', propias.length, 155);
+check('y en ancla, 171', formas.length - propias.length, 171);
+// D1 de la PR 5: la gorra y el dominante son regionales y algo mas, y van en ancla.
+check('las que son regionales y algo mas no la tienen',
+  ['pikachu-alola-cap', 'raticate-totem-alola'].filter(n => propias.some(p => p.name === n)), []);
 check('una especie no es forma con URL propia', tieneUrlPropia(pokemon[0]), false);
 
 check('ida y vuelta de los 1351, con o sin URL propia',
@@ -240,7 +242,7 @@ const todas = [
   ...EGG_GROUPS.map(g => urlDe(`/egg/${g}`)),
   ...TYPES.map(t => urlDe(`/types/${t}`)),
 ];
-check('2487 paginas: las 2469 de la PR 1 y los 18 tipos', todas.length, 2487);
+check('2485 paginas: las 2469 de la PR 1, los 18 tipos y 2 formas menos (D1 de la PR 5)', todas.length, 2485);
 check('ninguna repetida', todas.length - new Set(todas).size, 0);
 check('todas en [a-z0-9-] y sin barra final',
   todas.filter(u => u !== '/' && !/^(\/[a-z0-9]+(-[a-z0-9]+)*)+$/.test(u)), []);
@@ -312,7 +314,7 @@ const todasEn = [
   ...EGG_GROUPS.map(g => urlDe(`/egg/${g}`, 'en')),
   ...TYPES.map(t => urlDe(`/types/${t}`, 'en')),
 ];
-check('2487 paginas en ingles, una por cada una en espanol', todasEn.length, todas.length);
+check('2485 paginas en ingles, una por cada una en espanol', todasEn.length, todas.length);
 check('ninguna repetida en ingles', todasEn.length - new Set(todasEn).size, 0);
 check('todas empiezan por /en, en [a-z0-9-] y sin barra final',
   todasEn.filter(u => !/^\/en(\/[a-z0-9]+(-[a-z0-9]+)*)*$/.test(u)), []);
