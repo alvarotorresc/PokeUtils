@@ -91,7 +91,7 @@ const esc = texto => String(texto).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<':
 // t() sin estado: la clave en el diccionario del contexto. Una clave que falta
 // lanza en vez de pintarse cruda, porque aqui no hay nadie mirando la pantalla:
 // lo veria el buscador.
-function tr(ctx, clave, vars) {
+export function tr(ctx, clave, vars) {
   const crudo = ctx.dic[clave];
   if (crudo === undefined) throw new Error(`contenido.js: falta la clave "${clave}" en el diccionario ${ctx.l}`);
   if (!vars) return crudo;
