@@ -44,7 +44,7 @@ export function renderDamage(container, query) {
       </div>
 
       <div class="card" id="dmgMoveCard">
-        <h3 class="section-title" style="margin-bottom:12px">${t('dmg.move')}</h3>
+        <h2 class="section-title" style="margin-bottom:12px">${t('dmg.move')}</h2>
         <div class="search-bar" style="margin-bottom:12px">
           <span class="search-icon">🔍</span>
           <input type="text" class="search-input" id="dmgMoveSearch" placeholder="${t('dmg.movesearch')}">
@@ -127,7 +127,7 @@ export function renderDamage(container, query) {
     `;
     return `
       <div class="card">
-        <h3 class="section-title" style="margin-bottom:12px">${title}</h3>
+        <h2 class="section-title" style="margin-bottom:12px">${title}</h2>
         <div class="search-bar" style="margin-bottom:12px">
           <span class="search-icon">🔍</span>
           <input type="text" class="search-input" id="dmg${side}Search" placeholder="${t('calc.search')}">

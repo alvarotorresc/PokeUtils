@@ -26,3 +26,16 @@
 // Folding hyphens and colons would make unrelated names collide.
 export const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
   .replace(/[’‘`´]/g, "'");
+
+// The picker filter shared by Compare, Counter and Speed: by name in either
+// language, or by number. Returns null while the term is too short to search,
+// so the caller hides the list: two characters for a name, since one letter
+// matches a third of the list, but one digit for a number, since 1 to 9 are
+// real Pokedex numbers and "6" has to find Charizard. The number is the
+// internal id, which for a species is its Pokedex number; a form (10xxx) is not
+// reached by its species' number, only by its own id.
+export function pokemonFilter(term) {
+  const q = norm((term || '').trim());
+  if (q.length < 2 && !/^\d$/.test(q)) return null;
+  return p => norm(p.nameEs).includes(q) || norm(p.nameEn).includes(q) || String(p.id) === q;
+}

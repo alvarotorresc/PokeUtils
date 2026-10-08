@@ -1,7 +1,7 @@
 // ===== MOVES PAGE =====
 import { TYPES } from './data.js';
 import { fetchMoves } from './api.js';
-import { skeletonHTML, renderPagination, replaceQuery, esc, toolTabsHTML, wireToolTabs, navegar } from './ui.js';
+import { skeletonHTML, renderPagination, replaceQuery, esc, encabezadoDe, introDe, wireToolTabs, navegar } from './ui.js';
 import { urlDe } from './rutas.js';
 import { PAGINA, esqueletoDe } from './cascaras.js';
 import { t, typeName, categoryName, pokeName, getLang, statName } from './i18n.js';
@@ -32,11 +32,7 @@ export function renderMoves(container, query = new URLSearchParams()) {
   let allMoves = null;
 
   container.innerHTML = `
-    ${toolTabsHTML('data', 'moves')}
-    <div class="page-header">
-      <h1>${t('moves.title')}</h1>
-      <p>${t('moves.subtitle')}</p>
-    </div>
+    ${encabezadoDe('/moves')}
     <div class="search-bar">
       <span class="search-icon">🔍</span>
       <input type="text" class="search-input" id="mvSearch" placeholder="${t('moves.search')}" value="${esc(state.q)}">
@@ -74,6 +70,7 @@ export function renderMoves(container, query = new URLSearchParams()) {
       <button class="filter-btn pdx-clear" id="mvClear" hidden>${t('moves.clear')}</button>
     </div>
     <div id="mvContent"></div>
+    ${introDe('/moves')}
   `;
   wireToolTabs(container);
 

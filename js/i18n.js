@@ -53,6 +53,12 @@ export function getLang() {
   return currentLang;
 }
 
+// El diccionario del idioma activo, entero: lo que contenido.js recibe en vez
+// de llamar a t(), para poder ser pura y servir tambien al build.
+export function diccionarioActivo() {
+  return diccionarios[currentLang];
+}
+
 // Asincrona desde que los diccionarios se cargan aparte: el idioma no cambia
 // hasta que el suyo esta bajado, o t() responderia en el idioma viejo.
 //

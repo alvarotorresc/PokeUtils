@@ -9,7 +9,8 @@ import { getLevel, setLevel, onLevelChange } from './level.js';
 import { t, getLang, setLang, onLangChange } from './i18n.js';
 import { purgeLegacyCache } from './api.js';
 import { leer, escribir } from './storage.js';
-import { renderError, parseRuta, navegar, fijarRouter, wireSpriteFade } from './ui.js';
+import { renderError, parseRuta, navegar, fijarRouter, wireSpriteFade, cargarTextos } from './ui.js';
+import { logicaIndexable, conservaShell } from './contenido.js';
 import { urlDe, cargarIndice, tituloDe, legadoAPublica, idiomaDe, esPortada, urlEquivalente } from './rutas.js';
 import { cascaraDeRuta } from './cascaras.js';
 import { attachGlobalSearch } from './global-search.js';
@@ -31,6 +32,7 @@ const footerFaq = document.getElementById('footerFaq');
 const footerPrivacy = document.getElementById('footerPrivacy');
 const footerTerms = document.getElementById('footerTerms');
 const footerData = document.getElementById('footerData');
+const footerAuthor = document.getElementById('footerAuthor');
 const navLogo = document.querySelector('.nav-logo');
 
 // La ruta actual decide "home o no", tanto para el nav-link activo como para
@@ -123,6 +125,8 @@ function updateFooterLabels() {
   footerFaq.setAttribute('href', urlDe('/faq'));
   footerPrivacy.setAttribute('href', urlDe('/privacy'));
   footerTerms.setAttribute('href', urlDe('/terms'));
+  // La web del autor en el idioma de la pagina (D12), como AUTOR en pages.mjs.
+  footerAuthor.setAttribute('href', getLang() === 'en' ? 'https://alvarotc.com/' : 'https://alvarotc.com/es/');
 }
 
 // Sin preventDefault: navega el interceptor de clics de mas abajo, como
@@ -308,6 +312,9 @@ function destinoDe(path, parts, query) {
   let destino;
   if (esRutaHome(path)) {
     destino = [() => import('./home.js'), m => m.renderHome(app)];
+  } else if (parts[0] === 'types' && parts[1]) {
+    // Una pagina por tipo, en el mismo modulo que la tabla: comparten CHART.
+    destino = [() => import('./type-chart.js'), m => m.renderTipo(app, parts[1])];
   } else if (path === '/types') {
     destino = [() => import('./type-chart.js'), m => m.renderTypeChart(app)];
   } else if (path === '/team') {
@@ -343,7 +350,7 @@ function destinoDe(path, parts, query) {
     destino = [() => import('./meta-page.js'), m => m.renderMeta(app, query)];
   } else if (parts[0] === 'egg' && parts[1]) {
     const grupo = decodificarSlug(parts[1]);
-    if (grupo !== null) destino = [() => import('./egg-pages.js'), m => m.renderEggGroup(app, grupo, query)];
+    if (grupo !== null) destino = [() => import('./egg-pages.js'), m => m.renderEggGroup(app, grupo)];
   } else if (path === '/egg') {
     destino = [() => import('./egg-pages.js'), m => m.renderEggIndex(app)];
   } else if (path === '/data') {
@@ -433,10 +440,16 @@ async function route() {
   // buscador visible se reserva ese hueco explicitamente; en la home, sin
   // buscador, el margen que ya habia de sobra sigue intacto.
   nav.classList.toggle('nav-has-search', !esHome);
-  // La portada de la home ya viene pintada en el HTML. Si la primera ruta es la
-  // home, se queda donde esta: vaciarla aqui devolveria el salto que vino a
-  // quitar. Cualquier otra ruta la borra como siempre.
-  const conservarShell = app.querySelector('[data-shell]') && esHome;
+  // Una pagina indexable llega pintada en el HTML, dentro de
+  // <div data-shell data-ruta="<logica>"> (hoy solo la portada; el resto, desde
+  // que el build las prerenderice). Si el shell es el de esta ruta, se queda
+  // donde esta y el renderizador lo sustituye o lo adopta: vaciarlo aqui
+  // devolveria el salto que vino a quitar. Con otra ruta o sin data-ruta se
+  // borra como siempre. Solo pasa en la primera carga: el renderizador lo
+  // reemplaza, y la portada le quita la marca al adoptarlo.
+  const logica = logicaIndexable(path, query);
+  const shell = app.querySelector('[data-shell]');
+  const conservarShell = Boolean(shell) && conservaShell(shell.dataset.ruta, logica);
   if (!conservarShell) app.innerHTML = '';
   // El fade-in es para el contenido que se acaba de pintar de golpe. La
   // portada estatica ya esta visible desde el primer frame -- ponerselo aqui
@@ -450,7 +463,7 @@ async function route() {
   // sin el min-height de la primera pintura, el footer subia hasta el header.
   // Ahora lo que se ve es la pantalla de destino con su titulo de verdad y el
   // esqueleto de lo que falta. Ver js/cascaras.js.
-  const cascara = conservarShell ? null : cascaraDeRuta(path, parts);
+  const cascara = conservarShell ? null : cascaraDeRuta(path, parts, query);
   if (cascara) {
     app.innerHTML = cascara;
     // Mientras este puesto, un esqueleto que se pinte encima no vuelve a
@@ -473,8 +486,14 @@ async function route() {
   }
 
   const [bajar, pintar] = destino;
+  // Los textos de la pagina (h2, intro, la frase y el derivado de tipos y
+  // grupos), a la vez que el modulo y no detras: son otro trozo, y en serie
+  // sumarian su latencia a la de la ruta. Solo en las indexables. Si no bajan,
+  // la herramienta se pinta igual, sin su bloque de texto: no son lo que se
+  // vino a usar.
+  const textos = logica ? cargarTextos(lang).catch(() => null) : null;
   try {
-    const [modulo] = await Promise.all([bajar(), indice]);
+    const [modulo] = await Promise.all([bajar(), indice, textos]);
     // Bajar tarda, y en ese hueco cabe otro clic. Si lo hubo, este render ya no
     // es el que toca: pintarlo dejaria la pagina anterior sobre la nueva ruta.
     if (token !== navegacion) return;

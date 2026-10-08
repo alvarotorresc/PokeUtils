@@ -18,8 +18,11 @@ import {
   slugEs, TABLA_ESTATICA, GRUPOS_HUEVO_ES, construirIndice, fijarIndice,
   urlDe, logicaDe, legadoALogica, TITULOS, tituloDe, SECCIONES_DE_FICHA,
   TABLA_ESTATICA_EN, GRUPOS_HUEVO_EN, idiomaDe, esPortada, fijarIdioma,
-  legadoAPublica, urlEquivalente, TITULOS_EN, DESAMBIGUAR_EN,
+  legadoAPublica, urlEquivalente, TITULOS_EN, DESAMBIGUAR_EN, TIPOS_ES, TIPOS_EN,
 } from '../js/rutas.js';
+import { TYPES, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN, CHART } from '../js/data.js';
+import { TITULOS_SEO } from '../js/titulos.js';
+import { TOOLS } from '../js/tools.js';
 import { tieneUrlPropia } from '../js/forms.js';
 import { EGG_GROUPS } from '../js/egg-groups.js';
 import es from '../js/i18n-es.js';
@@ -68,6 +71,7 @@ check('urlDe de una ficha sin indice lanza', lanza(() => urlDe('/pokedex/25')), 
 check('logicaDe de una ficha sin indice lanza', lanza(() => logicaDe('/pokedex/pikachu')), true);
 check('lo estatico no necesita indice', urlDe('/moves'), '/movimientos');
 check('ni los grupos huevo', urlDe('/egg/water1'), '/grupos-huevo/agua-1');
+check('ni los tipos', [urlDe('/types/fire'), comoTexto(logicaDe('/tipos/fuego'))], ['/tipos/fuego', '/types/fire']);
 
 console.log('\ndata/rutas.json\n');
 
@@ -124,9 +128,12 @@ check('la query se escribe con %20, nunca con +',
 check('cada pagina estatica tiene su titulo',
   publicasEstaticas.filter(p => p !== '/' && !Object.hasOwn(TITULOS, p)), []);
 check('y no sobra ninguno', Object.keys(TITULOS).filter(p => !publicasEstaticas.includes(p)), []);
-check('la portada se llama PokeUtils', tituloDe('/'), 'PokeUtils');
+check('la portada lleva el suyo, tambien por /home', [tituloDe('/'), tituloDe('/home')],
+  Array(2).fill('Pokédex, tabla de tipos y calculadoras Pokémon · PokeUtils'));
 check('cada pestana de la calculadora tiene el suyo',
-  tituloDe('/calculator?tab=damage&a=6'), 'Calculadora de daño · PokeUtils');
+  tituloDe('/calculator?tab=damage&a=6'), 'Calculadora de daño Pokémon: KO y rangos de daño · PokeUtils');
+check('las paginas sin titulo largo siguen con el corto', [tituloDe('/privacy'), tituloDe('/terms')],
+  ['Privacidad · PokeUtils', 'Términos · PokeUtils']);
 check('y un + viejo se lee como espacio',
   logicaDe('/pokedex', '?q=mr+mime').query.get('q'), 'mr mime');
 
@@ -139,6 +146,26 @@ check('cada slug es el de su etiqueta en espanol',
   EGG_GROUPS.filter(g => GRUPOS_HUEVO_ES[g] !== slugEs(es[`egg.group.${g}`])), []);
 check('ida y vuelta de los 15', EGG_GROUPS.filter(g => idaYVuelta(`/egg/${g}`) !== `/egg/${g}`), []);
 check('no-eggs es desconocido', urlDe('/egg/no-eggs'), '/grupos-huevo/desconocido');
+
+console.log('\nTipos\n');
+
+check('los 18 de data.js, en su orden', Object.keys(TIPOS_ES), TYPES);
+// Como los grupos: la tabla es a mano y esto obliga a decidir si cambia un nombre.
+check('cada slug es el de su nombre completo en espanol',
+  TYPES.filter(t => TIPOS_ES[t] !== slugEs(TYPE_NAMES_FULL[t])), []);
+check('en ingles, la clave tal cual, que es el slug de su nombre',
+  TYPES.filter(t => TIPOS_EN[t] !== t || slugEs(TYPE_NAMES_FULL_EN[t]) !== t), []);
+check('ida y vuelta de los 18', TYPES.filter(t => idaYVuelta(`/types/${t}`) !== `/types/${t}`), []);
+check('fuego y electrico', [urlDe('/types/fire'), urlDe('/types/electric')], ['/tipos/fuego', '/tipos/electrico']);
+check('/tipos sigue siendo la tabla, no una ficha', comoTexto(logicaDe('/tipos')), '/types');
+check('un tipo que no existe, o mal escrito, da null', [
+  '/tipos/fire', '/tipos/Fuego', '/tipos/eléctrico', '/tipos/electr', '/tipos/', '/tipos/fuego/mas', '/types/fire',
+  '/tipos/%66uego/x',
+].filter(p => logicaDe(p) !== null), []);
+check('urlDe de un tipo que no existe lanza', lanza(() => urlDe('/types/fuego')), true);
+check('su titulo dice que es un tipo (Bicho es tambien grupo huevo)',
+  [tituloDe('/types/bug', 'Bicho'), tituloDe('/egg/bug', 'Bicho')],
+  ['Tipo Bicho: debilidades, resistencias y Pokémon · PokeUtils', 'Grupo huevo Bicho: Pokémon y con quién crían · PokeUtils']);
 
 console.log('\nPokemon\n');
 
@@ -208,15 +235,16 @@ const todas = [
   ...moves.map(m => urlDe(`/moves/${m.id}`)),
   ...abilities.map(a => urlDe(`/abilities/${a.name}`)),
   ...EGG_GROUPS.map(g => urlDe(`/egg/${g}`)),
+  ...TYPES.map(t => urlDe(`/types/${t}`)),
 ];
-check('2469 paginas (sin tipos: decision 1)', todas.length, 2469);
+check('2487 paginas: las 2469 de la PR 1 y los 18 tipos', todas.length, 2487);
 check('ninguna repetida', todas.length - new Set(todas).size, 0);
 check('todas en [a-z0-9-] y sin barra final',
   todas.filter(u => u !== '/' && !/^(\/[a-z0-9]+(-[a-z0-9]+)*)+$/.test(u)), []);
 
 console.log('\nEn ingles: /en\n');
 
-// Las 2.469 paginas tienen su par en ingles bajo /en, con las mismas reglas que
+// Las 2.487 paginas tienen su par en ingles bajo /en, con las mismas reglas que
 // las de espanol: una pagina, una direccion, y vuelta a la misma ruta logica.
 // Las fijas y los grupos huevo son tablas propias; las fichas de Pokemon llevan
 // el mismo slug, las habilidades su name de PokeAPI y los movimientos el
@@ -245,6 +273,8 @@ check('logicaDe dice el idioma', [logicaDe('/pokedex').idioma, logicaDe('/en/pok
 check('cada grupo huevo en ingles es el slug de su etiqueta en ingles',
   EGG_GROUPS.filter(g => GRUPOS_HUEVO_EN[g] !== slugEs(en[`egg.group.${g}`])), []);
 check('ida y vuelta de los 15 en ingles', EGG_GROUPS.filter(g => idaYVueltaEn(`/egg/${g}`) !== `/egg/${g}`), []);
+check('ida y vuelta de los 18 tipos en ingles', TYPES.filter(t => idaYVueltaEn(`/types/${t}`) !== `/types/${t}`), []);
+check('fire', urlDe('/types/fire', 'en'), '/en/types/fire');
 check('no-eggs es no-eggs', urlDe('/egg/no-eggs', 'en'), '/en/egg-groups/no-eggs');
 
 check('ida y vuelta de los 1351 Pokemon en ingles',
@@ -273,8 +303,9 @@ const todasEn = [
   ...moves.map(m => urlDe(`/moves/${m.id}`, 'en')),
   ...abilities.map(a => urlDe(`/abilities/${a.name}`, 'en')),
   ...EGG_GROUPS.map(g => urlDe(`/egg/${g}`, 'en')),
+  ...TYPES.map(t => urlDe(`/types/${t}`, 'en')),
 ];
-check('2469 paginas en ingles, una por cada una en espanol', todasEn.length, todas.length);
+check('2487 paginas en ingles, una por cada una en espanol', todasEn.length, todas.length);
 check('ninguna repetida en ingles', todasEn.length - new Set(todasEn).size, 0);
 check('todas empiezan por /en, en [a-z0-9-] y sin barra final',
   todasEn.filter(u => !/^\/en(\/[a-z0-9]+(-[a-z0-9]+)*)*$/.test(u)), []);
@@ -291,6 +322,7 @@ check('mezclar idiomas, o salirse de la forma, da null', [
   '/moves/thunder-punch', '/abilities/levitate', '/egg-groups/monster', '/types', '/damage-calculator',
   '/en/abilities/unidad-ecuestre-glastrier', '/en/abilities/As%20One', '/en/egg-groups/water1',
   '/en/moves/9', '/en/moves/breakneck-blitz--physical', '/en/pokedex/noexiste', '/enx', '/en/pokedex/pikachu/mas',
+  '/en/types/fuego', '/en/tipos/fuego', '/en/tipos/fire', '/types/fire', '/en/types/Fire',
 ].filter(p => logicaDe(p) !== null), []);
 // Una barra codificada no es una barra: /en%2Fpokedex no es /en/pokedex, ni
 // /pokedex%2Fpikachu una ficha. Si se decodificara antes de partir la ruta,
@@ -342,6 +374,7 @@ const PARES = {
   '/grupos-huevo/desconocido': '/en/egg-groups/no-eggs',
   '/faq': '/en/faq',
   '/pokedex/charizard-mega-x': '/en/pokedex/charizard-mega-x',
+  '/tipos/electrico': '/en/types/electric',
 };
 check('de espanol a ingles', Object.keys(PARES).filter(es => equivalente(es, 'en') !== PARES[es])
   .map(es => [es, equivalente(es, 'en')]), []);
@@ -426,10 +459,10 @@ check('las dos Unidad Ecuestre',
   ['Habilidad Unidad Ecuestre (Glastrier) · PokeUtils', 'Habilidad Unidad Ecuestre (Spectrier) · PokeUtils']);
 check('Ditto el grupo no es Ditto el Pokemon',
   [tituloDe('/pokedex/132', 'Ditto'), tituloDe('/egg/ditto', 'Ditto')],
-  ['Ditto · PokeUtils', 'Grupo huevo Ditto · PokeUtils']);
+  ['Ditto · PokeUtils', 'Grupo huevo Ditto: cría con casi cualquiera · PokeUtils']);
 check('Competitivo la habilidad no es el hub',
   [tituloDe('/abilities/defiant', 'Competitivo'), tituloDe('/competitive')],
-  ['Habilidad Competitivo · PokeUtils', 'Competitivo · PokeUtils']);
+  ['Habilidad Competitivo · PokeUtils', 'Herramientas competitivas para tu equipo Pokémon · PokeUtils']);
 check('un movimiento sin colision no lleva nada', tituloDe('/moves/9', 'Puño Trueno'), 'Puño Trueno · PokeUtils');
 // Con el nombre de un idioma y la URL del otro no casa ningun sufijo, y no se
 // adivina: el titulo en ingles se pide en ingles (abajo).
@@ -446,12 +479,13 @@ const nombreEn = e => e.nameEn || e.name;
 check('cada pagina fija en ingles tiene su titulo',
   publicasEstaticasEn.filter(p => p !== '/en' && !Object.hasOwn(TITULOS_EN, p)), []);
 check('y no sobra ninguno', Object.keys(TITULOS_EN).filter(p => !publicasEstaticasEn.includes(p)), []);
-check('la portada en ingles se llama PokeUtils', tituloDe('/', undefined, 'en'), 'PokeUtils');
+check('la portada en ingles lleva el suyo', tituloDe('/', undefined, 'en'), 'Pokédex, type chart and Pokémon calculators · PokeUtils');
 check('las tres pestanas', ['/calculator', '/calculator?tab=damage', '/calculator?tab=catch'].map(l => tituloDe(l, undefined, 'en')),
-  ['IV and EV calculator · PokeUtils', 'Damage calculator · PokeUtils', 'Catch calculator · PokeUtils']);
+  ['Pokémon IV and EV calculator, with final stats · PokeUtils', 'Pokémon damage calculator: KO chances and rolls · PokeUtils',
+    'Pokémon catch calculator: odds and balls needed · PokeUtils']);
 check('una ficha sin nombre lleva el de su seccion, en ingles',
-  [tituloDe('/moves/9', undefined, 'en'), tituloDe('/egg/ditto', undefined, 'en')],
-  ['Moves · PokeUtils', 'Egg groups · PokeUtils']);
+  [tituloDe('/moves/9', undefined, 'en'), tituloDe('/abilities/stench', undefined, 'en')],
+  ['Moves · PokeUtils', 'Abilities · PokeUtils']);
 check('las dos breakneck blitz',
   [tituloDe('/moves/622', 'Breakneck Blitz', 'en'), tituloDe('/moves/623', 'Breakneck Blitz', 'en')],
   ['Breakneck Blitz (physical) · PokeUtils', 'Breakneck Blitz (special) · PokeUtils']);
@@ -460,15 +494,15 @@ check('las dos As One',
   ['As One (Glastrier) ability · PokeUtils', 'As One (Spectrier) ability · PokeUtils']);
 check('Ditto el grupo no es Ditto el Pokemon, en ingles',
   [tituloDe('/pokedex/132', 'Ditto', 'en'), tituloDe('/egg/ditto', 'Ditto', 'en')],
-  ['Ditto · PokeUtils', 'Ditto egg group · PokeUtils']);
+  ['Ditto · PokeUtils', 'Ditto egg group: breeds with almost any Pokémon · PokeUtils']);
 // D6: la herramienta es "Counters" para no chocar con el movimiento Counter, y
 // la habilidad Competitive lleva "ability" detras.
 check('Counter el movimiento no es la herramienta',
   [tituloDe('/moves/68', 'Counter', 'en'), tituloDe('/counter', undefined, 'en')],
-  ['Counter · PokeUtils', 'Counters · PokeUtils']);
+  ['Counter · PokeUtils', 'Pokémon team counters: what threatens your team · PokeUtils']);
 check('Competitive la habilidad no es el hub',
   [tituloDe('/abilities/competitive', 'Competitive', 'en'), tituloDe('/competitive', undefined, 'en')],
-  ['Competitive ability · PokeUtils', 'Competitive · PokeUtils']);
+  ['Competitive ability · PokeUtils', 'Competitive Pokémon tools for building a team · PokeUtils']);
 // D7: las dos megas de Meowstic se llaman igual en el dataset. Se desambiguan
 // aqui por slug hasta que la PR 5 arregle el dato.
 check('las dos Mega Meowstic',
@@ -493,6 +527,7 @@ const titulosEn = [
   ...moves.map(m => tituloDe(`/moves/${m.id}`, nombreEn(m), 'en')),
   ...abilities.map(a => tituloDe(`/abilities/${a.name}`, nombreEn(a), 'en')),
   ...EGG_GROUPS.map(g => tituloDe(`/egg/${g}`, en[`egg.group.${g}`], 'en')),
+  ...TYPES.map(t => tituloDe(`/types/${t}`, TYPE_NAMES_FULL_EN[t], 'en')),
 ];
 check('un titulo por pagina en ingles', titulosEn.length, todasEn.length);
 check('ninguno repetido', [...new Set(titulosEn.filter((x, i) => titulosEn.indexOf(x) !== i))], []);
@@ -503,8 +538,54 @@ check('38 titulos con sufijo de pareja', titulosEn.filter(x => / \((physical|spe
 fijarIdioma('en');
 const tituloConEn = [tituloDe('/moves'), tituloDe('/moves/9', 'Thunder Punch')];
 fijarIdioma('es');
-check('tituloDe sin idioma usa el activo', tituloConEn, ['Moves · PokeUtils', 'Thunder Punch · PokeUtils']);
-check('y vuelve a espanol', tituloDe('/moves'), 'Movimientos · PokeUtils');
+check('tituloDe sin idioma usa el activo', tituloConEn,
+  ['Pokémon moves: type, power, accuracy and PP · PokeUtils', 'Thunder Punch · PokeUtils']);
+check('y vuelve a espanol', tituloDe('/moves'), 'Movimientos Pokémon: potencia, precisión y PP · PokeUtils');
+
+console.log('\nTitulos para el buscador (titulos.js)\n');
+
+// Las 53 paginas por idioma que se indexan: portada, los dos hubs, FAQ, las 16
+// herramientas, los 18 tipos y los 15 grupos huevo.
+const indexables = ['/', '/data', '/competitive', '/faq', ...TOOLS.map(x => x.route),
+  ...TYPES.map(x => `/types/${x}`), ...EGG_GROUPS.map(g => `/egg/${g}`)];
+const largo = texto => [...texto].length;
+check('53 paginas indexables por idioma', indexables.length, 53);
+check('titulos.js tiene exactamente esas en los dos idiomas',
+  ['es', 'en'].map(l => [...Object.keys(TITULOS_SEO[l])].sort()), Array(2).fill([...indexables].sort()));
+check('todos de 50 a 60 caracteres', ['es', 'en'].flatMap(l => Object.entries(TITULOS_SEO[l])
+  .filter(([, x]) => largo(x) < 50 || largo(x) > 60).map(([k, x]) => `${l} ${k} (${largo(x)})`)), []);
+check('todos acaban en " · PokeUtils", y solo lo llevan ahi', ['es', 'en'].flatMap(l => Object.entries(TITULOS_SEO[l])
+  .filter(([, x]) => !x.endsWith(' · PokeUtils') || x.indexOf(' · ') !== x.length - 12).map(([k]) => `${l} ${k}`)), []);
+check('ninguno repetido dentro de un idioma',
+  ['es', 'en'].map(l => Object.values(TITULOS_SEO[l]).length - new Set(Object.values(TITULOS_SEO[l])).size), [0, 0]);
+check('ninguno igual en los dos idiomas', indexables.filter(k => TITULOS_SEO.es[k] === TITULOS_SEO.en[k]), []);
+check('tituloDe los devuelve tal cual, tambien con nombre',
+  ['es', 'en'].flatMap(l => indexables.filter(k => tituloDe(k, 'Nombre', l) !== TITULOS_SEO[l][k]).map(k => `${l} ${k}`)), []);
+check('con el ? que deja route() y con query',
+  [tituloDe('/?'), tituloDe('/pokedex?q=mr%20mime'), tituloDe('/calculator?tab=catch&b=4', undefined, 'en')],
+  [TITULOS_SEO.es['/'], TITULOS_SEO.es['/pokedex'], TITULOS_SEO.en['/calculator?tab=catch']]);
+
+// Lo que un titulo de tipo dice de el tiene que ser verdad en CHART: que tiene
+// debilidades, resistencias o inmunidades, y en singular si solo hay una. Sin
+// esto, la plantilla de la muestra le daria resistencias a Normal, que no tiene
+// ninguna.
+const recibe = (tipo, m) => TYPES.filter(a => CHART[a][TYPES.indexOf(tipo)] === m).length;
+const PALABRAS = {
+  es: [['debilidad', 'debilidades', 2], ['resistencia', 'resistencias', 0.5], ['inmunidad', 'inmunidades', 0]],
+  en: [['weakness', 'weaknesses', 2], ['resistance', 'resistances', 0.5], ['immunity', 'immunities', 0]],
+};
+const mentiras = [];
+for (const l of ['es', 'en']) {
+  for (const tipo of TYPES) {
+    const titulo = TITULOS_SEO[l][`/types/${tipo}`].toLowerCase();
+    for (const [una, varias, m] of PALABRAS[l]) {
+      const n = recibe(tipo, m);
+      const dice = new RegExp(`\\b${varias}\\b`).test(titulo) ? 'varias' : new RegExp(`\\b${una}\\b`).test(titulo) ? 'una' : null;
+      if ((dice === 'varias' && n < 2) || (dice === 'una' && n !== 1)) mentiras.push(`${l} ${tipo}: dice ${dice === 'una' ? una : varias} y son ${n}`);
+    }
+  }
+}
+check('los titulos de tipo no dicen nada que CHART no diga', mentiras, []);
 
 console.log('\nLa migracion inline de index.html\n');
 

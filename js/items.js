@@ -1,7 +1,7 @@
 // ===== ITEMS PAGE =====
 import { itemSprite, ITEM_PLACEHOLDER_SPRITE } from './data.js';
 import { fetchItems, fetchItemDescriptions } from './api.js';
-import { skeletonHTML, renderPagination, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { skeletonHTML, renderPagination, esc, encabezadoDe, introDe, wireToolTabs } from './ui.js';
 import { PAGINA, esqueletoDe } from './cascaras.js';
 import { t, pokeName, getLang } from './i18n.js';
 import { norm } from './normalize.js';
@@ -42,11 +42,7 @@ export function renderItems(container, query = new URLSearchParams()) {
   let descripciones = null;
 
   container.innerHTML = `
-    ${toolTabsHTML('data', 'items')}
-    <div class="page-header">
-      <h1>${t('items.title')}</h1>
-      <p>${t('items.subtitle')}</p>
-    </div>
+    ${encabezadoDe('/items')}
     <div class="search-bar">
       <span class="search-icon">🔍</span>
       <input type="text" class="search-input" id="itSearch" placeholder="${t('items.search')}" value="${esc(searchTerm)}">
@@ -54,6 +50,7 @@ export function renderItems(container, query = new URLSearchParams()) {
     <div class="filter-row" id="itFilters"></div>
     <div id="itContent"></div>
     <div id="itModal"></div>
+    ${introDe('/items')}
   `;
   wireToolTabs(container);
 

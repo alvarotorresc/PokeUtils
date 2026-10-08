@@ -22,7 +22,7 @@ export function renderIvEv(container) {
 
     <div class="calc-form">
       <div class="card">
-        <h3 class="section-title" style="margin-bottom:12px">${t('calc.pokemon')}</h3>
+        <h2 class="section-title" style="margin-bottom:12px">${t('calc.pokemon')}</h2>
         <div class="search-bar" style="margin-bottom:12px">
           <span class="search-icon">🔍</span>
           <input type="text" class="search-input" id="calcSearch" placeholder="${t('calc.search')}">
@@ -32,7 +32,7 @@ export function renderIvEv(container) {
       </div>
 
       <div class="card" id="calcFormCard" style="display:none">
-        <h3 class="section-title" style="margin-bottom:12px">${t('calc.params')}</h3>
+        <h2 class="section-title" style="margin-bottom:12px">${t('calc.params')}</h2>
         <div class="calc-row">
           <div class="calc-field">
             <label>${t('calc.level')}</label>
@@ -48,7 +48,7 @@ export function renderIvEv(container) {
       </div>
 
       <div class="card" id="calcStatsCard" style="display:none">
-        <h3 class="section-title" style="margin-bottom:12px">${t('calc.stats')}</h3>
+        <h2 class="section-title" style="margin-bottom:12px">${t('calc.stats')}</h2>
         <div class="tabs" style="margin-bottom:16px">
           <button class="tab active" id="calcModeIvEv">${t('calc.mode.ivev')}</button>
           <button class="tab" id="calcModeStat">${t('calc.mode.stat')}</button>

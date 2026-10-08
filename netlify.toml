@@ -19,8 +19,17 @@
 # con ese codigo, asi que un check en rojo corta la cadena y el build ni empieza.
 # Cae en el mismo modo de fallo de arriba: el sitio no se actualiza. Medido: los
 # 20 checks tardan ~2,3 s, encadenado ~3 s.
+#
+# El sitemap pone a cada pagina el lastmod del ultimo commit que toco sus
+# dependencias (build.mjs, lastmodDe), y eso necesita la historia entera: en un
+# clon superficial git log da la fecha del unico commit que hay, y el build se
+# para a proposito. Netlify puede clonar superficial (build-image#317), asi que
+# se trae la historia antes de nada, solo si hace falta: en local y en un clon
+# completo el `if` no hace nada. Si el fetch falla, `&&` corta y el sitio no se
+# actualiza, el mismo modo de fallo de arriba. Que el clon venga superficial y
+# que el fetch funcione se mira en el log del deploy preview.
 [build]
-  command = "npm run check && npm run build"
+  command = "if [ \"$(git rev-parse --is-shallow-repository)\" = true ]; then git fetch --unshallow; fi && npm run check && npm run build"
   publish = "dist"
 
 # ===== CABECERAS DE SEGURIDAD =====
@@ -168,7 +177,7 @@
 #
 # Desde que hay rutas reales, build.mjs (scripts/pages.mjs) escribe una pagina
 # por ruta y por idioma: dist/pokedex.html, dist/pokedex/pikachu.html,
-# dist/en.html, dist/en/pokedex/pikachu.html... 4.937 mas la portada. Son el
+# dist/en.html, dist/en/pokedex/pikachu.html... 4.973 mas la portada. Son el
 # mismo index.html con otra cabecera, asi que llevan los mismos nombres
 # hasheados y la misma regla: revalidar siempre.
 #
@@ -298,6 +307,13 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
+# Las 18 de tipo (/tipos/fuego). /tipos a secas es la tabla y lleva el suyo
+# arriba: el splat no casa con ella.
+[[headers]]
+  for = "/tipos/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
 [[headers]]
   for = "/movimientos/*"
   [headers.values]
@@ -308,7 +324,7 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# Las paginas en ingles. /en/* cubre las 2.468 de debajo de /en, fijas y
+# Las paginas en ingles. /en/* cubre las 2.486 de debajo de /en, fijas y
 # fichas, pero no /en a secas (servida desde en.html), que lleva el suyo como
 # /pokedex. Que /en, /en/ y la carpeta en/ convivan con en.html sin que gane la
 # carpeta se mide en el deploy preview.
@@ -324,8 +340,9 @@
 
 # ===== LOS CUATRO FICHEROS SUELTOS =====
 #
-# build.mjs copia cuatro ficheros de la raiz tal cual -- 404.html,
-# manifest.webmanifest, robots.txt y sitemap.xml -- y hasta aqui eran los unicos
+# build.mjs copia dos ficheros de la raiz tal cual -- 404.html y
+# manifest.webmanifest -- y genera otros dos, robots.txt y sitemap.xml (PR 3:
+# antes tambien eran copias de la raiz). Hasta aqui eran los unicos
 # del sitio sin politica escrita ni motivo escrito para no tenerla. Ninguno
 # lleva hash en el nombre, asi que `immutable` esta descartado para los cuatro:
 # la unica decision es cuanto se tolera que uno se quede viejo.
@@ -380,9 +397,10 @@
 # un dia. Una hora acota eso y sigue ahorrando practicamente todas las
 # peticiones -- estos dos ficheros cambian una vez al ano, no una vez a la hora.
 #
-# El sitemap solo lista la raiz: las demas paginas llevan noindex mientras dure
-# la PR 1 de rutas reales, asi que su contenido no cambia ni cuando se anade una
-# herramienta.
+# Desde la PR 3 el sitemap lo genera el build con las 106 indexables y su
+# lastmod. Cambia con cada deploy que toque una de ellas, pero un rastreador que
+# lo lea con una hora de retraso solo ve la fecha nueva una hora tarde: la hora
+# sigue valiendo. robots.txt tambien se genera, con la misma politica.
 [[headers]]
   for = "/robots.txt"
   [headers.values]

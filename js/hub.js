@@ -1,11 +1,11 @@
 // ===== CATEGORY HUB =====
 //
 // The middle page of a category: its tools as cards. Same markup as the home
-// grid, so it inherits the styles that already exist.
-import { spriteUrl } from './data.js';
+// grid (rejillaHerramientasHTML), so it inherits the styles that already exist.
 import { CATEGORIES, toolsIn } from './tools.js';
 import { t } from './i18n.js';
-import { urlDe } from './rutas.js';
+import { contextoActivo, encabezadoDe, introDe } from './ui.js';
+import { rejillaHerramientasHTML, idsDeCategoria } from './contenido.js';
 
 export function renderHub(container, categoryId) {
   const category = CATEGORIES.find(c => c.id === categoryId);
@@ -18,19 +18,9 @@ export function renderHub(container, categoryId) {
     return;
   }
 
-  container.innerHTML = `
-    <div class="page-header">
-      <h1>${t(`hub.${categoryId}.title`)}</h1>
-      <p>${t(`hub.${categoryId}.subtitle`)}</p>
-    </div>
-    <div class="home-grid">
-      ${tools.map(tool => `
-        <a href="${urlDe(tool.route)}" class="home-card">
-          <img class="icon" src="${spriteUrl(tool.icon)}" alt="" loading="lazy">
-          <div class="label">${t(tool.label)}</div>
-          <div class="desc">${t(tool.desc)}</div>
-        </a>
-      `).join('')}
-    </div>
-  `;
+  // La miga, la cabecera, la rejilla y el texto son los de contenido.js, los
+  // mismos que escribira el build en el HTML de /datos y /competitivo.
+  container.innerHTML = encabezadoDe(category.route)
+    + rejillaHerramientasHTML(contextoActivo(), idsDeCategoria(categoryId))
+    + introDe(category.route);
 }

@@ -7,23 +7,20 @@ import { STAT_KEYS, spriteUrl } from './data.js';
 import { fetchPokemonList, fetchAbilities } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
 import { defensiveMatrix } from './team-analysis.js';
-import { skeletonHTML, replaceQuery, esc, toolTabsHTML } from './ui.js';
+import { skeletonHTML, replaceQuery, esc, encabezadoDe, introDe } from './ui.js';
 import { urlDe } from './rutas.js';
 import { esqueletoDe } from './cascaras.js';
 import { t, typeName, statName, pokeName, getLang } from './i18n.js';
 import { attachTooltip } from './tooltip.js';
-import { norm } from './normalize.js';
+import { pokemonFilter } from './normalize.js';
 
 const MAX = 4;
 
 export async function renderCompare(container, query = new URLSearchParams()) {
   container.innerHTML = `
-    ${toolTabsHTML('pokedex', 'compare')}
-    <div class="page-header">
-      <h1>${t('compare.title')}</h1>
-      <p>${t('compare.subtitle')}</p>
-    </div>
+    ${encabezadoDe('/compare')}
     <div id="cmpBody">${skeletonHTML(esqueletoDe('compare'))}</div>
+    ${introDe('/compare')}
   `;
   const body = container.querySelector('#cmpBody');
   // pokemon.json carries ability slugs only, so the names come from
@@ -180,15 +177,15 @@ export async function renderCompare(container, query = new URLSearchParams()) {
     if (full) return;
 
     search.addEventListener('input', () => {
-      const q = search.value.trim().toLowerCase();
-      if (q.length < 2) {
+      // Una cifra sola ya busca: es un numero de Pokedex. Ver pokemonFilter.
+      const match = pokemonFilter(search.value);
+      if (!match) {
         results.hidden = true;
         return;
       }
-      const nq = norm(q);
       const hits = all
         .filter(p => !ids.includes(p.id))
-        .filter(p => norm(p.nameEs).includes(nq) || norm(p.nameEn).includes(nq) || String(p.id) === q)
+        .filter(match)
         .slice(0, 8);
       results.hidden = hits.length === 0;
       results.innerHTML = hits.map(p => `

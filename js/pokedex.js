@@ -2,7 +2,7 @@
 import { TYPES, spriteUrl, STAT_KEYS, GENERATIONS, SORT_KEYS } from './data.js';
 import { fetchPokemonList } from './api.js';
 import { isForm, spriteIdFor } from './forms.js';
-import { skeletonHTML, renderPagination, replaceQuery, esc, toolTabsHTML } from './ui.js';
+import { skeletonHTML, renderPagination, replaceQuery, esc, encabezadoDe, introDe } from './ui.js';
 import { urlDe } from './rutas.js';
 import { PAGINA, esqueletoDe } from './cascaras.js';
 import { t, typeName, statName, pokeName } from './i18n.js';
@@ -87,11 +87,7 @@ export function renderPokedex(container, query = new URLSearchParams()) {
   // The controls move into a sidebar, but keep every id they had: the handlers
   // below find them the same way and none of the behaviour changes.
   container.innerHTML = `
-    ${toolTabsHTML('pokedex', 'pokedex')}
-    <div class="page-header">
-      <h1>${t('pokedex.title')}</h1>
-      <p>${t('pokedex.subtitle')}</p>
-    </div>
+    ${encabezadoDe('/pokedex')}
     <div class="dex-split">
       <aside class="dex-side">
         <div class="search-bar">
@@ -99,12 +95,12 @@ export function renderPokedex(container, query = new URLSearchParams()) {
           <input type="text" class="search-input" id="pdxSearch" placeholder="${t('pokedex.search')}" value="${esc(state.q)}">
         </div>
         <div class="pdx-count" id="pdxCount"></div>
-        <h4 class="dex-side-title">${t('pokedex.type')}</h4>
+        <h2 class="dex-side-title">${t('pokedex.type')}</h2>
         <div class="filter-row" id="pdxFilters">
           <button class="filter-btn${state.type === '' ? ' active' : ''}" data-type="">${t('common.all')}</button>
           ${TYPES.map(tp => `<button class="filter-btn${state.type === tp ? ' active' : ''}" data-type="${tp}"><span class="type-badge sm" data-type="${tp}" style="padding:3px 6px;font-size:0.42rem">${typeName(tp)}</span></button>`).join('')}
         </div>
-        <h4 class="dex-side-title">${t('pokedex.sort')}</h4>
+        <h2 class="dex-side-title">${t('pokedex.sort')}</h2>
         <div class="pdx-controls">
           <!-- Ninguna opcion repite el nombre de su filtro: leer
                "Rareza: Normales, Rareza: Legendarios, Rareza: Singulares" es
@@ -137,6 +133,7 @@ export function renderPokedex(container, query = new URLSearchParams()) {
         <div id="pdxContent"></div>
       </div>
     </div>
+    ${introDe('/pokedex')}
   `;
 
   const content = container.querySelector('#pdxContent');

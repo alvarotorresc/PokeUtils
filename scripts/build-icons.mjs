@@ -18,7 +18,7 @@
 import { spawn } from 'node:child_process';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { inflateSync } from 'node:zlib';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -44,7 +44,7 @@ const RING = '#2a2a3e';
 const ARTBOARD = { stroke: 5 / 76, button: 22 / 76 };
 const NAV = { stroke: 2 / 24, button: 8 / 24 };
 
-function pokeballSvg(size, ratio, { proportions = ARTBOARD, bg = true } = {}) {
+export function pokeballSvg(size, ratio, { proportions = ARTBOARD, bg = true } = {}) {
   const d = size * ratio;
   const cx = size / 2;
   const cy = size / 2;
@@ -119,7 +119,7 @@ function cdp(wsUrl) {
   };
 }
 
-async function withChrome(fn) {
+export async function withChrome(fn) {
   const port = 9200 + Math.floor(Math.random() * 300);
   const proc = spawn('google-chrome', [
     '--headless=new', '--disable-gpu', '--hide-scrollbars',
@@ -135,7 +135,7 @@ async function withChrome(fn) {
   }
 }
 
-async function shoot(port, { html, width, height, waitFonts = false, assertFonts = null, transparent = false }) {
+export async function shoot(port, { html, width, height, waitFonts = false, assertFonts = null, transparent = false }) {
   const target = await (await fetch(
     `http://127.0.0.1:${port}/json/new?about:blank`, { method: 'PUT' },
   )).json();
@@ -185,7 +185,7 @@ async function shoot(port, { html, width, height, waitFonts = false, assertFonts
 
 // ===== verificacion del PNG resultante =====
 
-function readPngSize(buf) {
+export function readPngSize(buf) {
   if (buf.length < 24 || buf.toString('ascii', 1, 4) !== 'PNG' || buf.toString('ascii', 12, 16) !== 'IHDR') {
     throw new Error('no es un PNG con cabecera IHDR valida');
   }
@@ -195,7 +195,7 @@ function readPngSize(buf) {
 // Heuristica barata para "no esta vacio/negro": descomprime los IDAT y mira
 // si los bytes varian. Una imagen de un solo color, tras el filtro por fila
 // que usa PNG, comprime a filas practicamente todo-cero.
-function pngLooksFlat(buf) {
+export function pngLooksFlat(buf) {
   let offset = 8;
   const idat = [];
   while (offset < buf.length) {
@@ -418,4 +418,6 @@ async function main() {
   console.log('\n  icons/ listo.\n');
 }
 
-await main();
+// scripts/build-og.mjs importa de aqui withChrome, shoot y los asertos del
+// PNG: importado, este modulo no regenera nada.
+if (import.meta.url === pathToFileURL(process.argv[1]).href) await main();

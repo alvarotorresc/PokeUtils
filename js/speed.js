@@ -5,22 +5,19 @@
 import { speedSpread, speedTiers } from './speed-tiers.js';
 import { fetchPokemonList } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { skeletonHTML, replaceQuery, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { skeletonHTML, replaceQuery, esc, encabezadoDe, introDe, wireToolTabs } from './ui.js';
 import { urlDe } from './rutas.js';
 import { esqueletoDe } from './cascaras.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
 import { t, pokeName } from './i18n.js';
-import { norm } from './normalize.js';
+import { pokemonFilter } from './normalize.js';
 
 export async function renderSpeed(container, query = new URLSearchParams()) {
   container.innerHTML = `
-    ${toolTabsHTML('competitive', 'speed')}
-    <div class="page-header">
-      <h1>${t('speed.title')}</h1>
-      <p>${t('speed.subtitle')}</p>
-    </div>
+    ${encabezadoDe('/speed')}
     <div id="spdBody">${skeletonHTML(esqueletoDe('speed'))}</div>
+    ${introDe('/speed')}
   `;
   wireToolTabs(container);
   const body = container.querySelector('#spdBody');
@@ -43,11 +40,11 @@ export async function renderSpeed(container, query = new URLSearchParams()) {
     return `
       <div class="spd-tiers">
         <div>
-          <h3 class="section-title">${t('speed.above', { n: tiers.fasterCount })}</h3>
+          <h2 class="section-title">${t('speed.above', { n: tiers.fasterCount })}</h2>
           ${tiers.above.map(rowHTML).join('') || `<p class="egg-note">${t('speed.nobodyabove')}</p>`}
         </div>
         <div>
-          <h3 class="section-title">${t('speed.below', { n: tiers.slowerCount })}</h3>
+          <h2 class="section-title">${t('speed.below', { n: tiers.slowerCount })}</h2>
           ${tiers.tiedCount ? `<p class="egg-note" style="margin:0 0 8px">${t('speed.tied', { n: tiers.tiedCount })}</p>` : ''}
           ${tiers.below.map(rowHTML).join('') || `<p class="egg-note">${t('speed.nobodybelow')}</p>`}
         </div>
@@ -89,14 +86,14 @@ export async function renderSpeed(container, query = new URLSearchParams()) {
     const search = body.querySelector('#spdSearch');
     const results = body.querySelector('#spdResults');
     search.addEventListener('input', () => {
-      const q = search.value.trim().toLowerCase();
-      if (q.length < 2) {
+      // Una cifra sola ya busca: es un numero de Pokedex. Ver pokemonFilter.
+      const match = pokemonFilter(search.value);
+      if (!match) {
         results.hidden = true;
         return;
       }
-      const nq = norm(q);
       const hits = all
-        .filter(x => norm(x.nameEs).includes(nq) || norm(x.nameEn).includes(nq) || String(x.id) === q)
+        .filter(match)
         .slice(0, 8);
       results.hidden = hits.length === 0;
       results.innerHTML = hits.map(x => `

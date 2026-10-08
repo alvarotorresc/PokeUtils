@@ -10,10 +10,13 @@
 import { readFile } from 'node:fs/promises';
 import {
   ORIGEN, rutasPublicas, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas,
-  bloqueHreflang, literalesEspanol, sinComentarios,
+  bloqueHreflang, literalesEspanol, sinComentarios, sitemapDe, robotsDe,
 } from './pages.mjs';
+import { existsSync } from 'node:fs';
 import { tieneUrlPropia, isForm } from '../js/forms.js';
 import { pokeName } from '../js/i18n.js';
+import { INDEXABLES } from '../js/contenido.js';
+import textosEn from '../js/textos-en.js';
 
 const leerTexto = ruta => readFile(new URL(`../${ruta}`, import.meta.url), 'utf8');
 const leer = async nombre => JSON.parse(await leerTexto(`data/${nombre}.json`));
@@ -43,11 +46,11 @@ const por = publica => rutas.find(r => r.publica === publica);
 const de = idioma => rutas.filter(r => r.idioma === idioma);
 
 // 22 fijas (portada, hubs, herramientas con las 3 pestanas, FAQ y legales) +
-// 1.025 especies + 157 formas propias + 15 grupos + 937 movimientos + 313
-// habilidades, en cada idioma. A mano a proposito: si cambia, que sea porque
-// alguien lo decide.
-check('4.938 paginas: 2.469 por idioma', [rutas.length, de('es').length, de('en').length], [4938, 2469, 2469]);
-check('y por idioma lo mismo contado desde los datos', paginasEsperadas({ pokemon, moves, abilities }), 2469);
+// 1.025 especies + 157 formas propias + 15 grupos + 18 tipos + 937 movimientos
+// + 313 habilidades, en cada idioma. A mano a proposito: si cambia, que sea
+// porque alguien lo decide.
+check('4.974 paginas: 2.487 por idioma', [rutas.length, de('es').length, de('en').length], [4974, 2487, 2487]);
+check('y por idioma lo mismo contado desde los datos', paginasEsperadas({ pokemon, moves, abilities }), 2487);
 check('especies + formas propias, en cada idioma',
   [rutas.filter(r => r.publica.startsWith('/pokedex/')).length, rutas.filter(r => r.publica.startsWith('/en/pokedex/')).length],
   Array(2).fill(pokemon.filter(p => !isForm(p)).length + pokemon.filter(tieneUrlPropia).length));
@@ -59,26 +62,47 @@ check('el idioma de cada fila es el de su prefijo',
   rutas.filter(r => r.idioma !== (r.publica === '/en' || r.publica.startsWith('/en/') ? 'en' : 'es')).map(r => r.publica), []);
 check('todas con descripcion', rutas.filter(r => !r.descripcion).map(r => r.publica), []);
 check('ninguna descripcion de mas de 160', rutas.filter(r => r.descripcion?.length > 160).map(r => r.publica), []);
-// D2: la portada en ingles es indexable, con su hreflang reciproco con /.
-check('noindex en todas salvo las dos portadas',
-  rutas.filter(r => r.noindex === ['/', '/en'].includes(r.publica)).map(r => r.publica), []);
-check('sin /tipos/<tipo> (decision 1)', rutas.filter(r => /^(\/en)?\/(tipos|types)\//.test(r.publica)).length, 0);
+// PR 3: se indexan las 53 por idioma de INDEXABLES, en los dos idiomas a la
+// vez; el resto, con noindex. D2: la portada en ingles tambien.
+check('noindex en todas salvo las de INDEXABLES',
+  rutas.filter(r => r.noindex === INDEXABLES.includes(r.logica) || r.indexable === r.noindex).map(r => r.publica), []);
+check('106 indexables, 53 por idioma', ['es', 'en'].map(l => de(l).filter(r => r.indexable).length), [53, 53]);
+check('y las legales no', rutas.filter(r => /privac|terminos|terms/.test(r.publica)).map(r => r.noindex), [true, true, true, true]);
+check('los 18 tipos en cada idioma',
+  ['es', 'en'].map(l => de(l).filter(r => /^(\/en)?\/(tipos|types)\//.test(r.publica)).length), [18, 18]);
 
 const alternas = { es: '/', en: '/en' };
-check('la portada', por('/'), {
-  idioma: 'es', logica: '/', publica: '/', alternas, titulo: 'PokeUtils',
-  descripcion: 'Tu guía Pokémon retro: análisis competitivo, herramientas de cría, Pokédex completa y calculadoras de daño.',
-  noindex: false,
+// Sin el contenido, que se comprueba abajo en el HTML.
+const sinContenido = ({ contenido, chips, jsonLd, deps, ...resto }) => resto;
+// Las deps del lastmod (depsDe): las llevan las indexables y solo ellas, y cada
+// fichero existe. Que tenga historia en git lo mira el build.
+check('deps: en las 106 indexables y en ninguna mas', [rutas.filter(r => r.deps).length, rutas.filter(r => r.indexable && r.deps?.length).length], [106, 106]);
+check('deps que no existen en disco', [...new Set(rutas.flatMap(r => r.deps ?? []))].filter(d => !existsSync(new URL(`../${d}`, import.meta.url))), []);
+check('deps: el fichero de textos de su idioma', [por('/tipos/fuego').deps.includes('js/textos-es.js'), por('/en/types/fire').deps.includes('js/textos-en.js'), por('/en/types/fire').deps.includes('js/textos-es.js')], [true, true, false]);
+check('sitemapDe: loc y lastmod, escapados, sin hreflang', sitemapDe([{ publica: '/a&b', lastmod: '2026-10-08T10:00:00+02:00' }], 'https://x.test'),
+  '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url>\n    <loc>https://x.test/a&amp;b</loc>\n    <lastmod>2026-10-08T10:00:00+02:00</lastmod>\n  </url>\n</urlset>\n');
+check('robotsDe apunta al sitemap', robotsDe('https://x.test').split('\n').includes('Sitemap: https://x.test/sitemap.xml'), true);
+const tiposLd = ruta => ruta.jsonLd['@graph'].map(nodo => nodo['@type']);
+check('JSON-LD de la portada, una herramienta, un tipo y una ficha', [tiposLd(por('/')), tiposLd(por('/en/damage-calculator')), tiposLd(por('/tipos/fuego')), por('/pokedex/pikachu').jsonLd],
+  [['WebSite'], ['BreadcrumbList', 'WebApplication'], ['BreadcrumbList'], undefined]);
+check('la portada', sinContenido(por('/')), {
+  idioma: 'es', logica: '/', publica: '/', alternas, titulo: 'Pokédex, tabla de tipos y calculadoras Pokémon · PokeUtils',
+  descripcion: 'Pokédex con los 1025 Pokémon, tabla de tipos, grupos huevo, calculadoras de daño, captura e IVs y herramientas para montar tu equipo competitivo.',
+  indexable: true, noindex: false,
 });
-// La de antes de la PR 2, que estaba en ingles en la portada espanola (D11).
-check('la portada en ingles', por('/en'), {
-  idioma: 'en', logica: '/', publica: '/en', alternas, titulo: 'PokeUtils',
-  descripcion: 'Your retro Pokemon guide: competitive analysis, breeding tools, complete Pokédex and damage calculators.',
-  noindex: false,
+check('la portada en ingles', sinContenido(por('/en')), {
+  idioma: 'en', logica: '/', publica: '/en', alternas, titulo: 'Pokédex, type chart and Pokémon calculators · PokeUtils',
+  descripcion: 'Pokédex with all 1025 Pokémon, a type chart, egg groups, damage, catch and IV calculators, and tools to build your competitive team.',
+  indexable: true, noindex: false,
 });
 check('index.html lleva la descripcion de la portada (D11)',
   [...esqueleto.matchAll(/<meta (?:name|property)="(?:og:)?description" content="([^"]*)">/g)].map(m => m[1]),
   [por('/').descripcion, por('/').descripcion]);
+// La portada espanola es el index.html tal cual, sin pasar por paginaHtml: si
+// su <title> se quedara atras, Google veria uno y el cliente pondria otro.
+check('y su <title> y su og:title, los de tituloDe',
+  [...esqueleto.matchAll(/<title>([^<]*)<\/title>|<meta property="og:title" content="([^"]*)">/g)].map(m => m[1] ?? m[2]),
+  [por('/').titulo, por('/').titulo]);
 check('cada fila sabe donde esta su par',
   rutas.filter(r => r.alternas[r.idioma] !== r.publica || !por(r.alternas.es) || !por(r.alternas.en)).map(r => r.publica), []);
 check('y el par la tiene a ella', rutas.filter(r => {
@@ -94,9 +118,12 @@ check('un movimiento', [por('/movimientos/puno-trueno')?.titulo, por('/movimient
   ['Puño Trueno · PokeUtils', '/moves/9']);
 check('su descripcion es la del juego', por('/movimientos/puno-trueno')?.descripcion.startsWith('Puño Trueno: '), true);
 check('una habilidad', por('/habilidades/hedor')?.titulo, 'Habilidad Hedor · PokeUtils');
-check('un grupo', por('/grupos-huevo/agua-1')?.titulo, 'Grupo huevo Agua 1 · PokeUtils');
+check('un grupo, con su titulo largo', por('/grupos-huevo/agua-1')?.titulo, 'Grupo huevo Agua 1: Pokémon y con quién crían · PokeUtils');
+check('un tipo, con su nombre completo, indexable desde que tiene contenido (commit 6)',
+  [por('/tipos/electrico')?.logica, por('/tipos/electrico')?.titulo, por('/tipos/electrico')?.noindex],
+  ['/types/electric', 'Tipo Eléctrico: debilidad, resistencias, Pokémon · PokeUtils', false]);
 check('una pestana de la calculadora', [por('/calculadora-de-dano')?.logica, por('/calculadora-de-dano')?.titulo],
-  ['/calculator?tab=damage', 'Calculadora de daño · PokeUtils']);
+  ['/calculator?tab=damage', 'Calculadora de daño Pokémon: KO y rangos de daño · PokeUtils']);
 
 console.log('\nLas paginas en ingles\n');
 
@@ -116,10 +143,13 @@ check('un movimiento Z (D4)', por('/en/moves/breakneck-blitz-physical')?.titulo,
 check('una habilidad', [por('/en/abilities/stench')?.titulo, por('/en/abilities/stench')?.descripcion.startsWith('Stench: ')],
   ['Stench ability · PokeUtils', true]);
 check('un grupo', [por('/en/egg-groups/water-1')?.titulo, por('/en/egg-groups/water-1')?.descripcion],
-  ['Water 1 egg group · PokeUtils', 'The Pokémon in the Water 1 egg group and who they can breed with.']);
+  ['Water 1 egg group: Pokémon and breeding partners · PokeUtils', textosEn['/egg/water1'].descripcion]);
+check('un tipo', [por('/en/types/electric')?.titulo, por('/en/types/electric')?.alternas.es],
+  ['Electric type: weakness, resistances and Pokémon · PokeUtils', '/tipos/electrico']);
 check('una pestana de la calculadora', [por('/en/damage-calculator')?.logica, por('/en/damage-calculator')?.titulo],
-  ['/calculator?tab=damage', 'Damage calculator · PokeUtils']);
-check('la descripcion de una fija sale del diccionario ingles', por('/en/faq')?.descripcion, 'What PokeUtils is, and where each piece of data comes from.');
+  ['/calculator?tab=damage', 'Pokémon damage calculator: KO chances and rolls · PokeUtils']);
+check('la de una indexable sale de los textos ingleses', por('/en/faq')?.descripcion, textosEn['/faq'].descripcion);
+check('y la de una fija que no lo es, del diccionario', por('/en/privacy')?.descripcion.length > 0 && por('/en/privacy').descripcion !== por('/privacidad').descripcion, true);
 check('pokeName en ingles sin tocar el idioma activo',
   [pokeName({ name: 'mr-mime', nameEs: 'Mr. Mime', nameEn: 'Mr. Mime' }, 'en'), pokeName({ name: 'x', nameEs: 'Equis', nameEn: 'Ex' }, 'en'),
     pokeName({ name: 'x', nameEs: 'Equis', nameEn: 'Ex' })],
@@ -153,13 +183,16 @@ check('sin comentarios HTML', pika.includes('<!--'), false);
 // D9: la migracion de los #/, el no-hero y los dos swaps de idioma solo hacen
 // algo en la portada espanola, que es el index.html tal cual. En las generadas
 // ya esta todo en el HTML. Quedan Umami, el tema con el modulepreload y app.js.
-const scripts = html => (html.match(/<script\b/g) || []).length;
+// Sin contar el JSON-LD, que no es codigo: lo lleva /en y no la ficha.
+const scripts = html => (html.match(/<script\b(?! type="application\/ld\+json")/g) || []).length;
 const MUERTOS = ['var RUTAS_ESTATICAS', "classList.add('no-hero')", 'var EN_NAV', 'var EN_HERO'];
 check('el esqueleto lleva los cuatro scripts de la portada', MUERTOS.map(m => esqueleto.includes(m)), [true, true, true, true]);
 check('y una pagina generada, cuatro <script> menos', [scripts(pika), scripts(paginaHtml(esqueleto, por('/en')))],
   Array(2).fill(scripts(sinComentarios(esqueleto)) - 4));
 check('ninguno de los cuatro', [pika, paginaHtml(esqueleto, por('/en/pokedex/pikachu')), paginaHtml(esqueleto, por('/en'))]
   .map(html => MUERTOS.filter(m => html.includes(m))), [[], [], []]);
+check('JSON-LD: uno en /en (WebSite) y ninguno en la ficha con noindex',
+  [paginaHtml(esqueleto, por('/en')).match(/application\/ld\+json/g)?.length, pika.includes('application/ld+json')], [1, false]);
 check('el tema y el modulepreload siguen', [pika.includes("'pkutils_theme'"), pika.includes("l.rel = 'modulepreload'")], [true, true]);
 // Sin el atributo, cada filtro (replaceState con ?q=) cuenta como una visita
 // en Umami: 1 pageview de mas por filtro, medido en el preview de la PR #21.
@@ -169,12 +202,30 @@ check('Umami ignora la query en el esqueleto',
 check('y en las paginas generadas', umami(pika).map(t => /\sdata-exclude-search="true"/.test(t)), [true]);
 check('el <main> sigue ahi, vacio', /<main class="main" id="app" data-reservando><\/main>/.test(pika), true);
 
+// Una indexable lleva su contenido dentro de <div data-shell data-ruta>, en el
+// <main>: el mismo que pinta el cliente, con su h1 y su texto.
+const fuego = paginaHtml(esqueleto, por('/tipos/fuego'));
+const enFuego = paginaHtml(esqueleto, por('/en/types/fire'));
+check('una indexable lleva su shell en el <main>',
+  [/<main class="main" id="app" data-reservando><div data-shell data-ruta="\/types\/fire">/.test(fuego), uno(fuego, /<h1>([^<]*)<\/h1>/g), uno(enFuego, /<h1>([^<]*)<\/h1>/g)],
+  [true, ['Fuego'], ['Fire']]);
+check('una herramienta, con su hueco reservado',
+  /<div class="tool-reserva" style="min-height:\d+px"><\/div><section class="intro">/.test(paginaHtml(esqueleto, por('/calculadora-de-dano'))), true);
+check('la portada en ingles, con lo de abajo y los chips dentro del shell',
+  [/<div class="portada" data-shell data-ruta="\/">[\s\S]*<section class="mostwanted">[\s\S]*<section class="intro">[\s\S]*<\/div>\s*<\/main>/.test(paginaHtml(esqueleto, por('/en'))),
+    (paginaHtml(esqueleto, por('/en')).match(/class="qchip"/g) || []).length], [true, 5]);
+
 const conComillas = paginaHtml(esqueleto, { ...por('/pokedex/pikachu'), titulo: 'A & "B" <c>', descripcion: 'd"e' });
 check('el nombre se escapa', [uno(conComillas, /<title>([^<]*)<\/title>/g)[0], uno(conComillas, /<meta name="description" content="([^"]*)"/g)[0]],
   ['A &amp; &quot;B&quot; &lt;c&gt;', 'd&quot;e']);
 check('la portada no se genera con esto', lanza(() => paginaHtml(esqueleto, por('/'))), true);
-check('un esqueleto que ya no casa lanza, no sale a medias',
-  lanza(() => paginaHtml(esqueleto.replace('<title>PokeUtils</title>', '<title>X</title>'), por('/pokedex/pikachu'))), true);
+// El patron del <title> acepta cualquier titulo, asi que lo que tiene que
+// saltar es que falte o que haya dos.
+check('un esqueleto que ya no casa lanza, no sale a medias', [
+  lanza(() => paginaHtml(esqueleto.replace(/<title>[^<]*<\/title>/, ''), por('/pokedex/pikachu'))),
+  lanza(() => paginaHtml(esqueleto.replace(/(<title>[^<]*<\/title>)/, '$1$1'), por('/pokedex/pikachu'))),
+  lanza(() => paginaHtml(esqueleto.replace('<meta property="og:url"', '<meta property="og:urlx"'), por('/pokedex/pikachu'))),
+], [true, true, true]);
 
 console.log('\nhreflang\n');
 
@@ -256,7 +307,7 @@ const prefijos = [...new Set(rutas.filter(r => r.publica !== '/').map(r => {
   const [, seccion, hijo] = r.publica.split('/');
   return hijo ? `/${seccion}/*` : r.publica;
 }))];
-check('27 bloques: 21 paginas fijas, 4 secciones con fichas, /en y /en/*', prefijos.length, 27);
+check('28 bloques: 21 paginas fijas, 5 secciones con fichas, /en y /en/*', prefijos.length, 28);
 check('cada una tiene el suyo en netlify.toml', prefijos.filter(f => !bloques.has(f)), []);
 check('y todos revalidan',
   prefijos.filter(f => !/Cache-Control = "public, max-age=0, must-revalidate"/.test(bloques.get(f) ?? '')), []);

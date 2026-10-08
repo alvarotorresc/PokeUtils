@@ -9,7 +9,8 @@
 // "puno fuego".
 // Run with: node scripts/check-normalize.mjs
 import { readFile, readdir } from 'node:fs/promises';
-import { norm } from '../js/normalize.js';
+import { norm, pokemonFilter } from '../js/normalize.js';
+import { competitiveList } from '../js/forms.js';
 
 let failed = 0;
 
@@ -74,6 +75,22 @@ check('type: null -> Código Cero', nameEsOf(pokemon, 'type: null'), ['Código C
 // Los dos apostrofos, el que esta en los datos y el que hay en el teclado.
 check('farfetch’d', matches(pokemon, 'farfetch’d').length, 2);
 check("farfetch'd", matches(pokemon, "farfetch'd").length, 2);
+
+console.log('\nEl buscador de Pokemon de Comparador, Contrarrestar y Velocidad\n');
+
+// La misma lista que ven las tres paginas. Una sola cifra es un numero de
+// Pokedex valido (del 1 al 9) y no puede quedarse sin resultado; una sola letra
+// sigue sin buscar, porque casa con un tercio de la lista y no contesta nada.
+const elegibles = competitiveList(pokemon);
+const buscarPokemon = term => {
+  const f = pokemonFilter(term);
+  return f ? elegibles.filter(f).map(p => p.id) : null;
+};
+check('6 -> Charizard', buscarPokemon('6'), [6]);
+check('25 -> Pikachu', buscarPokemon('25'), [25]);
+check('una letra no busca', buscarPokemon('a'), null);
+check('vacio no busca', buscarPokemon('  '), null);
+check('pi sigue buscando por nombre', buscarPokemon('pi').includes(25), true);
 
 console.log('\nNingun filtro compara nombres a pelo\n');
 

@@ -4,10 +4,47 @@
 // importaban app.js solo por estos cuatro helpers, asi que app.js volvia a
 // arrastrar las otras diecisiete. Con el ciclo cerrado, cargar una ruta bajo
 // siempre las cuarenta y seis. Aqui no dependen de nadie mas que de i18n.
-import { t } from './i18n.js';
+import { t, getLang, diccionarioActivo } from './i18n.js';
 import { ErrorKind } from './api.js';
-import { toolsIn } from './tools.js';
 import { urlDe, logicaDe, tituloDe } from './rutas.js';
+import { pestanasHTML, encabezadoHTML, introHTML } from './contenido.js';
+
+// ===== Los textos de las paginas indexables =====
+//
+// js/textos-es.js y js/textos-en.js, unos 8 KB gz cada uno: solo los piden las
+// 53 paginas indexables (route() los pide en paralelo con el modulo de la
+// ruta), y solo el del idioma de la direccion. Dos ramas literales y no una
+// plantilla, por lo mismo que los diccionarios de i18n.js: esbuild tiene que
+// ver los dos para sacar cada uno como su propio trozo. En el build esos trozos
+// llevan ya el parrafo derivado de tipos y grupos (conDerivados en
+// contenido.js), asi que el cliente nunca lo calcula.
+const CARGADORES_TEXTOS = {
+  es: () => import('./textos-es.js'),
+  en: () => import('./textos-en.js'),
+};
+const textos = {};
+
+export async function cargarTextos(lang) {
+  if (!textos[lang]) textos[lang] = (await CARGADORES_TEXTOS[lang]()).default;
+  return textos[lang];
+}
+
+// El contexto que piden las piezas de contenido.js (que no usan t() para poder
+// servir tambien al build): el idioma activo, su diccionario y, si ya han
+// llegado, sus textos. Del mismo idioma que el diccionario siempre: se leen por
+// el idioma activo, no por el ultimo que se pidio.
+export const contextoActivo = () => {
+  const l = getLang();
+  return { l, dic: diccionarioActivo(), textos: textos[l] };
+};
+
+// Pestanas, miga de pan y cabecera de una pagina indexable, con el idioma
+// activo. El orden y el marcado son los de contenido.js, los del prerender.
+export const encabezadoDe = (logica, propia) => encabezadoHTML(logica, contextoActivo(), propia);
+
+// El bloque de texto que cierra una pagina indexable: '' hasta que llegan los
+// textos.
+export const introDe = logica => introHTML(logica, contextoActivo());
 
 // ===== HELPER: un nodo propio para lo que pinta la ruta =====
 //
@@ -28,6 +65,16 @@ export function hostDeRuta(container) {
   const host = document.createElement('div');
   container.appendChild(host);
   return host;
+}
+
+// La otra forma de no pintar tarde, para las paginas que esperan sus datos con
+// la cascara (o el prerender) a la vista y luego pintan entero: vaciar ahora
+// con hostDeRuta quitaria justo lo que se esta ensenando. Se apunta el primer
+// nodo de antes del await; si al volver ya no es el mismo, el router ha pintado
+// otra ruta encima y este render no toca.
+export function seguimosEn(container) {
+  const nodo = container.firstChild;
+  return () => container.firstChild === nodo;
 }
 
 // ===== HELPER: error state with retry =====
@@ -216,11 +263,9 @@ export const esc = s => String(s ?? '').replace(/[&<>"']/g,
 
 // ===== HELPER: las pestanas de una herramienta =====
 //
-// Vivian en hub.js, que ademas pinta el hub de una categoria y por eso importa
-// data.js entero. Estas dos no necesitan nada de eso --toolsIn, i18n y el
-// wireScrollFade de aqui al lado-- y en cambio si las necesita el router, que
-// pinta la cascara de la ruta antes de bajar su modulo. Dejarlas en hub.js
-// habria metido data.js en el arranque para usar veinte lineas.
+// Vivian en hub.js, y las necesita el router, que pinta la cascara de la ruta
+// antes de bajar su modulo. El marcado esta ahora en contenido.js, que trae
+// data.js; no pesa de mas en el arranque porque search-index.js ya lo traia.
 
 // The strip every tool page shows above its title, so a sibling tool is one
 // click away instead of a trip back through the hub. At every width it is the
@@ -231,18 +276,11 @@ export const esc = s => String(s ?? '').replace(/[&<>"']/g,
 // `.tool-tabs-scroll` under its max-width: 639px query). Above that width the
 // wrapper and its fade sit there unused: nothing overflows, so JS never sets
 // `.more-left`/`.more-right` and the pseudo-elements stay at opacity 0.
+//
+// El marcado vive en contenido.js (pestanasHTML), que es el que usara tambien
+// el build: esta es la misma tira con el idioma activo.
 export function toolTabsHTML(categoryId, activeToolId) {
-  const tools = toolsIn(categoryId);
-  const scrolls = tools.length > 3;
-  const tabs = tools.map(tool => `
-    <a href="${urlDe(tool.route)}" class="tab${tool.id === activeToolId ? ' active' : ''}">${t(tool.tab || tool.label)}</a>
-  `).join('');
-  if (!scrolls) return `<div class="tabs tool-tabs">${tabs}</div>`;
-  return `
-    <div class="form-tabs-wrap" id="toolTabsWrap">
-      <div class="tabs tool-tabs tool-tabs-scroll" id="toolTabsStrip">${tabs}</div>
-    </div>
-  `;
+  return pestanasHTML(categoryId, activeToolId, contextoActivo());
 }
 
 // Called once after a tool page paints its strip. Finds nothing -- and does

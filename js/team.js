@@ -6,7 +6,7 @@
 import { TYPES, spriteUrl } from './data.js';
 import { fetchPokemonList } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { skeletonHTML, renderError, replaceQuery, hostDeRuta, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { skeletonHTML, renderError, replaceQuery, hostDeRuta, esc, encabezadoDe, introDe, wireToolTabs } from './ui.js';
 import { urlDe } from './rutas.js';
 import { esqueletoDe } from './cascaras.js';
 import { t, typeName, pokeName } from './i18n.js';
@@ -68,11 +68,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
   };
 
   host.innerHTML = `
-    ${toolTabsHTML('competitive', 'team')}
-    <div class="page-header">
-      <h1>${t('team.title')}</h1>
-      <p>${t('team.subtitle')}</p>
-    </div>
+    ${encabezadoDe('/team')}
     <div class="team-slots" id="teamSlots"></div>
     <div class="search-bar" id="teamSearchBar">
       <span class="search-icon">🔍</span>
@@ -81,6 +77,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
     <div id="teamResults" class="team-results"></div>
     <p class="back-link" id="teamCounterLink" hidden></p>
     <div id="teamAnalysis"></div>
+    ${introDe('/team')}
   `;
   wireToolTabs(host);
 
@@ -170,7 +167,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
     const noEdge = [...coverage.neutral, ...coverage.resisted];
 
     analysisEl.innerHTML = `
-      <h3 class="section-title">${t('team.defense')}</h3>
+      <h2 class="section-title">${t('team.defense')}</h2>
       <div class="card" style="margin-bottom:20px">
         <div class="team-summary">
           <div>
@@ -207,7 +204,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
         </table>
       </div>
 
-      <h3 class="section-title">${t('team.offense')}</h3>
+      <h2 class="section-title">${t('team.offense')}</h2>
       <div class="card" style="margin-bottom:20px">
         <p class="team-hint">${t('team.offense.hint')}</p>
         <div class="filter-row team-atk">

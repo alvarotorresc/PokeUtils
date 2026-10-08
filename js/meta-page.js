@@ -7,7 +7,7 @@ import { fetchMeta, fetchPokemonList, fetchMetaNames } from './api.js';
 import { FORMATS, MONTH, defaultFormat, metaSetOf, metaName, metaLink, usageRanking } from './meta.js';
 import { spriteUrl, STAT_KEYS, NATURES } from './data.js';
 import { spriteIdFor } from './forms.js';
-import { skeletonHTML, replaceQuery, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { skeletonHTML, replaceQuery, esc, encabezadoDe, introDe, wireToolTabs } from './ui.js';
 import { urlDe } from './rutas.js';
 import { esqueletoDe } from './cascaras.js';
 import { getLevel } from './level.js';
@@ -17,12 +17,9 @@ const SHOWN = 30;
 
 export async function renderMeta(container, query = new URLSearchParams()) {
   container.innerHTML = `
-    ${toolTabsHTML('competitive', 'meta')}
-    <div class="page-header">
-      <h1>${t('meta.title')}</h1>
-      <p>${t('meta.subtitle')}</p>
-    </div>
+    ${encabezadoDe('/meta')}
     <div id="metaBody">${skeletonHTML(esqueletoDe('meta'))}</div>
+    ${introDe('/meta')}
   `;
   wireToolTabs(container);
   const body = container.querySelector('#metaBody');
@@ -109,7 +106,7 @@ export async function renderMeta(container, query = new URLSearchParams()) {
       </div>
       <p class="egg-note">${t('meta.source', { month: MONTH, battles: format.battles.toLocaleString(getLang() === 'es' ? 'es' : 'en') })}</p>
       ${chosen ? setHTML(chosen, byId.get(state.id)) : ''}
-      <h3 class="section-title">${t('meta.ranking')}</h3>
+      <h2 class="section-title">${t('meta.ranking')}</h2>
       <div class="meta-rank">
         ${ranking.slice(0, SHOWN).map((row, i) => {
           const mon = byId.get(row.id);

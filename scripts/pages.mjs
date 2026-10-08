@@ -10,18 +10,30 @@
 //
 // Cada pagina existe en espanol y en ingles (/en/...), con su <html lang>, sus
 // textos fijos ya traducidos y los tres hreflang que la emparejan con la otra.
-// Todas salvo las dos portadas llevan noindex: abrir las fichas al indice es
-// una decision aparte (PR 3). La portada espanola no se regenera: es el
-// index.html tal cual, con su canonical y sus hreflang escritos a mano.
+// Solo se indexan las 53 por idioma de INDEXABLES (js/contenido.js): portada,
+// hubs, FAQ, herramientas, tipos y grupos. Esas llegan ademas con su contenido
+// en el HTML (contenidoDe, abajo), el mismo que pinta el cliente. Las demas
+// llevan noindex: abrir las fichas al indice es la PR 4. La portada espanola no
+// se regenera: es el index.html tal cual, con su canonical y sus hreflang
+// escritos a mano, y el build le mete dentro del hero su contenido
+// (rellenarPortada).
 //
 // Funciones puras, sin tocar disco: build.mjs las llama y escribe, y
 // check-pages.mjs las comprueba contra el fuente antes de que haya build.
 
 import {
-  TABLA_ESTATICA, GRUPOS_HUEVO_ES, IDIOMAS, fijarIndice, urlDe, tituloDe, logicaDe,
+  TABLA_ESTATICA, GRUPOS_HUEVO_ES, TIPOS_ES, IDIOMAS, fijarIndice, urlDe, tituloDe, logicaDe,
 } from '../js/rutas.js';
+import { TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from '../js/data.js';
 import { isForm, tieneUrlPropia } from '../js/forms.js';
-import { TOOLS } from '../js/tools.js';
+import { TOOLS, CATEGORIES, toolsIn } from '../js/tools.js';
+import {
+  INDEXABLES, conDerivados, encabezadoHTML, introHTML, tipoHTML, grupoHTML, faqHTML, listaGruposHTML,
+  rejillaHerramientasHTML, idsDeCategoria, tiposTodosHTML, portadaHTML, chipsInicialesHTML, breadcrumbItems, nombreDe,
+} from '../js/contenido.js';
+import { reservaDe } from '../js/cascaras.js';
+import textosEs from '../js/textos-es.js';
+import textosEn from '../js/textos-en.js';
 // pokeName es la misma regla con la que las fichas ponen su nombre, asi que el
 // <title> del build y el del cliente salen iguales. Con el idioma explicito:
 // el build saca los dos sin tocar el idioma activo de i18n.js.
@@ -30,6 +42,16 @@ import es from '../js/i18n-es.js';
 import en from '../js/i18n-en.js';
 
 const DICCIONARIOS = { es, en };
+const TEXTOS = { es: textosEs, en: textosEn };
+
+// Los textos de cada idioma con el parrafo derivado de tipos y grupos ya puesto:
+// lo mismo que lleva el trozo de textos del cliente, que el build calcula con
+// la misma funcion (derivadosEnTextos en build.mjs).
+export function textosConDerivados({ pokemon, moves }) {
+  return Object.fromEntries(IDIOMAS.map(l => [l, conDerivados(TEXTOS[l], { l, dic: DICCIONARIOS[l], pokemon, moves })]));
+}
+// El nombre completo de cada tipo, el mismo que pinta renderTipo en su h1.
+const NOMBRES_TIPO = { es: TYPE_NAMES_FULL, en: TYPE_NAMES_FULL_EN };
 
 export const ORIGEN = 'https://pokeutils.alvarotc.com';
 
@@ -45,11 +67,12 @@ const SUBTITULOS = {
 
 // La de las portadas, que no sale del diccionario: ninguna clave dice esto. La
 // espanola es tambien la del index.html (D11), que se sirve sin build y no se
-// regenera; check-pages comprueba que siguen siendo la misma. La inglesa es la
-// que llevaba la portada antes de la PR 2.
-const DESCRIPCION_PORTADA = {
-  es: 'Tu guía Pokémon retro: análisis competitivo, herramientas de cría, Pokédex completa y calculadoras de daño.',
-  en: 'Your retro Pokemon guide: competitive analysis, breeding tools, complete Pokédex and damage calculators.',
+// regenera; check-pages comprueba que siguen siendo la misma. De 120 a 155
+// caracteres, lo que muestra un resultado de Google sin cortar (PR 3). Se
+// exporta para check-textos, que exige que la de '/' en los textos sea esta.
+export const DESCRIPCION_PORTADA = {
+  es: 'Pokédex con los 1025 Pokémon, tabla de tipos, grupos huevo, calculadoras de daño, captura e IVs y herramientas para montar tu equipo competitivo.',
+  en: 'Pokédex with all 1025 Pokémon, a type chart, egg groups, damage, catch and IV calculators, and tools to build your competitive team.',
 };
 
 // La de cada ficha. En ingles solo descriptionEn (no hay ninguna vacia): la
@@ -58,12 +81,14 @@ const DESCRIPCIONES = {
   es: {
     especie: n => `${n} en la Pokédex: estadísticas base, tipos, debilidades, habilidades, evoluciones y movimientos que aprende.`,
     grupo: n => `Los Pokémon del grupo huevo ${n} y con quién pueden criar.`,
+    tipo: n => `El tipo ${n} en Pokémon: contra qué es débil, qué resiste y qué Pokémon lo tienen.`,
     movimiento: (n, m) => `${n}: ${m.descriptionEs || m.descriptionEn || 'tipo, categoría, potencia, precisión y PP.'}`,
     habilidad: (n, a) => `${n}: ${a.descriptionEs || a.descriptionEn || 'qué hace esta habilidad.'}`,
   },
   en: {
     especie: n => `${n} in the Pokédex: base stats, types, weaknesses, abilities, evolutions and the moves it learns.`,
     grupo: n => `The Pokémon in the ${n} egg group and who they can breed with.`,
+    tipo: n => `The ${n} type in Pokémon: what it is weak to, what it resists and which Pokémon have it.`,
     movimiento: (n, m) => `${n}: ${m.descriptionEn || 'type, category, power, accuracy and PP.'}`,
     habilidad: (n, a) => `${n}: ${a.descriptionEn || 'what this ability does.'}`,
   },
@@ -120,6 +145,10 @@ function fichas(l, { pokemon, moves, abilities }) {
     const nombre = DICCIONARIOS[l][`egg.group.${g}`];
     return ficha(`/egg/${g}`, nombre, d.grupo(nombre));
   });
+  const tipos = Object.keys(TIPOS_ES).map(tipo => {
+    const nombre = NOMBRES_TIPO[l][tipo];
+    return ficha(`/types/${tipo}`, nombre, d.tipo(nombre));
+  });
   const fichasMoves = [...moves].sort((a, b) => a.id - b.id).map(m => {
     const nombre = pokeName(m, l);
     return ficha(`/moves/${m.id}`, nombre, d.movimiento(nombre, m));
@@ -128,32 +157,255 @@ function fichas(l, { pokemon, moves, abilities }) {
     const nombre = pokeName(a, l);
     return ficha(`/abilities/${a.name}`, nombre, d.habilidad(nombre, a));
   });
-  return [...fichasPokemon, ...grupos, ...fichasMoves, ...fichasAbilities];
+  return [...fichasPokemon, ...grupos, ...tipos, ...fichasMoves, ...fichasAbilities];
 }
 
 // rutasPublicas({indice, pokemon, moves, abilities}) ->
 //   [{idioma, logica, publica, alternas: {es, en}, titulo, descripcion, noindex}]
-// Primero las 2.469 espanolas y luego las 2.469 inglesas, en el mismo orden.
+// Primero las 2.487 espanolas y luego las 2.487 inglesas, en el mismo orden.
 // `alternas` es la direccion de la misma pagina en cada idioma (la suya
 // incluida): de ahi salen los hreflang y el href del conmutador.
 // indice es data/rutas.json: se fija aqui para que urlDe sepa los slugs.
 export function rutasPublicas({ indice, pokemon, moves, abilities }) {
   fijarIndice(indice);
+  const textos = textosConDerivados({ pokemon, moves });
   return IDIOMAS.flatMap(l => [...rutasFijas(l), ...fichas(l, { pokemon, moves, abilities })].map(fila => {
     const alternas = Object.fromEntries(IDIOMAS.map(otro => [otro, urlDe(fila.logica, otro)]));
     const publica = alternas[l];
-    return {
+    // La misma ruta logica en los dos idiomas: ES es indexable si y solo si lo
+    // es EN, y el hreflang nunca apunta a una pagina que no se deja indexar.
+    const indexable = INDEXABLES.includes(fila.logica);
+    const fija = {
       idioma: l,
       logica: fila.logica,
       publica,
       alternas,
       titulo: fila.titulo,
-      descripcion: fila.descripcion,
-      // D2: /en tambien es indexable, o el hreflang de / apuntaria a una pagina
-      // que no se deja indexar.
-      noindex: publica !== '/' && publica !== '/en',
+      // La de una indexable es la escrita a mano en los textos, de 120 a 155.
+      descripcion: indexable ? textos[l][fila.logica].descripcion : fila.descripcion,
+      indexable,
+      noindex: !indexable,
     };
+    if (!indexable) return fija;
+    const ctx = { l, dic: DICCIONARIOS[l], textos: textos[l], pokemon };
+    const conLd = { ...fija, jsonLd: jsonLdDe(fila.logica, ctx, fija.descripcion), deps: depsDe(fila.logica, l) };
+    return fila.logica === '/'
+      ? { ...conLd, contenido: portadaHTML(ctx), chips: chipsInicialesHTML(ctx) }
+      : { ...conLd, contenido: contenidoDe(fila.logica, ctx) };
   }));
+}
+
+// ===== La imagen al compartir (og:image) =====
+//
+// Una por categoria y por idioma (D11): icons/og/<categoria>-<idioma>.png, que
+// genera scripts/build-og.mjs con el nombre de la categoria escrito en ese
+// idioma. Cada pagina lleva la de su categoria: las herramientas, la de la suya
+// en tools.js; los hubs de Datos y Competitivo, la de su categoria (1.7); las
+// fichas, la de su seccion (tipos, movimientos y habilidades son Datos; especies
+// y grupos huevo, Pokedex). La portada, la FAQ y las legales no son de ninguna
+// categoria y llevan la general, og-image.png, la misma en los dos idiomas.
+const OG_GENERAL = '/icons/og-image.png';
+const SIN_CATEGORIA = ['/', '/faq', '/privacy', '/terms'];
+const CATEGORIA_DE_FICHA = { pokedex: 'pokedex', egg: 'pokedex', types: 'data', moves: 'data', abilities: 'data' };
+
+export const ogFichero = (categoria, l) => `/icons/og/${categoria}-${l}.png`;
+
+export function categoriaOgDe(logica) {
+  if (SIN_CATEGORIA.includes(logica)) return null;
+  const hub = CATEGORIES.find(c => c.route === logica && !c.direct);
+  if (hub) return hub.id;
+  const tool = TOOLS.find(t => t.route === logica);
+  if (tool) return tool.category;
+  const [seccion, id] = logica.split('/').filter(Boolean);
+  if (id && CATEGORIA_DE_FICHA[seccion]) return CATEGORIA_DE_FICHA[seccion];
+  throw new Error(`pages.mjs: no se que og:image lleva ${logica} -- mira categoriaOgDe`);
+}
+
+// Lo que se escribe en cada imagen y su texto alternativo: el nombre de la
+// categoria (el del nav) y sus herramientas, con el nombre corto de la miga. En
+// las calculadoras sobra el "Calculadora de" de cada una: ya lo dice el titulo.
+const Y = { es: 'y', en: 'and' };
+const capitalizar = texto => texto.charAt(0).toUpperCase() + texto.slice(1);
+
+export function textoOg(categoria, l) {
+  const cat = CATEGORIES.find(c => c.id === categoria);
+  if (!cat) throw new Error(`pages.mjs: no hay categoria ${categoria}`);
+  const ctx = { l, dic: DICCIONARIOS[l] };
+  const herramientas = toolsIn(categoria).map(t => capitalizar(nombreDe(t.route, ctx)
+    .replace(/^Calculadora de /, '').replace(/ calculator$/, '')));
+  const nombre = DICCIONARIOS[l][cat.label];
+  const lista = `${herramientas.slice(0, -1).join(', ')} ${Y[l]} ${herramientas.at(-1)}`;
+  return {
+    nombre,
+    herramientas,
+    url: `pokeutils.alvarotc.com${urlDe(cat.route, l)}`,
+    alt: `PokeUtils · ${capitalizar(nombre.toLowerCase())}: ${lista}`,
+  };
+}
+
+const ALT_GENERAL = {
+  es: 'El logo de PokeUtils: una Poké Ball y el nombre POKEUTILS',
+  en: 'The PokeUtils logo: a Poké Ball and the POKEUTILS wordmark',
+};
+const LOCALE = { es: 'es_ES', en: 'en_US' };
+
+// {imagen, alt, locale, alterno} de una pagina. imagen es absoluta: una
+// etiqueta og no resuelve rutas relativas.
+export function ogDe(logica, l, origen = ORIGEN) {
+  const categoria = categoriaOgDe(logica);
+  return {
+    imagen: `${origen}${categoria ? ogFichero(categoria, l) : OG_GENERAL}`,
+    alt: categoria ? textoOg(categoria, l).alt : ALT_GENERAL[l],
+    locale: LOCALE[l],
+    alterno: LOCALE[l === 'es' ? 'en' : 'es'],
+  };
+}
+
+// ===== Datos estructurados (JSON-LD) =====
+//
+// Tres tipos y ninguno mas (aserto q de build.mjs):
+//  - WebSite, solo en las dos portadas. Google lee el nombre del sitio solo en
+//    la raiz del dominio ("does not support site names at the subdirectory
+//    level"), asi que la url es la raiz tambien en /en; lo que cambia es
+//    inLanguage.
+//  - BreadcrumbList, con la misma lista que la miga visible (breadcrumbItems):
+//    en todas menos la portada, que no tiene miga (un solo paso).
+//  - WebApplication, en las 16 herramientas. Sin aggregateRating ni review
+//    (D3): no hay valoraciones de verdad que poner, y el Rich Results Test lo
+//    marca por eso. FAQPage no (D4): Google lo retiro en mayo de 2026.
+// Un solo <script> por pagina, con @graph.
+const SITIO = { name: 'PokeUtils', alternateName: 'Poke Utils' };
+
+export function jsonLdDe(logica, ctx, descripcion) {
+  const grafo = [];
+  const absoluta = publica => `${ORIGEN}${publica}`;
+  if (logica === '/') {
+    grafo.push({ '@type': 'WebSite', ...SITIO, url: absoluta('/'), inLanguage: ctx.l });
+  }
+  const migas = breadcrumbItems(logica, ctx);
+  if (migas.length >= 2) {
+    grafo.push({
+      '@type': 'BreadcrumbList',
+      itemListElement: migas.map((miga, i) => ({ '@type': 'ListItem', position: i + 1, name: miga.nombre, item: absoluta(miga.url) })),
+    });
+  }
+  if (TOOLS.some(tool => tool.route === logica)) {
+    grafo.push({
+      '@type': 'WebApplication',
+      name: nombreDe(logica, ctx),
+      url: absoluta(urlDe(logica, ctx.l)),
+      description: descripcion,
+      applicationCategory: 'GameApplication',
+      operatingSystem: 'Web',
+      inLanguage: ctx.l,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' },
+    });
+  }
+  return { '@context': 'https://schema.org', '@graph': grafo };
+}
+
+// El <script> que va antes de </head>. JSON.stringify no escapa "<", y un
+// "</script>" dentro de un texto cerraria el bloque: va como \u003c.
+export const jsonLdHTML = datos => `<script type="application/ld+json">${JSON.stringify(datos).replace(/</g, '\\u003c')}</script>`;
+
+export function conJsonLd(html, ruta) {
+  if (!ruta.indexable) return html;
+  if (!ruta.jsonLd) throw new Error(`pages.mjs: ${ruta.publica} es indexable y no lleva jsonLd`);
+  return sustituir(html, /<\/head>/, () => `  ${jsonLdHTML(ruta.jsonLd)}\n</head>`, 'el </head>');
+}
+
+// ===== Sitemap y robots.txt =====
+//
+// De que ficheros sale cada pagina indexable, para su lastmod (D9): su modulo
+// (el que carga el router y los que solo usa el), sus datos y su fichero de
+// textos. Sin el chrome -- index.html, style.css, pages.mjs, ui.js, i18n.js,
+// app.js --, que cambia a menudo y diria que todo el sitio cambio cada vez. El
+// diccionario solo cuenta en la FAQ, cuyas preguntas viven en el. contenido.js
+// cuenta donde es el que pinta el cuerpo: portada, hubs, FAQ, tipos y grupos.
+// Rutas desde la raiz del repo; build.mjs lanza si una no tiene historia en git.
+const MODULOS = {
+  '/': ['js/home.js', 'js/contenido.js', 'js/tools.js'],
+  '/data': ['js/hub.js', 'js/contenido.js', 'js/tools.js'],
+  '/competitive': ['js/hub.js', 'js/contenido.js', 'js/tools.js'],
+  '/faq': ['js/faq.js', 'js/contenido.js'],
+  '/pokedex': ['js/pokedex.js', 'data/pokemon.json'],
+  '/compare': ['js/compare.js', 'js/team-analysis.js', 'data/pokemon.json', 'data/abilities.json'],
+  '/egg': ['js/egg-pages.js', 'js/egg-groups.js', 'js/contenido.js', 'data/pokemon.json'],
+  '/moves': ['js/moves.js', 'data/moves.json'],
+  '/abilities': ['js/abilities.js', 'data/abilities.json'],
+  '/items': ['js/items.js', 'data/items.json', 'data/items-desc.json'],
+  '/natures': ['js/natures.js'],
+  '/types': ['js/type-chart.js', 'js/data.js', 'data/pokemon.json'],
+  '/team': ['js/team.js', 'js/team-analysis.js', 'data/pokemon.json'],
+  '/counter': ['js/counter.js', 'js/threats.js', 'js/meta.js', 'data/pokemon.json', 'data/meta-ou.json', 'data/meta-vgc.json'],
+  '/speed': ['js/speed.js', 'js/speed-tiers.js', 'data/pokemon.json'],
+  '/survive': ['js/survive.js', 'js/survival.js', 'js/battle-data.js', 'data/pokemon.json', 'data/moves.json'],
+  '/meta': ['js/meta-page.js', 'js/meta.js', 'data/pokemon.json', 'data/meta-ou.json', 'data/meta-vgc.json', 'data/meta-names.json'],
+  '/calculator': ['js/calculator.js', 'js/calc-ivev.js', 'js/stats.js', 'data/pokemon.json'],
+  '/calculator?tab=damage': ['js/calculator.js', 'js/calc-damage.js', 'js/damage.js', 'js/stats.js',
+    'data/pokemon.json', 'data/moves.json', 'data/items.json', 'data/berries.json'],
+  '/calculator?tab=catch': ['js/calculator.js', 'js/calc-capture.js', 'js/capture.js', 'js/battle-data.js', 'data/pokemon.json'],
+  tipo: ['js/type-chart.js', 'js/contenido.js', 'js/data.js', 'data/pokemon.json', 'data/moves.json'],
+  grupo: ['js/egg-pages.js', 'js/egg-groups.js', 'js/contenido.js', 'data/pokemon.json'],
+};
+
+export function depsDe(logica, l) {
+  const [seccion, id] = logica.split('/').filter(Boolean);
+  const clave = seccion === 'types' && id ? 'tipo' : seccion === 'egg' && id ? 'grupo' : logica;
+  const modulos = MODULOS[clave];
+  if (!modulos) throw new Error(`pages.mjs: ${logica} es indexable y no tiene deps en MODULOS`);
+  return [...modulos, `js/textos-${l}.js`, ...(logica === '/faq' ? [`js/i18n-${l}.js`] : [])];
+}
+
+const escXml = texto => String(texto).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
+
+// [{publica, lastmod}] -> sitemap.xml. Solo loc y lastmod: sin hreflang (D10),
+// que ya va en el HTML de cada pagina con el aserto (h); sin changefreq ni
+// priority, que Google ignora.
+export function sitemapDe(entradas, origen = ORIGEN) {
+  const urls = entradas.map(({ publica, lastmod }) => `  <url>\n    <loc>${escXml(`${origen}${publica}`)}</loc>\n    <lastmod>${escXml(lastmod)}</lastmod>\n  </url>`);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`;
+}
+
+export const robotsDe = (origen = ORIGEN) => `User-agent: *\nAllow: /\n\nSitemap: ${origen}/sitemap.xml\n`;
+
+// ===== El contenido de una pagina indexable =====
+//
+// Lo que va dentro de <div data-shell data-ruta="<logica>">: lo mismo que pinta
+// el renderizador de esa ruta (pestanas, miga, cabecera, el cuerpo y el texto),
+// con las mismas funciones de contenido.js. Las herramientas no se pueden
+// pintar sin el navegador: en su sitio va un hueco del alto que ocupan
+// (reservaDe, en PANTALLAS de cascaras.js), para que el texto de debajo no
+// salte al hidratar. ctx = {l, dic, textos, pokemon}.
+export function contenidoDe(logica, ctx) {
+  const [seccion, id] = logica.split('/').filter(Boolean);
+  let cuerpo;
+  if (seccion === 'types' && id) cuerpo = tipoHTML(id, ctx);
+  else if (seccion === 'egg' && id) cuerpo = grupoHTML(id, ctx);
+  else if (logica === '/faq') cuerpo = faqHTML(ctx);
+  else if (logica === '/egg') cuerpo = `<div id="eggContent">${listaGruposHTML(ctx)}</div>`;
+  else {
+    const categoria = CATEGORIES.find(c => c.route === logica && !c.direct);
+    const tool = TOOLS.find(t => t.route === logica);
+    if (categoria) cuerpo = rejillaHerramientasHTML(ctx, idsDeCategoria(categoria.id));
+    else if (tool) {
+      cuerpo = `<div class="tool-reserva" style="min-height:${reservaDe(tool.id)}px"></div>`;
+      // La tabla de tipos lleva debajo de la herramienta la tira de los 18.
+      if (logica === '/types') cuerpo += tiposTodosHTML(ctx);
+    } else throw new Error(`pages.mjs: no se que contenido lleva ${logica}`);
+  }
+  return encabezadoHTML(logica, ctx) + cuerpo + introHTML(logica, ctx);
+}
+
+// La portada: lo de debajo del buscador dentro del shell (el hero), detras del
+// .swarm-wrap, y los chips iniciales en su sitio. La espanola es el index.html
+// del build; la inglesa, la de paginaHtml.
+export function rellenarPortada(html, ruta) {
+  let salida = sustituir(html, /<div class="swarm-chips" id="swarmChips"><\/div>/,
+    () => `<div class="swarm-chips" id="swarmChips">${ruta.chips}</div>`, 'los chips del hero');
+  salida = sustituir(salida, /(<div class="portada" data-shell data-ruta="\/">[\s\S]*?)(\s*<\/div>\s*<\/main>)/,
+    (m, antes, cierre) => `${antes}${ruta.contenido}${cierre}`, 'el final del shell de la portada');
+  return salida;
 }
 
 // La misma cuenta, pero desde los datos y no desde rutasPublicas, y de un solo
@@ -162,7 +414,8 @@ export function rutasPublicas({ indice, pokemon, moves, abilities }) {
 export function paginasEsperadas({ pokemon, moves, abilities }) {
   const fijas = new Set(Object.values(TABLA_ESTATICA)).size;
   const fichas = pokemon.filter(p => !isForm(p) || tieneUrlPropia(p)).length;
-  return fijas + fichas + Object.keys(GRUPOS_HUEVO_ES).length + moves.length + abilities.length;
+  return fijas + fichas + Object.keys(GRUPOS_HUEVO_ES).length + Object.keys(TIPOS_ES).length
+    + moves.length + abilities.length;
 }
 
 // '/pokedex' -> 'pokedex.html', '/pokedex/pikachu' -> 'pokedex/pikachu.html'.
@@ -221,6 +474,10 @@ export function bloqueHreflang(alternas, origen = ORIGEN) {
 // al hidratar, asi que la pagina no cambia de texto al arrancar la app.
 const NAV = { home: 'nav.home', pokedex: 'nav.pokedex', data: 'nav.data', competitive: 'nav.competitive', calculator: 'nav.calculator' };
 const PIE = { footerData: 'footer.data', footerFaq: 'footer.faq', footerPrivacy: 'footer.privacy', footerTerms: 'footer.terms' };
+// La firma del pie lleva a la web del autor en el idioma de la pagina (D12).
+// index.html nace con la espanola; app.js (updateFooterLabels) la cambia al
+// cambiar de idioma, y build.mjs lo comprueba en cada pagina (aserto u).
+export const AUTOR = { es: 'https://alvarotc.com/es/', en: 'https://alvarotc.com/' };
 
 function traducirPlantilla(html, portada) {
   let salida = html;
@@ -237,6 +494,7 @@ function traducirPlantilla(html, portada) {
   for (const [id, clave] of Object.entries(PIE)) {
     salida = sustituir(salida, new RegExp(`(id="${id}">)[^<]*(<)`), (m, a, b) => `${a}${esc(en[clave])}${b}`, `#${id} en el pie`);
   }
+  salida = sustituir(salida, /<a href="[^"]*"( id="footerAuthor")/, (m, a) => `<a href="${AUTOR.en}"${a}`, 'la firma del pie');
   if (portada) {
     salida = sustituir(salida, /<h1>[^]*?<\/h1>/,
       () => `<h1>${esc(en['home.claim.a'])}<br><span class="hl">${esc(en['home.claim.b'])}</span></h1>`, 'el <h1> del hero');
@@ -301,7 +559,9 @@ export function paginaHtml(esqueleto, ruta, origen = ORIGEN) {
   // pero check-pages le pasa el fuente, y sus comentarios nombran <html lang>,
   // el conmutador o el hero, que son patrones de aqui abajo.
   let html = sinScriptsDeLaPortada(sinComentarios(esqueleto));
-  html = sustituir(html, /<title>PokeUtils<\/title>/, () => `<title>${titulo}</title>`, 'el <title>');
+  // Cualquier titulo y no 'PokeUtils': desde la PR 3 el index.html lleva el
+  // largo de la portada. Que case una vez sigue siendo lo que se exige.
+  html = sustituir(html, /<title>[^<]*<\/title>/, () => `<title>${titulo}</title>`, 'el <title>');
   html = sustituir(html, /<meta name="description" content="[^"]*">/,
     () => `<meta name="description" content="${descripcion}">`, 'la meta description');
   html = sustituir(html, /<meta property="og:title" content="[^"]*">/,
@@ -310,6 +570,17 @@ export function paginaHtml(esqueleto, ruta, origen = ORIGEN) {
     () => `<meta property="og:description" content="${descripcion}">`, 'og:description');
   html = sustituir(html, /<meta property="og:url" content="[^"]*">/,
     () => `<meta property="og:url" content="${url}">`, 'og:url');
+  // La imagen de su categoria en su idioma, y el idioma de la pagina. og:site_name
+  // es el mismo en todas y ya viene escrito en index.html.
+  const og = ogDe(ruta.logica, l, origen);
+  html = sustituir(html, /<meta property="og:image" content="[^"]*">/,
+    () => `<meta property="og:image" content="${og.imagen}">`, 'og:image');
+  html = sustituir(html, /<meta property="og:image:alt" content="[^"]*">/,
+    () => `<meta property="og:image:alt" content="${esc(og.alt)}">`, 'og:image:alt');
+  html = sustituir(html, /<meta property="og:locale" content="[^"]*">/,
+    () => `<meta property="og:locale" content="${og.locale}">`, 'og:locale');
+  html = sustituir(html, /<meta property="og:locale:alternate" content="[^"]*">/,
+    () => `<meta property="og:locale:alternate" content="${og.alterno}">`, 'og:locale:alternate');
   html = sustituir(html, /<link rel="canonical" href="[^"]*">/,
     () => `<link rel="canonical" href="${url}">${ruta.noindex ? '\n  <meta name="robots" content="noindex">' : ''}`,
     'la canonical');
@@ -329,6 +600,15 @@ export function paginaHtml(esqueleto, ruta, origen = ORIGEN) {
       () => '<main class="main" id="app" data-reservando></main>', 'el <main> con el hero');
   }
   if (l === 'en') html = enlacesEnIngles(traducirPlantilla(html, portada));
+  // El contenido despues de traducir la plantilla: ya va en su idioma, y los
+  // patrones de traducirPlantilla (el <h1> del hero) no tienen que verlo.
+  if (ruta.indexable && portada) html = rellenarPortada(html, ruta);
+  else if (ruta.indexable) {
+    html = sustituir(html, /<main class="main" id="app" data-reservando><\/main>/,
+      () => `<main class="main" id="app" data-reservando><div data-shell data-ruta="${esc(ruta.logica)}">${ruta.contenido}</div></main>`,
+      'el <main> vacio');
+  }
+  html = conJsonLd(html, ruta);
   // El conmutador lleva a la misma pagina en el otro idioma, y lo dice en su
   // texto, su hreflang y su lang. Despues de enlacesEnIngles, que no lo distingue
   // de los demas enlaces.
@@ -343,7 +623,7 @@ export function paginaHtml(esqueleto, ruta, origen = ORIGEN) {
 //
 // Las cadenas que una persona o un buscador leen: nodos de texto, y los
 // atributos title, placeholder, aria-label y alt. De content, solo los de
-// description, og:title y og:description, que son texto; los demas (viewport,
+// description, og:title, og:description y og:image:alt, que son texto; los demas (viewport,
 // el color del tema, la URL de la og:image, 1200) son valores tecnicos que no
 // tienen idioma. Sin <script> ni <style>, que no se leen.
 const ENTIDADES = { amp: '&', quot: '"', lt: '<', gt: '>', eacute: 'é', middot: '·', copy: '©', nbsp: ' ' };
@@ -356,7 +636,7 @@ export function textosVisibles(html) {
   const textos = [
     ...[...sinCodigo.matchAll(/>([^<]+)</g)].map(m => m[1]),
     ...[...sinCodigo.matchAll(/\s(?:title|placeholder|aria-label|alt)="([^"]*)"/g)].map(m => m[1]),
-    ...[...sinCodigo.matchAll(/<meta (?:name="description"|property="og:(?:title|description)") content="([^"]*)"/g)].map(m => m[1]),
+    ...[...sinCodigo.matchAll(/<meta (?:name="description"|property="og:(?:title|description|image:alt)") content="([^"]*)"/g)].map(m => m[1]),
   ];
   return textos.map(t => decodificar(t).replace(/\s+/g, ' ').trim()).filter(t => /\p{L}/u.test(t));
 }
