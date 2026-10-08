@@ -6,9 +6,13 @@
 // "Tronco Arena" y nada mas fallaria.
 // Run with: node scripts/check-forms.mjs
 import { readFile } from 'node:fs/promises';
-import { isCosmetic, formsOf, competitiveList, speciesOf } from '../js/forms.js';
+import { isCosmetic, formsOf, competitiveList, speciesOf, tieneUrlPropia, esMega, FORMAS_GEMELAS, MEGA_SIN_PIEDRA } from '../js/forms.js';
+import { megapiedra } from './overrides/forms.mjs';
 
-const pokemon = JSON.parse(await readFile(new URL('../data/pokemon.json', import.meta.url), 'utf8'));
+const leer = async ruta => JSON.parse(await readFile(new URL(`../${ruta}`, import.meta.url), 'utf8'));
+const pokemon = await leer('data/pokemon.json');
+const items = await leer('data/items.json');
+const moves = await leer('data/moves.json');
 let failed = 0;
 
 function check(label, actual, expected) {
@@ -82,7 +86,76 @@ check('ningun nombre es el slug crudo',
 check('Mega Charizard X se llama bien', bySlug('charizard-mega-x').nameEs, 'Mega-Charizard X');
 check('y su pestana es corta', bySlug('charizard-mega-x').formEs, 'Mega X');
 check('Charizard Gigamax se construye con el sufijo', bySlug('charizard-gmax').nameEs, 'Charizard Gigamax');
-check('Rattata de Alola lleva la especie delante', bySlug('rattata-alola').nameEs, 'Rattata Forma de Alola');
+check('Rattata de Alola se llama como en los juegos',
+  [bySlug('rattata-alola').nameEs, bySlug('rattata-alola').nameEn], ['Rattata de Alola', 'Alolan Rattata']);
+
+// Cada pagina de la Pokedex (las 1025 especies y las megas y regionales con
+// URL propia) lleva su nombre en el h1 y el titulo: dos iguales serian dos
+// paginas indistinguibles. Las formas en ancla (Minior Meteorito, los Gigamax
+// de Toxtricity) viven en una pestana de su especie y no entran.
+const conUrl = pokemon.filter(p => !p.speciesId || tieneUrlPropia(p));
+const repetidos = campo => [...new Set(conUrl.map(p => p[campo]).filter((n, i, todos) => todos.indexOf(n) !== i))];
+check('ningun nameEs repetido entre especies y formas con URL', repetidos('nameEs'), []);
+check('ningun nameEn repetido entre especies y formas con URL', repetidos('nameEn'), []);
+// La seccion de formas de la ficha y el buscador muestran el nombre tal cual:
+// dos formas de la misma especie (o una forma y su especie) con el mismo nombre
+// serian dos lineas iguales (Zygarde 10%, Minior Meteorito, Toxtricity Gigamax).
+const repetidosEnEspecie = campo => [...new Set(pokemon.filter(p => !p.speciesId).flatMap(e => {
+  const grupo = [e, ...forms.filter(f => f.speciesId === e.id)];
+  return grupo.filter((p, i) => grupo.findIndex(q => q[campo] === p[campo]) !== i).map(p => `${e.name}: ${p[campo]}`);
+}))];
+check('ningun nameEs repetido dentro de una especie', repetidosEnEspecie('nameEs'), []);
+check('ningun nameEn repetido dentro de una especie', repetidosEnEspecie('nameEn'), []);
+check('las megas en espanol empiezan por "Mega-"',
+  forms.filter(f => /-mega(-|$)/.test(f.name) && !f.nameEs.startsWith('Mega-')).map(f => f.name), []);
+check('Tauros de Paldea lleva su variedad', bySlug('tauros-paldea-aqua-breed').nameEs, 'Tauros de Paldea Variedad Acuática');
+check('y el Darmanitan Zen de Galar no se confunde con el de Unova',
+  [bySlug('darmanitan-galar-zen').nameEn, bySlug('darmanitan-zen').nameEn], ['Galarian Darmanitan Zen Mode', 'Darmanitan Zen Mode']);
+
+console.log('\nLas megapiedras (D7 de la PR 5)\n');
+
+// 97 megas: 96 con piedra y Mega-Rayquaza sin ella. Las piedras son 92: las
+// cuatro gemelas comparten la de su cabeza, y no hay otra piedra compartida.
+// Toda megapiedra de items.json (las que acaban en -ite, -ite-x...) tiene su
+// mega, salvo los cuatro objetos que acaban asi sin serlo.
+const megas = forms.filter(esMega);
+const conPiedra = megas.filter(m => m.megaStone);
+check('megas', megas.length, 97);
+check('megas con megaStone', conPiedra.length, 96);
+check('la unica sin piedra es Mega-Rayquaza', megas.filter(m => !m.megaStone).map(m => m.name), Object.keys(MEGA_SIN_PIEDRA));
+check('ninguna forma que no es mega lleva megaStone', pokemon.filter(p => p.megaStone && !esMega(p)).map(p => p.name), []);
+check('megaStone es el de overrides/forms.mjs sobre items.json (el dato no se ha quedado viejo)',
+  conPiedra.filter(m => JSON.stringify(m.megaStone) !== JSON.stringify(megapiedra(m.name, items))).map(m => m.name), []);
+const porPiedra = new Map();
+for (const m of conPiedra) porPiedra.set(m.megaStone.name, [...(porPiedra.get(m.megaStone.name) || []), m.name]);
+check('piedras distintas', porPiedra.size, 92);
+const cabezaDe = slug => FORMAS_GEMELAS[slug] ?? slug;
+check('cada piedra la comparten solo una cabeza y sus gemelas',
+  [...porPiedra].filter(([, ms]) => new Set(ms.map(cabezaDe)).size !== 1).map(([p]) => p), []);
+check('las 92 cabezas, una piedra cada una (biyeccion)',
+  new Set(conPiedra.filter(m => !FORMAS_GEMELAS[m.name]).map(m => m.megaStone.name)).size, conPiedra.filter(m => !FORMAS_GEMELAS[m.name]).length);
+const NO_SON_PIEDRA = ['meteorite', 'eviolite', 'black-augurite', 'rotom-bike--sparkling-white'];
+check('ninguna megapiedra de items.json se queda sin mega',
+  items.filter(i => /ite(-[xyz])?$/.test(i.name) && !NO_SON_PIEDRA.includes(i.name) && !porPiedra.has(i.name)).map(i => i.name), []);
+check('Charizardita X', bySlug('charizard-mega-x').megaStone, { id: 699, name: 'charizardite-x', es: 'Charizardita X', en: 'Charizardite X' });
+const ascenso = moves.find(m => m.name === MEGA_SIN_PIEDRA['rayquaza-mega'].movimiento);
+check('Ascenso Draco se llama como en moves.json',
+  [MEGA_SIN_PIEDRA['rayquaza-mega'].es, MEGA_SIN_PIEDRA['rayquaza-mega'].en], [ascenso?.nameEs, ascenso?.nameEn]);
+
+console.log('\nLas gemelas (D3 de la PR 5)\n');
+
+// Megas iguales a otra de su especie en tipos, stats, habilidades y piedra:
+// medidas, no a mano. FORMAS_GEMELAS tiene que ser exactamente este reparto.
+const firma = m => JSON.stringify([m.speciesId, m.types, m.stats, m.abilities, m.megaStone?.name ?? null]);
+const gemelasMedidas = {};
+const conUrlPropia = forms.filter(tieneUrlPropia);
+for (const f of conUrlPropia) {
+  const cabeza = conUrlPropia.find(o => firma(o) === firma(f));
+  if (cabeza.id !== f.id) gemelasMedidas[f.name] = cabeza.name;
+}
+const ordenar = o => Object.fromEntries(Object.entries(o).sort(([a], [b]) => a.localeCompare(b)));
+check('FORMAS_GEMELAS son las medidas', ordenar(FORMAS_GEMELAS), ordenar(gemelasMedidas));
+check('son cuatro', Object.keys(FORMAS_GEMELAS).length, 4);
 
 console.log('\nLo heredado de la especie\n');
 

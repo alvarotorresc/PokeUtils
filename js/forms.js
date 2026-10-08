@@ -45,20 +45,60 @@ export function competitiveList(list) {
 export const spriteIdFor = p => (p.noSprite && p.speciesId ? p.speciesId : p.id);
 
 // Que formas tienen pagina (y URL) propia en vez de una pestana en la ficha de
-// su especie: las 97 megas y las 60 regionales, 157 en total. Son las que se
+// su especie: las 97 megas y las 58 regionales, 155 en total. Son las que se
 // buscan por su nombre ("charizard mega x", "raichu alola"); el resto --
 // gigamax, dominantes, gorras, los modos de Deoxys -- vive en su pestana, y su
 // id lleva a la especie con `#forma-<name>`.
 //
-// Las mismas dos regex con las que cuenta check-forms.mjs. Es una union, no una
-// suma: raticate-totem-alola y pikachu-alola-cap son regionales y algo mas.
+// Las mismas dos regex con las que cuenta check-forms.mjs, menos la gorra y los
+// dominantes: pikachu-alola-cap y raticate-totem-alola son regionales y algo
+// mas, pero no la forma que alguien busca por su nombre (D1 de la PR 5). Hasta
+// la PR 4 tuvieron URL; su URL vieja lleva con 301 al ancla (URLS_RETIRADAS).
 const MEGA = /-mega(-|$)/;
 const REGIONAL = /-(alola|galar|hisui|paldea)(-|$)/;
-export const tieneUrlPropia = p => isForm(p) && (MEGA.test(p.name) || REGIONAL.test(p.name));
+export const tieneUrlPropia = p => isForm(p) && (MEGA.test(p.name) || REGIONAL.test(p.name))
+  && !/-(cap|totem)(-|$)/.test(p.name);
 
-// D12 del plan de la PR 4: la gorra de Pikachu y los dominantes son regionales
-// para tieneUrlPropia (pikachu-alola-cap, raticate-totem-alola), pero no son la
-// forma que alguien busca por su nombre. Tienen URL, pero ni el bloque de formas
-// de la ficha las enlaza ni el texto de la ficha las nombra: los dos preguntan
-// aqui.
-export const formaEnlazable = p => tieneUrlPropia(p) && !/-(cap|totem)(-|$)/.test(p.name);
+// Las formas que tuvieron URL propia y ya no: _redirects las manda al ancla.
+export const URLS_RETIRADAS = ['pikachu-alola-cap', 'raticate-totem-alola'];
+
+// El bloque de formas de la ficha y su texto preguntan aqui. Desde D1 de la
+// PR 5 es lo mismo que tieneUrlPropia; el nombre se queda para sus usuarios.
+export const formaEnlazable = tieneUrlPropia;
+
+// Megas y regionales, por separado: el texto de una forma con URL cuenta como
+// se obtiene, y eso depende de cual de las dos es.
+export const esMega = p => isForm(p) && MEGA.test(p.name);
+// Lo mismo por el nombre solo: rutas.js titula una forma sin tener sus datos.
+export const nombreDeMega = name => MEGA.test(name);
+export const regionDe = p => (isForm(p) && !esMega(p) ? REGIONAL.exec(p.name)?.[1] ?? null : null);
+
+// Las cuatro regiones de las formas regionales, con el juego en que aparecen,
+// para la frase "es la forma regional de Raichu en Alola, la region de Pokemon
+// Sol y Luna". El juego va entero y no por VERSION_GROUP_NAMES ("Leyendas:
+// Arceus" es una etiqueta de pestana, y el titulo es "Leyendas Pokemon: Arceus").
+export const REGIONES = {
+  alola: { es: { nombre: 'Alola', juego: 'Pokémon Sol y Luna' }, en: { nombre: 'Alola', juego: 'Pokémon Sun and Moon' } },
+  galar: { es: { nombre: 'Galar', juego: 'Pokémon Espada y Escudo' }, en: { nombre: 'Galar', juego: 'Pokémon Sword and Shield' } },
+  hisui: { es: { nombre: 'Hisui', juego: 'Leyendas Pokémon: Arceus' }, en: { nombre: 'Hisui', juego: 'Pokémon Legends: Arceus' } },
+  paldea: { es: { nombre: 'Paldea', juego: 'Pokémon Escarlata y Púrpura' }, en: { nombre: 'Paldea', juego: 'Pokémon Scarlet and Violet' } },
+};
+
+// Megas identicas a otra mega de su especie en tipos, stats, habilidad y
+// megapiedra: solo cambia el aspecto (D3 de la PR 5). Gemela -> cabeza. La
+// cabeza las nombra en su texto; ellas no tienen texto propio indexable, porque
+// con los nombres tapados dirian lo mismo que la cabeza. check-forms mide que
+// son estas cuatro y ninguna mas.
+export const FORMAS_GEMELAS = {
+  'meowstic-female-mega': 'meowstic-male-mega',
+  'magearna-original-mega': 'magearna-mega',
+  'tatsugiri-droopy-mega': 'tatsugiri-curly-mega',
+  'tatsugiri-stretchy-mega': 'tatsugiri-curly-mega',
+};
+
+// La unica mega sin megapiedra: Rayquaza megaevoluciona si conoce Ascenso
+// Draco. Los nombres son los de moves.json (check-forms lo comprueba); van
+// aqui para que la ficha no tenga que bajarse los movimientos.
+export const MEGA_SIN_PIEDRA = {
+  'rayquaza-mega': { movimiento: 'dragon-ascent', es: 'Ascenso Draco', en: 'Dragon Ascent' },
+};

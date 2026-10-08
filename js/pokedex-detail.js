@@ -1,17 +1,17 @@
 // ===== POKEMON DETAIL =====
 import { TYPES, STAT_KEYS, NATURES } from './data.js';
 import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchAbilities, fetchDex, fetchMeta, fetchMetaNames } from './api.js';
-import { skeletonHTML, renderError, hostDeRuta, seguimosEn, wireScrollFade, titularFicha, contextoActivo } from './ui.js';
+import { skeletonHTML, renderError, hostDeRuta, seguimosEn, wireScrollFade, titularFicha, contextoActivo, reescribirUrl } from './ui.js';
 import { urlDe } from './rutas.js';
 import { esqueletoDeFicha } from './cascaras.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
-import { formsOf } from './forms.js';
+import { formsOf, tieneUrlPropia } from './forms.js';
 import { metaSetOf, defaultFormat, prettySlug, metaName, metaLink, FORMATS, MONTH } from './meta.js';
 import { getLevel } from './level.js';
 import { fichaHTML, evoSectionHTML, movesPanelHTML, formLabels } from './ficha-pokemon.js';
 // Estatico y no import(): esto ya es el trozo de la ficha, que solo baja quien
 // abre una. El aserto (w) de scripts/build.mjs vigila que no suba al arranque.
-import { textoEspecie } from './ficha-texto.js';
+import { textoEspecie, textoForma } from './ficha-texto.js';
 
 // Evolucion y movimientos llegan pintados dentro de fichaHTML. Lo de aqui es
 // solo su camino de error: un fallo cargando uno de los dos no tumba la ficha,
@@ -184,7 +184,18 @@ async function renderMetaSection(host, dexId, format, meta, allPokemon, evolutio
 // evoluciones o sin el dex el texto diria "no evoluciona" o "0 movimientos",
 // y sin descripcion se queda en cifras, asi que textoEspecie lanza y la ficha
 // sale sin la seccion, como antes.
+//
+// Una forma con URL propia lleva el suyo, textoForma, que solo necesita
+// pokemon.json y las habilidades: ni evoluciones ni dex.
 function textoDe(dexId, pokemon, ctx, { allPokemon, abilities, evolutions, dex }) {
+  const entrada = allPokemon.find(p => p.id === pokemon.id);
+  if (entrada && tieneUrlPropia(entrada)) {
+    try {
+      return textoForma(pokemon.id, { ...ctx, pokemon: allPokemon, abilities });
+    } catch {
+      return null;
+    }
+  }
   if (pokemon.id !== dexId || !evolutions || !dex) return null;
   try {
     return textoEspecie(dexId, { ...ctx, pokemon: allPokemon, abilities, evolutions, dex });
@@ -195,11 +206,12 @@ function textoDe(dexId, pokemon, ctx, { allPokemon, abilities, evolutions, dex }
 
 // ===== La ficha que llega en el HTML =====
 //
-// En la primera carga de una especie el build ya ha pintado la ficha entera
-// dentro de <div data-shell data-ruta="/pokedex/<id>">, y route() la conserva
+// En la primera carga de una especie, o de una forma con URL propia
+// (/pokedex/10034), el build ya ha pintado la ficha entera dentro de
+// <div data-shell data-ruta="/pokedex/<id>">, y route() la conserva
 // (logicaDeShell). Aqui no se pinta el esqueleto encima: se cargan los datos y
-// se adopta. Una forma no llega con shell, ni una pestana de forma, que repinta
-// sin pasar por el router.
+// se adopta. Una pestana de forma no llega con shell: repinta sin pasar por el
+// router.
 function shellDeFicha(container, id) {
   const shell = container.querySelector(':scope > [data-shell]');
   return shell?.dataset.ruta === `/pokedex/${id}` ? shell : null;
@@ -210,10 +222,13 @@ function shellDeFicha(container, id) {
 // semana: recalcularlo podria cambiar una frase delante del lector, o dejar el
 // cliente diciendo otra cosa que lo que leyo el buscador. En una navegacion
 // SPA no hay shell y se calcula con textoEspecie. parrafos[0] es la
-// descripcion, que fichaHTML pinta aparte y no lee de aqui.
-function textoDelShell(shell) {
+// descripcion, que fichaHTML pinta aparte y no lee de aqui. En una forma con
+// URL propia no hay descripcion: los parrafos del shell son todo el texto, el
+// de textoForma.
+function textoDelShell(shell, esForma) {
   const parrafos = [...shell.querySelectorAll('.intro-ficha p')].map(p => p.textContent);
-  return parrafos.length ? { parrafos: [null, ...parrafos] } : null;
+  if (!parrafos.length) return null;
+  return { parrafos: esForma ? parrafos : [null, ...parrafos] };
 }
 
 // Adopta el shell o lo sustituye, de una vez. Si la ficha del cliente es
@@ -222,13 +237,25 @@ function textoDelShell(shell) {
 // /data/* de cache vieja, una seccion que no cargo), se cambia el contenido
 // entero en un solo paso. isEqualNode y no comparar cadenas: el navegador
 // serializa a su manera (&#39; vuelve como ').
+//
+// Menos la clase de la entrada de los sprites (wireSpriteFade, ui.js): un
+// sprite del shell que termina de cargar mientras llegan los datos ya la lleva,
+// y la ficha recien pintada no. Sin copiarla, esa sola clase repintaba la
+// ficha entera; pasaba sobre todo en las megas, con el sprite de su piedra.
 function adoptarShell(shell, html) {
   const nueva = document.createElement('div');
   nueva.innerHTML = html;
+  const vistas = shell.querySelectorAll('img');
+  const nuevas = nueva.querySelectorAll('img');
+  if (vistas.length === nuevas.length) {
+    vistas.forEach((img, i) => { if (img.classList.contains('sprite-entra')) nuevas[i].classList.add('sprite-entra'); });
+  }
   if (!nueva.isEqualNode(shell)) shell.replaceChildren(...nueva.childNodes);
 }
 
-export async function renderPokedexDetail(container, id) {
+// `saltar` en false no baja al ancla #forma-<name>: lo pide el cambio de
+// pestana, que ya ha puesto ese ancla en la URL y no debe mover la pagina.
+export async function renderPokedexDetail(container, id, { saltar = true } = {}) {
   const shell = shellDeFicha(container, id);
   let host, vigente;
   if (shell) {
@@ -305,8 +332,8 @@ export async function renderPokedexDetail(container, id) {
   // Con shell, sin la entrada animada: ya esta a la vista, y asi la ficha del
   // cliente es la misma que la del build.
   const html = fichaHTML(ctx, {
-    pokemon, allPokemon, variants, variantLabels, evolutions, dex,
-    texto: shell ? textoDelShell(shell) : textoDe(dexId, pokemon, ctx, { allPokemon, abilities, evolutions, dex }),
+    pokemon, allPokemon, abilities, variants, variantLabels, evolutions, dex,
+    texto: shell ? textoDelShell(shell, tieneUrlPropia(allPokemon.find(p => p.id === pokemon.id) ?? pokemon)) : textoDe(dexId, pokemon, ctx, { allPokemon, abilities, evolutions, dex }),
     animar: !shell,
   });
   if (shell) adoptarShell(shell, html);
@@ -320,11 +347,22 @@ export async function renderPokedexDetail(container, id) {
   else loadMovesSection(mvHost, dexId, errorDex);
   renderMetaSection(host.querySelector('#metaSection'), dexId, format, meta, allPokemon, evolutions);
 
+  // #forma-<name>: rutas.js ya ha abierto la pestana de esa forma (la ficha se
+  // pinta con ella); ademas se baja a su seccion de la especie, donde dice que
+  // cambia. Solo al llegar a la pagina: el cambio de pestana tambien escribe el
+  // ancla, y no salta.
+  const ancla = saltar && location.hash.startsWith('#forma-')
+    && location.hash === `#forma-${allPokemon.find(p => p.id === pokemon.id)?.name}`
+    ? host.querySelector(`[id="${CSS.escape(location.hash.slice(1))}"]`) : null;
+  ancla?.scrollIntoView({ block: 'start' });
+
   // Pikachu carries 17 forms and the strip only shows five of them at a time.
   // wireScrollFade (js/ui.js) lights a fade on whichever side has more; the
   // tool tab strips on the ten category tool pages share the same call.
   wireScrollFade(host.querySelector('#formTabsWrap'), host.querySelector('#formTabs'));
 
+  // Solo los botones: las pestanas de las formas con URL propia son <a> y las
+  // navega el router (app.js), como cualquier enlace.
   host.querySelector('#formTabs')?.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-form]');
     if (!btn) return;
@@ -332,7 +370,14 @@ export async function renderPokedexDetail(container, id) {
     if (next === pokemon.id) return;
     // Repaint in place. Navigating would run route(), reload the page and lose
     // the scroll position for a change of four numbers.
-    renderPokedexDetail(container, next);
+    //
+    // Pero el ancla sigue a la pestana: con #forma-deoxys-attack puesto, pulsar
+    // Normal y recargar (o cambiar de idioma, que lee location) volvia a Ataque.
+    // reescribirUrl (replaceState) no dispara el router ni hashchange, y deja el
+    // href del conmutador de idioma al dia.
+    const forma = allPokemon.find(p => p.id === next);
+    reescribirUrl(location.pathname + location.search + (forma?.speciesId ? `#forma-${forma.name}` : ''));
+    renderPokedexDetail(container, next, { saltar: false });
   });
 
 }

@@ -18,7 +18,7 @@ import {
   slugEs, TABLA_ESTATICA, GRUPOS_HUEVO_ES, construirIndice, fijarIndice,
   urlDe, logicaDe, legadoALogica, TITULOS, tituloDe, SECCIONES_DE_FICHA,
   TABLA_ESTATICA_EN, GRUPOS_HUEVO_EN, idiomaDe, esPortada, fijarIdioma,
-  legadoAPublica, urlEquivalente, TITULOS_EN, DESAMBIGUAR_EN, TIPOS_ES, TIPOS_EN,
+  legadoAPublica, urlEquivalente, TITULOS_EN, TIPOS_ES, TIPOS_EN,
   TITULO_ESPECIE_MIN, TITULO_ESPECIE_MAX,
 } from '../js/rutas.js';
 import { TYPES, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN, CHART } from '../js/data.js';
@@ -173,9 +173,11 @@ console.log('\nPokemon\n');
 
 const formas = pokemon.filter(p => p.speciesId);
 const propias = formas.filter(tieneUrlPropia);
-check('formas con URL propia: 97 megas + 60 regionales', propias.length, 157);
-check('las que son regionales y algo mas tambien la tienen',
-  ['pikachu-alola-cap', 'raticate-totem-alola'].filter(n => !propias.some(p => p.name === n)), []);
+check('formas con URL propia: 97 megas + 58 regionales', propias.length, 155);
+check('y en ancla, 171', formas.length - propias.length, 171);
+// D1 de la PR 5: la gorra y el dominante son regionales y algo mas, y van en ancla.
+check('las que son regionales y algo mas no la tienen',
+  ['pikachu-alola-cap', 'raticate-totem-alola'].filter(n => propias.some(p => p.name === n)), []);
 check('una especie no es forma con URL propia', tieneUrlPropia(pokemon[0]), false);
 
 check('ida y vuelta de los 1351, con o sin URL propia',
@@ -183,7 +185,8 @@ check('ida y vuelta de los 1351, con o sin URL propia',
 check('pikachu', urlDe('/pokedex/25'), '/pokedex/pikachu');
 check('una ficha sin nombre todavia lleva el de su seccion', tituloDe('/pokedex/25'), 'Pokédex · PokeUtils');
 check('y con nombre, el suyo', tituloDe('/pokedex/25', 'Pikachu'), 'Pikachu: tipo, debilidades, stats y habilidades · PokeUtils');
-check('una forma con URL propia, solo su nombre', tituloDe('/pokedex/10034', 'Mega Charizard X'), 'Mega Charizard X · PokeUtils');
+check('una mega con URL propia lleva su escalera', tituloDe('/pokedex/10034', 'Mega-Charizard X'),
+  'Mega-Charizard X: megapiedra, tipos y stats · PokeUtils');
 check('mr-mime y farfetchd conservan su nombre', [urlDe('/pokedex/122'), urlDe('/pokedex/83')],
   ['/pokedex/mr-mime', '/pokedex/farfetchd']);
 // El nombre de PokeAPI de la forma por defecto (deoxys-normal) no es el de la
@@ -240,7 +243,7 @@ const todas = [
   ...EGG_GROUPS.map(g => urlDe(`/egg/${g}`)),
   ...TYPES.map(t => urlDe(`/types/${t}`)),
 ];
-check('2487 paginas: las 2469 de la PR 1 y los 18 tipos', todas.length, 2487);
+check('2485 paginas: las 2469 de la PR 1, los 18 tipos y 2 formas menos (D1 de la PR 5)', todas.length, 2485);
 check('ninguna repetida', todas.length - new Set(todas).size, 0);
 check('todas en [a-z0-9-] y sin barra final',
   todas.filter(u => u !== '/' && !/^(\/[a-z0-9]+(-[a-z0-9]+)*)+$/.test(u)), []);
@@ -312,7 +315,7 @@ const todasEn = [
   ...EGG_GROUPS.map(g => urlDe(`/egg/${g}`, 'en')),
   ...TYPES.map(t => urlDe(`/types/${t}`, 'en')),
 ];
-check('2487 paginas en ingles, una por cada una en espanol', todasEn.length, todas.length);
+check('2485 paginas en ingles, una por cada una en espanol', todasEn.length, todas.length);
 check('ninguna repetida en ingles', todasEn.length - new Set(todasEn).size, 0);
 check('todas empiezan por /en, en [a-z0-9-] y sin barra final',
   todasEn.filter(u => !/^\/en(\/[a-z0-9]+(-[a-z0-9]+)*)*$/.test(u)), []);
@@ -462,6 +465,26 @@ check(`todas de ${TITULO_ESPECIE_MIN} a ${TITULO_ESPECIE_MAX} caracteres`,
   titulosEspecie.filter(([, , t]) => t.length < TITULO_ESPECIE_MIN || t.length > TITULO_ESPECIE_MAX), []);
 check('y todas con un sufijo', titulosEspecie.filter(([, , t]) => !t.includes(': ')).length, 0);
 
+console.log('\nTitulos de las formas con pagina propia\n');
+
+// PR 5: las megas y las regionales llevan su propia escalera (tituloForma),
+// mega o regional segun el slug, y el mismo margen de 50-60.
+const titulosForma = pokemon.filter(tieneUrlPropia)
+  .flatMap(p => ['es', 'en'].map(l => [l, p.name, tituloDe(`/pokedex/${p.id}`, pokeName(p, l), l)]));
+check('las 310 formas con URL propia tienen titulo', titulosForma.length, 310);
+check(`todas de ${TITULO_ESPECIE_MIN} a ${TITULO_ESPECIE_MAX} caracteres`,
+  titulosForma.filter(([, , t]) => t.length < TITULO_ESPECIE_MIN || t.length > TITULO_ESPECIE_MAX), []);
+check('las megas hablan de megapiedra y las regionales no',
+  titulosForma.filter(([l, name, t]) => /-mega(-|$)/.test(name) !== /: (megapiedra|Mega Stone)/.test(t)).map(([l, n]) => `${l} ${n}`), []);
+check('las tres de muestra', [
+  tituloDe('/pokedex/10034', 'Mega-Charizard X', 'es'), tituloDe('/pokedex/10100', 'Alolan Raichu', 'en'),
+  tituloDe('/pokedex/10250', 'Tauros de Paldea Variedad Combatiente', 'es'),
+], [
+  'Mega-Charizard X: megapiedra, tipos y stats · PokeUtils',
+  'Alolan Raichu: weaknesses, stats and ability · PokeUtils',
+  'Tauros de Paldea Variedad Combatiente: stats · PokeUtils',
+]);
+
 console.log('\nTitulos unicos\n');
 
 // El build genera una pagina por ficha y cada una necesita un <title> propio.
@@ -522,23 +545,7 @@ check('Counter el movimiento no es la herramienta',
 check('Competitive la habilidad no es el hub',
   [tituloDe('/abilities/competitive', 'Competitive', 'en'), tituloDe('/competitive', undefined, 'en')],
   ['Competitive ability · PokeUtils', 'Competitive Pokémon tools for building a team · PokeUtils']);
-// D7: las dos megas de Meowstic se llaman igual en el dataset. Se desambiguan
-// aqui por slug hasta que la PR 5 arregle el dato.
-check('las dos Mega Meowstic',
-  [tituloDe('/pokedex/10314', 'Mega Meowstic', 'en'), tituloDe('/pokedex/10326', 'Mega Meowstic', 'en')],
-  ['Mega Meowstic (male) · PokeUtils', 'Mega Meowstic (female) · PokeUtils']);
-check('y en espanol no se toca', tituloDe('/pokedex/10314', 'Meowstic Mega macho', 'es'), 'Meowstic Mega macho · PokeUtils');
-
 const conUrl = pokemon.filter(p => !p.speciesId || tieneUrlPropia(p));
-const nombresEnRepetidos = new Set(conUrl.map(nombreEn).filter((n, i, todos) => todos.indexOf(n) !== i));
-check('DESAMBIGUAR_EN solo cubre colisiones reales del dataset',
-  Object.keys(DESAMBIGUAR_EN).filter(slug => {
-    const p = conUrl.find(x => urlDe(`/pokedex/${x.id}`, 'en') === `/en/pokedex/${slug}`);
-    return !p || !nombresEnRepetidos.has(nombreEn(p));
-  }), []);
-check('y las cubre todas',
-  conUrl.filter(p => nombresEnRepetidos.has(nombreEn(p)) && !Object.hasOwn(DESAMBIGUAR_EN, urlDe(`/pokedex/${p.id}`, 'en').split('/').pop()))
-    .map(p => p.name), []);
 
 const titulosEn = [
   ...Object.keys(TABLA_ESTATICA_EN).filter(l => l !== '/home').map(l => tituloDe(l, undefined, 'en')),

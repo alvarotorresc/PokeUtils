@@ -9,7 +9,7 @@ import { getLevel, setLevel, onLevelChange } from './level.js';
 import { t, getLang, setLang, onLangChange } from './i18n.js';
 import { purgeLegacyCache } from './api.js';
 import { leer, escribir } from './storage.js';
-import { renderError, parseRuta, navegar, fijarRouter, wireSpriteFade, cargarTextos } from './ui.js';
+import { renderError, parseRuta, navegar, fijarRouter, fijarConmutador, wireSpriteFade, cargarTextos } from './ui.js';
 import { logicaIndexable, logicaDeShell, conservaShell } from './contenido.js';
 import { urlDe, cargarIndice, tituloDe, legadoAPublica, idiomaDe, esPortada, urlEquivalente } from './rutas.js';
 import { cascaraDeRuta } from './cascaras.js';
@@ -77,9 +77,10 @@ function updateLangBtn() {
   langToggle.setAttribute('lang', otro);
 }
 
-// El href, con la direccion de ahora mismo. Se pone en cada route(), y otra vez
-// al pulsarlo: los filtros reescriben la query con replaceQuery sin pasar por
-// route(), y el clic tiene que llevarse la query de este momento. Si no se puede
+// El href, con la direccion de ahora mismo. Se pone en cada route(), en cada
+// reescribirUrl (los filtros reescriben la query y la pestana de forma el ancla
+// sin pasar por route()) y otra vez al pulsarlo, por si algo escribio la
+// direccion por otro lado. Si no se puede
 // calcular (una ficha sin el indice de rutas), la portada del otro idioma, que
 // es a donde lleva urlEquivalente lo que no es una pagina.
 function actualizarConmutador() {
@@ -90,6 +91,7 @@ function actualizarConmutador() {
     langToggle.setAttribute('href', otro === 'en' ? '/en' : '/');
   }
 }
+fijarConmutador(actualizarConmutador);
 
 function updateNavLabels() {
   document.querySelectorAll('.nav-link').forEach(link => {

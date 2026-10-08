@@ -224,11 +224,11 @@ check('una forma que no es nodo cae en su especie',
 const [goomy, sliggoo] = hijoDe(cadenaDe(704), 704, 705);
 check('Goomy dice a donde lleva la variante de Hisui',
   textoDeRama(sliggoo, ramasResueltas(goomy, sliggoo, formaDe), nameOf, CTX.es, lookups),
-  'Nv. 40 o Nv. 40 en Hisui (a Sliggoo Forma de Hisui)');
+  'Nv. 40 o Nv. 40 en Hisui (a Sliggoo de Hisui)');
 const [mimeJr, mrMime] = hijoDe(cadenaDe(439), 439, 122);
 check('y Mime Jr. la de Galar',
   textoDeRama(mrMime, ramasResueltas(mimeJr, mrMime, formaDe), nameOf, CTX.es, lookups),
-  'Subir de nivel sabiendo Mimético o Subir de nivel en Galar sabiendo Mimético (a Mr. Mime Forma de Galar)');
+  'Subir de nivel sabiendo Mimético o Subir de nivel en Galar sabiendo Mimético (a Mr. Mime de Galar)');
 
 // Y en ingles igual: el diccionario es el de `ctx`, y `nameOf` tambien tiene
 // que elegir por idioma, como hace la ficha.
@@ -237,10 +237,10 @@ const nameOfEn = id => byId.get(id)?.nameEn || `#${id}`;
 const lookupsEn = { species: slug => objetoPorSlug.get(slug)?.nameEn || slug };
 check('en ingles dice a donde lleva la de Hisui',
   textoDeRama(sliggoo, ramasResueltas(goomy, sliggoo, formaDe), nameOfEn, CTX.en, lookupsEn),
-  'Lv. 40 or Lv. 40 at Hisui (to Sliggoo Hisuian Form)');
+  'Lv. 40 or Lv. 40 at Hisui (to Hisuian Sliggoo)');
 check('y la de Galar',
   textoDeRama(mrMime, ramasResueltas(mimeJr, mrMime, formaDe), nameOfEn, CTX.en, lookupsEn),
-  'Level up knowing Mimic or Level up at Galar knowing Mimic (to Mr. Mime Galarian Form)');
+  'Level up knowing Mimic or Level up at Galar knowing Mimic (to Galarian Mr. Mime)');
 
 // Y lo que no elige forma se queda exactamente como estaba: el texto de siempre.
 const [charmeleon, charizard] = hijoDe(cadenaDe(4), 5, 6);

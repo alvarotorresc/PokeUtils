@@ -6,7 +6,7 @@
 // Uses the REST API, which is CDN-cached and has no rate limit, unlike the
 // GraphQL endpoint. Output goes to data/*.json and is committed to the repo.
 
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -19,6 +19,7 @@ import {
   ITEM_NAME_OVERRIDES, ITEM_DESC_ES_OVERRIDES, ITEM_DESC_EN_OVERRIDES, ITEM_DESC_ES_TRANSLATED,
   ITEM_DESC_HAND_WRITTEN_ES, ITEM_DESC_HAND_WRITTEN_EN, DUPLICATE_ITEM_IDS, NAME_OVERRIDES_ES,
 } from './overrides/items.mjs';
+import { nombreOficial, megapiedra } from './overrides/forms.mjs';
 
 const API = 'https://pokeapi.co/api/v2';
 // POKEUTILS_OUT_DIR lets a build land somewhere else, so a regenerated file can
@@ -283,6 +284,13 @@ function formNames(label, speciesName, suffix, lang) {
 
 async function buildForms(base) {
   const bySpecies = new Map(base.map(p => [p.id, p]));
+  // La megapiedra sale de items.json (los nombres ES de 45 piedras vienen de
+  // ITEM_NAME_OVERRIDES, no de la API): el que acaba de escribir este mismo
+  // build (items va antes en BUILDERS) o el que ya hay en disco. Sin el, lanza:
+  // una mega sin piedra se pintaria "con la undefined".
+  const items = JSON.parse(await readFile(join(OUT_DIR, 'items.json'), 'utf8').catch(() => {
+    throw new Error(`buildForms necesita ${join(OUT_DIR, 'items.json')}: construye antes "items"`);
+  }));
   const all = await getJson(`${API}/pokemon?limit=20000`);
   const ids = all.results
     .map(r => Number(r.url.replace(/\/$/, '').split('/').pop()))
@@ -319,8 +327,10 @@ async function buildForms(base) {
       id: mon.id,
       name: mon.name,
       speciesId,
-      nameEs: es.full,
-      nameEn: en.full,
+      // Megas y regionales con su nombre oficial (scripts/overrides/forms.mjs);
+      // la pestana sigue con la etiqueta corta.
+      nameEs: nombreOficial(mon.name, species.nameEs, 'es') ?? es.full,
+      nameEn: nombreOficial(mon.name, species.nameEn, 'en') ?? en.full,
       formEs: es.tab,
       formEn: en.tab,
       types: mon.types.map(t => t.type.name),
@@ -342,6 +352,9 @@ async function buildForms(base) {
       // Eleven forms have no sprite of their own; the page falls back to the
       // species sprite, which reads as the Pokemon rather than as a bug.
       ...(mon.sprites?.front_default ? {} : { noSprite: true }),
+      // La piedra con la que megaevoluciona (scripts/overrides/forms.mjs). Solo
+      // las 96 megas que la tienen; Mega-Rayquaza no.
+      ...(megapiedra(mon.name, items) ? { megaStone: megapiedra(mon.name, items) } : {}),
     };
   }, 'forms');
 
@@ -671,11 +684,12 @@ async function write(name, payload) {
   console.log(`  wrote data/${name}.json (${count} records, ${kb} KB)\n`);
 }
 
+// items va antes que pokemon: las megas leen su piedra de items.json.
 const BUILDERS = {
+  items: buildItems,
   pokemon: buildPokemon,
   moves: buildMoves,
   abilities: buildAbilities,
-  items: buildItems,
   berries: buildBerries,
   evolutions: buildEvolutions,
   learnsets: buildLearnsets,

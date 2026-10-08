@@ -11,8 +11,8 @@
 // Cada pagina existe en espanol y en ingles (/en/...), con su <html lang>, sus
 // textos fijos ya traducidos y los tres hreflang que la emparejan con la otra.
 // Se indexan las que dice esIndexable (js/contenido.js): las 53 por idioma de
-// INDEXABLES (portada, hubs, FAQ, herramientas, tipos y grupos) y las 1025
-// fichas de especie. Todas llegan ademas con su contenido en el HTML
+// INDEXABLES (portada, hubs, FAQ, herramientas, tipos y grupos), las 1025
+// fichas de especie y las 151 de forma que no son gemelas. Todas llegan ademas con su contenido en el HTML
 // (contenidoDe, abajo), el mismo que pinta el cliente. Las demas llevan
 // noindex. La portada espanola no
 // se regenera: es el index.html tal cual, con su canonical y sus hreflang
@@ -26,15 +26,16 @@ import {
   TABLA_ESTATICA, GRUPOS_HUEVO_ES, TIPOS_ES, IDIOMAS, fijarIndice, urlDe, tituloDe, logicaDe,
 } from '../js/rutas.js';
 import { TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from '../js/data.js';
-import { isForm, tieneUrlPropia, formsOf } from '../js/forms.js';
+import { isForm, tieneUrlPropia, formsOf, URLS_RETIRADAS } from '../js/forms.js';
 import { TOOLS, CATEGORIES, toolsIn } from '../js/tools.js';
 import {
   INDEXABLES, esIndexable, encabezadoHTML, introHTML, tipoHTML, grupoHTML, faqHTML, listaGruposHTML,
   rejillaHerramientasHTML, idsDeCategoria, tiposTodosHTML, portadaHTML, chipsInicialesHTML, breadcrumbItems, nombreDe, nombrePokemon,
+  ULTIMA_ESPECIE,
 } from '../js/contenido.js';
 import { conDerivados } from '../js/derivados.js';
 import { reservaDe } from '../js/cascaras.js';
-import { descripcionEspecie, textoEspecie } from '../js/ficha-texto.js';
+import { descripcionEspecie, textoEspecie, descripcionForma, textoForma } from '../js/ficha-texto.js';
 import { fichaHTML, formLabels } from '../js/ficha-pokemon.js';
 import { detallePokemon } from '../js/api.js';
 import textosEs from '../js/textos-es.js';
@@ -84,14 +85,12 @@ export const DESCRIPCION_PORTADA = {
 // regla del cliente (descriptionEs || descriptionEn) prueba primero el espanol.
 const DESCRIPCIONES = {
   es: {
-    especie: n => `${n} en la Pokédex: estadísticas base, tipos, debilidades, habilidades, evoluciones y movimientos que aprende.`,
     grupo: n => `Los Pokémon del grupo huevo ${n} y con quién pueden criar.`,
     tipo: n => `El tipo ${n} en Pokémon: contra qué es débil, qué resiste y qué Pokémon lo tienen.`,
     movimiento: (n, m) => `${n}: ${m.descriptionEs || m.descriptionEn || 'tipo, categoría, potencia, precisión y PP.'}`,
     habilidad: (n, a) => `${n}: ${a.descriptionEs || a.descriptionEn || 'qué hace esta habilidad.'}`,
   },
   en: {
-    especie: n => `${n} in the Pokédex: base stats, types, weaknesses, abilities, evolutions and the moves it learns.`,
     grupo: n => `The Pokémon in the ${n} egg group and who they can breed with.`,
     tipo: n => `The ${n} type in Pokémon: what it is weak to, what it resists and which Pokémon have it.`,
     movimiento: (n, m) => `${n}: ${m.descriptionEn || 'type, category, power, accuracy and PP.'}`,
@@ -135,7 +134,8 @@ function rutasFijas(l) {
 
 // Las fichas de un idioma, sin URL todavia: {logica, titulo, descripcion}.
 // La de una especie sale de sus datos (descripcionEspecie, de 120 a 155), en
-// los dos idiomas; la de una forma, de la plantilla corta de DESCRIPCIONES.
+// los dos idiomas; la de una forma con pagina propia, de los suyos
+// (descripcionForma, de 120 a 155 tambien).
 function fichas(l, { pokemon, moves, abilities, evolutions, dex }) {
   const d = DESCRIPCIONES[l];
   const ficha = (logica, nombre, descripcion) => ({
@@ -147,7 +147,14 @@ function fichas(l, { pokemon, moves, abilities, evolutions, dex }) {
     .sort((a, b) => a.id - b.id)
     .map(p => {
       const nombre = pokeName(p, l);
-      if (isForm(p)) return ficha(`/pokedex/${p.id}`, nombre, d.especie(nombre));
+      // La de una forma lleva tambien su ficha en el shell (`forma`), y el nombre
+      // y la especie de su miga de 4 pasos para el BreadcrumbList.
+      if (isForm(p)) {
+        const especie = pokemon.find(q => q.id === p.speciesId);
+        return { logica: `/pokedex/${p.id}`, titulo: tituloDe(`/pokedex/${p.id}`, nombre, l),
+          descripcion: descripcionForma(p.id, { l, pokemon, abilities }), forma: true, nombre: nombrePokemon(p, l),
+          especieDeForma: { logica: `/pokedex/${especie.id}`, nombre: nombrePokemon(especie, l) } };
+      }
       // Sin recortar: ya sale de 120 a 155, y si no, que lo vea check-pages en
       // vez de cortarla aqui con unos puntos suspensivos. `nombre` es el de la
       // miga (nombrePokemon, como displayName en la ficha), que pide el JSON-LD.
@@ -193,9 +200,10 @@ export async function leerDex(pokemon, leer) {
 // especies.
 //
 // `contenido` (lo que va en el shell) va con la plantilla y no con la
-// indexabilidad: las 53 por idioma de INDEXABLES y las 1025 fichas de especie lo
-// llevan, y las fichas aunque se apagara FICHAS_INDEXABLES. El noindex, el
-// JSON-LD y el lastmod si dependen de esIndexable.
+// indexabilidad: las 53 por idioma de INDEXABLES, las 1025 fichas de especie y
+// las 155 de forma con URL propia lo llevan, las fichas aunque se apagara
+// FICHAS_INDEXABLES y las gemelas con noindex. El noindex, el JSON-LD y el
+// lastmod si dependen de esIndexable.
 export function rutasPublicas({ indice, pokemon, moves, abilities, evolutions, dex }) {
   fijarIndice(indice);
   const textos = textosConDerivados({ pokemon, moves });
@@ -217,12 +225,14 @@ export function rutasPublicas({ indice, pokemon, moves, abilities, evolutions, d
       noindex: !indexable,
     };
     const ctx = { l, dic: DICCIONARIOS[l], textos: textos[l], pokemon, abilities, evolutions, dex };
-    const conContenido = fila.especie ? { ...fija, contenido: contenidoDe(fila.logica, ctx) } : fija;
+    const conContenido = fila.especie || fila.forma ? { ...fija, contenido: contenidoDe(fila.logica, ctx) } : fija;
     if (!indexable) return conContenido;
-    // La ficha no tiene su nombre en ninguna tabla: la miga lo pide en ctx.
-    const ctxLd = fila.especie ? { ...ctx, nombre: fila.nombre } : ctx;
-    const conLd = { ...conContenido, jsonLd: jsonLdDe(fila.logica, ctxLd, fija.descripcion), deps: depsDe(fila.logica, l) };
-    if (fila.especie) return conLd;
+    // La ficha no tiene su nombre en ninguna tabla: la miga lo pide en ctx. La
+    // de una forma pide ademas su especie, el tercer paso de los 4.
+    const ctxLd = fila.especie ? { ...ctx, nombre: fila.nombre }
+      : fila.forma ? { ...ctx, nombre: fila.nombre, especieDeForma: fila.especieDeForma } : ctx;
+    const conLd = { ...conContenido, jsonLd: jsonLdDe(fila.logica, ctxLd, fija.descripcion), deps: depsDe(fila.logica, l, pokemon) };
+    if (fila.especie || fila.forma) return conLd;
     return fila.logica === '/'
       ? { ...conLd, contenido: portadaHTML(ctx), chips: chipsInicialesHTML(ctx) }
       : { ...conLd, contenido: contenidoDe(fila.logica, ctx) };
@@ -305,7 +315,8 @@ export function ogDe(logica, l, origen = ORIGEN) {
 //  - BreadcrumbList, con la misma lista que la miga visible (breadcrumbItems):
 //    en todas menos la portada, que no tiene miga (un solo paso). En una ficha
 //    de especie es lo unico que va (Inicio > Pokedex > nombre), con el nombre
-//    en ctx.nombre.
+//    en ctx.nombre; en una de forma, de 4 pasos, con su especie en
+//    ctx.especieDeForma (Inicio > Pokedex > Charizard > Mega-Charizard X).
 //  - WebApplication, en las 16 herramientas. Sin aggregateRating ni review
 //    (D3): no hay valoraciones de verdad que poner, y el Rich Results Test lo
 //    marca por eso. FAQPage no (D4): Google lo retiro en mayo de 2026.
@@ -391,9 +402,19 @@ const MODULOS = {
     'data/pokemon.json', 'data/abilities.json', 'data/evolutions.json'],
 };
 
-export function depsDe(logica, l) {
+// Una forma (/pokedex/10034) no tiene data/dex propio: su ficha lee el de su
+// especie (evolucion, movimientos, cria), y su tarjeta de obtencion, la
+// megapiedra que ya viene en pokemon.json. Por eso depsDe recibe pokemon.json
+// cuando la ruta es de una forma; sin el, lanza en vez de pedir un fichero
+// que no existe.
+export function depsDe(logica, l, pokemon) {
   const [seccion, id] = logica.split('/').filter(Boolean);
-  if (seccion === 'pokedex' && id) return [...MODULOS.ficha, `data/dex/${id}.json`];
+  if (seccion === 'pokedex' && id) {
+    if (Number(id) <= ULTIMA_ESPECIE) return [...MODULOS.ficha, `data/dex/${id}.json`];
+    const forma = pokemon?.find(p => p.id === Number(id));
+    if (!forma || !tieneUrlPropia(forma)) throw new Error(`pages.mjs: ${logica} no es una especie ni una forma con URL propia`);
+    return [...MODULOS.ficha, `data/dex/${forma.speciesId}.json`];
+  }
   const clave = seccion === 'types' && id ? 'tipo' : seccion === 'egg' && id ? 'grupo' : logica;
   const modulos = MODULOS[clave];
   if (!modulos) throw new Error(`pages.mjs: ${logica} es indexable y no tiene deps en MODULOS`);
@@ -446,20 +467,33 @@ export function contenidoDe(logica, ctx) {
 // entrada animada y con el meta vacio, que el cliente rellena despues. El
 // objeto del Pokemon sale de detallePokemon, la misma funcion que usa
 // fetchPokemonDetail, y las pestanas de formLabels.
+//
+// La de una forma con URL propia (megas y regionales), igual que la pinta el
+// cliente: con el dex y las pestanas de su especie, y su texto de textoForma.
+// La tarjeta de obtencion sale de la propia entrada (megaStone) y de las
+// tablas de forms.js, sin items.json. Una forma sin URL propia no tiene pagina:
+// vive en la ficha de su especie, con su ancla.
 function contenidoFicha(id, ctx) {
   const { l, dic, pokemon: todos, abilities, evolutions, dex } = ctx;
   const entrada = todos.find(p => p.id === id);
-  if (!entrada || isForm(entrada)) throw new Error(`pages.mjs: /pokedex/${id} no es una especie y su pagina no lleva ficha`);
-  const ficha = dex.get(id);
-  const variants = [entrada, ...formsOf(id, todos)];
+  if (!entrada || (isForm(entrada) && !tieneUrlPropia(entrada))) {
+    throw new Error(`pages.mjs: /pokedex/${id} no es una especie ni una forma con URL propia y su pagina no lleva ficha`);
+  }
+  const dexId = entrada.speciesId || id;
+  const especie = todos.find(p => p.id === dexId);
+  const ficha = dex.get(dexId);
+  const variants = [especie, ...formsOf(dexId, todos)];
   return fichaHTML({ l, dic }, {
     pokemon: detallePokemon(entrada, abilities, ficha),
     allPokemon: todos,
+    abilities,
     variants,
-    variantLabels: formLabels(variants, entrada.name, { l, dic }),
+    variantLabels: formLabels(variants, especie.name, { l, dic }),
     evolutions,
     dex: ficha,
-    texto: textoEspecie(id, { l, dic, pokemon: todos, abilities, evolutions, dex: ficha }),
+    texto: isForm(entrada)
+      ? textoForma(id, { l, dic, pokemon: todos, abilities })
+      : textoEspecie(id, { l, dic, pokemon: todos, abilities, evolutions, dex: ficha }),
     animar: false,
   });
 }
@@ -750,10 +784,23 @@ export function literalesEspanol(html, esqueleto) {
 // una pagina valida.
 //
 // Una por Pokemon y por idioma: /en/pokedex/25 va a /en/pokedex/pikachu.
+// Mas las URLs por slug de las formas que la perdieron (D1 de la PR 5), al
+// mismo ancla al que lleva su id: /pokedex/pikachu-alola-cap a
+// /pokedex/pikachu#forma-pikachu-alola-cap.
 export function redirectsDe({ indice, pokemon }) {
   fijarIndice(indice);
   const ordenados = [...pokemon].sort((a, b) => a.id - b.id);
-  const lineas = IDIOMAS.flatMap(l => ordenados
-    .map(p => `${l === 'en' ? '/en' : ''}/pokedex/${p.id}  ${urlDe(`/pokedex/${p.id}`, l)}  301`));
+  const retiradas = URLS_RETIRADAS.map(name => {
+    const p = pokemon.find(q => q.name === name);
+    if (!p || tieneUrlPropia(p)) throw new Error(`URLS_RETIRADAS: ${name} no existe o sigue teniendo URL propia`);
+    return p;
+  });
+  const lineas = IDIOMAS.flatMap(l => {
+    const prefijo = l === 'en' ? '/en' : '';
+    return [
+      ...ordenados.map(p => `${prefijo}/pokedex/${p.id}  ${urlDe(`/pokedex/${p.id}`, l)}  301`),
+      ...retiradas.map(p => `${prefijo}/pokedex/${p.name}  ${urlDe(`/pokedex/${p.id}`, l)}  301`),
+    ];
+  });
   return `# Generado por scripts/build.mjs (pages.mjs). No editar a mano.\n${lineas.join('\n')}\n`;
 }

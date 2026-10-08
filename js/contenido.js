@@ -60,11 +60,11 @@
 // unos 4,2 KB gz mas en este modulo. Por eso no los llama (commit 5): los llama
 // el build. tipoHTML y grupoHTML si van al cliente, con egg-groups.js: 1,1 KB gz
 // en el arranque, medido el 2026-10-08.
-import { urlDe, TITULOS, TITULOS_EN } from './rutas.js';
+import { urlDe, formaIndexable, TITULOS, TITULOS_EN } from './rutas.js';
 import { TYPES, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN, CHART, GENERATIONS, spriteUrl } from './data.js';
 import { TOOLS, CATEGORIES, toolsIn } from './tools.js';
 import { EGG_GROUPS, membersOf, canBreed, partnersOf, groupCounts } from './egg-groups.js';
-import { isForm } from './forms.js';
+import { isForm, tieneUrlPropia } from './forms.js';
 import { contarPalabras, nombrePokemon } from './frases.js';
 
 // contarPalabras y nombrePokemon se siguen pidiendo a este modulo (build.mjs,
@@ -90,10 +90,11 @@ export const INDEXABLES = [
 //
 // La PR 4 abre al buscador las 1025 fichas de especie (/pokedex/1 a
 // /pokedex/1025) ademas de las 53: no tienen textos a mano, su texto sale de
-// los datos (ficha-texto.js). Las formas (/pokedex/10001 en adelante) siguen
-// con noindex. INDEXABLES sigue siendo la lista de las 53 con textos a mano, y
-// es lo que piden las funciones que los leen; esIndexable es lo que decide el
-// noindex, el sitemap y la cuenta del build.
+// los datos (ficha-texto.js). La PR 5 suma las 151 formas con URL propia que
+// no son gemelas (esFichaForma); el resto de formas sigue con noindex.
+// INDEXABLES sigue siendo la lista de las 53 con textos a mano, y es lo que
+// piden las funciones que los leen; esIndexable es lo que decide el noindex,
+// el sitemap y la cuenta del build.
 //
 // La ultima especie, la de la ultima generacion: con una nueva, entra sola.
 // Marcada como pura para que esbuild la quite del cliente, que no la usa: un
@@ -111,7 +112,21 @@ export function esFichaEspecie(logica) {
 // JSON-LD y sitemap). Apagarla devuelve las 1025 al noindex sin tocar nada mas.
 export const FICHAS_INDEXABLES = true;
 
-export const esIndexable = logica => INDEXABLES.includes(logica) || (FICHAS_INDEXABLES && esFichaEspecie(logica));
+// La ficha de una mega o una regional con URL propia (/pokedex/10034), salvo
+// las gemelas (formaIndexable, js/rutas.js). Pide el indice de rutas fijado.
+export function esFichaForma(logica) {
+  const m = /^\/pokedex\/(\d+)$/.exec(logica);
+  if (!m) return false;
+  const id = Number(m[1]);
+  return id > ULTIMA_ESPECIE && formaIndexable(id);
+}
+
+// Encendida desde que el build prerenderiza las formas con su texto, su
+// BreadcrumbList de 4 pasos y su sitemap. Apagarla devuelve las 151 al noindex.
+export const FORMAS_INDEXABLES = true;
+
+export const esIndexable = logica => INDEXABLES.includes(logica)
+  || (FICHAS_INDEXABLES && esFichaEspecie(logica)) || (FORMAS_INDEXABLES && esFichaForma(logica));
 
 export const NOMBRES_TIPO = { es: TYPE_NAMES_FULL, en: TYPE_NAMES_FULL_EN };
 // Los nombres cortos que ya usa tituloDe para las paginas fijas, con mayusculas
@@ -141,15 +156,18 @@ const toolDe = logica => TOOLS.find(tool => tool.route === logica);
 
 // ===== Nombres y miga de pan =====
 
-// La ficha de un Pokemon (/pokedex/25, o /pokedex/10034 de una forma): la de
-// una especie es indexable y la de una forma no, pero las dos llevan miga. Su nombre no esta en ninguna tabla, asi
-// que llega en el contexto como `nombre`, ya en el idioma de la pagina.
+// La ficha de un Pokemon (/pokedex/25, o /pokedex/10034 de una forma): las dos
+// llevan miga. Su nombre no esta en ninguna tabla, asi
+// que llega en el contexto como `nombre`, ya en el idioma de la pagina. La de
+// una forma con URL propia cuelga de su especie, que llega como
+// `especieDeForma` ({logica, nombre}): Pokedex > Charizard > Mega-Charizard X.
 const esFichaPokemon = logica => /^\/pokedex\/\d+$/.test(logica);
 
 // El nombre corto de una pagina: el de la miga de pan y el de los enlaces de
 // "Relacionadas".
 export function nombreDe(logica, ctx) {
   if (esFichaPokemon(logica)) {
+    if (ctx.especieDeForma?.logica === logica) return ctx.especieDeForma.nombre;
     if (!ctx.nombre) throw new Error(`contenido.js: la miga de "${logica}" necesita ctx.nombre`);
     return ctx.nombre;
   }
@@ -167,12 +185,15 @@ export function nombreDe(logica, ctx) {
 // dano" diria que una esta dentro de la otra.
 const PADRE_DE_CATEGORIA = { pokedex: '/pokedex', data: '/data', competitive: '/competitive', calculator: '/' };
 
-function padreDe(logica) {
+function padreDe(logica, ctx) {
   if (logica === '/') return null;
   const [seccion, id] = logica.split('/').filter(Boolean);
   if (seccion === 'types' && id) return '/types';
   if (seccion === 'egg' && id) return '/egg';
-  if (esFichaPokemon(logica)) return '/pokedex';
+  if (esFichaPokemon(logica)) {
+    const especie = ctx.especieDeForma?.logica;
+    return especie && especie !== logica ? especie : '/pokedex';
+  }
   const tool = toolDe(logica);
   if (tool) {
     const padre = PADRE_DE_CATEGORIA[tool.category];
@@ -185,7 +206,7 @@ function padreDe(logica) {
 // origen: el JSON-LD le pone delante el suyo.
 export function breadcrumbItems(logica, ctx) {
   const items = [];
-  for (let actual = logica; actual !== null; actual = padreDe(actual)) {
+  for (let actual = logica; actual !== null; actual = padreDe(actual, ctx)) {
     items.unshift({ nombre: nombreDe(actual, ctx), logica: actual, url: urlDe(actual, ctx.l) });
   }
   return items;
@@ -328,11 +349,11 @@ export function logicaIndexable(path, query = new URLSearchParams()) {
   return INDEXABLES.includes(logica) ? logica : null;
 }
 
-// La clave del shell de una direccion: la de logicaIndexable o, en una ficha de
-// especie, su ruta logica (/pokedex/25). Las fichas llegan prerenderizadas
-// aunque no se indexen, y su shell se conserva igual; lo que no hacen es cargar
-// textos, y por eso logicaIndexable sigue dandoles null. Una forma
-// (/pokedex/10034) no llega con shell, asi que nunca casa con ninguno.
+// La clave del shell de una direccion: la de logicaIndexable o, en una ficha,
+// su ruta logica (/pokedex/25, o /pokedex/10034 de una forma con URL propia).
+// Las fichas llegan prerenderizadas aunque no se indexen (las formas, con
+// noindex), y su shell se conserva igual; lo que no hacen es cargar textos, y
+// por eso logicaIndexable sigue dandoles null.
 export function logicaDeShell(path, query = new URLSearchParams()) {
   return logicaIndexable(path, query) ?? (/^\/pokedex\/\d+$/.test(path) ? path : null);
 }
@@ -414,13 +435,21 @@ function seccionTiposHTML(clase, clave, tipos, mult, ctx) {
 
 // El cuerpo de /types/<tipo>, debajo de encabezadoHTML: la tira de los 18, la
 // frase y el derivado, que recibe y que hace en seis secciones (las de la tabla
-// de tipos, con un solo tipo y como enlaces), y las especies de ese tipo.
-// ctx = {l, dic, textos, pokemon}: pokemon es pokemon.json entero, las formas
-// se quitan aqui (81 de Fuego, la cuenta del derivado).
+// de tipos, con un solo tipo y como enlaces), las especies de ese tipo y, aparte,
+// sus megaevoluciones y formas regionales: las que tienen pagina propia, que
+// asi quedan a tres clics como mucho de la portada de su idioma (el recorrido
+// de build.mjs lo exige) y no solo detras de la pestana de su especie. ctx = {l, dic, textos, pokemon}:
+// pokemon es pokemon.json entero, las formas se quitan aqui de la lista de
+// especies (81 de Fuego, la cuenta del derivado).
 export function tipoHTML(tipo, ctx) {
   const r = relacionesDe(tipo);
   const logica = `/types/${tipo}`;
   const especies = especiesDe(ctx).filter(p => p.types.includes(tipo));
+  const formas = ctx.pokemon.filter(p => tieneUrlPropia(p) && p.types.includes(tipo));
+  const listaFormas = formas.length
+    ? `<section class="ficha-lista"><h2 class="section-title">${esc(tr(ctx, 'contenido.tipo.formas', { tipo: NOMBRES_TIPO[ctx.l][tipo] }))}`
+      + ` <span class="ficha-cuenta">${formas.length}</span></h2>${listaPokemonHTML(formas, ctx)}</section>`
+    : '';
   return tiraTiposHTML(tipo, ctx)
     + textoFichaHTML(logica, ctx)
     + '<div class="tipo-secciones">'
@@ -432,7 +461,8 @@ export function tipoHTML(tipo, ctx) {
     + seccionTiposHTML('no-effect', 'sinEfecto', r.sinEfecto, 0, ctx)
     + '</div>'
     + `<section class="ficha-lista"><h2 class="section-title">${esc(tr(ctx, 'contenido.tipo.pokemon', { tipo: NOMBRES_TIPO[ctx.l][tipo] }))}`
-    + ` <span class="ficha-cuenta">${especies.length}</span></h2>${listaPokemonHTML(especies, ctx)}</section>`;
+    + ` <span class="ficha-cuenta">${especies.length}</span></h2>${listaPokemonHTML(especies, ctx)}</section>`
+    + listaFormas;
 }
 
 // El cuerpo de /egg/<grupo>: la frase y el derivado, los miembros (todos, sin

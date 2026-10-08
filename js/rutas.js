@@ -23,7 +23,7 @@
 // Sin DOM y sin importar api.js (que arrastra storage.js), para que node lo
 // pueda importar: lo usan check-rutas.mjs, serve.mjs y el build.
 
-import { isForm, tieneUrlPropia } from './forms.js';
+import { isForm, tieneUrlPropia, nombreDeMega, FORMAS_GEMELAS } from './forms.js';
 import { TITULOS_SEO } from './titulos.js';
 
 // ===== Idiomas =====
@@ -423,6 +423,16 @@ export function fijarIndice(json) {
   };
 }
 
+// Si la forma `id` tiene pagina que indexar: URL propia (megas y regionales) y
+// no ser una de las gemelas de FORMAS_GEMELAS, que solo cambian de aspecto y
+// dirian lo mismo que su cabeza (D3 de la PR 5): esas conservan su URL, con
+// noindex. Sin indice lanza en vez de contestar que no.
+export function formaIndexable(id) {
+  exigirIndice(`formaIndexable(${id})`);
+  const f = forma.get(id);
+  return Boolean(f?.propia && !FORMAS_GEMELAS[f.name]);
+}
+
 // La misma ruta relativa al modulo que usa api.js: en el build este fichero
 // acaba en dist/js/<trozo>.js y data/ sigue estando un nivel por encima. El
 // build le anade ?v=<hash del contenido> (versionarIndice en scripts/build.mjs):
@@ -786,7 +796,8 @@ const TIPO_DE_FICHA = {
 // el primer sufijo que deje el titulo entero, con " · PokeUtils", entre 50 y
 // 60 caracteres. Solo el nombre, porque titularFicha y route() lo piden antes
 // de tener datos. Si ninguno cabe se queda el ultimo, y check-rutas lo dice.
-// Las formas siguen con su nombre solo: no se indexan.
+// Las formas con pagina propia (megas y regionales) van igual con su escalera
+// (tituloForma): mega o regional sale del slug, sin data.js.
 export const TITULO_ESPECIE_MIN = 50;
 export const TITULO_ESPECIE_MAX = 60;
 const SUFIJOS_ESPECIE = {
@@ -797,12 +808,24 @@ function tituloEspecie(nombre, l) {
   const titulos = SUFIJOS_ESPECIE[l].map(sufijo => `${nombre}${sufijo} · PokeUtils`);
   return titulos.find(t => t.length >= TITULO_ESPECIE_MIN && t.length <= TITULO_ESPECIE_MAX) ?? titulos.at(-1);
 }
-
-// Dos fichas que en ingles se llaman igual en el dataset: las dos megas de
-// Meowstic son "Mega Meowstic" (en espanol ya dicen macho y hembra). Por slug,
-// y solo en el titulo (D7): el dato lo arregla la PR 5, y check-rutas falla si
-// aqui queda una que ya no choca.
-export const DESAMBIGUAR_EN = { 'meowstic-male-mega': 'male', 'meowstic-female-mega': 'female' };
+const SUFIJOS_FORMA = {
+  es: {
+    mega: [': megapiedra, tipos, debilidades y stats', ': megapiedra, debilidades y stats', ': megapiedra, tipos y stats',
+      ': megapiedra y stats', ': megapiedra', ''],
+    regional: [': tipos, debilidades, stats y habilidad', ': debilidades, stats y habilidad', ': tipos, debilidades y stats',
+      ': debilidades y stats', ': tipos y stats', ': stats', ''],
+  },
+  en: {
+    mega: [': Mega Stone, types, weaknesses and stats', ': Mega Stone, weaknesses and stats', ': Mega Stone, types and stats',
+      ': Mega Stone and stats', ': Mega Stone', ''],
+    regional: [': types, weaknesses, stats and ability', ': weaknesses, stats and ability', ': types, weaknesses and stats',
+      ': weaknesses and stats', ': types and stats', ': stats', ''],
+  },
+};
+export function tituloForma(nombre, esMega, l) {
+  const titulos = SUFIJOS_FORMA[l][esMega ? 'mega' : 'regional'].map(sufijo => `${nombre}${sufijo} · PokeUtils`);
+  return titulos.find(t => t.length >= TITULO_ESPECIE_MIN && t.length <= TITULO_ESPECIE_MAX) ?? titulos.at(-1);
+}
 
 // Las 53 de titulos.js, por URL publica y no por ruta logica: asi casan
 // tambien '/calculator?tab=damage&a=6', el '/?' que pasa route() y el alias
@@ -846,15 +869,14 @@ export function tituloDe(logica, nombre, idiomaDestino = idioma) {
     const seccion = Object.hasOwn(SECCION_LOGICA[l], seccionPublica) ? SECCION_LOGICA[l][seccionPublica] : null;
     // Una especie, y no una forma con pagina propia: su slug es de especies.
     if (seccion === 'pokedex' && slug && inverso?.especie.has(slug)) return tituloEspecie(nombre, l);
+    // Una mega o una regional con pagina propia: su slug es el name de la forma.
+    if (seccion === 'pokedex' && slug && inverso?.formaPropia.has(slug)) return tituloForma(nombre, nombreDeMega(slug), l);
     let titulo = nombre;
     if (slug) {
       const base = slugEs(nombre);
       const sufijo = slug.startsWith(`${base}-`) ? slug.slice(base.length + 1) : '';
       if (['moves', 'abilities'].includes(seccion) && Object.hasOwn(SUFIJOS_TITULO[l], sufijo)) {
         titulo += ` (${SUFIJOS_TITULO[l][sufijo]})`;
-      }
-      if (l === 'en' && seccion === 'pokedex' && Object.hasOwn(DESAMBIGUAR_EN, slug)) {
-        titulo += ` (${DESAMBIGUAR_EN[slug]})`;
       }
       if (Object.hasOwn(TIPO_DE_FICHA[l], seccion)) {
         const tipo = TIPO_DE_FICHA[l][seccion];

@@ -13,7 +13,7 @@ globalThis.location = { pathname: '/', search: '', hash: '', href: 'http://local
 const { fijarIndice, urlDe, logicaDe, idiomaDe } = await import('../js/rutas.js');
 fijarIndice(JSON.parse(readFileSync(new URL('../data/rutas.json', import.meta.url), 'utf8')));
 const {
-  INDEXABLES, esFichaEspecie, esIndexable, FICHAS_INDEXABLES, ULTIMA_ESPECIE, nombreDe, breadcrumbItems, breadcrumbHTML, cabeceraHTML, pestanasHTML,
+  INDEXABLES, esFichaEspecie, esFichaForma, esIndexable, FICHAS_INDEXABLES, FORMAS_INDEXABLES, ULTIMA_ESPECIE, nombreDe, breadcrumbItems, breadcrumbHTML, cabeceraHTML, pestanasHTML,
   rejillaHerramientasHTML, idsDeCategoria, introHTML, contarPalabras,
 } = await import('../js/contenido.js');
 const { derivadoTipo, derivadoGrupo, conDerivados } = await import('../js/derivados.js');
@@ -57,16 +57,22 @@ console.log('\nLas fichas de especie\n');
 check('la ultima especie es la 1025', ULTIMA_ESPECIE, 1025);
 check('ficha de especie: /pokedex/1 y /pokedex/1025 si',
   ['/pokedex/1', '/pokedex/1025'].map(esFichaEspecie), [true, true]);
-// 10001 es la primera forma: sigue con noindex aunque se abran las especies.
+// 10001 es la primera forma, sin URL propia: sigue con noindex.
 check('ficha de especie: /pokedex/0, /pokedex/1026, /pokedex/10001 y /pokedex no',
   ['/pokedex/0', '/pokedex/1026', '/pokedex/10001', '/pokedex'].map(esFichaEspecie), [false, false, false, false]);
 check('las 53 son indexables', INDEXABLES.filter(k => !esIndexable(k)), []);
 // El build ya prerenderiza las fichas enteras: la bandera esta encendida y las
-// 1025 especies se indexan; las formas y el resto de fichas, no.
+// 1025 especies se indexan; las formas sin URL y el resto de fichas, no.
 check('con FICHAS_INDEXABLES encendida, /pokedex/1, /pokedex/25 y /pokedex/1025 son indexables',
   [FICHAS_INDEXABLES, ...['/pokedex/1', '/pokedex/25', '/pokedex/1025'].map(esIndexable)], [true, true, true, true]);
 check('y /pokedex/10001, /moves/1 y /abilities/static no',
   ['/pokedex/10001', '/moves/1', '/abilities/static'].map(esIndexable), [false, false, false]);
+// PR 5: las megas y regionales con URL propia se indexan; las gemelas
+// (meowstic-female-mega, 10326) y las formas sin URL (deoxys-attack, 10001), no.
+check('ficha de forma: Mega-Charizard X y Raichu de Alola si; una gemela, Deoxys Ataque y una especie no',
+  ['/pokedex/10034', '/pokedex/10100', '/pokedex/10326', '/pokedex/10001', '/pokedex/6'].map(esFichaForma), [true, true, false, false, false]);
+check('con FORMAS_INDEXABLES encendida, /pokedex/10034 es indexable y la gemela no',
+  [FORMAS_INDEXABLES, ...['/pokedex/10034', '/pokedex/10326'].map(esIndexable)], [true, true, false]);
 
 console.log('\nNombres\n');
 
@@ -100,6 +106,19 @@ check('la FAQ', miga('/faq'), ['Inicio /', 'Preguntas frecuentes /faq']);
 check('en ingles', miga('/types/fire', 'en'), ['Home /en', 'Data /en/data', 'Type chart /en/types', 'Fire /en/types/fire']);
 check('en ingles, un grupo', miga('/egg/no-eggs', 'en'),
   ['Home /en', 'Pokédex /en/pokedex', 'Egg groups /en/egg-groups', 'Undiscovered /en/egg-groups/no-eggs']);
+// PR 5: una ficha de especie, 3 pasos; una forma con URL propia cuelga de su
+// especie, 4. Sin especieDeForma (una especie, o la forma pintada como pestana)
+// se queda en 3.
+const migaFicha = (logica, extra, l = 'es') => breadcrumbItems(logica, { ...CTX[l], ...extra }).map(i => `${i.nombre} ${i.url}`);
+check('una ficha de especie y una de forma', [
+  migaFicha('/pokedex/6', { nombre: 'Charizard' }),
+  migaFicha('/pokedex/10034', { nombre: 'Mega-Charizard X', especieDeForma: { logica: '/pokedex/6', nombre: 'Charizard' } }),
+  migaFicha('/pokedex/10091', { nombre: 'Alolan Rattata', especieDeForma: { logica: '/pokedex/19', nombre: 'Rattata' } }, 'en'),
+], [
+  ['Inicio /', 'Pokédex /pokedex', 'Charizard /pokedex/charizard'],
+  ['Inicio /', 'Pokédex /pokedex', 'Charizard /pokedex/charizard', 'Mega-Charizard X /pokedex/charizard-mega-x'],
+  ['Home /en', 'Pokédex /en/pokedex', 'Rattata /en/pokedex/rattata', 'Alolan Rattata /en/pokedex/rattata-alola'],
+]);
 
 const malas = [];
 for (const l of ['es', 'en']) {
@@ -272,11 +291,23 @@ check('nombrePokemon es pokeName, en las 1351 entradas y los dos idiomas',
   ['es', 'en'].flatMap(l => pokemon.filter(p => nombrePokemon(p, l) !== pokeName(p, l)).map(p => `${l} ${p.name}`)), []);
 const cuantas = (html, re) => (html.match(re) ?? []).length;
 const fuego = { es: tipoHTML('fire', DATOS.es), en: tipoHTML('fire', DATOS.en) };
-check('Fuego: tira de 18, seis secciones y el h2 de sus especies', [
+check('Fuego: tira de 18, seis secciones, el h2 de sus especies y el de sus formas', [
   cuantas(fuego.es, /<a class="type-badge/g), cuantas(fuego.es, /<h2/g), cuantas(fuego.es, /aria-current="page"/g),
   /<h2 class="section-title">Pokémon de tipo Fuego <span class="ficha-cuenta">81<\/span><\/h2>/.test(fuego.es),
   /<h2 class="section-title">Fire-type Pokémon <span class="ficha-cuenta">81<\/span><\/h2>/.test(fuego.en),
-], [18, 7, 1, true, true]);
+  /<h2 class="section-title">Megaevoluciones y formas regionales de tipo Fuego <span class="ficha-cuenta">17<\/span><\/h2>/.test(fuego.es),
+  /<h2 class="section-title">Fire-type Mega Evolutions and regional forms <span class="ficha-cuenta">17<\/span><\/h2>/.test(fuego.en),
+], [18, 8, 1, true, true, true, true]);
+// PR 5: las formas con URL propia de cada tipo, en su propia lista y a su
+// pagina, para que queden a 3 clics de la portada. Ni las de sin URL (la gorra
+// de Pikachu, Gigamax) ni las especies.
+const listaFormas = html => html.split('lista-pokemon')[2]?.split('</ul>')[0] ?? '';
+check('y las 17 formas de Fuego, cada una a su pagina', [
+  cuantas(listaFormas(fuego.es), /<li><a href="\/pokedex\//g),
+  listaFormas(fuego.es).includes('<a href="/pokedex/charizard-mega-x">Mega-Charizard X</a>'),
+  listaFormas(fuego.en).includes('<a href="/en/pokedex/arcanine-hisui">Hisuian Arcanine</a>'),
+  listaFormas(fuego.es).includes('href="/pokedex/charizard"'),
+], [17, true, true, false]);
 check('y las 81 especies enlazadas a su ficha, en su idioma', [
   cuantas(fuego.es.split('lista-pokemon')[1], /<li><a href="\/pokedex\//g),
   fuego.es.includes('<a href="/pokedex/charizard">Charizard</a>'), fuego.en.includes('<a href="/en/pokedex/charizard">Charizard</a>'),
