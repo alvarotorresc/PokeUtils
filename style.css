@@ -2257,6 +2257,60 @@ html.no-hero [data-shell][data-ruta="/"] {
   margin-bottom: 10px;
 }
 
+/* Las formas sin pagina propia, en la ficha de su especie: las que cambian
+   algo como las habilidades (raya a la izquierda, nombre y frase), las de
+   aspecto en una lista corrida. Con scroll-margin el ancla #forma-<name> no
+   queda debajo de la barra de navegacion. */
+.formas-ancla {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.forma-ancla {
+  scroll-margin-top: calc(var(--nav-height) + 16px);
+}
+
+section.forma-ancla {
+  border-left: 2px solid var(--border-accent);
+  padding-left: 12px;
+}
+
+.forma-ancla-nombre {
+  font-size: 0.5rem;
+  color: var(--ink-1);
+  line-height: 1.8;
+}
+
+.forma-ancla-frase {
+  margin: 6px 0 0;
+  font-size: 0.44rem;
+  line-height: 1.9;
+  color: var(--ink-2);
+}
+
+.formas-aspecto-tit {
+  font-size: 0.4rem;
+  color: var(--ink-3);
+  line-height: 2;
+  margin: 16px 0 8px;
+}
+
+.formas-ancla + .formas-aspecto-tit {
+  padding-top: 14px;
+  border-top: 2px dashed var(--border);
+}
+
+.section-title + .formas-aspecto-tit {
+  margin-top: 0;
+}
+
+.formas-aspecto {
+  font-size: 0.44rem;
+  line-height: 1.9;
+  color: var(--ink-2);
+}
+
 /* Dos columnas y no tres a partir de 1500. Con tres, un Pokemon sin set del
    meta dejaba la del medio en 457px contra 1030 la de la derecha: 573px de
    hueco a media pagina. Y no es cosa del reparto, es que las seis tarjetas no

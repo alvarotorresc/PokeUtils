@@ -16,6 +16,11 @@ function check(label, ok, detalle = '') {
   if (!ok) failed++;
   console.log(`${ok ? '  ok  ' : '  FAIL'} ${label}${ok || !detalle ? '' : ` -- ${detalle}`}`);
 }
+// Lo medido contra lo esperado, por valor. Un array como `ok` de check() es
+// siempre verdadero: los asertos que comparan varias cosas a la vez pasan por
+// aqui, o nacen verdes.
+const checkIgual = (label, real, esperado) =>
+  check(label, JSON.stringify(real) === JSON.stringify(esperado), `${JSON.stringify(real)} en vez de ${JSON.stringify(esperado)}`);
 
 // ===== Pura: su grafo de imports no toca el navegador =====
 //
@@ -63,6 +68,8 @@ const en = (await import('../js/i18n-en.js')).default;
 const CTX = { es: { l: 'es', dic: es }, en: { l: 'en', dic: en } };
 
 const allPokemon = await fetchPokemonList();
+// Los nombres de las habilidades: el texto y las formas de ancla de la ficha.
+const abilities = JSON.parse(readFileSync(new URL('../data/abilities.json', import.meta.url), 'utf8'));
 const evolutions = JSON.parse(readFileSync(new URL('../data/evolutions.json', import.meta.url), 'utf8'));
 
 // ===== Las claves existen en los dos diccionarios =====
@@ -96,7 +103,7 @@ async function pintar(id, ctx) {
   const dex = await fetchDex(dexId);
   const variants = [allPokemon.find(p => p.id === dexId), ...formsOf(dexId, allPokemon)];
   const variantLabels = formLabels(variants, variants[0].name, ctx);
-  return { pokemon, dex, html: fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels, evolutions, dex }) };
+  return { pokemon, dex, html: fichaHTML(ctx, { pokemon, allPokemon, abilities, variants, variantLabels, evolutions, dex }) };
 }
 
 // Una clave sin resolver: `pokedex.stats` tal cual en el HTML. Las URL no
@@ -198,7 +205,7 @@ for (const l of ['es', 'en']) {
   const pikachu = (await pintar(25, ctx)).html;
   const gorra = porNombre('pikachu-alola-cap');
   const prefijo = l === 'en' ? '/en' : '';
-  check(`formas ${l}: la gorra de Alola de Pikachu es una pestana con ancla, sin pagina`,
+  checkIgual(`formas ${l}: la gorra de Alola de Pikachu es una pestana con ancla, sin pagina`,
     [tieneUrlPropia(gorra), urlDe(`/pokedex/${gorra.id}`, l), pikachu.includes(`href="${prefijo}/pokedex/pikachu-alola-cap"`),
       pikachu.includes(ctx.dic['pokedex.forms']), pikachu.includes(`data-form="${gorra.id}"`)],
     [false, `${prefijo}/pokedex/pikachu#forma-pikachu-alola-cap`, false, false, true]);
@@ -207,6 +214,22 @@ for (const l of ['es', 'en']) {
   const tauros = bloqueFormas((await pintar(128, ctx)).html);
   check(`formas ${l}: Tauros enlaza sus ${paldea.length} formas de Paldea`,
     paldea.length === 3 && paldea.every(f => enlaza(tauros, f.name)), tauros);
+
+  // 5b de la PR 5: cada forma sin URL propia tiene su ancla en la especie, y
+  // ninguna se repite. Pikachu tiene 16 (las 8 gorras, los 6 disfraces, la de
+  // Let's Go y la Gigamax), todas de aspecto salvo la de Let's Go; Deoxys
+  // Ataque cambia stats, asi que va en su <section>.
+  const anclasPikachu = [...pikachu.matchAll(/id="(forma-[^"]+)"/g)].map(m => m[1]);
+  const esperadas = formsOf(25, allPokemon).filter(f => !tieneUrlPropia(f)).map(f => `forma-${f.name}`);
+  checkIgual(`anclas ${l}: Pikachu tiene sus ${esperadas.length} ids forma-* unicos, con la gorra de Alola`,
+    [anclasPikachu.length, new Set(anclasPikachu).size, esperadas.every(id => anclasPikachu.includes(id)),
+      pikachu.includes('id="forma-pikachu-alola-cap"')],
+    [esperadas.length, esperadas.length, true, true]);
+  const deoxys = (await pintar(386, ctx)).html;
+  check(`anclas ${l}: Deoxys Ataque tiene su <section id="forma-deoxys-attack">`,
+    /<section class="forma-ancla" id="forma-deoxys-attack">/.test(deoxys), deoxys.match(/<section class="forma-ancla"[^>]*>/g));
+  check(`anclas ${l}: Bulbasaur, sin formas de ancla, no pinta la seccion`,
+    !(await pintar(1, ctx)).html.includes(ctx.dic['pokedex.anchor']));
 }
 
 // ===== El texto derivado, debajo de la descripcion =====
@@ -215,7 +238,6 @@ for (const l of ['es', 'en']) {
 // descripcion, que ya esta encima). Solo en la especie: con el mismo texto y la
 // pestana de Raichu de Alola, la seccion no sale (D8). Sin texto, tampoco.
 const { textoEspecie, textoForma } = await import('../js/ficha-texto.js');
-const abilities = JSON.parse(readFileSync(new URL('../data/abilities.json', import.meta.url), 'utf8'));
 // Como el esc de la ficha: un apostrofo del ingles no casaria en crudo.
 const escHTML = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const seccionTexto = html => html.match(/<section class="intro intro-ficha">([^]*?)<\/section>/)?.[1] ?? null;
@@ -225,7 +247,7 @@ async function pintarConTexto(id, ctx, texto) {
   const dex = await fetchDex(dexId);
   const variants = [allPokemon.find(p => p.id === dexId), ...formsOf(dexId, allPokemon)];
   const variantLabels = formLabels(variants, variants[0].name, ctx);
-  return fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels, evolutions, dex, texto });
+  return fichaHTML(ctx, { pokemon, allPokemon, abilities, variants, variantLabels, evolutions, dex, texto });
 }
 const raichuAlola = allPokemon.find(p => p.name === 'raichu-alola');
 for (const l of ['es', 'en']) {
@@ -251,10 +273,10 @@ for (const l of ['es', 'en']) {
   const alola = await pintarConTexto(raichuAlola.id, ctx, deAlola);
   const raichu = allPokemon.find(p => p.id === 26);
   const prefijo = l === 'en' ? '/en' : '';
-  check(`texto ${l}: Raichu de Alola pinta sus dos parrafos y no la descripcion`,
+  checkIgual(`texto ${l}: Raichu de Alola pinta sus dos parrafos y no la descripcion`,
     [seccionTexto(alola) === deAlola.parrafos.map(p => `<p>${escHTML(p)}</p>`).join(''), alola.includes('poke-flavour')],
     [true, false]);
-  check(`texto ${l}: Raichu de Alola, region, movimientos de Raichu y pestana enlazada`,
+  checkIgual(`texto ${l}: Raichu de Alola, region, movimientos de Raichu y pestana enlazada`,
     [alola.includes(ctx.dic['pokedex.obtain']), alola.includes('>Alola<'),
       alola.includes(escHTML(tr(ctx, 'learn.of', { species: nombrePokemon(raichu, l) }))),
       alola.includes(`<a class="tab" href="${prefijo}/pokedex/raichu"`), alola.includes('data-form=')],
@@ -272,7 +294,7 @@ for (const l of ['es', 'en']) {
   const conSprite = obtencion(await pintarConTexto(de('charizard-mega-x').id, ctx, null));
   const sinSprite = obtencion(await pintarConTexto(de('clefable-mega').id, ctx, null));
   const rayquaza = obtencion(await pintarConTexto(de('rayquaza-mega').id, ctx, null));
-  check(`obtencion ${l}: piedra con sprite, sin sprite y Rayquaza sin piedra`,
+  checkIgual(`obtencion ${l}: piedra con sprite, sin sprite y Rayquaza sin piedra`,
     [conSprite?.includes('/sprites/items/charizardite-x.png'), conSprite?.includes(de('charizard-mega-x').megaStone[l]),
       sinSprite?.includes('<img'), sinSprite?.includes(de('clefable-mega').megaStone[l]),
       rayquaza?.includes(MEGA_SIN_PIEDRA['rayquaza-mega'][l]), rayquaza?.includes('<img'),

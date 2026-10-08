@@ -319,7 +319,7 @@ export async function renderPokedexDetail(container, id) {
   // Con shell, sin la entrada animada: ya esta a la vista, y asi la ficha del
   // cliente es la misma que la del build.
   const html = fichaHTML(ctx, {
-    pokemon, allPokemon, variants, variantLabels, evolutions, dex,
+    pokemon, allPokemon, abilities, variants, variantLabels, evolutions, dex,
     texto: shell ? textoDelShell(shell, tieneUrlPropia(allPokemon.find(p => p.id === pokemon.id) ?? pokemon)) : textoDe(dexId, pokemon, ctx, { allPokemon, abilities, evolutions, dex }),
     animar: !shell,
   });
@@ -333,6 +333,15 @@ export async function renderPokedexDetail(container, id) {
   if (dex) wireMovesPanel(mvHost, dex);
   else loadMovesSection(mvHost, dexId, errorDex);
   renderMetaSection(host.querySelector('#metaSection'), dexId, format, meta, allPokemon, evolutions);
+
+  // #forma-<name>: rutas.js ya ha abierto la pestana de esa forma (la ficha se
+  // pinta con ella); ademas se baja a su seccion de la especie, donde dice que
+  // cambia. Solo si el ancla es la de la forma que se ensena: el hash se queda
+  // al cambiar de pestana, y otra pestana no debe volver a saltar alli.
+  const ancla = location.hash.startsWith('#forma-')
+    && location.hash === `#forma-${allPokemon.find(p => p.id === pokemon.id)?.name}`
+    ? host.querySelector(`[id="${CSS.escape(location.hash.slice(1))}"]`) : null;
+  ancla?.scrollIntoView({ block: 'start' });
 
   // Pikachu carries 17 forms and the strip only shows five of them at a time.
   // wireScrollFade (js/ui.js) lights a fade on whichever side has more; the

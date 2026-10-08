@@ -457,6 +457,7 @@ function contenidoFicha(id, ctx) {
   return fichaHTML({ l, dic }, {
     pokemon: detallePokemon(entrada, abilities, ficha),
     allPokemon: todos,
+    abilities,
     variants,
     variantLabels: formLabels(variants, entrada.name, { l, dic }),
     evolutions,

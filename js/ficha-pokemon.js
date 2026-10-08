@@ -18,7 +18,7 @@
 // rellena despues: aqui solo va su hueco), el error con reintento de evolucion
 // y movimientos, y los listeners.
 
-import { spriteUrl, itemSpriteUrl, STAT_KEYS, STAT_COLORS, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN } from './data.js';
+import { spriteUrl, itemSpriteUrl, STAT_KEYS, STAT_COLORS, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from './data.js';
 import { urlDe } from './rutas.js';
 import { tr, nombrePokemon, breadcrumbHTML } from './contenido.js';
 import { rangeAt100 } from './stats.js';
@@ -370,6 +370,98 @@ function obtencionHTML(forma, especie, ctx) {
   `;
 }
 
+// Las habilidades de una entrada de pokemon.json como clave comparable: las
+// normales sin orden y la oculta aparte. Una forma sin habilidades las hereda de
+// su especie, como en habilidadesDe (ficha-texto.js).
+const claveHabilidades = p => [p.abilities.filter(a => !a.isHidden).map(a => a.nameEn).sort().join(','),
+  p.abilities.find(a => a.isHidden)?.nameEn ?? ''].join('|');
+const mismosTipos = (a, b) => a.length === b.length && a.every(t => b.includes(t));
+
+// El nombre visible de una habilidad por su slug, como detallePokemon (api.js):
+// en espanol, el ingles si PokeAPI no tiene nombre espanol.
+function nombreHabilidad(slug, porSlug, ctx) {
+  const a = porSlug.get(slug);
+  if (!a) throw new Error(`ficha-pokemon.js: la habilidad "${slug}" no esta en abilities.json`);
+  return ctx.l === 'es' && a.nameEs && a.nameEs !== a.name ? a.nameEs : a.nameEn;
+}
+
+// La frase de una forma de ancla que cambia algo: tipos, stats y habilidad
+// frente a su especie, lo que en la pestana hay que ir a buscar numero a
+// numero. Corta y sin hechosForma, que es de las formas con URL propia.
+function fraseFormaAncla(v, especie, porSlug, ctx) {
+  const nombreEspecie = displayName(especie, ctx);
+  // Los nombres enteros, como en el texto de la especie: 'type.*' son los de
+  // las insignias, recortados ("Psíquic.").
+  const tipos = v.types.map(tp => (ctx.l === 'es' ? TYPE_NAMES_FULL : TYPE_NAMES_FULL_EN)[tp]).join(' / ');
+  const partes = [mismosTipos(v.types, especie.types)
+    ? tr(ctx, 'pokedex.anchor.types.same', { types: tipos, species: nombreEspecie })
+    : tr(ctx, 'pokedex.anchor.types', { types: tipos })];
+  const cambios = STAT_KEYS.filter(k => v.stats[k] !== especie.stats[k]);
+  partes.push(cambios.length
+    ? cambios.map(k => `${nombreStat(k, ctx)} ${especie.stats[k]} → ${v.stats[k]}`).join(', ')
+    : tr(ctx, 'pokedex.anchor.stats.same', { species: nombreEspecie }));
+  if (!v.abilities.length || claveHabilidades(v) === claveHabilidades(especie)) {
+    partes.push(tr(ctx, 'pokedex.anchor.abilities.same', { species: nombreEspecie }));
+  } else {
+    const lista = v.abilities.map(a => nombreHabilidad(a.nameEn, porSlug, ctx)
+      + (a.isHidden ? ` ${tr(ctx, 'pokedex.hidden')}` : '')).join(', ');
+    partes.push(v.abilities.length === 1
+      ? tr(ctx, 'pokedex.anchor.ability', { list: lista })
+      : tr(ctx, 'pokedex.anchor.abilities', { list: lista }));
+  }
+  return `${partes.join('; ')}.`;
+}
+
+// Las formas sin URL propia, en la ficha de su especie (5b de la PR 5): las
+// que cambian algo con su seccion y su frase, las de aspecto en una lista. Cada
+// una con id="forma-<name>", el ancla a la que lleva su id (rutas.js) y la URL
+// retirada de la gorra y el dominante (URLS_RETIRADAS). Fuera de .intro-ficha:
+// el texto de la especie no cambia. Sin formas de ancla, nada.
+//
+// Cambia algo si cambian los tipos, las stats o las habilidades: isCosmetic
+// mira solo las dos primeras, y Toxtricity Grave o Greninja Fuerte Afecto
+// cambian de habilidad con las mismas stats. Los nombres repetidos (Minior,
+// Zygarde 10%) llevan detras la etiqueta de su pestana, que los distingue.
+//
+// `abilities` es abilities.json entero: pokemon.json solo trae los slugs.
+function formasAnclaHTML(ctx, { variants, variantLabels, abilities }) {
+  const especie = variants[0];
+  const anclas = variants
+    .map((v, i) => ({ v, etiqueta: variantLabels[i] }))
+    .filter(({ v }) => v.speciesId && !tieneUrlPropia(v));
+  if (anclas.length === 0) return '';
+  if (!Array.isArray(abilities)) throw new Error(`ficha-pokemon.js: las formas de #${especie.id} necesitan abilities.json`);
+  const porSlug = new Map(abilities.map(a => [a.name, a]));
+
+  const veces = {};
+  anclas.forEach(({ v }) => { veces[displayName(v, ctx)] = (veces[displayName(v, ctx)] || 0) + 1; });
+  const nombreDe = ({ v, etiqueta }) => {
+    const n = displayName(v, ctx);
+    return veces[n] > 1 ? `${n} (${etiqueta})` : n;
+  };
+  const cambia = ({ v }) => !mismosTipos(v.types, especie.types)
+    || STAT_KEYS.some(k => v.stats[k] !== especie.stats[k])
+    || (v.abilities.length > 0 && claveHabilidades(v) !== claveHabilidades(especie));
+  const conCambios = anclas.filter(cambia);
+  const deAspecto = anclas.filter(a => !cambia(a));
+
+  return `
+      <section class="b">
+      <h2 class="section-title">${tr(ctx, 'pokedex.anchor')}</h2>
+      ${conCambios.length ? `<div class="formas-ancla">
+        ${conCambios.map(a => `<section class="forma-ancla" id="forma-${esc(a.v.name)}">
+          <h3 class="forma-ancla-nombre">${esc(nombreDe(a))}</h3>
+          <p class="forma-ancla-frase">${esc(fraseFormaAncla(a.v, especie, porSlug, ctx))}</p>
+        </section>`).join('')}
+      </div>` : ''}
+      ${deAspecto.length ? `<p class="formas-aspecto-tit">${tr(ctx, 'pokedex.anchor.look')}</p>
+      <ul class="relacionadas formas-aspecto">
+        ${deAspecto.map(a => `<li class="forma-ancla" id="forma-${esc(a.v.name)}">${esc(nombreDe(a))}</li>`).join('')}
+      </ul>` : ''}
+      </section>
+  `;
+}
+
 // Una pestana de forma. Las que tienen URL propia son enlaces a su pagina, que
 // navega el router como cualquier otro (D6 de la PR 5): asi el enlace existe
 // para el buscador. Tambien la especie, vista desde una de esas paginas. Las
@@ -396,10 +488,14 @@ function pestanaHTML(v, label, pokemon, propia, ctx) {
 // pintados si llegan sus datos, y vacios si no: un fallo de uno de los dos no
 // tumba la ficha, y el cliente pone en su hueco el error con reintento.
 //
-// datos = { pokemon, allPokemon, variants, variantLabels, evolutions, dex }
+// datos = { pokemon, allPokemon, abilities, variants, variantLabels, evolutions, dex }
 //   pokemon        lo que devuelve fetchPokemonDetail (api.js)
 //   allPokemon     pokemon.json entero (cria, nombres de anterior/siguiente y
 //                  de la linea evolutiva)
+//   abilities      abilities.json entero: los nombres de las habilidades de las
+//                  formas sin URL propia (formasAnclaHTML), que pokemon.json
+//                  solo trae por slug. Hace falta en una especie con formas de
+//                  ancla y en sus pestanas; sin el, esas fichas lanzan.
 //   variants       la especie y sus formas, en el orden de las pestanas
 //   variantLabels  el texto de cada pestana (formLabels, arriba)
 //   evolutions     evolutions.json entero, o null
@@ -418,7 +514,7 @@ function pestanaHTML(v, label, pokemon, propia, ctx) {
 //                  ya esta a la vista desde el primer frame, y animarla la
 //                  esconderia otra vez y retrasaria el LCP. Ni el build ni el
 //                  cliente al adoptarla la animan.
-export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels, evolutions, dex, texto, animar = true }) {
+export function fichaHTML(ctx, { pokemon, allPokemon, abilities, variants, variantLabels, evolutions, dex, texto, animar = true }) {
   const dexId = pokemon.speciesId || pokemon.id;
   const { weak, resist, immune } = enfrentamientos(pokemon.types);
 
@@ -508,7 +604,7 @@ export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels, e
       ${flavour && !propia ? `<p class="poke-flavour">${flavour}</p>` : ''}
       ${texto && (pokemon.id === dexId || propia) ? `<section class="intro intro-ficha">${texto.parrafos.slice(propia ? 0 : 1).map(p => `<p>${esc(p)}</p>`).join('')}</section>` : ''}
       </section>
-${propia ? obtencionHTML(entrada, displayName(allPokemon.find(p => p.id === dexId), ctx), ctx) : ''}${formasPropiasHTML(pokemon, variants, ctx)}
+${propia ? obtencionHTML(entrada, displayName(allPokemon.find(p => p.id === dexId), ctx), ctx) : ''}${formasPropiasHTML(pokemon, variants, ctx)}${propia ? '' : formasAnclaHTML(ctx, { variants, variantLabels, abilities })}
       <section class="b">
       <h2 class="section-title">${tr(ctx, 'pokedex.stats')}</h2>
       <div>
