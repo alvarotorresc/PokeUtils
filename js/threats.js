@@ -46,7 +46,8 @@ const topSpeed = (p, level) => calcStat(p.stats.spe, 31, 252, level, 1.1);
 
 export function counters(team, list, level, meta = null) {
   if (!team.length) return { total: 0, rows: [], teamSize: 0, half: 0 };
-  // Half the team, rounded up: the same cut team-analysis.js uses for threats.
+  // Half the team, rounded up. Not the cut team-analysis.js uses for threats:
+  // that one is a fixed three members, whatever the size of the team.
   const half = Math.ceil(team.length / 2);
 
   const memberSpeeds = team.map(m => topSpeed(m, level));

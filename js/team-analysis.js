@@ -27,8 +27,9 @@ export function defensiveMatrix(members) {
   });
 }
 
-// Half the team or more taking super effective damage from the same type. Three
-// of six is the cut: over the teams measured for the spec it leaves between one
+// Three or more members taking super effective damage from the same type: a
+// fixed count, not half the team, so a team of four also needs three. Over the
+// teams measured for the spec it leaves between one
 // and six threats, which is enough to be useful and short enough to read.
 export function threats(matrix) {
   return matrix.filter(row => row.weak >= 3).sort((a, b) => b.weak - a.weak);

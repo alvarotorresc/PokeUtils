@@ -457,7 +457,7 @@ export default {
     'team.remove': 'Quitar del equipo',
     'team.empty': 'Añade Pokémon para ver de qué se defiende mal tu equipo y qué tipos no puedes tocar',
     'team.defense': 'DEFENSA',
-    'team.threats': 'Amenazas: golpean a la mitad del equipo o más',
+    'team.threats': 'Amenazas: golpean a tres miembros o más',
     'team.threats.none': 'Ningún tipo golpea a tres o más miembros',
     'team.unresisted': 'Sin respuesta: nadie del equipo lo resiste',
     'team.unresisted.none': 'Todo lo que os golpea lo resiste alguien',

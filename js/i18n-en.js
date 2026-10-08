@@ -442,7 +442,7 @@ export default {
     'team.remove': 'Remove from team',
     'team.empty': 'Add Pokemon to see what your team is weak to and which types you cannot hit',
     'team.defense': 'DEFENCE',
-    'team.threats': 'Threats: hit half the team or more',
+    'team.threats': 'Threats: hit three or more members',
     'team.threats.none': 'No type hits three or more members',
     'team.unresisted': 'No answer: nobody on the team resists it',
     'team.unresisted.none': 'Someone resists everything that hits you',
