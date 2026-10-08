@@ -6,7 +6,8 @@
 // build pueda sacar la misma ficha en los dos idiomas sin una segunda plantilla.
 //
 // Pura y con el idioma explicito, como contenido.js: no importa ui.js ni
-// i18n.js ni evolution.js (que usa t()) ni usa t(). Cada funcion recibe
+// i18n.js ni usa t(). evolution.js si, porque tambien traduce con `ctx`. Cada
+// funcion recibe
 //
 //   ctx = { l: 'es' | 'en', dic: <el diccionario de ese idioma> }
 //
@@ -14,15 +15,16 @@
 // diccionarios importados. scripts/check-ficha.mjs la pinta en node.
 //
 // Lo que sigue en pokedex-detail.js: la carga de datos, las pestanas de forma
-// (formLabels), las tres secciones que se rellenan despues (evolucion,
-// movimientos y meta: aqui solo van sus huecos con el mismo id) y los listeners.
+// (formLabels), el meta (que se rellena despues: aqui solo va su hueco), el
+// error con reintento de evolucion y movimientos, y los listeners.
 
-import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART } from './data.js';
+import { TYPES, spriteUrl, STAT_KEYS, STAT_COLORS, CHART, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN } from './data.js';
 import { urlDe } from './rutas.js';
 import { tr, nombrePokemon, breadcrumbHTML } from './contenido.js';
 import { rangeAt100 } from './stats.js';
 import { partnersOf, hasEggData } from './egg-groups.js';
-import { spriteIdFor, tieneUrlPropia } from './forms.js';
+import { spriteIdFor, tieneUrlPropia, formsOf } from './forms.js';
+import { evolutionText, ramasResueltas, textoDeRama, nodoActual } from './evolution.js';
 
 // El mismo esc que ui.js, que aqui no se puede importar: tambien escapa la
 // comilla simple y deja '' para null, y el HTML del build tiene que ser el que
@@ -43,9 +45,9 @@ export function displayName(entry, ctx) {
 
 // ===== Linea evolutiva =====
 //
-// Los textos de cada rama los escribe evolution.js, que todavia traduce con
-// t(): por eso no se importa y llegan hechos en `evo`, junto con lo que el arbol
-// necesita saber de los datos:
+// Los textos de cada rama los escribe evolution.js. El arbol los recibe en
+// `evo`, junto con lo que necesita saber de los datos (lo monta
+// evoSectionHTML, mas abajo):
 //
 //   evo = { currentId, nameOf(id), ramas(node, child), textoRama(child, resueltas),
 //           textoDetalles(details) }
@@ -117,6 +119,49 @@ export function evoTreeHTML(node, evo, ctx) {
   `;
 }
 
+// El contenido de #evoSection: el arbol de la especie, o "no evoluciona".
+//
+// Recibe la forma abierta (`formId`) ademas de la especie, porque es la unica
+// que sabe cual de las tres ramas de Lycanroc es la pestana que se esta
+// mirando. La cadena es la de la especie: una forma no tiene linea evolutiva
+// propia.
+//
+// Item and move names are already resolved inside evolutions.json, so this
+// never needs items.json (595 KB) or moves.json (343 KB) to read a few names.
+export function evoSectionHTML(ctx, { evolutions, allPokemon, dexId, formId = dexId }) {
+  const chainId = evolutions.bySpecies[dexId];
+  const root = chainId != null ? evolutions.chains[chainId] : null;
+  if (!root || root.evolvesTo.length === 0) {
+    return `<p class="evo-none">${tr(ctx, 'evo.none')}</p>`;
+  }
+
+  const pokeBySlug = new Map(allPokemon.map(x => [x.name, x]));
+  const byId = new Map(allPokemon.map(p => [p.id, p]));
+  const nameOf = id => displayName(byId.get(id), ctx) || `#${id}`;
+  const lookups = {
+    species: slug => displayName(pokeBySlug.get(slug), ctx) || slug,
+  };
+
+  // Por el sufijo del slug y no por una tabla de ids: la especie 745 ya se
+  // llama `lycanroc-midday`, asi que la forma diurna se encuentra igual que
+  // las otras dos y no hay ningun numero que mantener a mano.
+  const formaDe = (species, sufijo) => {
+    const entrada = byId.get(species);
+    if (!entrada) return null;
+    const candidatos = [entrada, ...formsOf(species, allPokemon)];
+    return candidatos.find(p => p.name.endsWith(`-${sufijo}`))?.id || null;
+  };
+
+  const evo = {
+    currentId: nodoActual(root, dexId, formId, formaDe),
+    nameOf,
+    ramas: (node, child) => ramasResueltas(node, child, formaDe),
+    textoRama: (child, resueltas) => textoDeRama(child, resueltas, nameOf, ctx, lookups),
+    textoDetalles: details => evolutionText(details, ctx, lookups),
+  };
+  return `<div class="evo-line">${evoTreeHTML(root, evo, ctx)}</div>`;
+}
+
 // ===== Movimientos =====
 
 export function moveRowHTML(move, level, ctx) {
@@ -132,6 +177,46 @@ export function moveRowHTML(move, level, ctx) {
       <span class="mv-num">${move.pp ?? dash}</span>
     </div>
   `;
+}
+
+// Las pestanas que tiene un learnset, en este orden. La primera es la que se
+// abre.
+export const METHOD_ORDER = ['level', 'machine', 'egg', 'tutor'];
+
+// El contenido de #mvSection con la pestana `method` abierta (por defecto, la
+// primera que tenga). `dex` es data/dex/{id}.json de la especie: el learnset y
+// los movimientos que aparecen en el, ya con nombre y numeros. El cambio de
+// pestana lo escucha pokedex-detail.js, que vuelve a llamar aqui.
+//
+// La lista tiene alto fijo y scroll propio, asi que la tarjeta ocupa lo mismo
+// con 15 movimientos que con 150, y no salta al cambiar de pestana.
+export function movesPanelHTML(ctx, dex, method) {
+  const entry = dex.learnset;
+  if (!entry || Object.keys(entry).length === 0) {
+    return `<p class="evo-none">${tr(ctx, 'learn.none')}</p>`;
+  }
+  const methods = METHOD_ORDER.filter(m => entry[m]);
+  const active = methods.includes(method) ? method : methods[0];
+  const byId = new Map(dex.moves.map(m => [m.id, m]));
+  const [vgIdx, list] = entry[active];
+  const vgSlug = dex.versionGroups[vgIdx];
+  const game = (ctx.l === 'es' ? VERSION_GROUP_NAMES : VERSION_GROUP_NAMES_EN)[vgSlug] || vgSlug;
+  const rows = list.map(item => {
+    const isLevel = Array.isArray(item);
+    const move = byId.get(isLevel ? item[0] : item);
+    return move ? moveRowHTML(move, isLevel ? item[1] : null, ctx) : '';
+  }).join('');
+
+  return `
+      <div class="tabs mv-tabs">
+        ${methods.map(m => `<button class="tab${m === active ? ' active' : ''}" data-method="${m}">${tr(ctx, 'learn.tab.' + m)}</button>`).join('')}
+      </div>
+      <div class="mv-meta">
+        <span>${tr(ctx, 'learn.from', { game })}</span>
+        <span>${list.length === 1 ? tr(ctx, 'learn.count.one') : tr(ctx, 'learn.count', { n: list.length })}</span>
+      </div>
+      <div class="mv-list">${rows}</div>
+    `;
 }
 
 // ===== Cria =====
@@ -238,15 +323,22 @@ function formasPropiasHTML(pokemon, variants, ctx) {
   `;
 }
 
-// La ficha entera, con los huecos de evolucion (#evoSection), movimientos
-// (#mvSection) y meta (#metaSection) vacios: los rellena pokedex-detail.js.
+// La ficha entera. El meta (#metaSection) va siempre vacio: lo rellena
+// pokedex-detail.js. Evolucion (#evoSection) y movimientos (#mvSection) salen
+// pintados si llegan sus datos, y vacios si no: un fallo de uno de los dos no
+// tumba la ficha, y el cliente pone en su hueco el error con reintento.
 //
-// datos = { pokemon, allPokemon, variants, variantLabels }
+// datos = { pokemon, allPokemon, variants, variantLabels, evolutions, dex }
 //   pokemon        lo que devuelve fetchPokemonDetail (api.js)
-//   allPokemon     pokemon.json entero (cria y los nombres de anterior/siguiente)
+//   allPokemon     pokemon.json entero (cria, nombres de anterior/siguiente y
+//                  de la linea evolutiva)
 //   variants       la especie y sus formas, en el orden de las pestanas
 //   variantLabels  el texto de cada pestana (formLabels, en pokedex-detail.js)
-export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels }) {
+//   evolutions     evolutions.json entero, o null
+//   dex            data/dex/{id}.json de la especie, o null. La especie y no
+//                  la forma: Mega Charizard X evoluciona y aprende igual que
+//                  Charizard, y los learnsets solo existen para las 1025.
+export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels, evolutions, dex }) {
   const dexId = pokemon.speciesId || pokemon.id;
   const { weak, resist, immune } = enfrentamientos(pokemon.types);
 
@@ -396,7 +488,7 @@ ${formasPropiasHTML(pokemon, variants, ctx)}
 
       <section class="b">
       <h2 class="section-title">${tr(ctx, 'learn.title')}</h2>
-      <div class="mv-section" id="mvSection"></div>
+      <div class="mv-section" id="mvSection">${dex ? movesPanelHTML(ctx, dex) : ''}</div>
       </section>
 
       <section class="b">
@@ -429,7 +521,7 @@ ${formasPropiasHTML(pokemon, variants, ctx)}
            card. It closes the bento as a full-width band instead. -->
       <section class="b b-wide">
       <h2 class="section-title">${tr(ctx, 'evo.title')}</h2>
-      <div id="evoSection"></div>
+      <div id="evoSection">${evolutions ? evoSectionHTML(ctx, { evolutions, allPokemon, dexId, formId: pokemon.id }) : ''}</div>
       </section>
       </div>
 

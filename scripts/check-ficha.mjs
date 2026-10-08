@@ -1,6 +1,7 @@
 // Comprueba js/ficha-pokemon.js en node, en los dos idiomas: que es pura (no
 // arrastra i18n.js ni ui.js), y que la ficha de Pikachu, Ditto, Eevee y
-// Charizard sale entera en el idioma del contexto y no en el activo. Es la
+// Charizard sale entera en el idioma del contexto y no en el activo, con su
+// linea evolutiva y su primera pestana de movimientos ya pintadas. Es la
 // plantilla que pinta el cliente y la que pintara el build: si una clave saliera
 // cruda o un texto en espanol en la ficha inglesa, lo veria el buscador.
 //
@@ -21,7 +22,9 @@ function check(label, ok, detalle = '') {
 // Se recorre el fuente y no lo que node ha cargado: i18n.js se importa sin
 // problema en node (arranca en espanol), asi que cargarlo no fallaria. Fallaria
 // la ficha inglesa, en silencio.
-const PROHIBIDOS = ['i18n.js', 'ui.js', 'evolution.js', 'api.js'];
+// evolution.js ya no esta en la lista: traduce con `ctx` como esta, y el
+// recorrido de abajo entra en ella y comprueba que tampoco arrastra nada.
+const PROHIBIDOS = ['i18n.js', 'ui.js', 'api.js'];
 const grafo = new Set();
 (function recorrer(fichero) {
   if (grafo.has(fichero)) return;
@@ -48,11 +51,12 @@ globalThis.fetch = async url => {
 
 const { fijarIndice, urlDe } = await import('../js/rutas.js');
 fijarIndice(JSON.parse(readFileSync(new URL('../data/rutas.json', import.meta.url), 'utf8')));
-const { fichaHTML, evoTreeHTML, moveRowHTML } = await import('../js/ficha-pokemon.js');
+const { fichaHTML, evoTreeHTML, moveRowHTML, METHOD_ORDER } = await import('../js/ficha-pokemon.js');
+const { evolutionText } = await import('../js/evolution.js');
 const { nombrePokemon } = await import('../js/contenido.js');
 const { fetchPokemonDetail, fetchPokemonList, fetchDex } = await import('../js/api.js');
 const { formsOf } = await import('../js/forms.js');
-const { TYPES, STAT_KEYS } = await import('../js/data.js');
+const { TYPES, STAT_KEYS, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN } = await import('../js/data.js');
 const { EGG_GROUPS } = await import('../js/egg-groups.js');
 const es = (await import('../js/i18n-es.js')).default;
 const en = (await import('../js/i18n-en.js')).default;
@@ -65,9 +69,15 @@ const evolutions = JSON.parse(readFileSync(new URL('../data/evolutions.json', im
 //
 // tr() lanza con una clave que falta, pero solo si se pinta: la de "ratio
 // desconocido" o la de "sin genero" no salen en estos cuatro. Se comprueban
-// todas las literales del fuente y las de cada prefijo.
+// todas las literales del fuente (con variables o sin ellas, y las de
+// evolution.js, que tambien se pinta aqui) y las de cada prefijo.
 const fuente = readFileSync(new URL('../js/ficha-pokemon.js', import.meta.url), 'utf8');
-const claves = new Set([...fuente.matchAll(/tr\(ctx, '([\w.-]+)'\)/g)].map(m => m[1]));
+const fuenteEvo = readFileSync(new URL('../js/evolution.js', import.meta.url), 'utf8');
+// Las que terminan en punto son prefijos ('type.' + tipo): van aparte, abajo.
+const claves = new Set([...fuente.matchAll(/tr\(ctx, '([\w.-]+)'/g)].map(m => m[1]).filter(k => !k.endsWith('.')));
+// En evolution.js tambien las de TIME_KEYS, que no van dentro de un tr().
+for (const [, k] of fuenteEvo.matchAll(/'(evo\.[\w.-]+)'/g)) claves.add(k);
+METHOD_ORDER.forEach(m => claves.add('learn.tab.' + m));
 TYPES.forEach(tp => claves.add('type.' + tp));
 STAT_KEYS.forEach(k => claves.add('stat.' + k));
 EGG_GROUPS.forEach(g => claves.add('egg.group.' + g));
@@ -84,9 +94,10 @@ for (const [l, dic] of Object.entries({ es, en })) {
 async function pintar(id, ctx) {
   const pokemon = await fetchPokemonDetail(id);
   const dexId = pokemon.speciesId || pokemon.id;
+  const dex = await fetchDex(dexId);
   const variants = [allPokemon.find(p => p.id === dexId), ...formsOf(dexId, allPokemon)];
   const variantLabels = variants.map(v => (v.speciesId ? (ctx.l === 'es' ? v.formEs : v.formEn) : ctx.dic['form.base']));
-  return { pokemon, html: fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels }) };
+  return { pokemon, dex, html: fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels, evolutions, dex }) };
 }
 
 // Una clave sin resolver: `pokedex.stats` tal cual en el HTML. Las URL no
@@ -210,7 +221,70 @@ for (const id of [983, 984]) {
   }
 }
 
-// ===== Las piezas que rellena el cliente =====
+// ===== Evolucion y movimientos, dentro de la ficha =====
+//
+// Lo que antes rellenaba el cliente despues, en el idioma activo. Ahora sale de
+// fichaHTML con el de ctx, que es lo que va a hacer el build. Por cada uno, una
+// condicion que solo puede salir en un idioma, y que la del otro no aparece.
+const seccion = (html, id) => html.match(new RegExp(`<div[^>]* id="${id}">([^]*?)</div>\\s*</section>`))?.[1] ?? '';
+const CONDICIONES = {
+  // Kingambit: "tras derrotar a tres Bisharp", la condicion que mas texto tiene.
+  983: { es: [es['evo.bisharp']], en: [en['evo.bisharp']], ramas: 2 },
+  // Eevee, 8 ramas: piedras, amistad, hora y movimiento de tipo Hada.
+  133: { es: ['Piedra Agua', 'Piedra Hoja'], en: ['Water Stone', 'Leaf Stone'], ramas: 8 },
+  6: { es: ['Nv. 16', 'Nv. 36'], en: ['Lv. 16', 'Lv. 36'], ramas: 2 },
+  25: { es: ['Piedra Trueno', 'Subir de nivel con amistad alta'], en: ['Thunder Stone', 'Level up with high friendship'], ramas: 3 },
+};
+const JUEGOS = { es: VERSION_GROUP_NAMES, en: VERSION_GROUP_NAMES_EN };
+for (const [id, esperado] of Object.entries(CONDICIONES)) {
+  for (const l of ['es', 'en']) {
+    const ctx = CTX[l];
+    const otro = l === 'es' ? 'en' : 'es';
+    const etiqueta = `#${id} ${l}`;
+    const { html, dex } = await pintar(Number(id), ctx);
+
+    const evo = seccion(html, 'evoSection');
+    check(`${etiqueta}: la linea evolutiva sale pintada, con ${esperado.ramas} ramas`,
+      evo.startsWith('<div class="evo-line">') && (evo.match(/class="evo-branch"/g) || []).length === esperado.ramas,
+      evo.slice(0, 120));
+    for (const texto of esperado[l]) check(`${etiqueta}: la evolucion dice "${texto}"`, evo.includes(texto));
+    for (const texto of esperado[otro]) check(`${etiqueta}: la evolucion no dice "${texto}"`, !evo.includes(texto));
+
+    // La primera pestana: la primera que tenga el learnset, activa, con el
+    // juego en el idioma y todas sus filas.
+    const mv = seccion(html, 'mvSection');
+    const primera = METHOD_ORDER.find(m => dex.learnset[m]);
+    const [vg, lista] = dex.learnset[primera];
+    const slug = dex.versionGroups[vg];
+    const juego = JUEGOS[l][slug];
+    check(`${etiqueta}: movimientos con la pestana "${ctx.dic['learn.tab.' + primera]}" abierta`,
+      mv.includes(`<button class="tab active" data-method="${primera}">${ctx.dic['learn.tab.' + primera]}</button>`), mv.slice(0, 200));
+    check(`${etiqueta}: "${ctx.dic['learn.from'].replace('{game}', juego)}"`,
+      Boolean(juego) && mv.includes(`<span>${ctx.dic['learn.from'].replace('{game}', juego)}</span>`));
+    if (JUEGOS[otro][slug] !== juego) check(`${etiqueta}: sin el juego en ${otro} ("${JUEGOS[otro][slug]}")`, !mv.includes(JUEGOS[otro][slug]));
+    check(`${etiqueta}: las ${lista.length} filas de la pestana`, (mv.match(/class="mv-row"/g) || []).length === lista.length);
+  }
+}
+
+// Todas las transiciones del dataset, en los dos idiomas: tr() lanza con una
+// clave que falte, y la ficha que la pinte seria la del build.
+const transiciones = [];
+(function aplanar(nodo) {
+  for (const hijo of nodo.evolvesTo) { transiciones.push(hijo.details); aplanar(hijo); }
+})({ evolvesTo: Object.values(evolutions.chains) });
+const lookups = { species: slug => slug };
+for (const l of ['es', 'en']) {
+  const rotas = [];
+  for (const details of transiciones) {
+    try {
+      const texto = evolutionText(details, CTX[l], lookups);
+      if (CLAVE_CRUDA.test(texto)) rotas.push(texto);
+    } catch (err) { rotas.push(err.message); }
+  }
+  check(`las ${transiciones.length} transiciones se escriben en ${l}`, rotas.length === 0, [...new Set(rotas)].slice(0, 5).join(' | '));
+}
+
+// ===== Las piezas sueltas =====
 
 // El arbol de Eevee: los textos de rama vienen hechos, el resto es de aqui.
 const eevee = evolutions.chains[evolutions.bySpecies[133]];
@@ -232,6 +306,15 @@ for (const l of ['es', 'en']) {
 // Una fila de movimiento: nombre, tipo y categoria del contexto.
 const ficha = await fetchDex(25);
 const mov = ficha.moves.find(m => m.nameEs && m.nameEs !== m.nameEn && m.category === 'physical');
+// Los 18 movimientos oscuros de XD son de un tipo que no esta entre los 18:
+// sin su clave, tr() lanzaba al pintar la fila.
+const oscuros = Object.values(JSON.parse(readFileSync(new URL('../data/moves.json', import.meta.url), 'utf8')))
+  .filter(m => m.type === 'shadow');
+for (const l of ['es', 'en']) {
+  let lanza = null;
+  try { oscuros.forEach(m => moveRowHTML(m, null, CTX[l])); } catch (err) { lanza = err.message; }
+  check(`los ${oscuros.length} movimientos oscuros se pintan en ${l}`, oscuros.length === 18 && !lanza, lanza);
+}
 for (const l of ['es', 'en']) {
   const ctx = CTX[l];
   const html = moveRowHTML(mov, 0, ctx);

@@ -1,67 +1,29 @@
 // ===== POKEMON DETAIL =====
-import { TYPES, STAT_KEYS, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN, NATURES } from './data.js';
-import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchDex } from './api.js';
+import { TYPES, STAT_KEYS, NATURES } from './data.js';
+import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchDex, fetchMeta, fetchMetaNames } from './api.js';
 import { skeletonHTML, renderError, hostDeRuta, wireScrollFade, titularFicha, contextoActivo } from './ui.js';
 import { urlDe } from './rutas.js';
 import { esqueletoDeFicha } from './cascaras.js';
-import { evolutionText, ramasResueltas, textoDeRama, nodoActual } from './evolution.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
 import { formsOf } from './forms.js';
-import { fetchMeta, fetchMetaNames } from './api.js';
 import { metaSetOf, defaultFormat, prettySlug, metaName, metaLink, FORMATS, MONTH } from './meta.js';
 import { getLevel } from './level.js';
-import { fichaHTML, displayName, evoTreeHTML, moveRowHTML } from './ficha-pokemon.js';
+import { fichaHTML, evoSectionHTML, movesPanelHTML } from './ficha-pokemon.js';
 
-// A failure loading evolutions must not take down the whole detail page: this
-// section shows its own error with a retry and the rest stays up.
-async function renderEvolutionSection(host, dexId, formId = dexId) {
+// Evolucion y movimientos llegan pintados dentro de fichaHTML. Lo de aqui es
+// solo su camino de error: un fallo cargando uno de los dos no tumba la ficha,
+// la seccion ensena su propio error con reintento y el resto sigue en pie.
+//
+// `fallo` es el error de la primera carga, la de renderPokedexDetail: con el,
+// se va directo al error sin volver a pedir nada. El reintento entra sin el.
+async function renderEvolutionSection(host, dexId, formId = dexId, fallo = null) {
   host.innerHTML = skeletonHTML({ shape: 'blocks', rows: 3 });
   try {
-    // Only two datasets: item and move names are already resolved inside
-    // evolutions.json, so the page never pulls items.json (595 KB) or
-    // moves.json (343 KB) just to read a few names.
+    if (fallo) throw fallo;
     const [evolutions, allPokemon] = await Promise.all([
       fetchEvolutions(), fetchPokemonList(),
     ]);
-
-    // La cadena es la de la especie: una forma no tiene linea evolutiva propia.
-    const chainId = evolutions.bySpecies[dexId];
-    const root = chainId != null ? evolutions.chains[chainId] : null;
-    if (!root || root.evolvesTo.length === 0) {
-      host.innerHTML = `<p class="evo-none">${t('evo.none')}</p>`;
-      return;
-    }
-
-    const pokeBySlug = new Map(allPokemon.map(x => [x.name, x]));
-    const byId = new Map(allPokemon.map(p => [p.id, p]));
-    const ctx = contextoActivo();
-    const nameOf = id => displayName(byId.get(id), ctx) || `#${id}`;
-
-    const lookups = {
-      species: slug => displayName(pokeBySlug.get(slug), ctx) || slug,
-    };
-
-    // Por el sufijo del slug y no por una tabla de ids: la especie 745 ya se
-    // llama `lycanroc-midday`, asi que la forma diurna se encuentra igual que
-    // las otras dos y no hay ningun numero que mantener a mano.
-    const formaDe = (species, sufijo) => {
-      const entrada = byId.get(species);
-      if (!entrada) return null;
-      const candidatos = [entrada, ...formsOf(species, allPokemon)];
-      return candidatos.find(p => p.name.endsWith(`-${sufijo}`))?.id || null;
-    };
-
-    const currentId = nodoActual(root, dexId, formId, formaDe);
-    // Los textos de las ramas los pone evolution.js, que traduce con t(): el
-    // arbol (ficha-pokemon.js) los recibe hechos.
-    const evo = {
-      currentId,
-      nameOf,
-      ramas: (node, child) => ramasResueltas(node, child, formaDe),
-      textoRama: (child, resueltas) => textoDeRama(child, resueltas, nameOf, ctx.l, lookups),
-      textoDetalles: details => evolutionText(details, ctx.l, lookups),
-    };
-    host.innerHTML = `<div class="evo-line">${evoTreeHTML(root, evo, ctx)}</div>`;
+    host.innerHTML = evoSectionHTML(contextoActivo(), { evolutions, allPokemon, dexId, formId });
   } catch (err) {
     // Sin enlace de vuelta: la ficha sigue entera encima, esto es una seccion
     // suya. Ver renderError.
@@ -77,64 +39,27 @@ async function renderEvolutionSection(host, dexId, formId = dexId) {
 // mismo data/dex/{id}.json que la cabecera ya ha pedido para la descripcion:
 // mediana 1,7 KB gz y cero peticiones nuevas.
 //
-// La lista tiene alto fijo y scroll propio, asi que la tarjeta ocupa lo mismo
-// con 15 movimientos que con 150, y no salta al cambiar de pestana.
-const METHOD_ORDER = ['level', 'machine', 'egg', 'tutor'];
-
-function renderMovesPanel(host, entry, byId, versionGroups) {
-  const methods = METHOD_ORDER.filter(m => entry[m]);
-  let active = methods[0];
-
-  const paint = () => {
-    const ctx = contextoActivo();
-    const [vgIdx, list] = entry[active];
-    const vgSlug = versionGroups[vgIdx];
-    const game = (getLang() === 'es' ? VERSION_GROUP_NAMES : VERSION_GROUP_NAMES_EN)[vgSlug] || vgSlug;
-    const rows = list.map(item => {
-      const isLevel = Array.isArray(item);
-      const move = byId.get(isLevel ? item[0] : item);
-      return move ? moveRowHTML(move, isLevel ? item[1] : null, ctx) : '';
-    }).join('');
-
-    host.innerHTML = `
-      <div class="tabs mv-tabs">
-        ${methods.map(m => `<button class="tab${m === active ? ' active' : ''}" data-method="${m}">${t('learn.tab.' + m)}</button>`).join('')}
-      </div>
-      <div class="mv-meta">
-        <span>${t('learn.from', { game })}</span>
-        <span>${list.length === 1 ? t('learn.count.one') : t('learn.count', { n: list.length })}</span>
-      </div>
-      <div class="mv-list">${rows}</div>
-    `;
-
-    host.querySelector('.mv-tabs').addEventListener('click', (e) => {
-      const btn = e.target.closest('.tab');
-      if (!btn) return;
-      active = btn.dataset.method;
-      paint();
-    });
-  };
-
-  paint();
+// La primera pestana la pinta fichaHTML; aqui se escucha el cambio de pestana,
+// que repinta el panel con la elegida. Un solo listener en el hueco, que no se
+// sustituye: el innerHTML cambia, el listener se queda.
+function wireMovesPanel(host, dex) {
+  host.addEventListener('click', (e) => {
+    const btn = e.target.closest('.mv-tabs .tab');
+    if (!btn) return;
+    host.innerHTML = movesPanelHTML(contextoActivo(), dex, btn.dataset.method);
+  });
 }
 
-async function loadMovesSection(host, currentId) {
+// `fallo`, como en renderEvolutionSection.
+async function loadMovesSection(host, dexId, fallo = null) {
   host.innerHTML = skeletonHTML({ shape: 'blocks', rows: 4 });
   try {
-    // Un solo fichero con el learnset de esta especie y los movimientos que
-    // aparecen en el, ya con nombre y numeros. Antes eran learnsets.json y
-    // moves.json enteros -- 155,6 KB gz por abrir una ficha para leer los ~100
-    // movimientos de uno. Y ya esta pedido: la cabecera saco de aqui la
-    // descripcion, asi que esto no cuesta ni una peticion mas.
-    const ficha = await fetchDex(currentId);
-    const entry = ficha.learnset;
-    if (!entry || Object.keys(entry).length === 0) {
-      host.innerHTML = `<p class="evo-none">${t('learn.none')}</p>`;
-      return;
-    }
-    renderMovesPanel(host, entry, new Map(ficha.moves.map(m => [m.id, m])), ficha.versionGroups);
+    if (fallo) throw fallo;
+    const dex = await fetchDex(dexId);
+    host.innerHTML = movesPanelHTML(contextoActivo(), dex);
+    wireMovesPanel(host, dex);
   } catch (err) {
-    renderError(host, err, () => loadMovesSection(host, currentId), { backHome: false });
+    renderError(host, err, () => loadMovesSection(host, dexId), { backHome: false });
   }
 }
 
@@ -259,9 +184,8 @@ function metaSetHTML(found, owner, names) {
 
 // Se pinta aparte porque puede tener que pedir el otro formato. Falla suave: si
 // algo no carga, la ficha se queda sin esta seccion y con todo lo demas.
-async function renderMetaSection(host, dexId, format, meta, allPokemon) {
+async function renderMetaSection(host, dexId, format, meta, allPokemon, evolutions) {
   try {
-    const evolutions = await fetchEvolutions().catch(() => null);
     const found = await findMetaSet(dexId, format, meta, evolutions);
     if (!found) return;
 
@@ -290,15 +214,21 @@ export async function renderPokedexDetail(container, id) {
   const host = hostDeRuta(container);
   host.innerHTML = skeletonHTML(esqueletoDeFicha('pokedex'));
 
-  // In parallel: fetchPokemonList is already memoised by api.js, so the full
-  // list the breeding section needs costs no extra request.
+  // Todo a la vez, y se pinta una sola vez cuando esta todo: la ficha ya no
+  // llega a trozos. Los cinco (el dex, justo debajo) estan memorizados en
+  // api.js, asi que lo que otra parte de la pagina ya pidio no se pide dos
+  // veces.
+  //
+  // Evoluciones y meta fallan suave: sin ellos la ficha se pinta entera, la
+  // evolucion con su error y reintento, y sin seccion de meta, que es
+  // informacion de mas y no la razon de estar en la pagina.
   const format = defaultFormat(getLevel());
-  const [pokemon, allPokemon, meta] = await Promise.all([
+  let errorEvo = null;
+  const [pokemon, allPokemon, meta, evolutions] = await Promise.all([
     fetchPokemonDetail(id),
     fetchPokemonList(),
-    // Falla suave: si el fichero del meta no carga, la ficha se pinta entera sin
-    // su seccion. Es informacion de mas, no la razon de estar en la pagina.
     fetchMeta(format).catch(() => null),
+    fetchEvolutions().catch((err) => { errorEvo = err; return null; }),
   ]);
   if (!pokemon) {
     host.innerHTML = `
@@ -317,21 +247,26 @@ export async function renderPokedexDetail(container, id) {
   // species keeps owning the dex number, the neighbours, evolution, the
   // learnset and breeding. Only what the header shows changes.
   const dexId = pokemon.speciesId || pokemon.id;
+  // El dex de la especie ya lo ha pedido fetchPokemonDetail para la
+  // descripcion, a la vez que todo lo de arriba: esto es la promesa memorizada,
+  // no una peticion mas. Si fallo alli, aqui se reintenta una vez.
+  let errorDex = null;
+  const dex = await fetchDex(dexId).catch((err) => { errorDex = err; return null; });
   const speciesEntry = allPokemon.find(p => p.id === dexId);
   const variants = [speciesEntry, ...formsOf(dexId, allPokemon)].filter(Boolean);
   const variantLabels = formLabels(variants, speciesEntry?.name || '', getLang());
 
   // titularFicha con pokeName: el nombre del idioma activo, igual que el h1.
   titularFicha(`/pokedex/${id}`, pokeName(pokemon));
-  host.innerHTML = fichaHTML(contextoActivo(), { pokemon, allPokemon, variants, variantLabels });
+  host.innerHTML = fichaHTML(contextoActivo(), { pokemon, allPokemon, variants, variantLabels, evolutions, dex });
 
-  // The species owns both: Mega Charizard X evolves and learns exactly as
-  // Charizard does, and the learnsets were built for the 1025 species only. La
-  // evolucion recibe ademas la forma abierta, que es la unica que sabe cual de
-  // las tres ramas de Lycanroc es la pestana que se esta mirando.
-  renderEvolutionSection(host.querySelector('#evoSection'), dexId, pokemon.id);
-  loadMovesSection(host.querySelector('#mvSection'), dexId);
-  renderMetaSection(host.querySelector('#metaSection'), dexId, format, meta, allPokemon);
+  // Lo que no pudo cargar se queda con su error y su reintento, en su hueco.
+  const evoHost = host.querySelector('#evoSection');
+  if (errorEvo) renderEvolutionSection(evoHost, dexId, pokemon.id, errorEvo);
+  const mvHost = host.querySelector('#mvSection');
+  if (dex) wireMovesPanel(mvHost, dex);
+  else loadMovesSection(mvHost, dexId, errorDex);
+  renderMetaSection(host.querySelector('#metaSection'), dexId, format, meta, allPokemon, evolutions);
 
   // Pikachu carries 17 forms and the strip only shows five of them at a time.
   // wireScrollFade (js/ui.js) lights a fade on whichever side has more; the

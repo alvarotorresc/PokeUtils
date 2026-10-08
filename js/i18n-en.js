@@ -632,6 +632,9 @@ export default {
     'type.flying': 'Flying', 'type.psychic': 'Psychic', 'type.bug': 'Bug',
     'type.rock': 'Rock', 'type.ghost': 'Ghost', 'type.dragon': 'Dragon',
     'type.dark': 'Dark', 'type.steel': 'Steel', 'type.fairy': 'Fairy',
+    // Los 18 movimientos oscuros de Colosseum y XD (data/moves.json). No es
+    // uno de los 18 tipos, pero sin clave su fila de movimiento no se pinta.
+    'type.shadow': 'Shadow',
 
     'stat.hp': 'HP', 'stat.atk': 'Attack', 'stat.def': 'Defense',
     'stat.spa': 'Sp. Atk', 'stat.spd': 'Sp. Def', 'stat.spe': 'Speed',
