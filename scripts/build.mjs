@@ -29,7 +29,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { execFileSync } from 'node:child_process';
 import {
-  rutasPublicas, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas, sinComentarios,
+  rutasPublicas, leerDex, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas, sinComentarios,
   literalesEspanol, ORIGEN, SCRIPTS_DE_LA_PORTADA, rellenarPortada, textosVisibles, textosConDerivados, conJsonLd,
   sitemapDe, robotsDe,
 } from './pages.mjs';
@@ -320,8 +320,9 @@ function lastmodDe(deps) {
 async function generarPaginas(esqueleto) {
   // esqueleto: el index.html ya construido, que es tambien la portada espanola.
   const leerDato = async nombre => JSON.parse(await readFile(join(ROOT, 'data', `${nombre}.json`), 'utf8'));
-  const [indice, pokemon, moves, abilities] = await Promise.all(['rutas', 'pokemon', 'moves', 'abilities'].map(leerDato));
-  const rutas = rutasPublicas({ indice, pokemon, moves, abilities });
+  const [indice, pokemon, moves, abilities, evolutions] = await Promise.all(['rutas', 'pokemon', 'moves', 'abilities', 'evolutions'].map(leerDato));
+  const dex = await leerDex(pokemon, leerDato);
+  const rutas = rutasPublicas({ indice, pokemon, moves, abilities, evolutions, dex });
 
   for (const ruta of rutas) {
     if (ruta.publica === '/') {

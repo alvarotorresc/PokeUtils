@@ -9,19 +9,20 @@
 // Run with: node scripts/check-pages.mjs
 import { readFile } from 'node:fs/promises';
 import {
-  ORIGEN, rutasPublicas, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas,
+  ORIGEN, rutasPublicas, leerDex, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas,
   bloqueHreflang, literalesEspanol, sinComentarios, sitemapDe, robotsDe,
 } from './pages.mjs';
 import { existsSync } from 'node:fs';
 import { tieneUrlPropia, isForm } from '../js/forms.js';
 import { pokeName } from '../js/i18n.js';
-import { INDEXABLES, esIndexable, FICHAS_INDEXABLES, ULTIMA_ESPECIE } from '../js/contenido.js';
+import { INDEXABLES, esIndexable, esFichaEspecie, FICHAS_INDEXABLES, ULTIMA_ESPECIE } from '../js/contenido.js';
 import textosEn from '../js/textos-en.js';
 
 const leerTexto = ruta => readFile(new URL(`../${ruta}`, import.meta.url), 'utf8');
 const leer = async nombre => JSON.parse(await leerTexto(`data/${nombre}.json`));
 
-const [pokemon, moves, abilities, indice] = await Promise.all(['pokemon', 'moves', 'abilities', 'rutas'].map(leer));
+const [pokemon, moves, abilities, indice, evolutions] = await Promise.all(['pokemon', 'moves', 'abilities', 'rutas', 'evolutions'].map(leer));
+const dex = await leerDex(pokemon, leer);
 const esqueleto = await leerTexto('index.html');
 
 let failed = 0;
@@ -41,7 +42,7 @@ const lanza = fn => {
 
 console.log('\nQue paginas hay\n');
 
-const rutas = rutasPublicas({ indice, pokemon, moves, abilities });
+const rutas = rutasPublicas({ indice, pokemon, moves, abilities, evolutions, dex });
 const por = publica => rutas.find(r => r.publica === publica);
 const de = idioma => rutas.filter(r => r.idioma === idioma);
 
@@ -62,6 +63,12 @@ check('el idioma de cada fila es el de su prefijo',
   rutas.filter(r => r.idioma !== (r.publica === '/en' || r.publica.startsWith('/en/') ? 'en' : 'es')).map(r => r.publica), []);
 check('todas con descripcion', rutas.filter(r => !r.descripcion).map(r => r.publica), []);
 check('ninguna descripcion de mas de 160', rutas.filter(r => r.descripcion?.length > 160).map(r => r.publica), []);
+// PR 4: la de cada ficha de especie sale de descripcionEspecie, de 120 a 155
+// (el titulo, de 50 a 60, lo mira check-rutas). Las formas no: son de plantilla.
+const especies = rutas.filter(r => esFichaEspecie(r.logica));
+check('2050 fichas de especie, 1025 por idioma', ['es', 'en'].map(l => especies.filter(r => r.idioma === l).length), [1025, 1025]);
+check('su description, de 120 a 155',
+  especies.filter(r => r.descripcion.length < 120 || r.descripcion.length > 155).map(r => `${r.publica} ${r.descripcion.length}`), []);
 // PR 3: se indexan las 53 por idioma de INDEXABLES, en los dos idiomas a la
 // vez; el resto, con noindex. D2: la portada en ingles tambien.
 // PR 4: y las fichas de especie, cuando se encienda FICHAS_INDEXABLES.
@@ -112,7 +119,7 @@ check('y el par la tiene a ella', rutas.filter(r => {
   return JSON.stringify(par.alternas) !== JSON.stringify(r.alternas) || par.logica !== r.logica;
 }).map(r => r.publica), []);
 
-check('una especie', [por('/pokedex/pikachu')?.logica, por('/pokedex/pikachu')?.titulo], ['/pokedex/25', 'Pikachu · PokeUtils']);
+check('una especie', [por('/pokedex/pikachu')?.logica, por('/pokedex/pikachu')?.titulo], ['/pokedex/25', 'Pikachu: tipo, debilidades, stats y habilidades · PokeUtils']);
 check('una especie con slug limpio (decision 7)', por('/pokedex/deoxys')?.logica, '/pokedex/386');
 check('una forma propia', por('/pokedex/charizard-mega-x')?.titulo, 'Mega-Charizard X · PokeUtils');
 check('una forma sin URL no tiene pagina', por('/pokedex/deoxys-attack'), undefined);
@@ -130,9 +137,13 @@ check('una pestana de la calculadora', [por('/calculadora-de-dano')?.logica, por
 console.log('\nLas paginas en ingles\n');
 
 check('una especie', [por('/en/pokedex/pikachu')?.logica, por('/en/pokedex/pikachu')?.titulo, por('/en/pokedex/pikachu')?.alternas],
-  ['/pokedex/25', 'Pikachu · PokeUtils', { es: '/pokedex/pikachu', en: '/en/pokedex/pikachu' }]);
+  ['/pokedex/25', 'Pikachu: type, weaknesses, stats and abilities · PokeUtils', { es: '/pokedex/pikachu', en: '/en/pokedex/pikachu' }]);
+// La de una especie sale de sus datos (descripcionEspecie); la de una forma,
+// de la plantilla corta.
 check('su descripcion', por('/en/pokedex/pikachu')?.descripcion,
-  'Pikachu in the Pokédex: base stats, types, weaknesses, abilities, evolutions and the moves it learns.');
+  'Pikachu, an Electric-type Pokémon: weak to Ground, 320 base stat total, evolves into Raichu. Its abilities, who it breeds with and the moves it learns.');
+check('la de una forma propia, de plantilla', por('/en/pokedex/charizard-mega-x')?.descripcion,
+  'Mega Charizard X in the Pokédex: base stats, types, weaknesses, abilities, evolutions and the moves it learns.');
 check('una forma propia, con su nombre en ingles', por('/en/pokedex/charizard-mega-x')?.titulo, 'Mega Charizard X · PokeUtils');
 check('un movimiento', [por('/en/moves/thunder-punch')?.titulo, por('/en/moves/thunder-punch')?.alternas.es],
   ['Thunder Punch · PokeUtils', '/movimientos/puno-trueno']);
@@ -170,11 +181,11 @@ console.log('\nEl HTML de una pagina\n');
 
 const pika = paginaHtml(esqueleto, por('/pokedex/pikachu'));
 const uno = (html, re) => [...html.matchAll(re)].map(m => m[1]);
-check('su <title>', uno(pika, /<title>([^<]*)<\/title>/g), ['Pikachu · PokeUtils']);
+check('su <title>', uno(pika, /<title>([^<]*)<\/title>/g), ['Pikachu: tipo, debilidades, stats y habilidades · PokeUtils']);
 check('su canonical, absoluta y sin barra final',
   uno(pika, /<link rel="canonical" href="([^"]*)"/g), [`${ORIGEN}/pokedex/pikachu`]);
 check('og:url igual que la canonical', uno(pika, /<meta property="og:url" content="([^"]*)"/g), [`${ORIGEN}/pokedex/pikachu`]);
-check('og:title', uno(pika, /<meta property="og:title" content="([^"]*)"/g), ['Pikachu · PokeUtils']);
+check('og:title', uno(pika, /<meta property="og:title" content="([^"]*)"/g), ['Pikachu: tipo, debilidades, stats y habilidades · PokeUtils']);
 check('description y og:description, la misma',
   [...uno(pika, /<meta name="description" content="([^"]*)"/g), ...uno(pika, /<meta property="og:description" content="([^"]*)"/g)],
   [por('/pokedex/pikachu').descripcion, por('/pokedex/pikachu').descripcion]);

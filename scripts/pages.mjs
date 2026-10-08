@@ -33,6 +33,7 @@ import {
   rejillaHerramientasHTML, idsDeCategoria, tiposTodosHTML, portadaHTML, chipsInicialesHTML, breadcrumbItems, nombreDe,
 } from '../js/contenido.js';
 import { reservaDe } from '../js/cascaras.js';
+import { descripcionEspecie } from '../js/ficha-texto.js';
 import textosEs from '../js/textos-es.js';
 import textosEn from '../js/textos-en.js';
 // pokeName es la misma regla con la que las fichas ponen su nombre, asi que el
@@ -130,17 +131,23 @@ function rutasFijas(l) {
 }
 
 // Las fichas de un idioma, sin URL todavia: {logica, titulo, descripcion}.
-function fichas(l, { pokemon, moves, abilities }) {
+// La de una especie sale de sus datos (descripcionEspecie, de 120 a 155), en
+// los dos idiomas; la de una forma, de la plantilla corta de DESCRIPCIONES.
+function fichas(l, { pokemon, moves, abilities, evolutions, dex }) {
   const d = DESCRIPCIONES[l];
   const ficha = (logica, nombre, descripcion) => ({
     logica, titulo: tituloDe(logica, nombre, l), descripcion: recortar(descripcion),
   });
+  const ctxEspecie = id => ({ l, dic: DICCIONARIOS[l], pokemon, abilities, evolutions, dex: dex.get(id) });
   const fichasPokemon = pokemon
     .filter(p => !isForm(p) || tieneUrlPropia(p))
     .sort((a, b) => a.id - b.id)
     .map(p => {
       const nombre = pokeName(p, l);
-      return ficha(`/pokedex/${p.id}`, nombre, d.especie(nombre));
+      if (isForm(p)) return ficha(`/pokedex/${p.id}`, nombre, d.especie(nombre));
+      // Sin recortar: ya sale de 120 a 155, y si no, que lo vea check-pages en
+      // vez de cortarla aqui con unos puntos suspensivos.
+      return { logica: `/pokedex/${p.id}`, titulo: tituloDe(`/pokedex/${p.id}`, nombre, l), descripcion: descripcionEspecie(p.id, ctxEspecie(p.id)) };
     });
   const grupos = Object.keys(GRUPOS_HUEVO_ES).map(g => {
     const nombre = DICCIONARIOS[l][`egg.group.${g}`];
@@ -161,16 +168,25 @@ function fichas(l, { pokemon, moves, abilities }) {
   return [...fichasPokemon, ...grupos, ...tipos, ...fichasMoves, ...fichasAbilities];
 }
 
-// rutasPublicas({indice, pokemon, moves, abilities}) ->
+// El dex de las 1025 especies, una vez: leer(nombre) es el lector de JSON de
+// data/ de quien llama (build.mjs o check-pages), y aqui no se toca el disco.
+export async function leerDex(pokemon, leer) {
+  const ids = pokemon.filter(p => !isForm(p)).map(p => p.id);
+  return new Map(await Promise.all(ids.map(async id => [id, await leer(`dex/${id}`)])));
+}
+
+// rutasPublicas({indice, pokemon, moves, abilities, evolutions, dex}) ->
 //   [{idioma, logica, publica, alternas: {es, en}, titulo, descripcion, noindex}]
 // Primero las 2.487 espanolas y luego las 2.487 inglesas, en el mismo orden.
 // `alternas` es la direccion de la misma pagina en cada idioma (la suya
 // incluida): de ahi salen los hreflang y el href del conmutador.
 // indice es data/rutas.json: se fija aqui para que urlDe sepa los slugs.
-export function rutasPublicas({ indice, pokemon, moves, abilities }) {
+// evolutions es data/evolutions.json y dex, un Map id -> data/dex/<id>.json de
+// las 1025 especies (leerDex): los piden las descriptions de las especies.
+export function rutasPublicas({ indice, pokemon, moves, abilities, evolutions, dex }) {
   fijarIndice(indice);
   const textos = textosConDerivados({ pokemon, moves });
-  return IDIOMAS.flatMap(l => [...rutasFijas(l), ...fichas(l, { pokemon, moves, abilities })].map(fila => {
+  return IDIOMAS.flatMap(l => [...rutasFijas(l), ...fichas(l, { pokemon, moves, abilities, evolutions, dex })].map(fila => {
     const alternas = Object.fromEntries(IDIOMAS.map(otro => [otro, urlDe(fila.logica, otro)]));
     const publica = alternas[l];
     // La misma ruta logica en los dos idiomas: ES es indexable si y solo si lo
