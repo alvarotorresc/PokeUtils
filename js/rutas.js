@@ -23,7 +23,7 @@
 // Sin DOM y sin importar api.js (que arrastra storage.js), para que node lo
 // pueda importar: lo usan check-rutas.mjs, serve.mjs y el build.
 
-import { isForm, tieneUrlPropia, nombreDeMega } from './forms.js';
+import { isForm, tieneUrlPropia, nombreDeMega, FORMAS_GEMELAS } from './forms.js';
 import { TITULOS_SEO } from './titulos.js';
 
 // ===== Idiomas =====
@@ -421,6 +421,16 @@ export function fijarIndice(json) {
     moveEn: new Map([...moveEn].map(([id, slug]) => [slug, id])),
     ability: new Map(Object.entries(json.abilities).map(([name, slug]) => [slug, name])),
   };
+}
+
+// Si la forma `id` tiene pagina que indexar: URL propia (megas y regionales) y
+// no ser una de las gemelas de FORMAS_GEMELAS, que solo cambian de aspecto y
+// dirian lo mismo que su cabeza (D3 de la PR 5): esas conservan su URL, con
+// noindex. Sin indice lanza en vez de contestar que no.
+export function formaIndexable(id) {
+  exigirIndice(`formaIndexable(${id})`);
+  const f = forma.get(id);
+  return Boolean(f?.propia && !FORMAS_GEMELAS[f.name]);
 }
 
 // La misma ruta relativa al modulo que usa api.js: en el build este fichero

@@ -60,7 +60,7 @@
 // unos 4,2 KB gz mas en este modulo. Por eso no los llama (commit 5): los llama
 // el build. tipoHTML y grupoHTML si van al cliente, con egg-groups.js: 1,1 KB gz
 // en el arranque, medido el 2026-10-08.
-import { urlDe, TITULOS, TITULOS_EN } from './rutas.js';
+import { urlDe, formaIndexable, TITULOS, TITULOS_EN } from './rutas.js';
 import { TYPES, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN, CHART, GENERATIONS, spriteUrl } from './data.js';
 import { TOOLS, CATEGORIES, toolsIn } from './tools.js';
 import { EGG_GROUPS, membersOf, canBreed, partnersOf, groupCounts } from './egg-groups.js';
@@ -90,10 +90,11 @@ export const INDEXABLES = [
 //
 // La PR 4 abre al buscador las 1025 fichas de especie (/pokedex/1 a
 // /pokedex/1025) ademas de las 53: no tienen textos a mano, su texto sale de
-// los datos (ficha-texto.js). Las formas (/pokedex/10001 en adelante) siguen
-// con noindex. INDEXABLES sigue siendo la lista de las 53 con textos a mano, y
-// es lo que piden las funciones que los leen; esIndexable es lo que decide el
-// noindex, el sitemap y la cuenta del build.
+// los datos (ficha-texto.js). La PR 5 suma las 151 formas con URL propia que
+// no son gemelas (esFichaForma); el resto de formas sigue con noindex.
+// INDEXABLES sigue siendo la lista de las 53 con textos a mano, y es lo que
+// piden las funciones que los leen; esIndexable es lo que decide el noindex,
+// el sitemap y la cuenta del build.
 //
 // La ultima especie, la de la ultima generacion: con una nueva, entra sola.
 // Marcada como pura para que esbuild la quite del cliente, que no la usa: un
@@ -111,7 +112,21 @@ export function esFichaEspecie(logica) {
 // JSON-LD y sitemap). Apagarla devuelve las 1025 al noindex sin tocar nada mas.
 export const FICHAS_INDEXABLES = true;
 
-export const esIndexable = logica => INDEXABLES.includes(logica) || (FICHAS_INDEXABLES && esFichaEspecie(logica));
+// La ficha de una mega o una regional con URL propia (/pokedex/10034), salvo
+// las gemelas (formaIndexable, js/rutas.js). Pide el indice de rutas fijado.
+export function esFichaForma(logica) {
+  const m = /^\/pokedex\/(\d+)$/.exec(logica);
+  if (!m) return false;
+  const id = Number(m[1]);
+  return id > ULTIMA_ESPECIE && formaIndexable(id);
+}
+
+// Encendida desde que el build prerenderiza las formas con su texto, su
+// BreadcrumbList de 4 pasos y su sitemap. Apagarla devuelve las 151 al noindex.
+export const FORMAS_INDEXABLES = true;
+
+export const esIndexable = logica => INDEXABLES.includes(logica)
+  || (FICHAS_INDEXABLES && esFichaEspecie(logica)) || (FORMAS_INDEXABLES && esFichaForma(logica));
 
 export const NOMBRES_TIPO = { es: TYPE_NAMES_FULL, en: TYPE_NAMES_FULL_EN };
 // Los nombres cortos que ya usa tituloDe para las paginas fijas, con mayusculas
@@ -141,8 +156,8 @@ const toolDe = logica => TOOLS.find(tool => tool.route === logica);
 
 // ===== Nombres y miga de pan =====
 
-// La ficha de un Pokemon (/pokedex/25, o /pokedex/10034 de una forma): la de
-// una especie es indexable y la de una forma no, pero las dos llevan miga. Su nombre no esta en ninguna tabla, asi
+// La ficha de un Pokemon (/pokedex/25, o /pokedex/10034 de una forma): las dos
+// llevan miga. Su nombre no esta en ninguna tabla, asi
 // que llega en el contexto como `nombre`, ya en el idioma de la pagina. La de
 // una forma con URL propia cuelga de su especie, que llega como
 // `especieDeForma` ({logica, nombre}): Pokedex > Charizard > Mega-Charizard X.

@@ -13,7 +13,7 @@ globalThis.location = { pathname: '/', search: '', hash: '', href: 'http://local
 const { fijarIndice, urlDe, logicaDe, idiomaDe } = await import('../js/rutas.js');
 fijarIndice(JSON.parse(readFileSync(new URL('../data/rutas.json', import.meta.url), 'utf8')));
 const {
-  INDEXABLES, esFichaEspecie, esIndexable, FICHAS_INDEXABLES, ULTIMA_ESPECIE, nombreDe, breadcrumbItems, breadcrumbHTML, cabeceraHTML, pestanasHTML,
+  INDEXABLES, esFichaEspecie, esFichaForma, esIndexable, FICHAS_INDEXABLES, FORMAS_INDEXABLES, ULTIMA_ESPECIE, nombreDe, breadcrumbItems, breadcrumbHTML, cabeceraHTML, pestanasHTML,
   rejillaHerramientasHTML, idsDeCategoria, introHTML, contarPalabras,
 } = await import('../js/contenido.js');
 const { derivadoTipo, derivadoGrupo, conDerivados } = await import('../js/derivados.js');
@@ -57,16 +57,22 @@ console.log('\nLas fichas de especie\n');
 check('la ultima especie es la 1025', ULTIMA_ESPECIE, 1025);
 check('ficha de especie: /pokedex/1 y /pokedex/1025 si',
   ['/pokedex/1', '/pokedex/1025'].map(esFichaEspecie), [true, true]);
-// 10001 es la primera forma: sigue con noindex aunque se abran las especies.
+// 10001 es la primera forma, sin URL propia: sigue con noindex.
 check('ficha de especie: /pokedex/0, /pokedex/1026, /pokedex/10001 y /pokedex no',
   ['/pokedex/0', '/pokedex/1026', '/pokedex/10001', '/pokedex'].map(esFichaEspecie), [false, false, false, false]);
 check('las 53 son indexables', INDEXABLES.filter(k => !esIndexable(k)), []);
 // El build ya prerenderiza las fichas enteras: la bandera esta encendida y las
-// 1025 especies se indexan; las formas y el resto de fichas, no.
+// 1025 especies se indexan; las formas sin URL y el resto de fichas, no.
 check('con FICHAS_INDEXABLES encendida, /pokedex/1, /pokedex/25 y /pokedex/1025 son indexables',
   [FICHAS_INDEXABLES, ...['/pokedex/1', '/pokedex/25', '/pokedex/1025'].map(esIndexable)], [true, true, true, true]);
 check('y /pokedex/10001, /moves/1 y /abilities/static no',
   ['/pokedex/10001', '/moves/1', '/abilities/static'].map(esIndexable), [false, false, false]);
+// PR 5: las megas y regionales con URL propia se indexan; las gemelas
+// (meowstic-female-mega, 10326) y las formas sin URL (deoxys-attack, 10001), no.
+check('ficha de forma: Mega-Charizard X y Raichu de Alola si; una gemela, Deoxys Ataque y una especie no',
+  ['/pokedex/10034', '/pokedex/10100', '/pokedex/10326', '/pokedex/10001', '/pokedex/6'].map(esFichaForma), [true, true, false, false, false]);
+check('con FORMAS_INDEXABLES encendida, /pokedex/10034 es indexable y la gemela no',
+  [FORMAS_INDEXABLES, ...['/pokedex/10034', '/pokedex/10326'].map(esIndexable)], [true, true, false]);
 
 console.log('\nNombres\n');
 

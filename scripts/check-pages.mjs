@@ -13,9 +13,9 @@ import {
   bloqueHreflang, literalesEspanol, sinComentarios, sitemapDe, robotsDe,
 } from './pages.mjs';
 import { existsSync } from 'node:fs';
-import { tieneUrlPropia, isForm } from '../js/forms.js';
+import { tieneUrlPropia, isForm, FORMAS_GEMELAS } from '../js/forms.js';
 import { pokeName } from '../js/i18n.js';
-import { INDEXABLES, esIndexable, esFichaEspecie, FICHAS_INDEXABLES, ULTIMA_ESPECIE } from '../js/contenido.js';
+import { INDEXABLES, esIndexable, esFichaEspecie, FICHAS_INDEXABLES, FORMAS_INDEXABLES, ULTIMA_ESPECIE } from '../js/contenido.js';
 import textosEn from '../js/textos-en.js';
 
 const leerTexto = ruta => readFile(new URL(`../${ruta}`, import.meta.url), 'utf8');
@@ -70,20 +70,25 @@ check('2050 fichas de especie, 1025 por idioma', ['es', 'en'].map(l => especies.
 check('su description, de 120 a 155',
   especies.filter(r => r.descripcion.length < 120 || r.descripcion.length > 155).map(r => `${r.publica} ${r.descripcion.length}`), []);
 // PR 5: la de cada forma con pagina propia sale de descripcionForma, tambien
-// de 120 a 155, y sigue con noindex hasta el commit que las enciende.
+// de 120 a 155, y se indexa salvo las 4 gemelas (D3), con noindex.
 const idsFormaPropia = new Set(pokemon.filter(tieneUrlPropia).map(p => `/pokedex/${p.id}`));
 const formasPropias = rutas.filter(r => idsFormaPropia.has(r.logica));
 check('310 fichas de forma propia, 155 por idioma', ['es', 'en'].map(l => formasPropias.filter(r => r.idioma === l).length), [155, 155]);
 check('su description, de 120 a 155',
   formasPropias.filter(r => r.descripcion.length < 120 || r.descripcion.length > 155).map(r => `${r.publica} ${r.descripcion.length}`), []);
 check('y ninguna con la plantilla vieja', formasPropias.filter(r => /(en la|in the) Pokédex: /.test(r.descripcion)).map(r => r.publica), []);
-check('las formas siguen con noindex', formasPropias.filter(r => !r.noindex).map(r => r.publica), []);
+const gemelas = pokemon.filter(p => FORMAS_GEMELAS[p.name]).map(p => `/pokedex/${p.id}`);
+check('noindex solo en las 4 gemelas, en los dos idiomas', formasPropias.filter(r => r.noindex).map(r => r.logica).sort(),
+  [...gemelas, ...gemelas].sort());
+check('son 4', gemelas.length, 4);
 // PR 3: se indexan las 53 por idioma de INDEXABLES, en los dos idiomas a la
 // vez; el resto, con noindex. D2: la portada en ingles tambien.
 // PR 4: y las 1025 fichas de especie, con FICHAS_INDEXABLES encendida.
+// PR 5: y las 151 formas con URL propia que no son gemelas (155 - 4), con
+// FORMAS_INDEXABLES.
 check('noindex en todas salvo las indexables (esIndexable)',
   rutas.filter(r => r.noindex === esIndexable(r.logica) || r.indexable === r.noindex).map(r => r.publica), []);
-const porIdioma = INDEXABLES.length + (FICHAS_INDEXABLES ? ULTIMA_ESPECIE : 0);
+const porIdioma = INDEXABLES.length + (FICHAS_INDEXABLES ? ULTIMA_ESPECIE : 0) + (FORMAS_INDEXABLES ? 151 : 0);
 check(`${porIdioma * 2} indexables, ${porIdioma} por idioma`, ['es', 'en'].map(l => de(l).filter(r => r.indexable).length), [porIdioma, porIdioma]);
 check('y las legales no', rutas.filter(r => /privac|terminos|terms/.test(r.publica)).map(r => r.noindex), [true, true, true, true]);
 check('los 18 tipos en cada idioma',
@@ -94,7 +99,7 @@ const alternas = { es: '/', en: '/en' };
 const sinContenido = ({ contenido, chips, jsonLd, deps, ...resto }) => resto;
 // Las deps del lastmod (depsDe): las llevan las indexables y solo ellas, y cada
 // fichero existe. Que tenga historia en git lo mira el build.
-check('deps: en las 2156 indexables y en ninguna mas', [rutas.filter(r => r.deps).length, rutas.filter(r => r.indexable && r.deps?.length).length], [2156, 2156]);
+check('deps: en las 2458 indexables y en ninguna mas', [rutas.filter(r => r.deps).length, rutas.filter(r => r.indexable && r.deps?.length).length], [2458, 2458]);
 check('deps que no existen en disco', [...new Set(rutas.flatMap(r => r.deps ?? []))].filter(d => !existsSync(new URL(`../${d}`, import.meta.url))), []);
 check('deps: el fichero de textos de su idioma', [por('/tipos/fuego').deps.includes('js/textos-es.js'), por('/en/types/fire').deps.includes('js/textos-en.js'), por('/en/types/fire').deps.includes('js/textos-es.js')], [true, true, false]);
 // Una ficha de especie: el conjunto comun, el mismo en los dos idiomas y sin
@@ -114,8 +119,16 @@ check('el BreadcrumbList de una ficha: Inicio, Pokedex y su nombre, absolutos y 
   [pasosLd(por('/pokedex/pikachu')), pasosLd(por('/en/pokedex/eevee'))],
   [[[1, 'Inicio', `${ORIGEN}/`], [2, 'Pokédex', `${ORIGEN}/pokedex`], [3, 'Pikachu', `${ORIGEN}/pokedex/pikachu`]],
     [[1, 'Home', `${ORIGEN}/en`], [2, 'Pokédex', `${ORIGEN}/en/pokedex`], [3, 'Eevee', `${ORIGEN}/en/pokedex/eevee`]]]);
-check('una forma, un movimiento y una habilidad, sin JSON-LD ni deps',
-  ['/pokedex/charizard-mega-x', '/movimientos/impactrueno', '/en/abilities/static'].map(u => [por(u)?.noindex, por(u)?.jsonLd, por(u)?.deps]),
+check('el de una forma: Inicio, Pokedex, su especie y su nombre',
+  [pasosLd(por('/pokedex/charizard-mega-x')), pasosLd(por('/en/pokedex/raichu-alola'))],
+  [[[1, 'Inicio', `${ORIGEN}/`], [2, 'Pokédex', `${ORIGEN}/pokedex`], [3, 'Charizard', `${ORIGEN}/pokedex/charizard`],
+    [4, 'Mega-Charizard X', `${ORIGEN}/pokedex/charizard-mega-x`]],
+  [[1, 'Home', `${ORIGEN}/en`], [2, 'Pokédex', `${ORIGEN}/en/pokedex`], [3, 'Raichu', `${ORIGEN}/en/pokedex/raichu`],
+    [4, 'Alolan Raichu', `${ORIGEN}/en/pokedex/raichu-alola`]]]);
+check('y sus deps, el dex de su especie',
+  por('/pokedex/charizard-mega-x').deps.filter(d => d.startsWith('data/dex/')), ['data/dex/6.json']);
+check('una gemela, un movimiento y una habilidad, sin JSON-LD ni deps',
+  ['/pokedex/meowstic-female-mega', '/movimientos/impactrueno', '/en/abilities/static'].map(u => [por(u)?.noindex, por(u)?.jsonLd, por(u)?.deps]),
   Array(3).fill([true, undefined, undefined]));
 check('la portada', sinContenido(por('/')), {
   idioma: 'es', logica: '/', publica: '/', alternas, titulo: 'Pokédex, tabla de tipos y calculadoras Pokémon · PokeUtils',
@@ -230,9 +243,10 @@ check('y una pagina generada, cuatro <script> menos', [scripts(pika), scripts(pa
   Array(2).fill(scripts(sinComentarios(esqueleto)) - 4));
 check('ninguno de los cuatro', [pika, paginaHtml(esqueleto, por('/en/pokedex/pikachu')), paginaHtml(esqueleto, por('/en'))]
   .map(html => MUERTOS.filter(m => html.includes(m))), [[], [], []]);
-check('JSON-LD: uno en /en (WebSite), uno en la ficha y ninguno en una forma con noindex',
+check('JSON-LD: uno en /en (WebSite), uno en la ficha, uno en una forma y ninguno en una gemela con noindex',
   [paginaHtml(esqueleto, por('/en')).match(/application\/ld\+json/g)?.length, pika.match(/application\/ld\+json/g)?.length,
-    paginaHtml(esqueleto, por('/pokedex/charizard-mega-x')).includes('application/ld+json')], [1, 1, false]);
+    paginaHtml(esqueleto, por('/pokedex/charizard-mega-x')).match(/application\/ld\+json/g)?.length,
+    paginaHtml(esqueleto, por('/pokedex/meowstic-female-mega')).includes('application/ld+json')], [1, 1, 1, false]);
 check('el tema y el modulepreload siguen', [pika.includes("'pkutils_theme'"), pika.includes("l.rel = 'modulepreload'")], [true, true]);
 // Sin el atributo, cada filtro (replaceState con ?q=) cuenta como una visita
 // en Umami: 1 pageview de mas por filtro, medido en el preview de la PR #21.
@@ -241,13 +255,13 @@ check('Umami ignora la query en el esqueleto',
   umami(esqueleto).map(t => /\sdata-exclude-search="true"/.test(t)), [true]);
 check('y en las paginas generadas', umami(pika).map(t => /\sdata-exclude-search="true"/.test(t)), [true]);
 // Sin plantilla (un movimiento, una habilidad), el <main> se queda vacio. Una
-// forma con URL propia ya lleva la suya (PR 5), aunque siga con noindex.
+// forma con URL propia ya lleva la suya (PR 5), tambien las gemelas con noindex.
 check('el <main> sigue ahi, vacio, en una pagina sin plantilla',
   ['/movimientos/impactrueno', '/en/abilities/static'].map(u => /<main class="main" id="app" data-reservando><\/main>/.test(paginaHtml(esqueleto, por(u)))),
   [true, true]);
-check('y una forma con URL propia lleva su ficha en el shell, con noindex',
+check('y una forma con URL propia lleva su ficha en el shell, sin noindex',
   [paginaHtml(esqueleto, por('/pokedex/charizard-mega-x')).includes('<div data-shell data-ruta="/pokedex/10034">'), por('/pokedex/charizard-mega-x').noindex],
-  [true, true]);
+  [true, false]);
 
 // Una indexable lleva su contenido dentro de <div data-shell data-ruta>, en el
 // <main>: el mismo que pinta el cliente, con su h1 y su texto.

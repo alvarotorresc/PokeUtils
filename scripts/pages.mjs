@@ -11,8 +11,8 @@
 // Cada pagina existe en espanol y en ingles (/en/...), con su <html lang>, sus
 // textos fijos ya traducidos y los tres hreflang que la emparejan con la otra.
 // Se indexan las que dice esIndexable (js/contenido.js): las 53 por idioma de
-// INDEXABLES (portada, hubs, FAQ, herramientas, tipos y grupos) y las 1025
-// fichas de especie. Todas llegan ademas con su contenido en el HTML
+// INDEXABLES (portada, hubs, FAQ, herramientas, tipos y grupos), las 1025
+// fichas de especie y las 151 de forma que no son gemelas. Todas llegan ademas con su contenido en el HTML
 // (contenidoDe, abajo), el mismo que pinta el cliente. Las demas llevan
 // noindex. La portada espanola no
 // se regenera: es el index.html tal cual, con su canonical y sus hreflang
@@ -148,8 +148,7 @@ function fichas(l, { pokemon, moves, abilities, evolutions, dex }) {
     .map(p => {
       const nombre = pokeName(p, l);
       // La de una forma lleva tambien su ficha en el shell (`forma`), y el nombre
-      // y la especie de su miga de 4 pasos para el BreadcrumbList del commit
-      // que las indexe.
+      // y la especie de su miga de 4 pasos para el BreadcrumbList.
       if (isForm(p)) {
         const especie = pokemon.find(q => q.id === p.speciesId);
         return { logica: `/pokedex/${p.id}`, titulo: tituloDe(`/pokedex/${p.id}`, nombre, l),
@@ -203,7 +202,7 @@ export async function leerDex(pokemon, leer) {
 // `contenido` (lo que va en el shell) va con la plantilla y no con la
 // indexabilidad: las 53 por idioma de INDEXABLES, las 1025 fichas de especie y
 // las 155 de forma con URL propia lo llevan, las fichas aunque se apagara
-// FICHAS_INDEXABLES y las formas con noindex. El noindex, el JSON-LD y el
+// FICHAS_INDEXABLES y las gemelas con noindex. El noindex, el JSON-LD y el
 // lastmod si dependen de esIndexable.
 export function rutasPublicas({ indice, pokemon, moves, abilities, evolutions, dex }) {
   fijarIndice(indice);
@@ -228,10 +227,12 @@ export function rutasPublicas({ indice, pokemon, moves, abilities, evolutions, d
     const ctx = { l, dic: DICCIONARIOS[l], textos: textos[l], pokemon, abilities, evolutions, dex };
     const conContenido = fila.especie || fila.forma ? { ...fija, contenido: contenidoDe(fila.logica, ctx) } : fija;
     if (!indexable) return conContenido;
-    // La ficha no tiene su nombre en ninguna tabla: la miga lo pide en ctx.
-    const ctxLd = fila.especie ? { ...ctx, nombre: fila.nombre } : ctx;
+    // La ficha no tiene su nombre en ninguna tabla: la miga lo pide en ctx. La
+    // de una forma pide ademas su especie, el tercer paso de los 4.
+    const ctxLd = fila.especie ? { ...ctx, nombre: fila.nombre }
+      : fila.forma ? { ...ctx, nombre: fila.nombre, especieDeForma: fila.especieDeForma } : ctx;
     const conLd = { ...conContenido, jsonLd: jsonLdDe(fila.logica, ctxLd, fija.descripcion), deps: depsDe(fila.logica, l, pokemon) };
-    if (fila.especie) return conLd;
+    if (fila.especie || fila.forma) return conLd;
     return fila.logica === '/'
       ? { ...conLd, contenido: portadaHTML(ctx), chips: chipsInicialesHTML(ctx) }
       : { ...conLd, contenido: contenidoDe(fila.logica, ctx) };
@@ -314,7 +315,8 @@ export function ogDe(logica, l, origen = ORIGEN) {
 //  - BreadcrumbList, con la misma lista que la miga visible (breadcrumbItems):
 //    en todas menos la portada, que no tiene miga (un solo paso). En una ficha
 //    de especie es lo unico que va (Inicio > Pokedex > nombre), con el nombre
-//    en ctx.nombre.
+//    en ctx.nombre; en una de forma, de 4 pasos, con su especie en
+//    ctx.especieDeForma (Inicio > Pokedex > Charizard > Mega-Charizard X).
 //  - WebApplication, en las 16 herramientas. Sin aggregateRating ni review
 //    (D3): no hay valoraciones de verdad que poner, y el Rich Results Test lo
 //    marca por eso. FAQPage no (D4): Google lo retiro en mayo de 2026.
