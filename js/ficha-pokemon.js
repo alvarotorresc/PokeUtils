@@ -420,25 +420,20 @@ function fraseFormaAncla(v, especie, porSlug, ctx) {
 //
 // Cambia algo si cambian los tipos, las stats o las habilidades: isCosmetic
 // mira solo las dos primeras, y Toxtricity Grave o Greninja Fuerte Afecto
-// cambian de habilidad con las mismas stats. Los nombres repetidos (Minior,
-// Zygarde 10%) llevan detras la etiqueta de su pestana, que los distingue.
+// cambian de habilidad con las mismas stats. El nombre sale tal cual del dato:
+// check-forms asegura que no se repite dentro de la especie.
 //
 // `abilities` es abilities.json entero: pokemon.json solo trae los slugs.
-function formasAnclaHTML(ctx, { variants, variantLabels, abilities }) {
+function formasAnclaHTML(ctx, { variants, abilities }) {
   const especie = variants[0];
   const anclas = variants
-    .map((v, i) => ({ v, etiqueta: variantLabels[i] }))
-    .filter(({ v }) => v.speciesId && !tieneUrlPropia(v));
+    .filter(v => v.speciesId && !tieneUrlPropia(v))
+    .map(v => ({ v }));
   if (anclas.length === 0) return '';
   if (!Array.isArray(abilities)) throw new Error(`ficha-pokemon.js: las formas de #${especie.id} necesitan abilities.json`);
   const porSlug = new Map(abilities.map(a => [a.name, a]));
 
-  const veces = {};
-  anclas.forEach(({ v }) => { veces[displayName(v, ctx)] = (veces[displayName(v, ctx)] || 0) + 1; });
-  const nombreDe = ({ v, etiqueta }) => {
-    const n = displayName(v, ctx);
-    return veces[n] > 1 ? `${n} (${etiqueta})` : n;
-  };
+  const nombreDe = ({ v }) => displayName(v, ctx);
   const cambia = ({ v }) => !mismosTipos(v.types, especie.types)
     || STAT_KEYS.some(k => v.stats[k] !== especie.stats[k])
     || (v.abilities.length > 0 && claveHabilidades(v) !== claveHabilidades(especie));
@@ -604,7 +599,7 @@ export function fichaHTML(ctx, { pokemon, allPokemon, abilities, variants, varia
       ${flavour && !propia ? `<p class="poke-flavour">${flavour}</p>` : ''}
       ${texto && (pokemon.id === dexId || propia) ? `<section class="intro intro-ficha">${texto.parrafos.slice(propia ? 0 : 1).map(p => `<p>${esc(p)}</p>`).join('')}</section>` : ''}
       </section>
-${propia ? obtencionHTML(entrada, displayName(allPokemon.find(p => p.id === dexId), ctx), ctx) : ''}${formasPropiasHTML(pokemon, variants, ctx)}${propia ? '' : formasAnclaHTML(ctx, { variants, variantLabels, abilities })}
+${propia ? obtencionHTML(entrada, displayName(allPokemon.find(p => p.id === dexId), ctx), ctx) : ''}${formasPropiasHTML(pokemon, variants, ctx)}${propia ? '' : formasAnclaHTML(ctx, { variants, abilities })}
       <section class="b">
       <h2 class="section-title">${tr(ctx, 'pokedex.stats')}</h2>
       <div>

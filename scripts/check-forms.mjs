@@ -97,6 +97,15 @@ const conUrl = pokemon.filter(p => !p.speciesId || tieneUrlPropia(p));
 const repetidos = campo => [...new Set(conUrl.map(p => p[campo]).filter((n, i, todos) => todos.indexOf(n) !== i))];
 check('ningun nameEs repetido entre especies y formas con URL', repetidos('nameEs'), []);
 check('ningun nameEn repetido entre especies y formas con URL', repetidos('nameEn'), []);
+// La seccion de formas de la ficha y el buscador muestran el nombre tal cual:
+// dos formas de la misma especie (o una forma y su especie) con el mismo nombre
+// serian dos lineas iguales (Zygarde 10%, Minior Meteorito, Toxtricity Gigamax).
+const repetidosEnEspecie = campo => [...new Set(pokemon.filter(p => !p.speciesId).flatMap(e => {
+  const grupo = [e, ...forms.filter(f => f.speciesId === e.id)];
+  return grupo.filter((p, i) => grupo.findIndex(q => q[campo] === p[campo]) !== i).map(p => `${e.name}: ${p[campo]}`);
+}))];
+check('ningun nameEs repetido dentro de una especie', repetidosEnEspecie('nameEs'), []);
+check('ningun nameEn repetido dentro de una especie', repetidosEnEspecie('nameEn'), []);
 check('las megas en espanol empiezan por "Mega-"',
   forms.filter(f => /-mega(-|$)/.test(f.name) && !f.nameEs.startsWith('Mega-')).map(f => f.name), []);
 check('Tauros de Paldea lleva su variedad', bySlug('tauros-paldea-aqua-breed').nameEs, 'Tauros de Paldea Variedad Acuática');

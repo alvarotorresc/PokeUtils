@@ -36,16 +36,39 @@ const SUFIJO_OFICIAL = {
   'stretchy-mega': { es: e => `Mega-${e} (forma recta)`, en: e => `Mega ${e} (Stretchy Form)` },
 };
 
+// Formas en ancla que compartian nombre con otra de su especie (las dos Zygarde
+// 10%, las seis Minior Meteorito, los Gigamax de Toxtricity y Urshifu en
+// ingles): la seccion de formas de la ficha y el buscador las mostraban
+// iguales. Por slug entero, y por idioma: un idioma ausente se queda con el de
+// PokeAPI, que ya era unico (los Gigamax en espanol). Las Zygarde se distinguen
+// por su habilidad (Agrupamiento / Rompeaura, como en los juegos) y las Minior
+// Meteorito por el color del nucleo que esconden, que es lo unico que las
+// separa. Zygarde Forma 50% no esta: no choca con nada, la especie es "Zygarde".
+const METEORO = { orange: ['naranja', 'Orange'], yellow: ['amarillo', 'Yellow'], green: ['verde', 'Green'],
+  blue: ['azul', 'Blue'], indigo: ['añil', 'Indigo'], violet: ['violeta', 'Violet'] };
+const POR_SLUG = {
+  'zygarde-10-power-construct': { es: e => `${e} Forma 10% (Agrupamiento)`, en: e => `${e} 10% Forme (Power Construct)` },
+  'zygarde-10': { es: e => `${e} Forma 10% (Rompeaura)`, en: e => `${e} 10% Forme (Aura Break)` },
+  'toxtricity-amped-gmax': { en: e => `${e} Gigantamax (Amped Form)` },
+  'toxtricity-low-key-gmax': { en: e => `${e} Gigantamax (Low Key Form)` },
+  'urshifu-single-strike-gmax': { en: e => `${e} Gigantamax (Single Strike Style)` },
+  'urshifu-rapid-strike-gmax': { en: e => `${e} Gigantamax (Rapid Strike Style)` },
+  ...Object.fromEntries(Object.entries(METEORO).map(([c, [es, en]]) => [`minior-${c}-meteor`,
+    { es: e => `${e} Forma Meteorito (${es})`, en: e => `${e} Meteor Form (${en})` }])),
+};
+
 // Las dos rarezas regionales que no se buscan por su nombre de forma regional
 // (la gorra de Pikachu y el Raticate dominante) conservan el de PokeAPI.
 const RAREZA = /-(cap|totem)(-|$)/;
 
 // Nombre oficial de la forma `slug` (p. ej. 'charizard-mega-x') cuya especie
-// se llama `especie` en `lang`. null si la forma no es mega ni regional, o es
-// una rareza: entonces vale el de PokeAPI. Se lee el final del slug y no el
-// slug de la especie, porque en el dato la especie es a veces una forma
+// se llama `especie` en `lang`. null si la forma no es mega, regional ni de
+// POR_SLUG, o es una rareza: entonces vale el de PokeAPI. Se lee el final del
+// slug y no el slug de la especie, porque en el dato la especie es a veces una forma
 // (darmanitan-standard, meowstic-male) y no la raiz que da /pokemon-species.
 export function nombreOficial(slug, especie, lang) {
+  const propio = POR_SLUG[slug]?.[lang];
+  if (propio) return propio(especie);
   if (RAREZA.test(slug)) return null;
   const sufijo = Object.keys(SUFIJO_OFICIAL).find(s => slug.endsWith(`-${s}`));
   if (sufijo) return SUFIJO_OFICIAL[sufijo][lang](especie);
