@@ -798,12 +798,6 @@ function tituloEspecie(nombre, l) {
   return titulos.find(t => t.length >= TITULO_ESPECIE_MIN && t.length <= TITULO_ESPECIE_MAX) ?? titulos.at(-1);
 }
 
-// Dos fichas que en ingles se llaman igual en el dataset: las dos megas de
-// Meowstic son "Mega Meowstic" (en espanol ya dicen macho y hembra). Por slug,
-// y solo en el titulo (D7): el dato lo arregla la PR 5, y check-rutas falla si
-// aqui queda una que ya no choca.
-export const DESAMBIGUAR_EN = { 'meowstic-male-mega': 'male', 'meowstic-female-mega': 'female' };
-
 // Las 53 de titulos.js, por URL publica y no por ruta logica: asi casan
 // tambien '/calculator?tab=damage&a=6', el '/?' que pasa route() y el alias
 // '/home', sin normalizar la query aqui otra vez. Se monta la primera vez que
@@ -852,9 +846,6 @@ export function tituloDe(logica, nombre, idiomaDestino = idioma) {
       const sufijo = slug.startsWith(`${base}-`) ? slug.slice(base.length + 1) : '';
       if (['moves', 'abilities'].includes(seccion) && Object.hasOwn(SUFIJOS_TITULO[l], sufijo)) {
         titulo += ` (${SUFIJOS_TITULO[l][sufijo]})`;
-      }
-      if (l === 'en' && seccion === 'pokedex' && Object.hasOwn(DESAMBIGUAR_EN, slug)) {
-        titulo += ` (${DESAMBIGUAR_EN[slug]})`;
       }
       if (Object.hasOwn(TIPO_DE_FICHA[l], seccion)) {
         const tipo = TIPO_DE_FICHA[l][seccion];

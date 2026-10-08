@@ -318,9 +318,10 @@ function clausulas(partes, enLista, l) {
 // segunda es "las otras tres". Con dos, se enumeran.
 const EMPATE = 3;
 
-// Las regionales ya llevan la palabra en el nombre ("Raichu Forma de Alola",
-// "Tauros Paldean Form (Combat Breed)"), y "su forma Raichu Forma de Alola" la
-// repite. Con esas, la frase nombra la forma sin el "su forma" delante.
+// Algunas formas ya llevan la palabra en el nombre ("Mega-Tatsugiri (forma
+// curvada)", "Mega Tatsugiri (Curly Form)"), y "su forma Mega-Tatsugiri (forma
+// curvada)" la repite. Con esas, la frase nombra la forma sin el "su forma"
+// delante. Las regionales ya no la llevan: "Su forma Raichu de Alola".
 const yaDicenForma = nombres => nombres.some(nombre => /\bForma?\b/i.test(nombre));
 
 function tipoEn(tipos) {

@@ -6,7 +6,7 @@
 // "Tronco Arena" y nada mas fallaria.
 // Run with: node scripts/check-forms.mjs
 import { readFile } from 'node:fs/promises';
-import { isCosmetic, formsOf, competitiveList, speciesOf } from '../js/forms.js';
+import { isCosmetic, formsOf, competitiveList, speciesOf, tieneUrlPropia } from '../js/forms.js';
 
 const pokemon = JSON.parse(await readFile(new URL('../data/pokemon.json', import.meta.url), 'utf8'));
 let failed = 0;
@@ -82,7 +82,22 @@ check('ningun nombre es el slug crudo',
 check('Mega Charizard X se llama bien', bySlug('charizard-mega-x').nameEs, 'Mega-Charizard X');
 check('y su pestana es corta', bySlug('charizard-mega-x').formEs, 'Mega X');
 check('Charizard Gigamax se construye con el sufijo', bySlug('charizard-gmax').nameEs, 'Charizard Gigamax');
-check('Rattata de Alola lleva la especie delante', bySlug('rattata-alola').nameEs, 'Rattata Forma de Alola');
+check('Rattata de Alola se llama como en los juegos',
+  [bySlug('rattata-alola').nameEs, bySlug('rattata-alola').nameEn], ['Rattata de Alola', 'Alolan Rattata']);
+
+// Cada pagina de la Pokedex (las 1025 especies y las megas y regionales con
+// URL propia) lleva su nombre en el h1 y el titulo: dos iguales serian dos
+// paginas indistinguibles. Las formas en ancla (Minior Meteorito, los Gigamax
+// de Toxtricity) viven en una pestana de su especie y no entran.
+const conUrl = pokemon.filter(p => !p.speciesId || tieneUrlPropia(p));
+const repetidos = campo => [...new Set(conUrl.map(p => p[campo]).filter((n, i, todos) => todos.indexOf(n) !== i))];
+check('ningun nameEs repetido entre especies y formas con URL', repetidos('nameEs'), []);
+check('ningun nameEn repetido entre especies y formas con URL', repetidos('nameEn'), []);
+check('las megas en espanol empiezan por "Mega-"',
+  forms.filter(f => /-mega(-|$)/.test(f.name) && !f.nameEs.startsWith('Mega-')).map(f => f.name), []);
+check('Tauros de Paldea lleva su variedad', bySlug('tauros-paldea-aqua-breed').nameEs, 'Tauros de Paldea Variedad Acuática');
+check('y el Darmanitan Zen de Galar no se confunde con el de Unova',
+  [bySlug('darmanitan-galar-zen').nameEn, bySlug('darmanitan-zen').nameEn], ['Galarian Darmanitan Zen Mode', 'Darmanitan Zen Mode']);
 
 console.log('\nLo heredado de la especie\n');
 

@@ -19,6 +19,7 @@ import {
   ITEM_NAME_OVERRIDES, ITEM_DESC_ES_OVERRIDES, ITEM_DESC_EN_OVERRIDES, ITEM_DESC_ES_TRANSLATED,
   ITEM_DESC_HAND_WRITTEN_ES, ITEM_DESC_HAND_WRITTEN_EN, DUPLICATE_ITEM_IDS, NAME_OVERRIDES_ES,
 } from './overrides/items.mjs';
+import { nombreOficial } from './overrides/forms.mjs';
 
 const API = 'https://pokeapi.co/api/v2';
 // POKEUTILS_OUT_DIR lets a build land somewhere else, so a regenerated file can
@@ -319,8 +320,10 @@ async function buildForms(base) {
       id: mon.id,
       name: mon.name,
       speciesId,
-      nameEs: es.full,
-      nameEn: en.full,
+      // Megas y regionales con su nombre oficial (scripts/overrides/forms.mjs);
+      // la pestana sigue con la etiqueta corta.
+      nameEs: nombreOficial(mon.name, species.nameEs, 'es') ?? es.full,
+      nameEn: nombreOficial(mon.name, species.nameEn, 'en') ?? en.full,
       formEs: es.tab,
       formEn: en.tab,
       types: mon.types.map(t => t.type.name),
