@@ -53,9 +53,9 @@ const { fijarIndice, urlDe } = await import('../js/rutas.js');
 fijarIndice(JSON.parse(readFileSync(new URL('../data/rutas.json', import.meta.url), 'utf8')));
 const { fichaHTML, evoTreeHTML, moveRowHTML, METHOD_ORDER, formLabels } = await import('../js/ficha-pokemon.js');
 const { evolutionText } = await import('../js/evolution.js');
-const { nombrePokemon } = await import('../js/contenido.js');
+const { nombrePokemon, tr } = await import('../js/contenido.js');
 const { fetchPokemonDetail, fetchPokemonList, fetchDex } = await import('../js/api.js');
-const { formsOf } = await import('../js/forms.js');
+const { formsOf, MEGA_SIN_PIEDRA } = await import('../js/forms.js');
 const { TYPES, STAT_KEYS, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN } = await import('../js/data.js');
 const { EGG_GROUPS } = await import('../js/egg-groups.js');
 const es = (await import('../js/i18n-es.js')).default;
@@ -214,7 +214,7 @@ for (const l of ['es', 'en']) {
 // fichaHTML no lo calcula: lo recibe en `texto` y pinta p2 y p3 (p1 es la
 // descripcion, que ya esta encima). Solo en la especie: con el mismo texto y la
 // pestana de Raichu de Alola, la seccion no sale (D8). Sin texto, tampoco.
-const { textoEspecie } = await import('../js/ficha-texto.js');
+const { textoEspecie, textoForma } = await import('../js/ficha-texto.js');
 const abilities = JSON.parse(readFileSync(new URL('../data/abilities.json', import.meta.url), 'utf8'));
 // Como el esc de la ficha: un apostrofo del ingles no casaria en crudo.
 const escHTML = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -238,9 +238,46 @@ for (const l of ['es', 'en']) {
       seccion === `<p>${escHTML(p2)}</p><p>${escHTML(p3)}</p>` && !seccion.includes(escHTML(p1)), seccion ?? 'sin seccion');
     check(`texto ${l} #${id}: sin texto, sin seccion`, seccionTexto(await pintarConTexto(id, ctx, null)) === null);
   }
-  const deRaichu = textoEspecie(26, { ...ctx, pokemon: allPokemon, abilities, evolutions, dex: await fetchDex(26) });
-  check(`texto ${l}: la pestana de Raichu de Alola no lo pinta`,
-    raichuAlola && seccionTexto(await pintarConTexto(raichuAlola.id, ctx, deRaichu)) === null);
+  // Una pestana de forma sin URL propia (la gorra de Pikachu) no lo pinta.
+  const dePikachu = textoEspecie(25, { ...ctx, pokemon: allPokemon, abilities, evolutions, dex: await fetchDex(25) });
+  const gorra = allPokemon.find(p => p.name === 'pikachu-alola-cap');
+  check(`texto ${l}: la pestana de la gorra de Alola no lo pinta`,
+    gorra && seccionTexto(await pintarConTexto(gorra.id, ctx, dePikachu)) === null);
+
+  // La pagina de Raichu de Alola (PR 5): sus dos parrafos de textoForma, sin la
+  // descripcion de Raichu (D4), con su region en "Como se obtiene", la linea
+  // de los movimientos de Raichu (D5) y la pestana de Raichu como enlace (D6).
+  const deAlola = textoForma(raichuAlola.id, { ...ctx, pokemon: allPokemon, abilities });
+  const alola = await pintarConTexto(raichuAlola.id, ctx, deAlola);
+  const raichu = allPokemon.find(p => p.id === 26);
+  const prefijo = l === 'en' ? '/en' : '';
+  check(`texto ${l}: Raichu de Alola pinta sus dos parrafos y no la descripcion`,
+    [seccionTexto(alola) === deAlola.parrafos.map(p => `<p>${escHTML(p)}</p>`).join(''), alola.includes('poke-flavour')],
+    [true, false]);
+  check(`texto ${l}: Raichu de Alola, region, movimientos de Raichu y pestana enlazada`,
+    [alola.includes(ctx.dic['pokedex.obtain']), alola.includes('>Alola<'),
+      alola.includes(escHTML(tr(ctx, 'learn.of', { species: nombrePokemon(raichu, l) }))),
+      alola.includes(`<a class="tab" href="${prefijo}/pokedex/raichu"`), alola.includes('data-form=')],
+    [true, true, true, true, false]);
+}
+
+// ===== Como se obtiene, en las megas =====
+//
+// La piedra con su sprite; sin el si no lo tiene; y Rayquaza, sin piedra, con
+// su movimiento. Las especies no llevan la tarjeta.
+for (const l of ['es', 'en']) {
+  const ctx = CTX[l];
+  const obtencion = html => html.match(/<div class="obtencion">([^]*?)<\/section>/)?.[1] ?? null;
+  const de = name => allPokemon.find(p => p.name === name);
+  const conSprite = obtencion(await pintarConTexto(de('charizard-mega-x').id, ctx, null));
+  const sinSprite = obtencion(await pintarConTexto(de('clefable-mega').id, ctx, null));
+  const rayquaza = obtencion(await pintarConTexto(de('rayquaza-mega').id, ctx, null));
+  check(`obtencion ${l}: piedra con sprite, sin sprite y Rayquaza sin piedra`,
+    [conSprite?.includes('/sprites/items/charizardite-x.png'), conSprite?.includes(de('charizard-mega-x').megaStone[l]),
+      sinSprite?.includes('<img'), sinSprite?.includes(de('clefable-mega').megaStone[l]),
+      rayquaza?.includes(MEGA_SIN_PIEDRA['rayquaza-mega'][l]), rayquaza?.includes('<img'),
+      (await pintarConTexto(6, ctx, null)).includes('class="obtencion"')],
+    [true, true, false, true, true, false, false]);
 }
 
 // ===== Anterior y siguiente, en el idioma de la pagina =====

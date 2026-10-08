@@ -5,13 +5,13 @@ import { skeletonHTML, renderError, hostDeRuta, seguimosEn, wireScrollFade, titu
 import { urlDe } from './rutas.js';
 import { esqueletoDeFicha } from './cascaras.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
-import { formsOf } from './forms.js';
+import { formsOf, tieneUrlPropia } from './forms.js';
 import { metaSetOf, defaultFormat, prettySlug, metaName, metaLink, FORMATS, MONTH } from './meta.js';
 import { getLevel } from './level.js';
 import { fichaHTML, evoSectionHTML, movesPanelHTML, formLabels } from './ficha-pokemon.js';
 // Estatico y no import(): esto ya es el trozo de la ficha, que solo baja quien
 // abre una. El aserto (w) de scripts/build.mjs vigila que no suba al arranque.
-import { textoEspecie } from './ficha-texto.js';
+import { textoEspecie, textoForma } from './ficha-texto.js';
 
 // Evolucion y movimientos llegan pintados dentro de fichaHTML. Lo de aqui es
 // solo su camino de error: un fallo cargando uno de los dos no tumba la ficha,
@@ -184,7 +184,18 @@ async function renderMetaSection(host, dexId, format, meta, allPokemon, evolutio
 // evoluciones o sin el dex el texto diria "no evoluciona" o "0 movimientos",
 // y sin descripcion se queda en cifras, asi que textoEspecie lanza y la ficha
 // sale sin la seccion, como antes.
+//
+// Una forma con URL propia lleva el suyo, textoForma, que solo necesita
+// pokemon.json y las habilidades: ni evoluciones ni dex.
 function textoDe(dexId, pokemon, ctx, { allPokemon, abilities, evolutions, dex }) {
+  const entrada = allPokemon.find(p => p.id === pokemon.id);
+  if (entrada && tieneUrlPropia(entrada)) {
+    try {
+      return textoForma(pokemon.id, { ...ctx, pokemon: allPokemon, abilities });
+    } catch {
+      return null;
+    }
+  }
   if (pokemon.id !== dexId || !evolutions || !dex) return null;
   try {
     return textoEspecie(dexId, { ...ctx, pokemon: allPokemon, abilities, evolutions, dex });
@@ -210,10 +221,13 @@ function shellDeFicha(container, id) {
 // semana: recalcularlo podria cambiar una frase delante del lector, o dejar el
 // cliente diciendo otra cosa que lo que leyo el buscador. En una navegacion
 // SPA no hay shell y se calcula con textoEspecie. parrafos[0] es la
-// descripcion, que fichaHTML pinta aparte y no lee de aqui.
-function textoDelShell(shell) {
+// descripcion, que fichaHTML pinta aparte y no lee de aqui. En una forma con
+// URL propia no hay descripcion: los parrafos del shell son todo el texto, el
+// de textoForma.
+function textoDelShell(shell, esForma) {
   const parrafos = [...shell.querySelectorAll('.intro-ficha p')].map(p => p.textContent);
-  return parrafos.length ? { parrafos: [null, ...parrafos] } : null;
+  if (!parrafos.length) return null;
+  return { parrafos: esForma ? parrafos : [null, ...parrafos] };
 }
 
 // Adopta el shell o lo sustituye, de una vez. Si la ficha del cliente es
@@ -306,7 +320,7 @@ export async function renderPokedexDetail(container, id) {
   // cliente es la misma que la del build.
   const html = fichaHTML(ctx, {
     pokemon, allPokemon, variants, variantLabels, evolutions, dex,
-    texto: shell ? textoDelShell(shell) : textoDe(dexId, pokemon, ctx, { allPokemon, abilities, evolutions, dex }),
+    texto: shell ? textoDelShell(shell, tieneUrlPropia(allPokemon.find(p => p.id === pokemon.id) ?? pokemon)) : textoDe(dexId, pokemon, ctx, { allPokemon, abilities, evolutions, dex }),
     animar: !shell,
   });
   if (shell) adoptarShell(shell, html);
@@ -325,6 +339,8 @@ export async function renderPokedexDetail(container, id) {
   // tool tab strips on the ten category tool pages share the same call.
   wireScrollFade(host.querySelector('#formTabsWrap'), host.querySelector('#formTabs'));
 
+  // Solo los botones: las pestanas de las formas con URL propia son <a> y las
+  // navega el router (app.js), como cualquier enlace.
   host.querySelector('#formTabs')?.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-form]');
     if (!btn) return;

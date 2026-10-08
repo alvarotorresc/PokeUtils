@@ -2221,6 +2221,42 @@ html.no-hero [data-shell][data-ruta="/"] {
   text-align: left;
 }
 
+/* Como se obtiene una forma con URL propia: la megapiedra con su sprite, o la
+   region con su juego. El sprite a 30px, su tamano, y pixelado como los demas.
+   Las piedras sin sprite se quedan en el texto, sin hueco. */
+.obtencion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.obtencion-sprite {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  image-rendering: pixelated;
+}
+
+.obtencion-nombre {
+  font-size: 0.5rem;
+  color: var(--ink-1);
+  line-height: 1.8;
+}
+
+.obtencion-nota {
+  font-size: 0.4rem;
+  color: var(--ink-2);
+  line-height: 2;
+}
+
+/* En una forma, de quien son los movimientos: los de su especie. */
+.mv-de {
+  font-size: 0.4rem;
+  color: var(--ink-2);
+  line-height: 2;
+  margin-bottom: 10px;
+}
+
 /* Dos columnas y no tres a partir de 1500. Con tres, un Pokemon sin set del
    meta dejaba la del medio en 457px contra 1030 la de la derecha: 573px de
    hueco a media pagina. Y no es cosa del reparto, es que las seis tarjetas no
@@ -3988,6 +4024,9 @@ a.evo-node:hover img {
 .form-tabs { margin: 0; overflow-x: auto; scrollbar-width: none; }
 .form-tabs::-webkit-scrollbar { display: none; }
 .form-tabs .tab { flex: 0 0 auto; white-space: nowrap; }
+/* Las pestanas de las formas con URL propia son enlaces: sin subrayado. */
+.form-tabs a.tab,
+.form-tabs a.tab:hover { text-decoration: none; }
 
 /* Nothing said the strip scrolled, so the tab at the edge just looked cut off.
    The fades sit on the wrapper, not on the scroller: inside it they would ride
