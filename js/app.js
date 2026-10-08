@@ -32,6 +32,7 @@ const footerFaq = document.getElementById('footerFaq');
 const footerPrivacy = document.getElementById('footerPrivacy');
 const footerTerms = document.getElementById('footerTerms');
 const footerData = document.getElementById('footerData');
+const footerAuthor = document.getElementById('footerAuthor');
 const navLogo = document.querySelector('.nav-logo');
 
 // La ruta actual decide "home o no", tanto para el nav-link activo como para
@@ -124,6 +125,8 @@ function updateFooterLabels() {
   footerFaq.setAttribute('href', urlDe('/faq'));
   footerPrivacy.setAttribute('href', urlDe('/privacy'));
   footerTerms.setAttribute('href', urlDe('/terms'));
+  // La web del autor en el idioma de la pagina (D12), como AUTOR en pages.mjs.
+  footerAuthor.setAttribute('href', getLang() === 'en' ? 'https://alvarotc.com/' : 'https://alvarotc.com/es/');
 }
 
 // Sin preventDefault: navega el interceptor de clics de mas abajo, como

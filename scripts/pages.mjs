@@ -474,6 +474,10 @@ export function bloqueHreflang(alternas, origen = ORIGEN) {
 // al hidratar, asi que la pagina no cambia de texto al arrancar la app.
 const NAV = { home: 'nav.home', pokedex: 'nav.pokedex', data: 'nav.data', competitive: 'nav.competitive', calculator: 'nav.calculator' };
 const PIE = { footerData: 'footer.data', footerFaq: 'footer.faq', footerPrivacy: 'footer.privacy', footerTerms: 'footer.terms' };
+// La firma del pie lleva a la web del autor en el idioma de la pagina (D12).
+// index.html nace con la espanola; app.js (updateFooterLabels) la cambia al
+// cambiar de idioma, y build.mjs lo comprueba en cada pagina (aserto u).
+export const AUTOR = { es: 'https://alvarotc.com/es/', en: 'https://alvarotc.com/' };
 
 function traducirPlantilla(html, portada) {
   let salida = html;
@@ -490,6 +494,7 @@ function traducirPlantilla(html, portada) {
   for (const [id, clave] of Object.entries(PIE)) {
     salida = sustituir(salida, new RegExp(`(id="${id}">)[^<]*(<)`), (m, a, b) => `${a}${esc(en[clave])}${b}`, `#${id} en el pie`);
   }
+  salida = sustituir(salida, /<a href="[^"]*"( id="footerAuthor")/, (m, a) => `<a href="${AUTOR.en}"${a}`, 'la firma del pie');
   if (portada) {
     salida = sustituir(salida, /<h1>[^]*?<\/h1>/,
       () => `<h1>${esc(en['home.claim.a'])}<br><span class="hl">${esc(en['home.claim.b'])}</span></h1>`, 'el <h1> del hero');

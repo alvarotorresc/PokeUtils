@@ -8,14 +8,19 @@
 // DATOS, que es donde la deriva hace dano:
 //   - las mismas secciones, en el mismo orden;
 //   - los mismos enlaces a rutas de la app (si una version enlaza una
-//     herramienta que la otra no, una de las dos se quedo atras);
+//     herramienta que la otra no, una de las dos se quedo atras), cada uno en
+//     su idioma;
 //   - las mismas capturas;
 //   - los mismos numeros (1025 Pokemon, 937 movimientos...), porque un dato
 //     actualizado en un idioma y no en el otro es una mentira a medias.
 import { readFileSync } from 'node:fs';
+import { logicaDe } from '../js/rutas.js';
+import { TOOLS } from '../js/tools.js';
 
-const ES = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
-const EN = readFileSync(new URL('../README.en.md', import.meta.url), 'utf8');
+// Los dos ficheros se pueden pasar por argumento para ver cada regla en rojo
+// sobre una copia: node scripts/check-readme.mjs /tmp/es.md /tmp/en.md
+const ES = readFileSync(process.argv[2] ?? new URL('../README.md', import.meta.url), 'utf8');
+const EN = readFileSync(process.argv[3] ?? new URL('../README.en.md', import.meta.url), 'utf8');
 
 const fallos = [];
 
@@ -32,16 +37,42 @@ if (es2.length !== en2.length) {
     `  ES: ${es2.join(' | ')}\n  EN: ${en2.join(' | ')}`);
 }
 
-// Las rutas de la app enlazadas (#/pokedex, #/calculator?tab=damage...). Los
-// nombres visibles cambian de idioma; los destinos no.
-const rutasDe = (txt) => [...new Set(
-  [...txt.matchAll(/pokeutils\.alvarotc\.com\/(#\/[^)\s]*)/g)].map(m => m[1])
-)].sort();
-const rutasEs = rutasDe(ES);
-const rutasEn = rutasDe(EN);
+// Las rutas de la app enlazadas. Desde la PR 3 son rutas reales y cada README
+// enlaza las de su idioma: /calculadora-de-dano en el espanol,
+// /en/damage-calculator en el ingles. Se comparan por su ruta LOGICA
+// (logicaDe, la misma que usa el router), que es la que no cambia de idioma.
+// Cuatro reglas:
+//   - cada enlace resuelve: una URL que logicaDe no reconoce es un 404;
+//   - cada README enlaza solo su idioma (un /en/ colado en el espanol, o al
+//     reves, manda al lector a la web en el idioma que no lee);
+//   - los dos enlazan las mismas rutas logicas, y entre ellas las 16
+//     herramientas de js/tools.js (asi un conjunto vacio no da verde);
+//   - no queda ningun #/ del router de antes, ni en enlaces ni en el texto.
+const rutasDe = (txt, idioma, nombre) => {
+  const logicas = new Set();
+  for (const [, url] of txt.matchAll(/pokeutils\.alvarotc\.com(\/[^)\s#]*)/g)) {
+    const [path, search = ''] = url.split('?');
+    const ruta = logicaDe(path, search);
+    if (!ruta) { fallos.push(`${nombre} enlaza ${url}, que no es ninguna pagina de la app`); continue; }
+    if (ruta.idioma !== idioma) fallos.push(`${nombre} enlaza ${url}, que esta en ${ruta.idioma} y no en ${idioma}`);
+    const query = String(ruta.query);
+    logicas.add(ruta.path + (query ? `?${query}` : ''));
+  }
+  return [...logicas].sort();
+};
+const rutasEs = rutasDe(ES, 'es', 'README.md');
+const rutasEn = rutasDe(EN, 'en', 'README.en.md');
 const soloEn = (a, b) => a.filter(x => !b.includes(x));
 if (soloEn(rutasEs, rutasEn).length) fallos.push(`rutas solo en el README es: ${soloEn(rutasEs, rutasEn).join(', ')}`);
 if (soloEn(rutasEn, rutasEs).length) fallos.push(`rutas solo en el README en: ${soloEn(rutasEn, rutasEs).join(', ')}`);
+for (const [nombre, rutas] of [['README.md', rutasEs], ['README.en.md', rutasEn]]) {
+  const sinEnlace = TOOLS.map(tool => tool.route).filter(r => !rutas.includes(r));
+  if (sinEnlace.length) fallos.push(`${nombre} no enlaza las herramientas ${sinEnlace.join(', ')}`);
+}
+for (const [nombre, txt] of [['README.md', ES], ['README.en.md', EN]]) {
+  const hash = txt.split('\n').map((linea, i) => [i + 1, linea]).filter(([, linea]) => linea.includes('#/'));
+  if (hash.length) fallos.push(`${nombre} conserva rutas con #/ en las lineas ${hash.map(([n]) => n).join(', ')}`);
+}
 
 const capturasDe = (txt) => [...new Set(
   [...txt.matchAll(/\.github\/readme\/([\w.-]+)/g)].map(m => m[1])

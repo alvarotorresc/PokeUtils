@@ -7,7 +7,7 @@ whether your team survives that hit and who can tear it apart. If you breed, who
 pairs with whom. And if you just came to look something up, the dex is complete,
 it's in English and Spanish, and it doesn't ask you for an account.
 
-[![Open PokeUtils](https://img.shields.io/badge/Open%20PokeUtils-pokeutils.alvarotc.com-ffcc00?style=for-the-badge&labelColor=0f0f23)](https://pokeutils.alvarotc.com)
+[![Open PokeUtils](https://img.shields.io/badge/Open%20PokeUtils-pokeutils.alvarotc.com-ffcc00?style=for-the-badge&labelColor=0f0f23)](https://pokeutils.alvarotc.com/en)
 
 ![1025 Pokémon · 16 tools](https://img.shields.io/badge/1025%20Pok%C3%A9mon-16%20tools-ffcc00?style=flat-square&labelColor=0f0f23)
 ![Español / English](https://img.shields.io/badge/Espa%C3%B1ol-English-3b5ba7?style=flat-square&labelColor=0f0f23)
@@ -18,7 +18,7 @@ it's in English and Spanish, and it doesn't ask you for an account.
 ## What you can do
 
 - **Build a team and see where it breaks.** Put in up to six, and it tells you
-  which types threaten half the roster, which ones nobody resists, what coverage
+  which types threaten three or more of them, which ones nobody resists, what coverage
   you are missing, and who in the whole dex counters you.
 - **Breed without guessing.** All 15 egg groups, who pairs with whom, and how
   many partners each Pokémon has — applying all five breeding rules, not just
@@ -35,7 +35,7 @@ page with the answer.
 
 ### Pokédex
 
-- **[Pokédex](https://pokeutils.alvarotc.com/#/pokedex)** — All 1025 Pokémon
+- **[Pokédex](https://pokeutils.alvarotc.com/en/pokedex)** — All 1025 Pokémon
   (generations 1 to 9) with sprite, stats, types, abilities and weaknesses.
   Filter by generation and rarity, sort by any base stat, and share the view:
   every filter lives in the URL.
@@ -44,11 +44,11 @@ page with the answer.
     condition for every step, and every move it learns by level, TM, breeding or
     tutor.
   - **Alternate forms** — 326 of them: 97 megas, 34 Gigantamax, 60 regional and
-    the rest. They appear as tabs inside their species page, so `#/pokedex/6` is
-    still Charizard whichever form you are looking at.
-- **[Compare](https://pokeutils.alvarotc.com/#/compare)** — Up to four side by
+    the rest. They appear as tabs inside their species page, so
+    `/en/pokedex/charizard` is the same page whichever form you are looking at.
+- **[Compare](https://pokeutils.alvarotc.com/en/compare)** — Up to four side by
   side on base stats, with each one's ×4 and ×2 weaknesses on their own rows.
-- **[Egg groups](https://pokeutils.alvarotc.com/#/egg)** — The 15 groups, who
+- **[Egg groups](https://pokeutils.alvarotc.com/en/egg-groups)** — The 15 groups, who
   breeds with whom, and how many partners each Pokémon has. It applies all five
   rules, not just the shared-group one: the Undiscovered group never breeds,
   Ditto breeds with everything except them, Ditto doesn't breed with Ditto,
@@ -57,51 +57,53 @@ page with the answer.
 
 ### Data
 
-- **[Moves](https://pokeutils.alvarotc.com/#/moves)** — All 937 with type,
+- **[Moves](https://pokeutils.alvarotc.com/en/moves)** — All 937 with type,
   category, power, accuracy and description. Filter by priority or by the stat
   they raise or lower, and share the view: every filter lives in the URL.
   - **Move page** — Priority in plain words (moves first / moves last), stat
     changes as data rather than buried in prose, and **which Pokémon learn it**,
     split by level, TM, breeding and tutor. That's also where you find what each
     TM teaches.
-- **[Abilities](https://pokeutils.alvarotc.com/#/abilities)** — All 313 with
+- **[Abilities](https://pokeutils.alvarotc.com/en/abilities)** — All 313 with
   their descriptions and a search box.
-- **[Items](https://pokeutils.alvarotc.com/#/items)** — 1848 items with their
+- **[Items](https://pokeutils.alvarotc.com/en/items)** — 1848 items with their
   sprites, category filters and a detail page.
-- **[Natures](https://pokeutils.alvarotc.com/#/natures)** — All 25 with their
+- **[Natures](https://pokeutils.alvarotc.com/en/natures)** — All 25 with their
   modifiers and a 5×5 grid to take them in at a glance.
-- **[Type chart](https://pokeutils.alvarotc.com/#/types)** — Effectiveness for
-  one or two types, on offence and on defence.
+- **[Type chart](https://pokeutils.alvarotc.com/en/types)** — Effectiveness for
+  one or two types, on offence and on defence. Each of the 18 types also has
+  its own page — `/en/types/fire` — with its weaknesses, resistances and
+  immunities and the Pokémon that carry it.
 
 ### Competitive
 
-- **[Team analysis](https://pokeutils.alvarotc.com/#/team)** — Up to 6 Pokémon:
-  which types threaten half the team, which ones nobody resists, and the
+- **[Team analysis](https://pokeutils.alvarotc.com/en/team)** — Up to 6 Pokémon:
+  which types threaten three members or more, which ones nobody resists, and the
   coverage you're missing. The team lives in the URL, so a team is a link.
-- **[Counter my team](https://pokeutils.alvarotc.com/#/counter)** — Walks all
+- **[Counter my team](https://pokeutils.alvarotc.com/en/counter)** — Walks all
   1259 candidates — species and their battle forms — and gives you whoever
   threatens half your team or more, ranked by offensive power and flagging who
   also outspeeds you. Threats measured in the current meta are marked apart from
   those merely inferred from typing.
-- **[Speed](https://pokeutils.alvarotc.com/#/speed)** — Relative to a Pokémon you
+- **[Speed](https://pokeutils.alvarotc.com/en/speed)** — Relative to a Pokémon you
   pick, not a global table: the 15 above and the 15 below, with ties marked,
   because tying isn't outspeeding.
-- **[Does it survive?](https://pokeutils.alvarotc.com/#/survive)** — Attacker,
+- **[Does it survive?](https://pokeutils.alvarotc.com/en/survive)** — Attacker,
   move and defender; the damage range, the verdict, and **the cheapest EV spread
   that survives the hit**, found by brute force over the real damage formula.
-- **[Meta sets](https://pokeutils.alvarotc.com/#/meta)** — What people actually
+- **[Meta sets](https://pokeutils.alvarotc.com/en/meta-sets)** — What people actually
   play: nature and EVs, item, ability, Tera type and moves, each with its real
   usage percentage. OU singles and VGC doubles.
 
 ### Calculators
 
-- **[IV/EV](https://pokeutils.alvarotc.com/#/calculator)** — Two modes: get final
+- **[IV/EV](https://pokeutils.alvarotc.com/en/iv-ev-calculator)** — Two modes: get final
   stats from IVs and EVs, or work out the possible IVs from a stat you already
   know.
-- **[Damage](https://pokeutils.alvarotc.com/#/calculator?tab=damage)** — The
+- **[Damage](https://pokeutils.alvarotc.com/en/damage-calculator)** — The
   generation 5+ formula, with weather, terrain, screens, abilities, items and
   crits. The whole panel lives in the URL, so a calculation is a link.
-- **[Catch](https://pokeutils.alvarotc.com/#/calculator?tab=catch)** — The odds
+- **[Catch](https://pokeutils.alvarotc.com/en/catch-calculator)** — The odds
   per ball, status and remaining HP, including the balls whose multiplier
   depends on the situation.
 

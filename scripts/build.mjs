@@ -816,6 +816,18 @@ async function generarPaginas(esqueleto) {
     if (!es || !en) throw new Error(`Ninguna pagina lleva la og:image de ${categoria} en algun idioma`);
     if (es.equals(en)) throw new Error(`icons/og/${categoria}: la imagen espanola y la inglesa son la misma (D11)`);
   }
+
+  // (u) La firma del pie (D12): una por pagina, hacia la web del autor en el
+  // idioma de la pagina. La tabla es propia y no AUTOR de pages.mjs, que es lo
+  // que se comprueba.
+  const FIRMA = { es: 'https://alvarotc.com/es/', en: 'https://alvarotc.com/' };
+  for (const { f, html } of paginas) {
+    const firmas = unico(html, /<a href="([^"]*)" id="footerAuthor"/g);
+    const l = idiomaDeFichero(f);
+    if (JSON.stringify(firmas) !== JSON.stringify([FIRMA[l]])) {
+      throw new Error(`dist/${f} (${l}) lleva la firma del pie hacia ${JSON.stringify(firmas)} y tiene que ir a ${FIRMA[l]}`);
+    }
+  }
   return ficheros.length;
 }
 
