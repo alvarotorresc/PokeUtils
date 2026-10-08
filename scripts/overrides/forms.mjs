@@ -58,3 +58,62 @@ export function nombreOficial(slug, especie, lang) {
   if (region) return lang === 'es' ? `${especie} ${REGION[region].es}` : `${REGION[region].en} ${especie}`;
   return null;
 }
+
+// ===== La megapiedra de cada mega =====
+//
+// Que objeto hace megaevolucionar a cada forma, como dato (D7 de la PR 5): la
+// ficha la nombra sin bajarse items.json (247 KB) y check-forms comprueba que
+// no sobra ni falta ninguna.
+//
+// Una tabla y no una regla sobre el slug: los nombres de las piedras son
+// irregulares (sablenite para Sableye, heracronite, glalitite, feraligite,
+// baxcalibrite), y una heuristica por prefijo acierta hasta que una piedra
+// nueva se parece a otra. Son 96 megas y 92 piedras: las cuatro gemelas
+// (FORMAS_GEMELAS en js/forms.js) comparten la de su cabeza. Mega-Rayquaza no
+// esta: megaevoluciona con Ascenso Draco, sin piedra.
+const MEGAPIEDRA = {
+  'venusaur-mega': 'venusaurite', 'charizard-mega-x': 'charizardite-x', 'charizard-mega-y': 'charizardite-y',
+  'blastoise-mega': 'blastoisinite', 'alakazam-mega': 'alakazite', 'gengar-mega': 'gengarite',
+  'kangaskhan-mega': 'kangaskhanite', 'pinsir-mega': 'pinsirite', 'gyarados-mega': 'gyaradosite',
+  'aerodactyl-mega': 'aerodactylite', 'mewtwo-mega-x': 'mewtwonite-x', 'mewtwo-mega-y': 'mewtwonite-y',
+  'ampharos-mega': 'ampharosite', 'scizor-mega': 'scizorite', 'heracross-mega': 'heracronite',
+  'houndoom-mega': 'houndoominite', 'tyranitar-mega': 'tyranitarite', 'blaziken-mega': 'blazikenite',
+  'gardevoir-mega': 'gardevoirite', 'mawile-mega': 'mawilite', 'aggron-mega': 'aggronite',
+  'medicham-mega': 'medichamite', 'manectric-mega': 'manectite', 'banette-mega': 'banettite',
+  'absol-mega': 'absolite', 'garchomp-mega': 'garchompite', 'lucario-mega': 'lucarionite',
+  'abomasnow-mega': 'abomasite', 'latias-mega': 'latiasite', 'latios-mega': 'latiosite',
+  'swampert-mega': 'swampertite', 'sceptile-mega': 'sceptilite', 'sableye-mega': 'sablenite',
+  'altaria-mega': 'altarianite', 'gallade-mega': 'galladite', 'audino-mega': 'audinite',
+  'sharpedo-mega': 'sharpedonite', 'slowbro-mega': 'slowbronite', 'steelix-mega': 'steelixite',
+  'pidgeot-mega': 'pidgeotite', 'glalie-mega': 'glalitite', 'diancie-mega': 'diancite',
+  'metagross-mega': 'metagrossite', 'camerupt-mega': 'cameruptite', 'lopunny-mega': 'lopunnite',
+  'salamence-mega': 'salamencite', 'beedrill-mega': 'beedrillite', 'clefable-mega': 'clefablite',
+  'victreebel-mega': 'victreebelite', 'starmie-mega': 'starminite', 'dragonite-mega': 'dragoninite',
+  'meganium-mega': 'meganiumite', 'feraligatr-mega': 'feraligite', 'skarmory-mega': 'skarmorite',
+  'froslass-mega': 'froslassite', 'emboar-mega': 'emboarite', 'excadrill-mega': 'excadrite',
+  'scolipede-mega': 'scolipite', 'scrafty-mega': 'scraftinite', 'eelektross-mega': 'eelektrossite',
+  'chandelure-mega': 'chandelurite', 'chesnaught-mega': 'chesnaughtite', 'delphox-mega': 'delphoxite',
+  'greninja-mega': 'greninjite', 'pyroar-mega': 'pyroarite', 'floette-mega': 'floettite',
+  'malamar-mega': 'malamarite', 'barbaracle-mega': 'barbaracite', 'dragalge-mega': 'dragalgite',
+  'hawlucha-mega': 'hawluchanite', 'zygarde-mega': 'zygardite', 'drampa-mega': 'drampanite',
+  'falinks-mega': 'falinksite', 'raichu-mega-x': 'raichunite-x', 'raichu-mega-y': 'raichunite-y',
+  'chimecho-mega': 'chimechite', 'absol-mega-z': 'absolite-z', 'staraptor-mega': 'staraptite',
+  'garchomp-mega-z': 'garchompite-z', 'lucario-mega-z': 'lucarionite-z', 'heatran-mega': 'heatranite',
+  'darkrai-mega': 'darkranite', 'golurk-mega': 'golurkite', 'meowstic-male-mega': 'meowsticite',
+  'meowstic-female-mega': 'meowsticite', 'crabominable-mega': 'crabominite', 'golisopod-mega': 'golisopite',
+  'magearna-mega': 'magearnite', 'magearna-original-mega': 'magearnite', 'zeraora-mega': 'zeraorite',
+  'scovillain-mega': 'scovillainite', 'glimmora-mega': 'glimmoranite', 'tatsugiri-curly-mega': 'tatsugirinite',
+  'tatsugiri-droopy-mega': 'tatsugirinite', 'tatsugiri-stretchy-mega': 'tatsugirinite', 'baxcalibur-mega': 'baxcalibrite',
+};
+
+// La megapiedra de la forma `slug`, con lo que la ficha necesita para nombrarla
+// y pintar su sprite (itemSprite lee name y noSprite): { id, name, es, en }.
+// null si la forma no tiene piedra. Lanza si la tabla nombra un objeto que
+// items.json no tiene: una mega sin su piedra diria "con la undefined".
+export function megapiedra(slug, items) {
+  const piedra = MEGAPIEDRA[slug];
+  if (!piedra) return null;
+  const item = items.find(i => i.name === piedra);
+  if (!item) throw new Error(`overrides/forms.mjs: la megapiedra "${piedra}" de ${slug} no esta en items.json`);
+  return { id: item.id, name: item.name, es: item.nameEs, en: item.nameEn, ...(item.noSprite ? { noSprite: true } : {}) };
+}

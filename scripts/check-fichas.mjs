@@ -29,18 +29,41 @@
 //                          Undiscovered (el slug no-eggs no cambia). Con
 //                          mayusculas: "they lay no eggs" vale.
 //
+// Las 155 formas con URL propia (97 megas y 58 regionales, §1.3 del plan de la
+// PR 5) pasan por textoForma y descripcionForma con sus propias reglas:
+//
+//   forma-lanza            no lanzan.
+//   forma-palabras         p1 + p2, de 60 a 160 palabras (no hay p1 de Pokedex).
+//   forma-familias         al menos 3 familias de datos.
+//   forma-cambios          al menos un cambio frente a la especie (tipos, stats o
+//                          habilidades): una forma igual que su especie no
+//                          merece pagina.
+//   forma-solo-cambia-el-nombre  ningun texto repetido con los nombres de la
+//                          familia (forma, especie, hermanas, gemelas) y de la
+//                          piedra tapados. Salvo las gemelas (FORMAS_GEMELAS):
+//                          solo cambian de aspecto y no tienen texto indexable.
+//   forma-descripcion      la meta description, de 120 a 155 caracteres.
+//   forma-muestras         Mega-Charizard X, Raichu de Alola y Tauros de Paldea
+//                          Variedad Combatiente, palabra por palabra como las
+//                          aprobo Alvaro (con los nombres oficiales del commit 1).
+//   forma-casos            las ramas que las muestras no tocan: Rayquaza sin
+//                          piedra, las gemelas, otra region, mas de cuatro stats.
+// Y las de lenguaje de abajo (espanol-en-en, plural, articulo, cero).
+//
 // Las reglas de lenguaje (espanol-en-en, plural, articulo, cero) miran solo lo
 // derivado (p2, p3 y la description): p1 es el texto de PokeAPI, se publica tal
 // cual y aqui no se puede arreglar. El titulo (50-60) no va aqui: es de rutas.js.
 //
-// Con --muestra 25,132,133 imprime ademas los textos de esas especies para
-// leerlos a mano. Sin el, imprime los recuentos y las ramas raras.
-// Run with: node scripts/check-fichas.mjs [--muestra 25,132,133]
+// Con --muestra 25,132,charizard-mega-x imprime ademas los textos de esas
+// especies o formas (por id o por slug) para leerlos a mano. Sin el, imprime
+// los recuentos y las ramas raras.
+// Run with: node scripts/check-fichas.mjs [--muestra 25,132,charizard-mega-x]
 import { readFileSync } from 'node:fs';
 import { pareceEspanol } from './espanol-en-en.mjs';
 
 const leer = ruta => JSON.parse(readFileSync(new URL(`../${ruta}`, import.meta.url), 'utf8'));
-const { textoEspecie, descripcionEspecie, hechosEspecie } = await import('../js/ficha-texto.js');
+const { textoEspecie, descripcionEspecie, hechosEspecie, textoForma, descripcionForma, hechosForma } = await import('../js/ficha-texto.js');
+const { tieneUrlPropia, FORMAS_GEMELAS } = await import('../js/forms.js');
 const { contarPalabras } = await import('../js/frases.js');
 // El panel de movimientos enlaza cada movimiento, y urlDe necesita el indice.
 const { fijarIndice } = await import('../js/rutas.js');
@@ -57,6 +80,7 @@ const IDIOMAS = ['es', 'en'];
 const especies = pokemon.filter(p => !p.speciesId).map(p => p.id).sort((a, b) => a - b);
 const dexDe = new Map(especies.map(id => [id, leer(`data/dex/${id}.json`)]));
 const ctxDe = (id, l) => ({ l, dic: DIC[l], pokemon, abilities, evolutions, dex: dexDe.get(id) });
+const formas = pokemon.filter(tieneUrlPropia).sort((a, b) => a.id - b.id);
 
 // ===== Las muestras aprobadas =====
 //
@@ -141,13 +165,77 @@ const CASOS = {
   },
 };
 
+// ===== Las formas aprobadas =====
+//
+// Las tres muestras del plan de la PR 5, con los nombres oficiales del commit 1
+// cambiados a mano ("Raichu Forma de Alola" -> "Raichu de Alola", "Tauros
+// Paldea Llama" -> "Tauros de Paldea Variedad Ardiente"...). Las descriptions
+// de Raichu y Tauros no estan: con los nombres nuevos la lista de debilidades
+// cabe y el texto ya no es el de la muestra.
+const MUESTRAS_FORMA = {
+  'charizard-mega-x': {
+    es: [
+      'Mega-Charizard X es la megaevolución de Charizard. Charizard megaevoluciona en combate si lleva la Charizardita X, y vuelve a su forma normal al acabar. Charizard tiene otra megaevolución, Mega-Charizard Y.',
+      'Es de tipo Fuego y Dragón, no Fuego y Volador como Charizard. Recibe el doble de daño de Tierra, Roca y Dragón, y resiste cinco tipos. Frente a Charizard, gana la debilidad a Tierra y Dragón, pierde la de Agua y Eléctrico, y la de Roca pasa de cuádruple a doble. Sus estadísticas base suman 634, 100 más que Charizard: Ataque pasa de 84 a 130, Defensa de 78 a 111 y Ataque Especial de 109 a 130. Su habilidad es Garra Dura; la de Charizard es Mar Llamas, y la oculta, Poder Solar.',
+      'Mega-Charizard X, megaevolución de Charizard con la Charizardita X: tipo Fuego y Dragón, débil a Tierra, Roca y Dragón y 634 de stats base (+100).',
+    ],
+    en: [
+      'Mega Charizard X is the Mega Evolution of Charizard. Charizard Mega Evolves in battle while holding the Charizardite X, and returns to normal when the battle ends. Charizard has one other Mega Evolution, Mega Charizard Y.',
+      'It is a Fire/Dragon-type instead of Fire/Flying like Charizard. It takes double damage from Ground, Rock and Dragon, and resists five types. Compared with Charizard, it becomes weak to Ground and Dragon, is no longer weak to Water and Electric, and takes double instead of quadruple damage from Rock. Its base stats total 634, 100 more than Charizard: Attack goes from 84 to 130, Defense from 78 to 111 and Special Attack from 109 to 130. Its ability is Tough Claws; Charizard has Blaze, with Solar Power as its hidden ability.',
+      'Mega Charizard X, Charizard’s Mega Evolution with the Charizardite X: Fire/Dragon-type, weak to Ground, Rock and Dragon, 634 base stat total (+100).',
+    ],
+  },
+  'raichu-alola': {
+    es: [
+      'Raichu de Alola es la forma regional de Raichu en Alola, la región de Pokémon Sol y Luna.',
+      'Es de tipo Eléctrico y Psíquico, no solo Eléctrico como Raichu. Recibe el doble de daño de Tierra, Bicho, Fantasma y Siniestro, y resiste cinco tipos. Frente a Raichu, gana la debilidad a Bicho, Fantasma y Siniestro. Sus estadísticas base suman 485, como las de Raichu, pero repartidas de otra forma: Ataque pasa de 90 a 85, Defensa de 55 a 50, Ataque Especial de 90 a 95 y Defensa Especial de 80 a 85. Su habilidad es Cola Surf; la de Raichu es Electricidad Estática, y la oculta, Pararrayos.',
+    ],
+    en: [
+      'Alolan Raichu is the regional form of Raichu in Alola, the region of Pokémon Sun and Moon.',
+      'It is an Electric/Psychic-type instead of a pure Electric-type like Raichu. It takes double damage from Ground, Bug, Ghost and Dark, and resists five types. Compared with Raichu, it becomes weak to Bug, Ghost and Dark. Its base stats total 485, the same as Raichu, spread differently: Attack goes from 90 to 85, Defense from 55 to 50, Special Attack from 90 to 95 and Special Defense from 80 to 85. Its ability is Surge Surfer; Raichu has Static, with Lightning Rod as its hidden ability.',
+    ],
+  },
+  'tauros-paldea-combat-breed': {
+    es: [
+      'Tauros de Paldea Variedad Combatiente es la forma regional de Tauros en Paldea, la región de Pokémon Escarlata y Púrpura. En Paldea tiene dos formas más: Tauros de Paldea Variedad Ardiente y Tauros de Paldea Variedad Acuática.',
+      'Es de tipo Lucha, no Normal como Tauros. Recibe el doble de daño de Volador, Psíquico y Hada, y resiste Bicho, Roca y Siniestro. Frente a Tauros, gana la debilidad a Volador, Psíquico y Hada, pierde la de Lucha y deja de ser inmune a Fantasma. Sus estadísticas base suman 490, como las de Tauros, pero repartidas de otra forma: Ataque pasa de 100 a 110, Defensa de 95 a 105, Ataque Especial de 40 a 30 y Velocidad de 110 a 100. Sus habilidades son Intimidación e Irascible, y la oculta, Rumia; Tauros tiene Potencia Bruta como oculta.',
+    ],
+    en: [
+      'Paldean Tauros (Combat Breed) is the regional form of Tauros in Paldea, the region of Pokémon Scarlet and Violet. It has two other forms there: Paldean Tauros (Blaze Breed) and Paldean Tauros (Aqua Breed).',
+      'It is a Fighting-type instead of Normal like Tauros. It takes double damage from Flying, Psychic and Fairy, and resists Bug, Rock and Dark. Compared with Tauros, it becomes weak to Flying, Psychic and Fairy, is no longer weak to Fighting and loses its immunity to Ghost. Its base stats total 490, the same as Tauros, spread differently: Attack goes from 100 to 110, Defense from 95 to 105, Special Attack from 40 to 30 and Speed from 110 to 100. Its abilities are Intimidate and Anger Point, with Cud Chew as its hidden ability; Tauros has Sheer Force as its hidden one.',
+    ],
+  },
+};
+
+// Las ramas de las formas que las muestras no tocan: [parrafo, frase].
+const CASOS_FORMA = {
+  'rayquaza-mega': {
+    es: [1, 'Rayquaza no necesita megapiedra para megaevolucionar en combate: le basta con conocer Ascenso Draco.'],
+    en: [1, 'Rayquaza needs no Mega Stone to Mega Evolve in battle: it only has to know Dragon Ascent.'],
+  },
+  'meowstic-male-mega': {
+    es: [1, 'Mega-Meowstic (macho) solo se distingue de Mega-Meowstic (hembra) por el aspecto.'],
+    en: [1, 'Mega Meowstic (Male) differs from Mega Meowstic (Female) only in appearance.'],
+  },
+  'tatsugiri-curly-mega': {
+    es: [1, 'solo se distingue de Mega-Tatsugiri (forma lánguida) y Mega-Tatsugiri (forma recta) por el aspecto.'],
+    en: [1, 'differs from Mega Tatsugiri (Droopy Form) and Mega Tatsugiri (Stretchy Form) only in appearance.'],
+  },
+  'meowth-alola': {
+    es: [1, 'Meowth tiene otra forma regional, Meowth de Galar.'],
+    en: [1, 'Meowth has one other regional form, Galarian Meowth.'],
+  },
+};
+
 // Los ficheros en ingles que nombran grupos huevo, leidos como texto.
 const FUENTES_EN = ['js/i18n-en.js', 'js/textos-en.js', 'js/titulos.js'];
 
 // ===== Las reglas =====
 
 const REGLAS = ['lanza', 'descripcion-pokedex', 'palabras-total', 'palabras-derivado', 'familias', 'solo-cambia-el-nombre',
-  'descripcion', 'espanol-en-en', 'plural', 'articulo', 'cero', 'como-la-ficha', 'muestras', 'casos', 'undiscovered'];
+  'descripcion', 'espanol-en-en', 'plural', 'articulo', 'cero', 'como-la-ficha', 'muestras', 'casos', 'undiscovered',
+  'forma-lanza', 'forma-palabras', 'forma-familias', 'forma-cambios', 'forma-solo-cambia-el-nombre', 'forma-descripcion',
+  'forma-muestras', 'forma-casos'];
 const fallos = new Map(REGLAS.map(regla => [regla, []]));
 const falla = (regla, que) => fallos.get(regla).push(que);
 const largo = texto => [...texto].length;
@@ -157,6 +245,20 @@ const tapar = (texto, nombre) => texto.split(nombre).join('@');
 const PLURAL = /(?<![\d.,])1 (movimientos|especies|tipos|moves|types)\b/;
 const ARTICULO = / a [AEIOU]/;
 const CERO = /\bcero tipos\b|\bzero types\b|(?<![\d.,])0 (especies|movimientos|tipos|species|moves|types)\b/i;
+
+// Las reglas de lenguaje, sobre lo derivado de una especie o de una forma.
+function reglasDeLenguaje(trozos, l, donde) {
+  for (const texto of trozos) {
+    if (l === 'en') {
+      const motivo = pareceEspanol(texto);
+      if (motivo) falla('espanol-en-en', `${donde}: ${motivo} en "${texto}"`);
+      if (ARTICULO.test(texto)) falla('articulo', `${donde}: "${texto.match(ARTICULO)[0]}"`);
+    }
+    if (PLURAL.test(texto)) falla('plural', `${donde}: "${texto.match(PLURAL)[0]}"`);
+    if (CERO.test(texto)) falla('cero', `${donde}: "${texto.match(CERO)[0]}"`);
+    if (l === 'en' && /No Eggs/.test(texto)) falla('undiscovered', `${donde}: "${texto}"`);
+  }
+}
 
 const textos = { es: new Map(), en: new Map() };
 const cifras = { es: { total: [], derivado: [], descripcion: [] }, en: { total: [], derivado: [], descripcion: [] } };
@@ -198,16 +300,7 @@ for (const l of IDIOMAS) {
     const dTapada = tapar(d, h.nombre);
     descripciones.set(dTapada, (descripciones.get(dTapada) || 0) + 1);
 
-    for (const texto of [p2, p3, d]) {
-      if (l === 'en') {
-        const motivo = pareceEspanol(texto);
-        if (motivo) falla('espanol-en-en', `${donde}: ${motivo} en "${texto}"`);
-        if (ARTICULO.test(texto)) falla('articulo', `${donde}: "${texto.match(ARTICULO)[0]}"`);
-      }
-      if (PLURAL.test(texto)) falla('plural', `${donde}: "${texto.match(PLURAL)[0]}"`);
-      if (CERO.test(texto)) falla('cero', `${donde}: "${texto.match(CERO)[0]}"`);
-      if (l === 'en' && /No Eggs/.test(texto)) falla('undiscovered', `${donde}: "${texto}"`);
-    }
+    reglasDeLenguaje([p2, p3, d], l, donde);
 
     // Lo que pinta la ficha: la pestana abierta del panel de movimientos y el
     // numero de parejas de la seccion de cria (si la frase lo dice).
@@ -250,6 +343,82 @@ for (const l of IDIOMAS) {
   cifras[l].descripcionesRepetidas = `${repetidas.length} plantillas compartidas por ${repetidas.reduce((s, n) => s + n, 0)} especies`;
 }
 
+// ===== Las formas con URL propia =====
+
+const textosForma = { es: new Map(), en: new Map() };
+const cifrasForma = { es: { palabras: [], descripcion: [] }, en: { palabras: [], descripcion: [] } };
+const ramasForma = { sinHabilidad: 0, soloStats: 0, soloTipos: 0, sinPiedra: 0, gemelas: 0, masDeCuatroStats: 0, otraRegion: 0 };
+// Tapa los nombres de mas largo a mas corto: si "Tauros" se tapara antes que
+// "Tauros de Paldea Variedad Combatiente", los restos ("@ de Paldea Variedad
+// Combatiente") harian unicos textos que no lo son.
+const taparTodos = (texto, nombres) => [...new Set(nombres)].filter(Boolean)
+  .sort((a, b) => b.length - a.length).reduce((t, nombre) => tapar(t, nombre), texto);
+
+for (const l of IDIOMAS) {
+  const tapados = new Map();
+  for (const forma of formas) {
+    const ctx = { l, pokemon, abilities };
+    const donde = `${l} ${forma.name}`;
+    let t, d, h;
+    try {
+      t = textoForma(forma.id, ctx);
+      d = descripcionForma(forma.id, ctx);
+      h = hechosForma(forma.id, ctx);
+    } catch (e) {
+      falla('forma-lanza', `${donde}: ${e.message}`);
+      continue;
+    }
+    textosForma[l].set(forma.name, { ...t, descripcion: d, h });
+    const [p1, p2] = t.parrafos;
+    const texto = `${p1} ${p2}`;
+    const palabras = contarPalabras(texto);
+    cifrasForma[l].palabras.push(palabras);
+    cifrasForma[l].descripcion.push(largo(d));
+    if (palabras < 60 || palabras > 160) falla('forma-palabras', `${donde}: ${palabras}`);
+    if (t.familias.length < 3) falla('forma-familias', `${donde}: ${t.familias.join(', ')}`);
+    if (t.cambios.length < 1) falla('forma-cambios', donde);
+    if (largo(d) < 120 || largo(d) > 155) falla('forma-descripcion', `${donde}: ${largo(d)} "${d}"`);
+
+    if (!FORMAS_GEMELAS[forma.name]) {
+      const tapado = taparTodos(texto, [h.nombre, h.especie, ...h.hermanas, ...h.otrasRegiones, ...h.gemelas, h.piedra, h.sinPiedra]);
+      if (tapados.has(tapado)) falla('forma-solo-cambia-el-nombre', `${donde} = ${tapados.get(tapado)}`);
+      else tapados.set(tapado, forma.name);
+    }
+    // La "Y" de Mega-Charizard Y es la letra de la mega, no la conjuncion: la
+    // heuristica la contaria como palabra espanola. Se quita solo esa letra
+    // del nombre; el resto del nombre se sigue mirando.
+    const nombres = [h.nombre, ...h.hermanas, ...h.gemelas, h.piedra].filter(Boolean);
+    const sinLetra = texto => nombres.reduce((t, nombre) => t.split(nombre).join(nombre.replace(/ [XYZ]$/, '')), texto);
+    reglasDeLenguaje([p1, p2, d].map(sinLetra), l, donde);
+
+    if (MUESTRAS_FORMA[forma.name]) {
+      const esperado = MUESTRAS_FORMA[forma.name][l];
+      [p1, p2, d].slice(0, esperado.length).forEach((salido, i) => {
+        if (salido !== esperado[i]) falla('forma-muestras', `${donde} ${['p1', 'p2', 'description'][i]}:\n      sale   "${salido}"\n      espera "${esperado[i]}"`);
+      });
+    }
+    if (CASOS_FORMA[forma.name]) {
+      const [n, frase] = CASOS_FORMA[forma.name][l];
+      if (!t.parrafos[n - 1].includes(frase)) falla('forma-casos', `${donde} p${n}:\n      sale   "${t.parrafos[n - 1]}"\n      espera "${frase}"`);
+    }
+
+    if (l === 'es') {
+      if (!h.habilidades) ramasForma.sinHabilidad++;
+      if (t.cambios.join() === 'stats') ramasForma.soloStats++;
+      if (t.cambios.join() === 'tipos') ramasForma.soloTipos++;
+      if (h.sinPiedra) ramasForma.sinPiedra++;
+      if (FORMAS_GEMELAS[forma.name]) ramasForma.gemelas++;
+      if (h.cambios.length > 4) ramasForma.masDeCuatroStats++;
+      if (h.otrasRegiones.length) ramasForma.otraRegion++;
+    }
+  }
+}
+// La regla de las 1025 y las 155 no se cumple sin mirar: que salgan todas.
+if (formas.length !== 155) falla('forma-lanza', `hay ${formas.length} formas con URL y se esperan 155`);
+for (const nombre of [...Object.keys(MUESTRAS_FORMA), ...Object.keys(CASOS_FORMA)]) {
+  if (!formas.some(f => f.name === nombre)) falla('forma-casos', `${nombre} no es una forma con URL`);
+}
+
 for (const ruta of FUENTES_EN) {
   readFileSync(new URL(`../${ruta}`, import.meta.url), 'utf8').split('\n').forEach((linea, i) => {
     if (/No Eggs/.test(linea)) falla('undiscovered', `${ruta}:${i + 1}`);
@@ -260,8 +429,32 @@ for (const ruta of FUENTES_EN) {
 
 const argMuestra = process.argv.indexOf('--muestra');
 if (argMuestra !== -1) {
-  const ids = (process.argv[argMuestra + 1] || '').split(',').map(Number).filter(Boolean);
-  for (const id of ids) {
+  const pedidos = (process.argv[argMuestra + 1] || '').split(',').map(x => x.trim()).filter(Boolean);
+  const porSlug = new Map(pokemon.map(p => [p.name, p]));
+  for (const pedido of pedidos) {
+    const entrada = /^\d+$/.test(pedido) ? pokemon.find(p => p.id === Number(pedido)) : porSlug.get(pedido);
+    if (!entrada) {
+      console.log(`${pedido}: no esta en pokemon.json\n`);
+      continue;
+    }
+    if (entrada.speciesId) {
+      for (const l of IDIOMAS) {
+        const t = textosForma[l].get(entrada.name);
+        if (!t) {
+          console.log(`${entrada.name} ${l}: sin texto (no tiene URL propia, o ver la regla "forma-lanza")\n`);
+          continue;
+        }
+        const [p1, p2] = t.parrafos;
+        const n = texto => contarPalabras(texto);
+        console.log(`===== #${entrada.id} ${entrada.name} ${t.h.nombre} (${l.toUpperCase()})${FORMAS_GEMELAS[entrada.name] ? ' [gemela]' : ''} =====`);
+        console.log(`description (${largo(t.descripcion)}): ${t.descripcion}\n`);
+        console.log(`p1: ${p1}\n`);
+        console.log(`p2: ${p2}\n`);
+        console.log(`palabras: ${n(p1)} + ${n(p2)} = ${n(p1) + n(p2)}; familias ${t.familias.join(', ')}; cambios ${t.cambios.join(', ') || '-'}\n`);
+      }
+      continue;
+    }
+    const id = entrada.id;
     for (const l of IDIOMAS) {
       const t = textos[l].get(id);
       if (!t) {
@@ -293,6 +486,12 @@ for (const l of IDIOMAS) {
   console.log(`  ${l}: palabras ${rango(c.total)}; derivadas ${rango(c.derivado)}; description ${rango(c.descripcion)}; descriptions con el nombre tapado: ${c.descripcionesRepetidas}`);
 }
 console.log(`Ramas raras (de ${especies.length}): ${Object.entries(ramas).map(([k, v]) => `${k} ${v}`).join(', ')}`);
+console.log('Formas con URL (min / mediana / max):');
+for (const l of IDIOMAS) {
+  const c = cifrasForma[l];
+  console.log(`  ${l}: palabras ${rango(c.palabras)}; description ${rango(c.descripcion)}`);
+}
+console.log(`Ramas de las formas (de ${formas.length}): ${Object.entries(ramasForma).map(([k, v]) => `${k} ${v}`).join(', ')}`);
 
 let fallidas = 0;
 for (const regla of REGLAS) {
