@@ -1,7 +1,7 @@
 // ===== POKEMON DETAIL =====
 import { TYPES, STAT_KEYS, NATURES } from './data.js';
 import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchAbilities, fetchDex, fetchMeta, fetchMetaNames } from './api.js';
-import { skeletonHTML, renderError, hostDeRuta, seguimosEn, wireScrollFade, titularFicha, contextoActivo } from './ui.js';
+import { skeletonHTML, renderError, hostDeRuta, seguimosEn, wireScrollFade, titularFicha, contextoActivo, reescribirUrl } from './ui.js';
 import { urlDe } from './rutas.js';
 import { esqueletoDeFicha } from './cascaras.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
@@ -373,9 +373,10 @@ export async function renderPokedexDetail(container, id, { saltar = true } = {})
     //
     // Pero el ancla sigue a la pestana: con #forma-deoxys-attack puesto, pulsar
     // Normal y recargar (o cambiar de idioma, que lee location) volvia a Ataque.
-    // replaceState no dispara el router ni hashchange.
+    // reescribirUrl (replaceState) no dispara el router ni hashchange, y deja el
+    // href del conmutador de idioma al dia.
     const forma = allPokemon.find(p => p.id === next);
-    history.replaceState(null, '', location.pathname + location.search + (forma?.speciesId ? `#forma-${forma.name}` : ''));
+    reescribirUrl(location.pathname + location.search + (forma?.speciesId ? `#forma-${forma.name}` : ''));
     renderPokedexDetail(container, next, { saltar: false });
   });
 

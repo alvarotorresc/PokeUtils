@@ -186,6 +186,20 @@ export function navegar(url) {
   alNavegar?.();
 }
 
+// Y el replaceState de la app, para que el href del conmutador de idioma siga a
+// la direccion: el filtro que reescribe la query y la pestana de forma que
+// reescribe el ancla no pasan por route(), que es quien lo recalcula. Sin esto,
+// "copiar enlace" o el clic central se llevaban la direccion de antes. app.js
+// se apunta al arrancar, como el router.
+let alReescribir = null;
+export function fijarConmutador(fn) {
+  alReescribir = fn;
+}
+export function reescribirUrl(url) {
+  history.replaceState(null, '', url);
+  alReescribir?.();
+}
+
 // ===== HELPER: la query de la ruta =====
 //
 // Rewrites the URL with replaceState, so the live page survives: nothing
@@ -235,7 +249,7 @@ export function replaceQuery(path, params) {
   const query = partes.join('&');
   // urlDe pliega el tab de la calculadora en la ruta y deja el resto como esta:
   // vuelve a escapar con encodeURIComponent, asi que el %20 sobrevive.
-  history.replaceState(null, '', urlDe(`${path}${query ? '?' + query : ''}`));
+  reescribirUrl(urlDe(`${path}${query ? '?' + query : ''}`));
 }
 
 // ===== HELPER: escape a value interpolated into HTML =====
