@@ -47,7 +47,11 @@
 //                          Variedad Combatiente, palabra por palabra como las
 //                          aprobo Alvaro (con los nombres oficiales del commit 1).
 //   forma-casos            las ramas que las muestras no tocan: Rayquaza sin
-//                          piedra, las gemelas, otra region, mas de cuatro stats.
+//                          piedra, las gemelas, otra region, cinco y seis stats,
+//                          las habilidades (la oculta de la especie, la oculta
+//                          que se queda, las mismas), Darmanitan de Galar Modo
+//                          Daruma frente al de Galar, la inmunidad que se pierde,
+//                          la mega sin habilidad, y ningun "Charizard’s" en ingles.
 // Y las de lenguaje de abajo (espanol-en-en, plural, articulo, cero).
 //
 // Las reglas de lenguaje (espanol-en-en, plural, articulo, cero) miran solo lo
@@ -176,13 +180,13 @@ const MUESTRAS_FORMA = {
   'charizard-mega-x': {
     es: [
       'Mega-Charizard X es la megaevolución de Charizard. Charizard megaevoluciona en combate si lleva la Charizardita X, y vuelve a su forma normal al acabar. Charizard tiene otra megaevolución, Mega-Charizard Y.',
-      'Es de tipo Fuego y Dragón, no Fuego y Volador como Charizard. Recibe el doble de daño de Tierra, Roca y Dragón, y resiste cinco tipos. Frente a Charizard, gana la debilidad a Tierra y Dragón, pierde la de Agua y Eléctrico, y la de Roca pasa de cuádruple a doble. Sus estadísticas base suman 634, 100 más que Charizard: Ataque pasa de 84 a 130, Defensa de 78 a 111 y Ataque Especial de 109 a 130. Su habilidad es Garra Dura; la de Charizard es Mar Llamas, y la oculta, Poder Solar.',
+      'Es de tipo Fuego y Dragón, no Fuego y Volador como Charizard. Recibe el doble de daño de Tierra, Roca y Dragón, y resiste cinco tipos. Frente a Charizard, gana la debilidad a Dragón, pierde la de Agua y Eléctrico, la de Roca pasa de cuádruple a doble, y deja de ser inmune a Tierra, que ahora le afecta el doble. Sus estadísticas base suman 634, 100 más que Charizard: Ataque pasa de 84 a 130, Defensa de 78 a 111 y Ataque Especial de 109 a 130. Su habilidad es Garra Dura; la de Charizard es Mar Llamas, y la oculta, Poder Solar.',
       'Mega-Charizard X, megaevolución de Charizard con la Charizardita X: tipo Fuego y Dragón, débil a Tierra, Roca y Dragón y 634 de stats base (+100).',
     ],
     en: [
       'Mega Charizard X is the Mega Evolution of Charizard. Charizard Mega Evolves in battle while holding the Charizardite X, and returns to normal when the battle ends. Charizard has one other Mega Evolution, Mega Charizard Y.',
-      'It is a Fire/Dragon-type instead of Fire/Flying like Charizard. It takes double damage from Ground, Rock and Dragon, and resists five types. Compared with Charizard, it becomes weak to Ground and Dragon, is no longer weak to Water and Electric, and takes double instead of quadruple damage from Rock. Its base stats total 634, 100 more than Charizard: Attack goes from 84 to 130, Defense from 78 to 111 and Special Attack from 109 to 130. Its ability is Tough Claws; Charizard has Blaze, with Solar Power as its hidden ability.',
-      'Mega Charizard X, Charizard’s Mega Evolution with the Charizardite X: Fire/Dragon-type, weak to Ground, Rock and Dragon, 634 base stat total (+100).',
+      'It is a Fire/Dragon-type instead of Fire/Flying like Charizard. It takes double damage from Ground, Rock and Dragon, and resists five types. Compared with Charizard, it becomes weak to Dragon, is no longer weak to Water and Electric, takes double instead of quadruple damage from Rock, and loses its immunity to Ground, which now deals double damage to it. Its base stats total 634, 100 more than Charizard: Attack goes from 84 to 130, Defense from 78 to 111 and Special Attack from 109 to 130. Its ability is Tough Claws; Charizard has Blaze, with Solar Power as its hidden ability.',
+      'Mega Charizard X, the Mega Evolution of Charizard with the Charizardite X: Fire/Dragon-type, weak to Ground, Rock and Dragon, 634 base stat total (+100).',
     ],
   },
   'raichu-alola': {
@@ -207,23 +211,86 @@ const MUESTRAS_FORMA = {
   },
 };
 
-// Las ramas de las formas que las muestras no tocan: [parrafo, frase].
+// Las ramas de las formas que las muestras no tocan: por idioma, una lista de
+// [parrafo, frase] (el parrafo 3 es la description). Con un tercer elemento
+// `false`, la frase NO debe salir.
 const CASOS_FORMA = {
   'rayquaza-mega': {
-    es: [1, 'Rayquaza no necesita megapiedra para megaevolucionar en combate: le basta con conocer Ascenso Draco.'],
-    en: [1, 'Rayquaza needs no Mega Stone to Mega Evolve in battle: it only has to know Dragon Ascent.'],
+    es: [[1, 'Rayquaza no necesita megapiedra para megaevolucionar en combate: le basta con conocer Ascenso Draco.']],
+    en: [[1, 'Rayquaza needs no Mega Stone to Mega Evolve in battle: it only has to know Dragon Ascent.']],
   },
   'meowstic-male-mega': {
-    es: [1, 'Mega-Meowstic (macho) solo se distingue de Mega-Meowstic (hembra) por el aspecto.'],
-    en: [1, 'Mega Meowstic (Male) differs from Mega Meowstic (Female) only in appearance.'],
+    es: [[1, 'Mega-Meowstic (macho) solo se distingue de Mega-Meowstic (hembra) por el aspecto.']],
+    en: [[1, 'Mega Meowstic (Male) differs from Mega Meowstic (Female) only in appearance.']],
   },
   'tatsugiri-curly-mega': {
-    es: [1, 'solo se distingue de Mega-Tatsugiri (forma lánguida) y Mega-Tatsugiri (forma recta) por el aspecto.'],
-    en: [1, 'differs from Mega Tatsugiri (Droopy Form) and Mega Tatsugiri (Stretchy Form) only in appearance.'],
+    es: [[1, 'solo se distingue de Mega-Tatsugiri (forma lánguida) y Mega-Tatsugiri (forma recta) por el aspecto.']],
+    en: [[1, 'differs from Mega Tatsugiri (Droopy Form) and Mega Tatsugiri (Stretchy Form) only in appearance.']],
   },
   'meowth-alola': {
-    es: [1, 'Meowth tiene otra forma regional, Meowth de Galar.'],
-    en: [1, 'Meowth has one other regional form, Galarian Meowth.'],
+    es: [[1, 'Meowth tiene otra forma regional, Meowth de Galar.']],
+    en: [[1, 'Meowth has one other regional form, Galarian Meowth.']],
+  },
+  // La habilidad de la forma es la oculta de la especie; y cinco stats, todas
+  // enumeradas en el orden de la ficha.
+  'scrafty-mega': {
+    es: [
+      [2, 'Su habilidad es Intimidación, la oculta de Scrafty.'],
+      [2, 'Sus estadísticas base suman 588, 100 más que Scrafty: Ataque pasa de 90 a 130, Defensa de 115 a 135, Ataque Especial de 45 a 55, Defensa Especial de 115 a 135 y Velocidad de 58 a 68.'],
+    ],
+    en: [
+      [2, 'Its ability is Intimidate, the hidden ability of Scrafty.'],
+      [2, 'Its base stats total 588, 100 more than Scrafty: Attack goes from 90 to 130, Defense from 115 to 135, Special Attack from 45 to 55, Special Defense from 115 to 135 and Speed from 58 to 68.'],
+    ],
+  },
+  // Cambian las normales y se queda la oculta.
+  'wooper-paldea': {
+    es: [[2, 'Sus habilidades son Punto Tóxico y Absorbe Agua, y conserva la oculta, Ignorante.']],
+    en: [[2, 'Its abilities are Poison Point and Water Absorb, and it keeps its hidden ability, Unaware.']],
+  },
+  // Se compara con Darmanitan de Galar, no con el de Teselia, y no es una
+  // "forma regional".
+  'darmanitan-galar-zen': {
+    es: [
+      [1, 'Darmanitan de Galar Modo Daruma es el Modo Daruma de Darmanitan de Galar'],
+      [1, 'forma regional', false],
+      [2, 'no solo Hielo como Darmanitan de Galar.'],
+      [2, 'Sus estadísticas base suman 540, 60 más que Darmanitan de Galar: Ataque pasa de 140 a 160 y Velocidad de 95 a 135.'],
+      [2, 'Conserva las habilidades de Darmanitan de Galar.'],
+      [3, 'Darmanitan de Galar Modo Daruma, Modo Daruma de Darmanitan de Galar:'],
+    ],
+    en: [
+      [1, 'Galarian Darmanitan Zen Mode is the Zen Mode of Galarian Darmanitan'],
+      [1, 'regional form', false],
+      [2, 'instead of a pure Ice-type like Galarian Darmanitan.'],
+      [2, 'Its base stats total 540, 60 more than Galarian Darmanitan: Attack goes from 140 to 160 and Speed from 95 to 135.'],
+      [2, 'It keeps the abilities of Galarian Darmanitan.'],
+      [3, 'Galarian Darmanitan Zen Mode, the Zen Mode of Galarian Darmanitan:'],
+    ],
+  },
+  // Seis stats: cuatro enumeradas y el resto contado.
+  'zygarde-mega': {
+    es: [[2, 'PS pasa de 108 a 216, Ataque de 100 a 70, Defensa de 121 a 91, Ataque Especial de 81 a 216 y cambian dos más.']],
+    en: [[2, 'HP goes from 108 to 216, Attack from 100 to 70, Defense from 121 to 91, Special Attack from 81 to 216 and two more change.']],
+  },
+  // Mega sin habilidad en los datos: la cola de la description.
+  'zeraora-mega': {
+    es: [[3, '(+100). Megapiedra y cambios.']],
+    en: [[3, '(+100). Mega Stone and changes.']],
+  },
+  // Sin posesivos para el Pokemon base.
+  'latias-mega': {
+    es: [[2, 'Conserva la habilidad de Latias.']],
+    en: [
+      [2, 'It keeps the Dragon/Psychic typing of Latias.'],
+      [2, 'It keeps the ability of Latias.'],
+      [3, 'Mega Latias, the Mega Evolution of Latias with the Latiasite:'],
+    ],
+  },
+  // De inmune a debil: se dice que pierde la inmunidad.
+  'sneasel-hisui': {
+    es: [[2, 'y deja de ser inmune a Psíquico, que ahora le afecta el cuádruple.']],
+    en: [[2, 'and loses its immunity to Psychic, which now deals quadruple damage to it.']],
   },
 };
 
@@ -347,7 +414,7 @@ for (const l of IDIOMAS) {
 
 const textosForma = { es: new Map(), en: new Map() };
 const cifrasForma = { es: { palabras: [], descripcion: [] }, en: { palabras: [], descripcion: [] } };
-const ramasForma = { sinHabilidad: 0, soloStats: 0, soloTipos: 0, sinPiedra: 0, gemelas: 0, masDeCuatroStats: 0, otraRegion: 0 };
+const ramasForma = { sinHabilidad: 0, soloStats: 0, soloTipos: 0, sinPiedra: 0, gemelas: 0, masDeCincoStats: 0, otraRegion: 0 };
 // Tapa los nombres de mas largo a mas corto: si "Tauros" se tapara antes que
 // "Tauros de Paldea Variedad Combatiente", los restos ("@ de Paldea Variedad
 // Combatiente") harian unicos textos que no lo son.
@@ -397,10 +464,14 @@ for (const l of IDIOMAS) {
         if (salido !== esperado[i]) falla('forma-muestras', `${donde} ${['p1', 'p2', 'description'][i]}:\n      sale   "${salido}"\n      espera "${esperado[i]}"`);
       });
     }
-    if (CASOS_FORMA[forma.name]) {
-      const [n, frase] = CASOS_FORMA[forma.name][l];
-      if (!t.parrafos[n - 1].includes(frase)) falla('forma-casos', `${donde} p${n}:\n      sale   "${t.parrafos[n - 1]}"\n      espera "${frase}"`);
+    for (const [n, frase, sale = true] of CASOS_FORMA[forma.name]?.[l] ?? []) {
+      const parrafo = n === 3 ? d : t.parrafos[n - 1];
+      if (parrafo.includes(frase) !== sale) {
+        falla('forma-casos', `${donde} ${n === 3 ? 'description' : `p${n}`}:\n      sale   "${parrafo}"\n      ${sale ? 'espera' : 'sobra '} "${frase}"`);
+      }
     }
+    // El ingles no dice "Charizard’s": "of Charizard".
+    if (l === 'en' && [p1, p2, d].some(x => x.includes(`${h.especie}’s`))) falla('forma-casos', `${donde}: posesivo "${h.especie}’s"`);
 
     if (l === 'es') {
       if (!h.habilidades) ramasForma.sinHabilidad++;
@@ -408,7 +479,7 @@ for (const l of IDIOMAS) {
       if (t.cambios.join() === 'tipos') ramasForma.soloTipos++;
       if (h.sinPiedra) ramasForma.sinPiedra++;
       if (FORMAS_GEMELAS[forma.name]) ramasForma.gemelas++;
-      if (h.cambios.length > 4) ramasForma.masDeCuatroStats++;
+      if (h.cambios.length > 5) ramasForma.masDeCincoStats++;
       if (h.otrasRegiones.length) ramasForma.otraRegion++;
     }
   }

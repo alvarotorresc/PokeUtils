@@ -421,8 +421,15 @@ export function descripcionEspecie(id, ctx) {
 //
 // Todo se cuenta frente a la especie, que es lo que se busca al buscar la
 // forma: "mega charizard x" quiere saber en que se distingue de Charizard.
+// Salvo las de FORMA_DE_FORMA, que se cuentan frente a otra forma.
 
-const STAT_ORDEN = new Map(STAT_KEYS.map((k, i) => [k, i]));
+// Las formas cuya base natural es otra forma con URL, no la especie: el Modo
+// Daruma de Darmanitan de Galar se distingue de Darmanitan de Galar, no del de
+// Teselia. `modo` es como se presenta en p1 y en la description.
+const FORMA_DE_FORMA = {
+  'darmanitan-galar-zen': { base: 'darmanitan-galar-standard', modo: { es: 'Modo Daruma', en: 'Zen Mode' } },
+};
+
 const mismosTipos = (a, b) => a.length === b.length && a.every(t => b.includes(t));
 
 // Habilidades de una entrada, separadas en normales y oculta, con su nombre en
@@ -450,8 +457,11 @@ export function hechosForma(id, ctx) {
   }
   const f = pokemon.find(x => x.id === id);
   if (!f || !tieneUrlPropia(f)) throw new Error(`ficha-texto.js: #${id} no es una forma con URL propia`);
-  const e = pokemon.find(x => x.id === f.speciesId);
-  if (!e) throw new Error(`ficha-texto.js: la especie de #${id} no esta en pokemon.json`);
+  // `e` es contra quien se compara: la especie o, en FORMA_DE_FORMA, la forma
+  // base.
+  const deForma = FORMA_DE_FORMA[f.name] ?? null;
+  const e = deForma ? pokemon.find(x => x.name === deForma.base) : pokemon.find(x => x.id === f.speciesId);
+  if (!e) throw new Error(`ficha-texto.js: la base de #${id} no esta en pokemon.json`);
   const nombre = p => nombrePokemon(p, l);
   const mega = esMega(f);
 
@@ -464,8 +474,8 @@ export function hechosForma(id, ctx) {
   // forma, sin las gemelas (esas van en su propia frase). Una regional separa
   // las de su region (las razas de Tauros) de las de otra (Meowth de Galar
   // para el de Alola).
-  const hermanas = formsOf(e.id, pokemon)
-    .filter(x => tieneUrlPropia(x) && x.id !== f.id && !grupo.has(x.id) && esMega(x) === mega);
+  const hermanas = formsOf(f.speciesId, pokemon)
+    .filter(x => tieneUrlPropia(x) && x.id !== f.id && x.id !== e.id && !grupo.has(x.id) && esMega(x) === mega);
   const region = regionDe(f);
 
   let piedra = null, sinPiedra = null;
@@ -483,11 +493,9 @@ export function hechosForma(id, ctx) {
   const inmuneYo = new Set(yo.immune.map(i => i.t)), inmuneSuyo = new Set(suyo.immune.map(i => i.t));
   const enOrden = tipos => TYPES.filter(t => tipos.includes(t));
 
-  // Las stats que cambian, de la que mas a la que menos; a igualdad, en el
-  // orden de la tabla.
+  // Las stats que cambian, en el orden de la ficha.
   const cambios = STAT_KEYS.filter(k => f.stats[k] !== e.stats[k])
-    .map(k => ({ k, de: e.stats[k], a: f.stats[k] }))
-    .sort((x, y) => Math.abs(y.a - y.de) - Math.abs(x.a - x.de) || STAT_ORDEN.get(x.k) - STAT_ORDEN.get(y.k));
+    .map(k => ({ k, de: e.stats[k], a: f.stats[k] }));
   const suma = p => STAT_KEYS.reduce((s, k) => s + p.stats[k], 0);
   if (STAT_KEYS.some(k => typeof f.stats[k] !== 'number' || typeof e.stats[k] !== 'number')) {
     throw new Error(`ficha-texto.js: a #${id} o a su especie le falta alguna stat`);
@@ -501,6 +509,7 @@ export function hechosForma(id, ctx) {
     f,
     nombre: nombre(f),
     especie: nombre(e),
+    modo: deForma ? deForma.modo[l] : null,
     mega,
     piedra,
     sinPiedra,
@@ -518,10 +527,11 @@ export function hechosForma(id, ctx) {
     resiste: yo.resist.map(r => r.t),
     inmune: yo.immune.map(i => i.t),
     // Lo que cambia en defensa frente a la especie, en el orden de TYPES. Un
-    // tipo se dice una vez: de inmune a debil es "gana la debilidad" (Charizard
-    // es inmune a Tierra, Mega-Charizard X le es debil), y de debil a inmune,
-    // "pasa a ser inmune".
-    gana: enOrden(yo.weak.map(w => w.t).filter(t => !multSuyo.has(t))),
+    // tipo se dice una vez: de inmune a debil va aparte, en `inmuneADebil`
+    // (Charizard es inmune a Tierra y Mega-Charizard X recibe el doble), y de
+    // debil a inmune, "pasa a ser inmune".
+    gana: enOrden(yo.weak.map(w => w.t).filter(t => !multSuyo.has(t) && !inmuneSuyo.has(t))),
+    inmuneADebil: yo.weak.filter(w => inmuneSuyo.has(w.t)),
     pierde: enOrden(suyo.weak.map(w => w.t).filter(t => !multYo.has(t) && !inmuneYo.has(t))),
     sube: enOrden([...multYo].filter(([t, m]) => m === 4 && multSuyo.get(t) === 2).map(([t]) => t)),
     baja: enOrden([...multYo].filter(([t, m]) => m === 2 && multSuyo.get(t) === 4).map(([t]) => t)),
@@ -536,8 +546,11 @@ export function hechosForma(id, ctx) {
   };
 }
 
-// Hasta cuatro stats cambiadas se enumeran; el resto se cuenta.
-const MAX_CAMBIOS = 4;
+// Hasta cinco stats cambiadas se enumeran todas. Con seis, cuatro y el resto
+// contado ("y cambian dos más"): nunca "y cambia una más".
+const MAX_CAMBIOS = 5;
+const CAMBIOS_ANTES_DEL_RESTO = 4;
+const cambiosDichos = h => (h.cambios.length > MAX_CAMBIOS ? h.cambios.slice(0, CAMBIOS_ANTES_DEL_RESTO) : h.cambios);
 
 const FRASES_FORMA = {
   es: {
@@ -547,7 +560,10 @@ const FRASES_FORMA = {
         : `${h.especie} no necesita megapiedra para megaevolucionar en combate: le basta con conocer ${h.sinPiedra}. Al acabar, vuelve a su forma normal.`;
       return `${h.nombre} es la megaevolución de ${h.especie}. ${como}`;
     },
-    region: h => `${h.nombre} es la forma regional de ${h.especie} en ${h.region.nombre}, la región de ${h.region.juego}.`,
+    region: h => (h.modo
+      // "Darmanitan de Galar, la región de...": el nombre de la base ya acaba en la region.
+      ? `${h.nombre} es el ${h.modo} de ${h.especie}, la región de ${h.region.juego}.`
+      : `${h.nombre} es la forma regional de ${h.especie} en ${h.region.nombre}, la región de ${h.region.juego}.`),
     hermanasMega: h => (h.hermanas.length === 1 ? `${h.especie} tiene otra megaevolución, ${h.hermanas[0]}.`
       : `${h.especie} tiene ${enLetra(h.hermanas.length, 'es', { femenino: true })} megaevoluciones más: ${lista(h.hermanas, 'es')}.`),
     hermanasRegion: h => (h.hermanas.length === 1 ? `En ${h.region.nombre} tiene otra forma, ${h.hermanas[0]}.`
@@ -580,6 +596,8 @@ const FRASES_FORMA = {
       if (h.sube.length) partes.push(SUJETO + `${la(h.sube, true)} ${h.sube.length > 1 ? 'pasan' : 'pasa'} de doble a cuádruple`);
       if (h.ganaInmunidad.length) partes.push(`se vuelve inmune a ${n(h.ganaInmunidad)}`);
       if (h.pierdeInmunidad.length) partes.push(`deja de ser inmune a ${n(h.pierdeInmunidad)}`);
+      // Al final: su relativo lleva coma y detras no puede ir otra clausula.
+      for (const { t, m } of h.inmuneADebil) partes.push(`deja de ser inmune a ${n([t])}, que ahora le afecta el ${m === 4 ? 'cuádruple' : 'doble'}`);
       return partes.length ? `Frente a ${h.especie}, ${unirClausulas(partes, 'es')}.` : null;
     },
     stats(h) {
@@ -588,11 +606,9 @@ const FRASES_FORMA = {
       const suma = d > 0 ? `Sus estadísticas base suman ${h.total}, ${d} más que ${h.especie}`
         : d < 0 ? `Sus estadísticas base suman ${h.total}, ${-d} menos que ${h.especie}`
           : `Sus estadísticas base suman ${h.total}, como las de ${h.especie}, pero repartidas de otra forma`;
-      const dichos = h.cambios.slice(0, MAX_CAMBIOS)
-        .map((c, i) => `${NOMBRES_STAT.es[c.k]} ${i === 0 ? 'pasa ' : ''}de ${c.de} a ${c.a}`);
-      const resto = h.cambios.length - MAX_CAMBIOS;
-      if (resto === 1) dichos.push('cambia una más');
-      else if (resto > 1) dichos.push(`cambian ${enLetra(resto, 'es')} más`);
+      const dichos = cambiosDichos(h).map((c, i) => `${NOMBRES_STAT.es[c.k]} ${i === 0 ? 'pasa ' : ''}de ${c.de} a ${c.a}`);
+      const resto = h.cambios.length - dichos.length;
+      if (resto) dichos.push(`cambian ${enLetra(resto, 'es')} más`);
       return `${suma}: ${lista(dichos, 'es')}.`;
     },
     habilidad(h) {
@@ -602,9 +618,10 @@ const FRASES_FORMA = {
       };
       const yo = { uno: 'Su habilidad es', varias: 'Sus habilidades son' };
       const a = h.habilidades, b = h.habilidadesEspecie;
-      if (!h.cambiaHabilidad) {
-        return `Conserva ${a.normales.length === 1 && !a.oculta ? 'la habilidad' : 'las habilidades'} de ${h.especie}: ${de(a, { uno: '', varias: '' }).trim()}.`;
-      }
+      if (!h.cambiaHabilidad) return `Conserva ${a.normales.length === 1 && !a.oculta ? 'la habilidad' : 'las habilidades'} de ${h.especie}.`;
+      const suya = unaDeLaEspecie(h);
+      if (suya) return `Su habilidad es ${a.normales[0]}, ${suya === 'oculta' ? `la oculta de ${h.especie}` : `una de las de ${h.especie}`}.`;
+      if (mismaOculta(h)) return `${de({ normales: a.normales }, yo)}, y conserva la oculta, ${a.oculta}.`;
       if (mismosTipos(a.normales, b.normales)) {
         return `${de(a, yo)}; ${b.oculta ? `${h.especie} tiene ${b.oculta} como oculta` : `${h.especie} no tiene habilidad oculta`}.`;
       }
@@ -618,7 +635,9 @@ const FRASES_FORMA = {
         : `${h.especie} needs no Mega Stone to Mega Evolve in battle: it only has to know ${h.sinPiedra}. It returns to normal when the battle ends.`;
       return `${h.nombre} is the Mega Evolution of ${h.especie}. ${como}`;
     },
-    region: h => `${h.nombre} is the regional form of ${h.especie} in ${h.region.nombre}, the region of ${h.region.juego}.`,
+    region: h => (h.modo
+      ? `${h.nombre} is the ${h.modo} of ${h.especie}, from ${h.region.nombre}, the region of ${h.region.juego}.`
+      : `${h.nombre} is the regional form of ${h.especie} in ${h.region.nombre}, the region of ${h.region.juego}.`),
     hermanasMega: h => (h.hermanas.length === 1 ? `${h.especie} has one other Mega Evolution, ${h.hermanas[0]}.`
       : `${h.especie} has ${enLetra(h.hermanas.length, 'en')} other Mega Evolutions: ${lista(h.hermanas, 'en')}.`),
     hermanasRegion: h => (h.hermanas.length === 1 ? `It has one other form there, ${h.hermanas[0]}.`
@@ -627,7 +646,7 @@ const FRASES_FORMA = {
       : `${h.especie} has ${enLetra(h.otrasRegiones.length, 'en')} other regional forms: ${lista(h.otrasRegiones, 'en')}.`),
     gemelas: h => `${h.nombre} differs from ${lista(h.gemelas, 'en')} only in appearance.`,
     tipo(h) {
-      if (!h.cambiaTipo) return `It keeps ${h.especie}’s ${nombresTipo(h.tipos, 'en').join('/')} typing.`;
+      if (!h.cambiaTipo) return `It keeps the ${nombresTipo(h.tipos, 'en').join('/')} typing of ${h.especie}.`;
       const antes = soloDe(h) ? `a pure ${nombresTipo(h.tiposEspecie, 'en')[0]}-type` : nombresTipo(h.tiposEspecie, 'en').join('/');
       return `It is ${tipoEn(h.tipos)} instead of ${antes} like ${h.especie}.`;
     },
@@ -640,19 +659,18 @@ const FRASES_FORMA = {
       if (h.sube.length) partes.push(SUJETO + `takes quadruple instead of double damage from ${n(h.sube)}`);
       if (h.ganaInmunidad.length) partes.push(`becomes immune to ${n(h.ganaInmunidad)}`);
       if (h.pierdeInmunidad.length) partes.push(`loses its immunity to ${n(h.pierdeInmunidad)}`);
+      for (const { t, m } of h.inmuneADebil) partes.push(`loses its immunity to ${n([t])}, which now deals ${m === 4 ? 'quadruple' : 'double'} damage to it`);
       return partes.length ? `Compared with ${h.especie}, it ${unirClausulas(partes, 'en')}.` : null;
     },
     stats(h) {
       const d = h.total - h.totalEspecie;
-      if (!h.cambios.length) return `Its base stats are the same as ${h.especie}’s, for a total of ${h.total}.`;
+      if (!h.cambios.length) return `Its base stats are the same as those of ${h.especie}, for a total of ${h.total}.`;
       const suma = d > 0 ? `Its base stats total ${h.total}, ${d} more than ${h.especie}`
         : d < 0 ? `Its base stats total ${h.total}, ${-d} less than ${h.especie}`
           : `Its base stats total ${h.total}, the same as ${h.especie}, spread differently`;
-      const dichos = h.cambios.slice(0, MAX_CAMBIOS)
-        .map((c, i) => `${NOMBRES_STAT.en[c.k]} ${i === 0 ? 'goes ' : ''}from ${c.de} to ${c.a}`);
-      const resto = h.cambios.length - MAX_CAMBIOS;
-      if (resto === 1) dichos.push('one more changes');
-      else if (resto > 1) dichos.push(`${enLetra(resto, 'en')} more change`);
+      const dichos = cambiosDichos(h).map((c, i) => `${NOMBRES_STAT.en[c.k]} ${i === 0 ? 'goes ' : ''}from ${c.de} to ${c.a}`);
+      const resto = h.cambios.length - dichos.length;
+      if (resto) dichos.push(`${enLetra(resto, 'en')} more change`);
       return `${suma}: ${lista(dichos, 'en')}.`;
     },
     habilidad(h) {
@@ -662,9 +680,10 @@ const FRASES_FORMA = {
       };
       const yo = { uno: 'Its ability is', varias: 'Its abilities are' };
       const a = h.habilidades, b = h.habilidadesEspecie;
-      if (!h.cambiaHabilidad) {
-        return `It keeps ${h.especie}’s ${a.normales.length === 1 && !a.oculta ? 'ability' : 'abilities'}: ${de(a, { uno: '', varias: '' }).trim()}.`;
-      }
+      if (!h.cambiaHabilidad) return `It keeps the ${a.normales.length === 1 && !a.oculta ? 'ability' : 'abilities'} of ${h.especie}.`;
+      const suya = unaDeLaEspecie(h);
+      if (suya) return `Its ability is ${a.normales[0]}, ${suya === 'oculta' ? `the hidden ability of ${h.especie}` : `one of the abilities of ${h.especie}`}.`;
+      if (mismaOculta(h)) return `${de({ normales: a.normales }, yo)}, and it keeps its hidden ability, ${a.oculta}.`;
       if (mismosTipos(a.normales, b.normales)) {
         return `${de(a, yo)}; ${b.oculta ? `${h.especie} has ${b.oculta} as its hidden one` : `${h.especie} has no hidden ability`}.`;
       }
@@ -673,6 +692,19 @@ const FRASES_FORMA = {
     },
   },
 };
+
+// La forma tiene una sola habilidad y es una de las de la especie: 'oculta' si
+// es la oculta de la especie (Mega-Scrafty, Intimidación), 'normal' si es una
+// de las normales (Mega-Scizor, Experto); si no, null.
+function unaDeLaEspecie(h) {
+  const a = h.habilidades, b = h.habilidadesEspecie;
+  if (a.oculta || a.normales.length !== 1) return null;
+  if (a.normales[0] === b.oculta) return 'oculta';
+  return b.normales.includes(a.normales[0]) ? 'normal' : null;
+}
+// Cambian las normales y se queda la oculta (Wooper de Paldea).
+const mismaOculta = h => h.habilidades.oculta != null && h.habilidades.oculta === h.habilidadesEspecie.oculta
+  && !mismosTipos(h.habilidades.normales, h.habilidadesEspecie.normales);
 
 // "No solo Eléctrico como Raichu": la especie tiene un tipo y la forma lo
 // conserva y suma otro. Si lo pierde (Tauros, Normal -> Lucha), no va el "solo".
@@ -734,11 +766,14 @@ const COLAS_FORMA = {
     una: [' Su habilidad y en qué cambia frente a la especie.', ' Habilidad y cambios.', ''],
     varias: [' Sus habilidades y en qué cambia frente a la especie.', ' Habilidades y cambios.', ''],
     ninguna: [' En qué cambia frente a la especie.', ' Sus cambios.', ''],
+    // Las megas sin habilidad en los datos.
+    megaSinHabilidad: [' Megapiedra y cambios.', ''],
   },
   en: {
     una: [' Its ability and how it differs from the species.', ' Ability and changes.', ''],
     varias: [' Its abilities and how it differs from the species.', ' Abilities and changes.', ''],
     ninguna: [' How it differs from the species.', ' What changes.', ''],
+    megaSinHabilidad: [' Mega Stone and changes.', ''],
   },
 };
 
@@ -749,14 +784,14 @@ export function descripcionForma(id, ctx) {
   const d = h.total - h.totalEspecie;
   const delta = d > 0 ? ` (+${d})` : d < 0 ? ` (−${-d})` : '';
   const quien = l === 'es'
-    ? (h.mega ? `megaevolución de ${h.especie} con ${h.piedra ? `la ${h.piedra}` : h.sinPiedra}` : `forma regional de ${h.especie}`)
-    : (h.mega ? `${h.especie}’s Mega Evolution with ${h.piedra ? `the ${h.piedra}` : h.sinPiedra}` : `${h.especie}’s regional form`);
+    ? (h.mega ? `megaevolución de ${h.especie} con ${h.piedra ? `la ${h.piedra}` : h.sinPiedra}` : h.modo ? `${h.modo} de ${h.especie}` : `forma regional de ${h.especie}`)
+    : (h.mega ? `the Mega Evolution of ${h.especie} with ${h.piedra ? `the ${h.piedra}` : h.sinPiedra}` : `the ${h.modo ?? 'regional form'} of ${h.especie}`);
   const listas = [lista(nombresTipo(h.debiles, l), l)];
   if (h.debiles.length > 1) listas.push(`${enLetra(h.debiles.length, l)} ${l === 'es' ? 'tipos' : 'types'}`);
   const bases = listas.map(debiles => (l === 'es'
     ? `${h.nombre}, ${quien}: tipo ${lista(nombresTipo(h.tipos, 'es'), 'es')}, débil a ${debiles} y ${h.total} de stats base${delta}.`
     : `${h.nombre}, ${quien}: ${nombresTipo(h.tipos, 'en').join('/')}-type, weak to ${debiles}, ${h.total} base stat total${delta}.`));
-  const colas = COLAS_FORMA[l][!h.habilidades ? 'ninguna' : h.habilidades.normales.length + (h.habilidades.oculta ? 1 : 0) > 1 ? 'varias' : 'una'];
+  const colas = COLAS_FORMA[l][!h.habilidades ? (h.mega && h.piedra ? 'megaSinHabilidad' : 'ninguna') : h.habilidades.normales.length + (h.habilidades.oculta ? 1 : 0) > 1 ? 'varias' : 'una'];
   const candidatas = bases.flatMap(base => colas.map(cola => base + cola));
   return candidatas.find(t => largo(t) >= DESCRIPCION_MIN && largo(t) <= DESCRIPCION_MAX)
     ?? candidatas.find(t => largo(t) <= DESCRIPCION_MAX)
