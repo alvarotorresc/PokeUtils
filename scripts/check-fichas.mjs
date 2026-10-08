@@ -252,7 +252,7 @@ const CASOS_FORMA = {
   // "forma regional".
   'darmanitan-galar-zen': {
     es: [
-      [1, 'Darmanitan de Galar Modo Daruma es el Modo Daruma de Darmanitan de Galar'],
+      [1, 'Darmanitan de Galar Modo Daruma es el Modo Daruma de Darmanitan de Galar, la forma que adopta Darmanitan en Galar, la región de Pokémon Espada y Escudo.'],
       [1, 'forma regional', false],
       [2, 'no solo Hielo como Darmanitan de Galar.'],
       [2, 'Sus estadísticas base suman 540, 60 más que Darmanitan de Galar: Ataque pasa de 140 a 160 y Velocidad de 95 a 135.'],
@@ -260,7 +260,7 @@ const CASOS_FORMA = {
       [3, 'Darmanitan de Galar Modo Daruma, Modo Daruma de Darmanitan de Galar:'],
     ],
     en: [
-      [1, 'Galarian Darmanitan Zen Mode is the Zen Mode of Galarian Darmanitan'],
+      [1, 'Galarian Darmanitan Zen Mode is the Zen Mode of Galarian Darmanitan, the form Darmanitan takes in Galar, the region of Pokémon Sword and Shield.'],
       [1, 'regional form', false],
       [2, 'instead of a pure Ice-type like Galarian Darmanitan.'],
       [2, 'Its base stats total 540, 60 more than Galarian Darmanitan: Attack goes from 140 to 160 and Speed from 95 to 135.'],

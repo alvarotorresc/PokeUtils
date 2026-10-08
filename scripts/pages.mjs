@@ -34,7 +34,7 @@ import {
 } from '../js/contenido.js';
 import { conDerivados } from '../js/derivados.js';
 import { reservaDe } from '../js/cascaras.js';
-import { descripcionEspecie, textoEspecie } from '../js/ficha-texto.js';
+import { descripcionEspecie, textoEspecie, descripcionForma } from '../js/ficha-texto.js';
 import { fichaHTML, formLabels } from '../js/ficha-pokemon.js';
 import { detallePokemon } from '../js/api.js';
 import textosEs from '../js/textos-es.js';
@@ -84,14 +84,12 @@ export const DESCRIPCION_PORTADA = {
 // regla del cliente (descriptionEs || descriptionEn) prueba primero el espanol.
 const DESCRIPCIONES = {
   es: {
-    especie: n => `${n} en la Pokédex: estadísticas base, tipos, debilidades, habilidades, evoluciones y movimientos que aprende.`,
     grupo: n => `Los Pokémon del grupo huevo ${n} y con quién pueden criar.`,
     tipo: n => `El tipo ${n} en Pokémon: contra qué es débil, qué resiste y qué Pokémon lo tienen.`,
     movimiento: (n, m) => `${n}: ${m.descriptionEs || m.descriptionEn || 'tipo, categoría, potencia, precisión y PP.'}`,
     habilidad: (n, a) => `${n}: ${a.descriptionEs || a.descriptionEn || 'qué hace esta habilidad.'}`,
   },
   en: {
-    especie: n => `${n} in the Pokédex: base stats, types, weaknesses, abilities, evolutions and the moves it learns.`,
     grupo: n => `The Pokémon in the ${n} egg group and who they can breed with.`,
     tipo: n => `The ${n} type in Pokémon: what it is weak to, what it resists and which Pokémon have it.`,
     movimiento: (n, m) => `${n}: ${m.descriptionEn || 'type, category, power, accuracy and PP.'}`,
@@ -135,7 +133,8 @@ function rutasFijas(l) {
 
 // Las fichas de un idioma, sin URL todavia: {logica, titulo, descripcion}.
 // La de una especie sale de sus datos (descripcionEspecie, de 120 a 155), en
-// los dos idiomas; la de una forma, de la plantilla corta de DESCRIPCIONES.
+// los dos idiomas; la de una forma con pagina propia, de los suyos
+// (descripcionForma, de 120 a 155 tambien).
 function fichas(l, { pokemon, moves, abilities, evolutions, dex }) {
   const d = DESCRIPCIONES[l];
   const ficha = (logica, nombre, descripcion) => ({
@@ -147,7 +146,10 @@ function fichas(l, { pokemon, moves, abilities, evolutions, dex }) {
     .sort((a, b) => a.id - b.id)
     .map(p => {
       const nombre = pokeName(p, l);
-      if (isForm(p)) return ficha(`/pokedex/${p.id}`, nombre, d.especie(nombre));
+      if (isForm(p)) {
+        return { logica: `/pokedex/${p.id}`, titulo: tituloDe(`/pokedex/${p.id}`, nombre, l),
+          descripcion: descripcionForma(p.id, { l, pokemon, abilities }) };
+      }
       // Sin recortar: ya sale de 120 a 155, y si no, que lo vea check-pages en
       // vez de cortarla aqui con unos puntos suspensivos. `nombre` es el de la
       // miga (nombrePokemon, como displayName en la ficha), que pide el JSON-LD.

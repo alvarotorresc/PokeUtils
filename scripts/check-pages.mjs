@@ -64,11 +64,20 @@ check('el idioma de cada fila es el de su prefijo',
 check('todas con descripcion', rutas.filter(r => !r.descripcion).map(r => r.publica), []);
 check('ninguna descripcion de mas de 160', rutas.filter(r => r.descripcion?.length > 160).map(r => r.publica), []);
 // PR 4: la de cada ficha de especie sale de descripcionEspecie, de 120 a 155
-// (el titulo, de 50 a 60, lo mira check-rutas). Las formas no: son de plantilla.
+// (el titulo, de 50 a 60, lo mira check-rutas).
 const especies = rutas.filter(r => esFichaEspecie(r.logica));
 check('2050 fichas de especie, 1025 por idioma', ['es', 'en'].map(l => especies.filter(r => r.idioma === l).length), [1025, 1025]);
 check('su description, de 120 a 155',
   especies.filter(r => r.descripcion.length < 120 || r.descripcion.length > 155).map(r => `${r.publica} ${r.descripcion.length}`), []);
+// PR 5: la de cada forma con pagina propia sale de descripcionForma, tambien
+// de 120 a 155, y sigue con noindex hasta el commit que las enciende.
+const idsFormaPropia = new Set(pokemon.filter(tieneUrlPropia).map(p => `/pokedex/${p.id}`));
+const formasPropias = rutas.filter(r => idsFormaPropia.has(r.logica));
+check('310 fichas de forma propia, 155 por idioma', ['es', 'en'].map(l => formasPropias.filter(r => r.idioma === l).length), [155, 155]);
+check('su description, de 120 a 155',
+  formasPropias.filter(r => r.descripcion.length < 120 || r.descripcion.length > 155).map(r => `${r.publica} ${r.descripcion.length}`), []);
+check('y ninguna con la plantilla vieja', formasPropias.filter(r => /(en la|in the) Pokédex: /.test(r.descripcion)).map(r => r.publica), []);
+check('las formas siguen con noindex', formasPropias.filter(r => !r.noindex).map(r => r.publica), []);
 // PR 3: se indexan las 53 por idioma de INDEXABLES, en los dos idiomas a la
 // vez; el resto, con noindex. D2: la portada en ingles tambien.
 // PR 4: y las 1025 fichas de especie, con FICHAS_INDEXABLES encendida.
@@ -135,7 +144,7 @@ check('y el par la tiene a ella', rutas.filter(r => {
 
 check('una especie', [por('/pokedex/pikachu')?.logica, por('/pokedex/pikachu')?.titulo], ['/pokedex/25', 'Pikachu: tipo, debilidades, stats y habilidades · PokeUtils']);
 check('una especie con slug limpio (decision 7)', por('/pokedex/deoxys')?.logica, '/pokedex/386');
-check('una forma propia', por('/pokedex/charizard-mega-x')?.titulo, 'Mega-Charizard X · PokeUtils');
+check('una forma propia', por('/pokedex/charizard-mega-x')?.titulo, 'Mega-Charizard X: megapiedra, tipos y stats · PokeUtils');
 check('una forma sin URL no tiene pagina', por('/pokedex/deoxys-attack'), undefined);
 check('un movimiento', [por('/movimientos/puno-trueno')?.titulo, por('/movimientos/puno-trueno')?.logica],
   ['Puño Trueno · PokeUtils', '/moves/9']);
@@ -152,13 +161,12 @@ console.log('\nLas paginas en ingles\n');
 
 check('una especie', [por('/en/pokedex/pikachu')?.logica, por('/en/pokedex/pikachu')?.titulo, por('/en/pokedex/pikachu')?.alternas],
   ['/pokedex/25', 'Pikachu: type, weaknesses, stats and abilities · PokeUtils', { es: '/pokedex/pikachu', en: '/en/pokedex/pikachu' }]);
-// La de una especie sale de sus datos (descripcionEspecie); la de una forma,
-// de la plantilla corta.
+// La de una especie sale de sus datos (descripcionEspecie); la de una forma
+// propia, de los suyos (descripcionForma).
 check('su descripcion', por('/en/pokedex/pikachu')?.descripcion,
   'Pikachu, an Electric-type Pokémon: weak to Ground, 320 base stat total, evolves into Raichu. Its abilities, who it breeds with and the moves it learns.');
-check('la de una forma propia, de plantilla', por('/en/pokedex/charizard-mega-x')?.descripcion,
-  'Mega Charizard X in the Pokédex: base stats, types, weaknesses, abilities, evolutions and the moves it learns.');
-check('una forma propia, con su nombre en ingles', por('/en/pokedex/charizard-mega-x')?.titulo, 'Mega Charizard X · PokeUtils');
+check('la de una forma propia, de sus datos', por('/en/pokedex/charizard-mega-x')?.descripcion?.startsWith('Mega Charizard X, the Mega Evolution of Charizard with the Charizardite X: '), true);
+check('una forma propia, con su nombre en ingles', por('/en/pokedex/charizard-mega-x')?.titulo, 'Mega Charizard X: Mega Stone, types and stats · PokeUtils');
 check('un movimiento', [por('/en/moves/thunder-punch')?.titulo, por('/en/moves/thunder-punch')?.alternas.es],
   ['Thunder Punch · PokeUtils', '/movimientos/puno-trueno']);
 // Solo descriptionEn: delJuego prueba primero la espanola.

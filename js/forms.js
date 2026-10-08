@@ -69,6 +69,8 @@ export const formaEnlazable = tieneUrlPropia;
 // Megas y regionales, por separado: el texto de una forma con URL cuenta como
 // se obtiene, y eso depende de cual de las dos es.
 export const esMega = p => isForm(p) && MEGA.test(p.name);
+// Lo mismo por el nombre solo: rutas.js titula una forma sin tener sus datos.
+export const nombreDeMega = name => MEGA.test(name);
 export const regionDe = p => (isForm(p) && !esMega(p) ? REGIONAL.exec(p.name)?.[1] ?? null : null);
 
 // Las cuatro regiones de las formas regionales, con el juego en que aparecen,

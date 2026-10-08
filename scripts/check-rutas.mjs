@@ -185,7 +185,8 @@ check('ida y vuelta de los 1351, con o sin URL propia',
 check('pikachu', urlDe('/pokedex/25'), '/pokedex/pikachu');
 check('una ficha sin nombre todavia lleva el de su seccion', tituloDe('/pokedex/25'), 'Pokédex · PokeUtils');
 check('y con nombre, el suyo', tituloDe('/pokedex/25', 'Pikachu'), 'Pikachu: tipo, debilidades, stats y habilidades · PokeUtils');
-check('una forma con URL propia, solo su nombre', tituloDe('/pokedex/10034', 'Mega Charizard X'), 'Mega Charizard X · PokeUtils');
+check('una mega con URL propia lleva su escalera', tituloDe('/pokedex/10034', 'Mega-Charizard X'),
+  'Mega-Charizard X: megapiedra, tipos y stats · PokeUtils');
 check('mr-mime y farfetchd conservan su nombre', [urlDe('/pokedex/122'), urlDe('/pokedex/83')],
   ['/pokedex/mr-mime', '/pokedex/farfetchd']);
 // El nombre de PokeAPI de la forma por defecto (deoxys-normal) no es el de la
@@ -463,6 +464,26 @@ check('las 2050 fichas de especie tienen titulo', titulosEspecie.length, 2050);
 check(`todas de ${TITULO_ESPECIE_MIN} a ${TITULO_ESPECIE_MAX} caracteres`,
   titulosEspecie.filter(([, , t]) => t.length < TITULO_ESPECIE_MIN || t.length > TITULO_ESPECIE_MAX), []);
 check('y todas con un sufijo', titulosEspecie.filter(([, , t]) => !t.includes(': ')).length, 0);
+
+console.log('\nTitulos de las formas con pagina propia\n');
+
+// PR 5: las megas y las regionales llevan su propia escalera (tituloForma),
+// mega o regional segun el slug, y el mismo margen de 50-60.
+const titulosForma = pokemon.filter(tieneUrlPropia)
+  .flatMap(p => ['es', 'en'].map(l => [l, p.name, tituloDe(`/pokedex/${p.id}`, pokeName(p, l), l)]));
+check('las 310 formas con URL propia tienen titulo', titulosForma.length, 310);
+check(`todas de ${TITULO_ESPECIE_MIN} a ${TITULO_ESPECIE_MAX} caracteres`,
+  titulosForma.filter(([, , t]) => t.length < TITULO_ESPECIE_MIN || t.length > TITULO_ESPECIE_MAX), []);
+check('las megas hablan de megapiedra y las regionales no',
+  titulosForma.filter(([l, name, t]) => /-mega(-|$)/.test(name) !== /: (megapiedra|Mega Stone)/.test(t)).map(([l, n]) => `${l} ${n}`), []);
+check('las tres de muestra', [
+  tituloDe('/pokedex/10034', 'Mega-Charizard X', 'es'), tituloDe('/pokedex/10100', 'Alolan Raichu', 'en'),
+  tituloDe('/pokedex/10250', 'Tauros de Paldea Variedad Combatiente', 'es'),
+], [
+  'Mega-Charizard X: megapiedra, tipos y stats · PokeUtils',
+  'Alolan Raichu: weaknesses, stats and ability · PokeUtils',
+  'Tauros de Paldea Variedad Combatiente: stats · PokeUtils',
+]);
 
 console.log('\nTitulos unicos\n');
 

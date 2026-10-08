@@ -510,6 +510,8 @@ export function hechosForma(id, ctx) {
     nombre: nombre(f),
     especie: nombre(e),
     modo: deForma ? deForma.modo[l] : null,
+    // La especie de verdad, para la frase de region de FORMA_DE_FORMA.
+    raiz: nombre(pokemon.find(x => x.id === f.speciesId) ?? e),
     mega,
     piedra,
     sinPiedra,
@@ -561,8 +563,9 @@ const FRASES_FORMA = {
       return `${h.nombre} es la megaevolución de ${h.especie}. ${como}`;
     },
     region: h => (h.modo
-      // "Darmanitan de Galar, la región de...": el nombre de la base ya acaba en la region.
-      ? `${h.nombre} es el ${h.modo} de ${h.especie}, la región de ${h.region.juego}.`
+      // La region va con su nombre: "Darmanitan de Galar, la región de..." se
+      // leia como si Darmanitan de Galar fuera la region.
+      ? `${h.nombre} es el ${h.modo} de ${h.especie}, la forma que adopta ${h.raiz} en ${h.region.nombre}, la región de ${h.region.juego}.`
       : `${h.nombre} es la forma regional de ${h.especie} en ${h.region.nombre}, la región de ${h.region.juego}.`),
     hermanasMega: h => (h.hermanas.length === 1 ? `${h.especie} tiene otra megaevolución, ${h.hermanas[0]}.`
       : `${h.especie} tiene ${enLetra(h.hermanas.length, 'es', { femenino: true })} megaevoluciones más: ${lista(h.hermanas, 'es')}.`),
@@ -636,7 +639,7 @@ const FRASES_FORMA = {
       return `${h.nombre} is the Mega Evolution of ${h.especie}. ${como}`;
     },
     region: h => (h.modo
-      ? `${h.nombre} is the ${h.modo} of ${h.especie}, from ${h.region.nombre}, the region of ${h.region.juego}.`
+      ? `${h.nombre} is the ${h.modo} of ${h.especie}, the form ${h.raiz} takes in ${h.region.nombre}, the region of ${h.region.juego}.`
       : `${h.nombre} is the regional form of ${h.especie} in ${h.region.nombre}, the region of ${h.region.juego}.`),
     hermanasMega: h => (h.hermanas.length === 1 ? `${h.especie} has one other Mega Evolution, ${h.hermanas[0]}.`
       : `${h.especie} has ${enLetra(h.hermanas.length, 'en')} other Mega Evolutions: ${lista(h.hermanas, 'en')}.`),
