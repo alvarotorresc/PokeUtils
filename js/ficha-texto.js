@@ -429,10 +429,12 @@ export function descripcionEspecie(id, ctx) {
 // Mega-Floette sale de Floette Flor Eterna (74 PS, no los 54 de Floette) y
 // Mega-Zygarde de la Forma Completa (216, no los 108 del 50 %), y frente a la
 // especie el texto contaria PS que no cambian y un total que no es el suyo.
-// check-fichas lo mide en la regla mega-base.
+// Mega-Meowstic hembra sale de Meowstic hembra, cuya oculta es Tenacidad y no
+// la Bromista del macho. check-fichas lo mide en la regla mega-base.
 const FORMA_DE_FORMA = {
   'darmanitan-galar-zen': { base: 'darmanitan-galar-standard', modo: { es: 'Modo Daruma', en: 'Zen Mode' } },
   'floette-mega': { base: 'floette-eternal' },
+  'meowstic-female-mega': { base: 'meowstic-female' },
   'zygarde-mega': { base: 'zygarde-complete' },
 };
 

@@ -325,6 +325,23 @@ const FUENTES_EN = ['js/i18n-en.js', 'js/textos-en.js', 'js/titulos.js'];
 // suman 100 a su base: Mega-Zygarde sale de la Forma Completa (708) y suma 778.
 const MEGA_NO_SUMA_100 = { 'zygarde-mega': 70 };
 
+// Y si la habilidad que cita es la de otra forma, el texto miente sin que los
+// numeros lo delaten: Mega-Meowstic hembra sale de Meowstic hembra (oculta,
+// Tenacidad), no del macho (Bromista). La base de una mega es la forma que se
+// llama como ella sin el "-mega" (meowstic-female, tatsugiri-droopy), la
+// especie si no hay tal forma, o la de MEGA_BASE, que no sale del nombre.
+const MEGA_BASE = { 'floette-mega': 'floette-eternal', 'zygarde-mega': 'zygarde-complete' };
+const baseDeMega = forma => pokemon.find(p => p.name === (MEGA_BASE[forma.name] ?? forma.name.replace(/-mega(-[xyz])?$/, '')))
+  ?? pokemon.find(p => p.id === forma.speciesId);
+const habilidadesDelDato = (p, l) => {
+  const nombre = slug => {
+    const a = abilities.find(x => x.name === slug);
+    return l === 'es' ? a.nameEs || a.nameEn : a.nameEn;
+  };
+  const normales = p.abilities.filter(a => !a.isHidden).map(a => nombre(a.nameEn));
+  return `${normales.join(', ')} / ${p.abilities.filter(a => a.isHidden).map(a => nombre(a.nameEn))[0] ?? '-'}`;
+};
+
 // ===== Las reglas =====
 
 const REGLAS = ['lanza', 'descripcion-pokedex', 'palabras-total', 'palabras-derivado', 'familias', 'solo-cambia-el-nombre',
@@ -442,6 +459,7 @@ for (const l of IDIOMAS) {
 
 const textosForma = { es: new Map(), en: new Map() };
 const cifrasForma = { es: { palabras: [], descripcion: [] }, en: { palabras: [], descripcion: [] } };
+const megasRevisadas = new Set();
 const ramasForma = { sinHabilidad: 0, soloStats: 0, soloTipos: 0, sinPiedra: 0, gemelas: 0, masDeCincoStats: 0, otraRegion: 0 };
 // Tapa los nombres de mas largo a mas corto: si "Tauros" se tapara antes que
 // "Tauros de Paldea Variedad Combatiente", los restos ("@ de Paldea Variedad
@@ -483,6 +501,10 @@ for (const l of IDIOMAS) {
       const suma = MEGA_NO_SUMA_100[forma.name] ?? 100;
       if (h.cambios.some(c => c.k === 'hp')) falla('mega-base', `${donde}: los PS cambian frente a ${h.especie}`);
       if (h.total - h.totalEspecie !== suma) falla('mega-base', `${donde}: suma ${h.total - h.totalEspecie} a ${h.especie}, no ${suma}`);
+      const citadas = `${h.habilidadesEspecie.normales.join(', ')} / ${h.habilidadesEspecie.oculta ?? '-'}`;
+      const delDato = habilidadesDelDato(baseDeMega(forma), l);
+      if (citadas !== delDato) falla('mega-base', `${donde}: cita de ${h.especie} ${citadas}; ${baseDeMega(forma).name} tiene ${delDato}`);
+      megasRevisadas.add(forma.name);
     }
     // La "Y" de Mega-Charizard Y es la letra de la mega, no la conjuncion: la
     // heuristica la contaria como palabra espanola. Se quita solo esa letra
@@ -519,6 +541,7 @@ for (const l of IDIOMAS) {
 }
 // La regla de las 1025 y las 155 no se cumple sin mirar: que salgan todas.
 if (formas.length !== 155) falla('forma-lanza', `hay ${formas.length} formas con URL y se esperan 155`);
+if (megasRevisadas.size !== 97) falla('mega-base', `se revisan las habilidades de ${megasRevisadas.size} megas y se esperan 97`);
 for (const nombre of [...Object.keys(MUESTRAS_FORMA), ...Object.keys(CASOS_FORMA)]) {
   if (!formas.some(f => f.name === nombre)) falla('forma-casos', `${nombre} no es una forma con URL`);
 }
