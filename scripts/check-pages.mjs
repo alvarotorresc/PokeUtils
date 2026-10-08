@@ -191,7 +191,11 @@ check('description y og:description, la misma',
   [por('/pokedex/pikachu').descripcion, por('/pokedex/pikachu').descripcion]);
 check('un robots noindex', uno(pika, /<meta name="robots" content="([^"]*)"/g), ['noindex']);
 check('no-hero ya en el <html>', /<html lang="es" class="no-hero">/.test(pika), true);
-check('sin el hero de la portada', [pika.includes('data-shell'), pika.includes('<h1>')], [false, false]);
+// La ficha de una especie lleva su contenido con noindex (FICHAS_INDEXABLES
+// apagada): su shell y su h1, el suyo y no el del hero.
+check('sin el hero de la portada, con el shell de la ficha',
+  [pika.includes('class="portada"'), pika.includes('<div data-shell data-ruta="/pokedex/25">'), uno(pika, /<h1>([^<]*)<\/h1>/g)],
+  [false, true, ['Pikachu']]);
 check('sin comentarios HTML', pika.includes('<!--'), false);
 // D9: la migracion de los #/, el no-hero y los dos swaps de idioma solo hacen
 // algo en la portada espanola, que es el index.html tal cual. En las generadas
@@ -213,7 +217,10 @@ const umami = html => html.replace(/<!--[\s\S]*?-->/g, '').match(/<script\b[^>]*
 check('Umami ignora la query en el esqueleto',
   umami(esqueleto).map(t => /\sdata-exclude-search="true"/.test(t)), [true]);
 check('y en las paginas generadas', umami(pika).map(t => /\sdata-exclude-search="true"/.test(t)), [true]);
-check('el <main> sigue ahi, vacio', /<main class="main" id="app" data-reservando><\/main>/.test(pika), true);
+// Sin plantilla (una forma, un movimiento), el <main> se queda vacio.
+check('el <main> sigue ahi, vacio, en una pagina sin plantilla',
+  ['/pokedex/charizard-mega-x', '/movimientos/impactrueno'].map(u => /<main class="main" id="app" data-reservando><\/main>/.test(paginaHtml(esqueleto, por(u)))),
+  [true, true]);
 
 // Una indexable lleva su contenido dentro de <div data-shell data-ruta>, en el
 // <main>: el mismo que pinta el cliente, con su h1 y su texto.
@@ -259,7 +266,8 @@ const bloque = html => (html.match(/<link rel="alternate" hreflang[\s\S]*hreflan
 check('el mismo bloque de hreflang que su par, byte a byte', [bloque(enPika) === bloque(pika), bloque(enPika) !== ''], [true, true]);
 check('y la portada en ingles, el mismo que index.html', bloque(enInicio) === bloque(esqueleto), true);
 check('su canonical, la suya en ingles', uno(enPika, /<link rel="canonical" href="([^"]*)"/g), [`${ORIGEN}/en/pokedex/pikachu`]);
-check('<html lang="en"> y sin hero', [/<html lang="en" class="no-hero">/.test(enPika), enPika.includes('data-shell')], [true, false]);
+check('<html lang="en">, sin hero y con el shell de su ficha',
+  [/<html lang="en" class="no-hero">/.test(enPika), enPika.includes('class="portada"'), enPika.includes('<div data-shell data-ruta="/pokedex/25">')], [true, false, true]);
 check('noindex', uno(enPika, /<meta name="robots" content="([^"]*)"/g), ['noindex']);
 check('el nav en ingles', uno(enPika, /data-page="\w+">([^<]*)</g), ['HOME', 'POKEDEX', 'DATA', 'COMPETITIVE', 'CALCULATOR']);
 check('y sus enlaces a /en', uno(enPika, /<a href="([^"]*)" class="nav-(?:logo|link)"/g),

@@ -14,9 +14,9 @@
 // El cliente lo saca de contextoActivo() en ui.js; el build, de los dos
 // diccionarios importados. scripts/check-ficha.mjs la pinta en node.
 //
-// Lo que sigue en pokedex-detail.js: la carga de datos, las pestanas de forma
-// (formLabels), el meta (que se rellena despues: aqui solo va su hueco), el
-// error con reintento de evolucion y movimientos, y los listeners.
+// Lo que sigue en pokedex-detail.js: la carga de datos, el meta (que se
+// rellena despues: aqui solo va su hueco), el error con reintento de evolucion
+// y movimientos, y los listeners.
 
 import { spriteUrl, STAT_KEYS, STAT_COLORS, VERSION_GROUP_NAMES, VERSION_GROUP_NAMES_EN } from './data.js';
 import { urlDe } from './rutas.js';
@@ -263,6 +263,39 @@ export function eggSectionHTML(pokemon, all, ctx) {
   `;
 }
 
+// ===== Las pestanas de forma =====
+//
+// Three species label two or more of their forms identically -- Minior repeats
+// "Forma Meteorito" six times, one per core colour, and Zygarde and Darmanitan
+// repeat one each: 10 tabs where the label alone cannot say which is which.
+// PokeAPI really does give them the same name, so rather than invent a
+// translation the repeated ones fall back to the slug's own suffix, which is
+// what actually distinguishes them.
+// The root cannot be sliced off with the species' slug, because that slug often
+// carries a suffix of its own: species 774 is `minior-red-meteor` and 718 is
+// `zygarde-50`. It is the segments the two share from the start, which also
+// keeps Kommo-o's own hyphen intact (`kommo-o` vs `kommo-o-totem`).
+function slugSuffix(formSlug, speciesSlug) {
+  const form = formSlug.split('-');
+  const species = speciesSlug.split('-');
+  let i = 0;
+  while (i < form.length && i < species.length && form[i] === species[i]) i++;
+  return form.slice(i).join(' ') || formSlug.replace(/-/g, ' ');
+}
+
+// Con el idioma del contexto y no el activo: el build pinta las pestanas de las
+// dos fichas, y tienen que salir las mismas que pinta el cliente.
+export function formLabels(variants, speciesSlug, ctx) {
+  const nameOf = v => v.speciesId ? (ctx.l === 'es' ? v.formEs : v.formEn) : tr(ctx, 'form.base');
+  const seen = {};
+  variants.forEach(v => { seen[nameOf(v)] = (seen[nameOf(v)] || 0) + 1; });
+
+  return variants.map(v => {
+    const label = nameOf(v);
+    return seen[label] < 2 ? label : slugSuffix(v.name, speciesSlug);
+  });
+}
+
 // ===== La ficha =====
 
 // The capture rate runs 0 (Chansey and friends) to 255 (Caterpie and friends).
@@ -297,8 +330,9 @@ function formasPropiasHTML(pokemon, variants, ctx) {
   `;
 }
 
-// La ficha entera. El meta (#metaSection) va siempre vacio: lo rellena
-// pokedex-detail.js. Evolucion (#evoSection) y movimientos (#mvSection) salen
+// La ficha entera. El meta (#metaSection) va siempre vacio y con hidden: lo
+// rellena pokedex-detail.js, que le quita el hidden. Vacio ya lo esconde
+// .b:empty, pero el hidden lo dice tambien sin CSS. Evolucion (#evoSection) y movimientos (#mvSection) salen
 // pintados si llegan sus datos, y vacios si no: un fallo de uno de los dos no
 // tumba la ficha, y el cliente pone en su hueco el error con reintento.
 //
@@ -307,7 +341,7 @@ function formasPropiasHTML(pokemon, variants, ctx) {
 //   allPokemon     pokemon.json entero (cria, nombres de anterior/siguiente y
 //                  de la linea evolutiva)
 //   variants       la especie y sus formas, en el orden de las pestanas
-//   variantLabels  el texto de cada pestana (formLabels, en pokedex-detail.js)
+//   variantLabels  el texto de cada pestana (formLabels, arriba)
 //   evolutions     evolutions.json entero, o null
 //   dex            data/dex/{id}.json de la especie, o null. La especie y no
 //                  la forma: Mega Charizard X evoluciona y aprende igual que
@@ -319,7 +353,11 @@ function formasPropiasHTML(pokemon, variants, ctx) {
 //                  primer parrafo, y solo en la especie: en una pestana de
 //                  forma o en la pagina de una forma se queda la descripcion
 //                  sola (D8), porque el texto habla de la especie.
-export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels, evolutions, dex, texto }) {
+//   animar         false sin la entrada (fade-in): la ficha que llega en el HTML
+//                  ya esta a la vista desde el primer frame, y animarla la
+//                  esconderia otra vez y retrasaria el LCP. Ni el build ni el
+//                  cliente al adoptarla la animan.
+export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels, evolutions, dex, texto, animar = true }) {
   const dexId = pokemon.speciesId || pokemon.id;
   const { weak, resist, immune } = enfrentamientos(pokemon.types);
 
@@ -352,8 +390,22 @@ export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels, e
     ? (pokemon.descriptionEs || pokemon.descriptionEn)
     : (pokemon.descriptionEn || pokemon.descriptionEs);
 
+  // Lo que eran comentarios HTML dentro de la plantilla viven aqui: la ficha
+  // viaja tambien en el HTML de cada pagina, y el build no deja pasar un <!--.
+  //  - Habilidades: la descripcion va escrita, no en una burbuja. Dos nombres
+  //    sueltos dejaban 168px de caja practicamente vacia, y lo que se quiere
+  //    saber de una habilidad es justo lo que hace. El enlace a su pagina sigue
+  //    donde estaba.
+  //  - The evolution line reads across, not down: in a masonry column it only
+  //    had 539px for the 674px Pikachu needs, and Raichu fell outside the card.
+  //    It closes the bento as a full-width band instead.
+  //  - El meta va fuera del bento: llega tarde (pide el meta y las evoluciones),
+  //    y dentro de las columnas su alto reequilibraba las dos y movia las
+  //    tarjetas ya pintadas. Detras de la banda de evolucion no empuja nada mas
+  //    que la navegacion de abajo.
+
   return `
-    <div class="poke-detail fade-in">
+    <div class="poke-detail${animar ? ' fade-in' : ''}">
       ${breadcrumbHTML(`/pokedex/${pokemon.id}`, { ...ctx, nombre })}
 
       <div class="bento">
@@ -441,10 +493,6 @@ ${formasPropiasHTML(pokemon, variants, ctx)}
 
       <section class="b">
       <h2 class="section-title">${tr(ctx, 'pokedex.abilities')}</h2>
-      <!-- La descripcion va escrita, no en una burbuja: dos nombres sueltos
-           dejaban 168px de caja practicamente vacia, y lo que se quiere saber
-           de una habilidad es justo lo que hace. El enlace a su pagina sigue
-           donde estaba. -->
       <div class="ability-list">
         ${pokemon.abilities.map(a => {
           // a.nameEn es el name de PokeAPI ('pressure'), que es lo que lleva la
@@ -498,20 +546,13 @@ ${formasPropiasHTML(pokemon, variants, ctx)}
 
       </section>
 
-      <!-- The evolution line reads across, not down: in a masonry column it only
-           had 539px for the 674px Pikachu needs, and Raichu fell outside the
-           card. It closes the bento as a full-width band instead. -->
       <section class="b b-wide">
       <h2 class="section-title">${tr(ctx, 'evo.title')}</h2>
       <div id="evoSection">${evolutions ? evoSectionHTML(ctx, { evolutions, allPokemon, dexId, formId: pokemon.id }) : ''}</div>
       </section>
       </div>
 
-      <!-- Fuera del bento: llega tarde (pide el meta y las evoluciones), y dentro
-           de las columnas su alto reequilibraba las dos y movia las tarjetas ya
-           pintadas. Detras de la banda de evolucion no empuja nada mas que la
-           navegacion de abajo. -->
-      <section class="b" id="metaSection"></section>
+      <section class="b" id="metaSection" hidden></section>
 
       <div class="poke-nav">
         ${dexId > 1 ? `<a href="${urlDe(`/pokedex/${dexId - 1}`, ctx.l)}" class="page-btn poke-nav-btn">

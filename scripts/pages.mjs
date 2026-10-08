@@ -12,9 +12,10 @@
 // textos fijos ya traducidos y los tres hreflang que la emparejan con la otra.
 // Se indexan las que dice esIndexable (js/contenido.js): las 53 por idioma de
 // INDEXABLES (portada, hubs, FAQ, herramientas, tipos y grupos) y, cuando se
-// encienda FICHAS_INDEXABLES, las 1025 fichas de especie. Las 53 llegan ademas
-// con su contenido en el HTML (contenidoDe, abajo), el mismo que pinta el
-// cliente. Las demas llevan noindex. La portada espanola no
+// encienda FICHAS_INDEXABLES, las 1025 fichas de especie. Las 53 y las 1025
+// fichas de especie (estas aunque sigan con noindex) llegan ademas con su
+// contenido en el HTML (contenidoDe, abajo), el mismo que pinta el cliente.
+// Las demas llevan noindex. La portada espanola no
 // se regenera: es el index.html tal cual, con su canonical y sus hreflang
 // escritos a mano, y el build le mete dentro del hero su contenido
 // (rellenarPortada).
@@ -26,7 +27,7 @@ import {
   TABLA_ESTATICA, GRUPOS_HUEVO_ES, TIPOS_ES, IDIOMAS, fijarIndice, urlDe, tituloDe, logicaDe,
 } from '../js/rutas.js';
 import { TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from '../js/data.js';
-import { isForm, tieneUrlPropia } from '../js/forms.js';
+import { isForm, tieneUrlPropia, formsOf } from '../js/forms.js';
 import { TOOLS, CATEGORIES, toolsIn } from '../js/tools.js';
 import {
   INDEXABLES, esIndexable, encabezadoHTML, introHTML, tipoHTML, grupoHTML, faqHTML, listaGruposHTML,
@@ -34,7 +35,9 @@ import {
 } from '../js/contenido.js';
 import { conDerivados } from '../js/derivados.js';
 import { reservaDe } from '../js/cascaras.js';
-import { descripcionEspecie } from '../js/ficha-texto.js';
+import { descripcionEspecie, textoEspecie } from '../js/ficha-texto.js';
+import { fichaHTML, formLabels } from '../js/ficha-pokemon.js';
+import { detallePokemon } from '../js/api.js';
 import textosEs from '../js/textos-es.js';
 import textosEn from '../js/textos-en.js';
 // pokeName es la misma regla con la que las fichas ponen su nombre, asi que el
@@ -148,7 +151,7 @@ function fichas(l, { pokemon, moves, abilities, evolutions, dex }) {
       if (isForm(p)) return ficha(`/pokedex/${p.id}`, nombre, d.especie(nombre));
       // Sin recortar: ya sale de 120 a 155, y si no, que lo vea check-pages en
       // vez de cortarla aqui con unos puntos suspensivos.
-      return { logica: `/pokedex/${p.id}`, titulo: tituloDe(`/pokedex/${p.id}`, nombre, l), descripcion: descripcionEspecie(p.id, ctxEspecie(p.id)) };
+      return { logica: `/pokedex/${p.id}`, titulo: tituloDe(`/pokedex/${p.id}`, nombre, l), descripcion: descripcionEspecie(p.id, ctxEspecie(p.id)), especie: true };
     });
   const grupos = Object.keys(GRUPOS_HUEVO_ES).map(g => {
     const nombre = DICCIONARIOS[l][`egg.group.${g}`];
@@ -177,13 +180,19 @@ export async function leerDex(pokemon, leer) {
 }
 
 // rutasPublicas({indice, pokemon, moves, abilities, evolutions, dex}) ->
-//   [{idioma, logica, publica, alternas: {es, en}, titulo, descripcion, noindex}]
+//   [{idioma, logica, publica, alternas: {es, en}, titulo, descripcion, noindex, contenido?}]
 // Primero las 2.487 espanolas y luego las 2.487 inglesas, en el mismo orden.
 // `alternas` es la direccion de la misma pagina en cada idioma (la suya
 // incluida): de ahi salen los hreflang y el href del conmutador.
 // indice es data/rutas.json: se fija aqui para que urlDe sepa los slugs.
 // evolutions es data/evolutions.json y dex, un Map id -> data/dex/<id>.json de
-// las 1025 especies (leerDex): los piden las descriptions de las especies.
+// las 1025 especies (leerDex): los piden las descriptions y la ficha de las
+// especies.
+//
+// `contenido` (lo que va en el shell) va con la plantilla y no con la
+// indexabilidad: las 53 por idioma de INDEXABLES y las 1025 fichas de especie lo
+// llevan, y las fichas aunque sigan con noindex mientras FICHAS_INDEXABLES este
+// apagada. El noindex, el JSON-LD y el lastmod si dependen de esIndexable.
 export function rutasPublicas({ indice, pokemon, moves, abilities, evolutions, dex }) {
   fijarIndice(indice);
   const textos = textosConDerivados({ pokemon, moves });
@@ -204,9 +213,10 @@ export function rutasPublicas({ indice, pokemon, moves, abilities, evolutions, d
       indexable,
       noindex: !indexable,
     };
-    if (!indexable) return fija;
-    const ctx = { l, dic: DICCIONARIOS[l], textos: textos[l], pokemon };
-    const conLd = { ...fija, jsonLd: jsonLdDe(fila.logica, ctx, fija.descripcion), deps: depsDe(fila.logica, l) };
+    const ctx = { l, dic: DICCIONARIOS[l], textos: textos[l], pokemon, abilities, evolutions, dex };
+    const conContenido = fila.especie ? { ...fija, contenido: contenidoDe(fila.logica, ctx) } : fija;
+    if (!indexable) return conContenido;
+    const conLd = { ...conContenido, jsonLd: jsonLdDe(fila.logica, ctx, fija.descripcion), deps: depsDe(fila.logica, l) };
     return fila.logica === '/'
       ? { ...conLd, contenido: portadaHTML(ctx), chips: chipsInicialesHTML(ctx) }
       : { ...conLd, contenido: contenidoDe(fila.logica, ctx) };
@@ -387,16 +397,17 @@ export function sitemapDe(entradas, origen = ORIGEN) {
 
 export const robotsDe = (origen = ORIGEN) => `User-agent: *\nAllow: /\n\nSitemap: ${origen}/sitemap.xml\n`;
 
-// ===== El contenido de una pagina indexable =====
+// ===== El contenido de una pagina con plantilla =====
 //
 // Lo que va dentro de <div data-shell data-ruta="<logica>">: lo mismo que pinta
 // el renderizador de esa ruta (pestanas, miga, cabecera, el cuerpo y el texto),
 // con las mismas funciones de contenido.js. Las herramientas no se pueden
 // pintar sin el navegador: en su sitio va un hueco del alto que ocupan
 // (reservaDe, en PANTALLAS de cascaras.js), para que el texto de debajo no
-// salte al hidratar. ctx = {l, dic, textos, pokemon}.
+// salte al hidratar. ctx = {l, dic, textos, pokemon, abilities, evolutions, dex}.
 export function contenidoDe(logica, ctx) {
   const [seccion, id] = logica.split('/').filter(Boolean);
+  if (seccion === 'pokedex' && id) return contenidoFicha(Number(id), ctx);
   let cuerpo;
   if (seccion === 'types' && id) cuerpo = tipoHTML(id, ctx);
   else if (seccion === 'egg' && id) cuerpo = grupoHTML(id, ctx);
@@ -413,6 +424,29 @@ export function contenidoDe(logica, ctx) {
     } else throw new Error(`pages.mjs: no se que contenido lleva ${logica}`);
   }
   return encabezadoHTML(logica, ctx) + cuerpo + introHTML(logica, ctx);
+}
+
+// La ficha de una especie, la misma que pinta renderPokedexDetail
+// (pokedex-detail.js) en la primera carga: con su texto derivado, sin la
+// entrada animada y con el meta vacio, que el cliente rellena despues. El
+// objeto del Pokemon sale de detallePokemon, la misma funcion que usa
+// fetchPokemonDetail, y las pestanas de formLabels.
+function contenidoFicha(id, ctx) {
+  const { l, dic, pokemon: todos, abilities, evolutions, dex } = ctx;
+  const entrada = todos.find(p => p.id === id);
+  if (!entrada || isForm(entrada)) throw new Error(`pages.mjs: /pokedex/${id} no es una especie y su pagina no lleva ficha`);
+  const ficha = dex.get(id);
+  const variants = [entrada, ...formsOf(id, todos)];
+  return fichaHTML({ l, dic }, {
+    pokemon: detallePokemon(entrada, abilities, ficha),
+    allPokemon: todos,
+    variants,
+    variantLabels: formLabels(variants, entrada.name, { l, dic }),
+    evolutions,
+    dex: ficha,
+    texto: textoEspecie(id, { l, dic, pokemon: todos, abilities, evolutions, dex: ficha }),
+    animar: false,
+  });
 }
 
 // La portada: lo de debajo del buscador dentro del shell (el hero), detras del
@@ -620,8 +654,10 @@ export function paginaHtml(esqueleto, ruta, origen = ORIGEN) {
   if (l === 'en') html = enlacesEnIngles(traducirPlantilla(html, portada));
   // El contenido despues de traducir la plantilla: ya va en su idioma, y los
   // patrones de traducirPlantilla (el <h1> del hero) no tienen que verlo.
-  if (ruta.indexable && portada) html = rellenarPortada(html, ruta);
-  else if (ruta.indexable) {
+  // Con contenido y no con indexable: las fichas de especie lo llevan con
+  // noindex (ver rutasPublicas).
+  if (ruta.contenido && portada) html = rellenarPortada(html, ruta);
+  else if (ruta.contenido) {
     html = sustituir(html, /<main class="main" id="app" data-reservando><\/main>/,
       () => `<main class="main" id="app" data-reservando><div data-shell data-ruta="${esc(ruta.logica)}">${ruta.contenido}</div></main>`,
       'el <main> vacio');

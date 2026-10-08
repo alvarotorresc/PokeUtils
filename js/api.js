@@ -129,7 +129,14 @@ export async function fetchPokemonDetail(id) {
   // despues movería la tarjeta entera hacia abajo cuando llegara.
   // Falla suave: la ficha se lee perfectamente sin el texto de sabor.
   const ficha = await fetchDex(dexId).catch(() => null);
+  return detallePokemon(p, abilities, ficha);
+}
 
+// El objeto que recibe la ficha (fichaHTML), a partir de su entrada de
+// pokemon.json, abilities.json entero y el data/dex/<id>.json de su especie (o
+// null). Aparte y sin red para que el build, que prerenderiza las fichas,
+// monte el mismo objeto que el cliente sin copiarlo a mano.
+export function detallePokemon(p, abilities, ficha) {
   const abilityInfo = new Map(abilities.map(a => [a.name, a]));
 
   return {

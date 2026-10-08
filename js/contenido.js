@@ -329,10 +329,19 @@ export function logicaIndexable(path, query = new URLSearchParams()) {
   return INDEXABLES.includes(logica) ? logica : null;
 }
 
+// La clave del shell de una direccion: la de logicaIndexable o, en una ficha de
+// especie, su ruta logica (/pokedex/25). Las fichas llegan prerenderizadas
+// aunque no se indexen, y su shell se conserva igual; lo que no hacen es cargar
+// textos, y por eso logicaIndexable sigue dandoles null. Una forma
+// (/pokedex/10034) no llega con shell, asi que nunca casa con ninguno.
+export function logicaDeShell(path, query = new URLSearchParams()) {
+  return logicaIndexable(path, query) ?? (/^\/pokedex\/\d+$/.test(path) ? path : null);
+}
+
 // El prerender deja su contenido en <div data-shell data-ruta="<logica>">. El
 // router lo conserva solo si es el de la pagina que va a pintar: sin data-ruta
 // o con otra ruta (el hero de la portada en una direccion que no es la
-// portada), se vacia como siempre.
+// portada), se vacia como siempre. `logica` es la de logicaDeShell.
 export const conservaShell = (rutaDelShell, logica) => logica !== null && rutaDelShell === logica;
 
 // ===== El principio de una pagina =====

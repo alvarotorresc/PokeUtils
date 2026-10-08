@@ -10,7 +10,7 @@ import { t, getLang, setLang, onLangChange } from './i18n.js';
 import { purgeLegacyCache } from './api.js';
 import { leer, escribir } from './storage.js';
 import { renderError, parseRuta, navegar, fijarRouter, wireSpriteFade, cargarTextos } from './ui.js';
-import { logicaIndexable, conservaShell } from './contenido.js';
+import { logicaIndexable, logicaDeShell, conservaShell } from './contenido.js';
 import { urlDe, cargarIndice, tituloDe, legadoAPublica, idiomaDe, esPortada, urlEquivalente } from './rutas.js';
 import { cascaraDeRuta } from './cascaras.js';
 import { attachGlobalSearch } from './global-search.js';
@@ -440,16 +440,17 @@ async function route() {
   // buscador visible se reserva ese hueco explicitamente; en la home, sin
   // buscador, el margen que ya habia de sobra sigue intacto.
   nav.classList.toggle('nav-has-search', !esHome);
-  // Una pagina indexable llega pintada en el HTML, dentro de
-  // <div data-shell data-ruta="<logica>"> (hoy solo la portada; el resto, desde
-  // que el build las prerenderice). Si el shell es el de esta ruta, se queda
-  // donde esta y el renderizador lo sustituye o lo adopta: vaciarlo aqui
-  // devolveria el salto que vino a quitar. Con otra ruta o sin data-ruta se
-  // borra como siempre. Solo pasa en la primera carga: el renderizador lo
-  // reemplaza, y la portada le quita la marca al adoptarlo.
+  // Una pagina indexable, y la ficha de una especie aunque aun no lo sea, llega
+  // pintada en el HTML, dentro de <div data-shell data-ruta="<logica>">. Si el
+  // shell es el de esta ruta, se queda donde esta y el renderizador lo
+  // sustituye o lo adopta: vaciarlo aqui devolveria el salto que vino a quitar.
+  // Con otra ruta o sin data-ruta se borra como siempre. Solo pasa en la
+  // primera carga: el renderizador lo reemplaza, y la portada y la ficha le
+  // quitan la marca al adoptarlo. `logica` (la de los textos) es aparte: una
+  // ficha conserva su shell y no baja textos.
   const logica = logicaIndexable(path, query);
   const shell = app.querySelector('[data-shell]');
-  const conservarShell = Boolean(shell) && conservaShell(shell.dataset.ruta, logica);
+  const conservarShell = Boolean(shell) && conservaShell(shell.dataset.ruta, logicaDeShell(path, query));
   if (!conservarShell) app.innerHTML = '';
   // El fade-in es para el contenido que se acaba de pintar de golpe. La
   // portada estatica ya esta visible desde el primer frame -- ponerselo aqui

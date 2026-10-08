@@ -1,14 +1,14 @@
 // ===== POKEMON DETAIL =====
 import { TYPES, STAT_KEYS, NATURES } from './data.js';
 import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchAbilities, fetchDex, fetchMeta, fetchMetaNames } from './api.js';
-import { skeletonHTML, renderError, hostDeRuta, wireScrollFade, titularFicha, contextoActivo } from './ui.js';
+import { skeletonHTML, renderError, hostDeRuta, seguimosEn, wireScrollFade, titularFicha, contextoActivo } from './ui.js';
 import { urlDe } from './rutas.js';
 import { esqueletoDeFicha } from './cascaras.js';
 import { t, typeName, statName, pokeName, getLang, natureName } from './i18n.js';
 import { formsOf } from './forms.js';
 import { metaSetOf, defaultFormat, prettySlug, metaName, metaLink, FORMATS, MONTH } from './meta.js';
 import { getLevel } from './level.js';
-import { fichaHTML, evoSectionHTML, movesPanelHTML } from './ficha-pokemon.js';
+import { fichaHTML, evoSectionHTML, movesPanelHTML, formLabels } from './ficha-pokemon.js';
 // Estatico y no import(): esto ya es el trozo de la ficha, que solo baja quien
 // abre una. El aserto (w) de scripts/build.mjs vigila que no suba al arranque.
 import { textoEspecie } from './ficha-texto.js';
@@ -64,35 +64,6 @@ async function loadMovesSection(host, dexId, fallo = null) {
   } catch (err) {
     renderError(host, err, () => loadMovesSection(host, dexId), { backHome: false });
   }
-}
-
-// Three species label two or more of their forms identically -- Minior repeats
-// "Forma Meteorito" six times, one per core colour, and Zygarde and Darmanitan
-// repeat one each: 10 tabs where the label alone cannot say which is which.
-// PokeAPI really does give them the same name, so rather than invent a
-// translation the repeated ones fall back to the slug's own suffix, which is
-// what actually distinguishes them.
-// The root cannot be sliced off with the species' slug, because that slug often
-// carries a suffix of its own: species 774 is `minior-red-meteor` and 718 is
-// `zygarde-50`. It is the segments the two share from the start, which also
-// keeps Kommo-o's own hyphen intact (`kommo-o` vs `kommo-o-totem`).
-function slugSuffix(formSlug, speciesSlug) {
-  const form = formSlug.split('-');
-  const species = speciesSlug.split('-');
-  let i = 0;
-  while (i < form.length && i < species.length && form[i] === species[i]) i++;
-  return form.slice(i).join(' ') || formSlug.replace(/-/g, ' ');
-}
-
-function formLabels(variants, speciesSlug, lang) {
-  const nameOf = v => v.speciesId ? (lang === 'es' ? v.formEs : v.formEn) : t('form.base');
-  const seen = {};
-  variants.forEach(v => { seen[nameOf(v)] = (seen[nameOf(v)] || 0) + 1; });
-
-  return variants.map(v => {
-    const label = nameOf(v);
-    return seen[label] < 2 ? label : slugSuffix(v.name, speciesSlug);
-  });
 }
 
 // El set mas jugado. Solo 201 de los 1025 estan en OU o en VGC, asi que la
@@ -197,6 +168,7 @@ async function renderMetaSection(host, dexId, format, meta, allPokemon, evolutio
     const names = await fetchMetaNames().catch(() => null);
 
     const owner = allPokemon.find(p => p.id === found.ownerId);
+    host.hidden = false;
     host.innerHTML = `
       <h2 class="section-title">${t('meta.section')}</h2>
       ${found.own ? '' : `<p class="meta-family">${t('meta.family', { name: `<a href="${urlDe(`/pokedex/${found.ownerId}`)}">${owner ? pokeName(owner) : '#' + found.ownerId}</a>` })}</p>`}
@@ -221,15 +193,65 @@ function textoDe(dexId, pokemon, ctx, { allPokemon, abilities, evolutions, dex }
   }
 }
 
+// ===== La ficha que llega en el HTML =====
+//
+// En la primera carga de una especie el build ya ha pintado la ficha entera
+// dentro de <div data-shell data-ruta="/pokedex/<id>">, y route() la conserva
+// (logicaDeShell). Aqui no se pinta el esqueleto encima: se cargan los datos y
+// se adopta. Una forma no llega con shell, ni una pestana de forma, que repinta
+// sin pasar por el router.
+function shellDeFicha(container, id) {
+  const shell = container.querySelector(':scope > [data-shell]');
+  return shell?.dataset.ruta === `/pokedex/${id}` ? shell : null;
+}
+
+// D1: en esa primera carga el texto derivado es el del shell, tal cual. El HTML
+// se revalida en cada visita y /data/* puede venir de una cache de hasta una
+// semana: recalcularlo podria cambiar una frase delante del lector, o dejar el
+// cliente diciendo otra cosa que lo que leyo el buscador. En una navegacion
+// SPA no hay shell y se calcula con textoEspecie. parrafos[0] es la
+// descripcion, que fichaHTML pinta aparte y no lee de aqui.
+function textoDelShell(shell) {
+  const parrafos = [...shell.querySelectorAll('.intro-ficha p')].map(p => p.textContent);
+  return parrafos.length ? { parrafos: [null, ...parrafos] } : null;
+}
+
+// Adopta el shell o lo sustituye, de una vez. Si la ficha del cliente es
+// identica nodo a nodo (lo normal: los mismos datos y la misma plantilla) se
+// quedan los nodos que ya estan, sin volver a crear un solo <img>. Si no (un
+// /data/* de cache vieja, una seccion que no cargo), se cambia el contenido
+// entero en un solo paso. isEqualNode y no comparar cadenas: el navegador
+// serializa a su manera (&#39; vuelve como ').
+function adoptarShell(shell, html) {
+  const nueva = document.createElement('div');
+  nueva.innerHTML = html;
+  if (!nueva.isEqualNode(shell)) shell.replaceChildren(...nueva.childNodes);
+}
+
 export async function renderPokedexDetail(container, id) {
-  // hostDeRuta y no `container` a secas: la ficha espera a la descripcion de
-  // pokeapi.co, que es red real a un tercero, asi que abrirla y volver atras
-  // antes de que conteste dejaba la ficha entera encima de la lista con la URL
-  // diciendo #/pokedex. Ahora ese render tardio escribe en un nodo que el router
-  // ya ha desconectado. Cubre tambien el cambio de pestana de forma, que
-  // repinta sin pasar por el router.
-  const host = hostDeRuta(container);
-  host.innerHTML = skeletonHTML(esqueletoDeFicha('pokedex'));
+  const shell = shellDeFicha(container, id);
+  let host, vigente;
+  if (shell) {
+    // Sin la marca, como la portada al adoptarla: un segundo route() a esta
+    // misma ruta ya no lo conservaria, y una pestana de forma que vuelva a la
+    // especie no lo confunde con el suyo. Y el shell es el host: la ficha del
+    // cliente lo ocupa tal cual estaba, sin un nivel mas de <div>. Lo que
+    // protege del render tardio es seguimosEn, como en las paginas de tipo.
+    shell.removeAttribute('data-shell');
+    shell.removeAttribute('data-ruta');
+    host = shell;
+    vigente = seguimosEn(container);
+  } else {
+    // hostDeRuta y no `container` a secas: la ficha espera a la descripcion de
+    // pokeapi.co, que es red real a un tercero, asi que abrirla y volver atras
+    // antes de que conteste dejaba la ficha entera encima de la lista con la URL
+    // diciendo #/pokedex. Ahora ese render tardio escribe en un nodo que el router
+    // ya ha desconectado. Cubre tambien el cambio de pestana de forma, que
+    // repinta sin pasar por el router.
+    host = hostDeRuta(container);
+    host.innerHTML = skeletonHTML(esqueletoDeFicha('pokedex'));
+    vigente = () => true;
+  }
 
   // Todo a la vez, y se pinta una sola vez cuando esta todo: la ficha ya no
   // llega a trozos. Los cinco (el dex, justo debajo) estan memorizados en
@@ -249,6 +271,7 @@ export async function renderPokedexDetail(container, id) {
     fetchMeta(format).catch(() => null),
     fetchEvolutions().catch((err) => { errorEvo = err; return null; }),
   ]);
+  if (!vigente()) return;
   if (!pokemon) {
     host.innerHTML = `
       <div class="no-results">
@@ -271,14 +294,23 @@ export async function renderPokedexDetail(container, id) {
   // no una peticion mas. Si fallo alli, aqui se reintenta una vez.
   let errorDex = null;
   const dex = await fetchDex(dexId).catch((err) => { errorDex = err; return null; });
+  if (!vigente()) return;
   const speciesEntry = allPokemon.find(p => p.id === dexId);
   const variants = [speciesEntry, ...formsOf(dexId, allPokemon)].filter(Boolean);
-  const variantLabels = formLabels(variants, speciesEntry?.name || '', getLang());
+  const variantLabels = formLabels(variants, speciesEntry?.name || '', contextoActivo());
 
   // titularFicha con pokeName: el nombre del idioma activo, igual que el h1.
   titularFicha(`/pokedex/${id}`, pokeName(pokemon));
   const ctx = contextoActivo();
-  host.innerHTML = fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels, evolutions, dex, texto: textoDe(dexId, pokemon, ctx, { allPokemon, abilities, evolutions, dex }) });
+  // Con shell, sin la entrada animada: ya esta a la vista, y asi la ficha del
+  // cliente es la misma que la del build.
+  const html = fichaHTML(ctx, {
+    pokemon, allPokemon, variants, variantLabels, evolutions, dex,
+    texto: shell ? textoDelShell(shell) : textoDe(dexId, pokemon, ctx, { allPokemon, abilities, evolutions, dex }),
+    animar: !shell,
+  });
+  if (shell) adoptarShell(shell, html);
+  else host.innerHTML = html;
 
   // Lo que no pudo cargar se queda con su error y su reintento, en su hueco.
   const evoHost = host.querySelector('#evoSection');

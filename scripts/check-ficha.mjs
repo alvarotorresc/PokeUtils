@@ -51,7 +51,7 @@ globalThis.fetch = async url => {
 
 const { fijarIndice, urlDe } = await import('../js/rutas.js');
 fijarIndice(JSON.parse(readFileSync(new URL('../data/rutas.json', import.meta.url), 'utf8')));
-const { fichaHTML, evoTreeHTML, moveRowHTML, METHOD_ORDER } = await import('../js/ficha-pokemon.js');
+const { fichaHTML, evoTreeHTML, moveRowHTML, METHOD_ORDER, formLabels } = await import('../js/ficha-pokemon.js');
 const { evolutionText } = await import('../js/evolution.js');
 const { nombrePokemon } = await import('../js/contenido.js');
 const { fetchPokemonDetail, fetchPokemonList, fetchDex } = await import('../js/api.js');
@@ -89,14 +89,13 @@ for (const [l, dic] of Object.entries({ es, en })) {
 
 // ===== La ficha, en los dos idiomas =====
 
-// Las pestanas de forma las etiqueta pokedex-detail.js (formLabels); aqui basta
-// con un texto por pestana.
+// Las pestanas con formLabels, la misma que usan el cliente y el build.
 async function pintar(id, ctx) {
   const pokemon = await fetchPokemonDetail(id);
   const dexId = pokemon.speciesId || pokemon.id;
   const dex = await fetchDex(dexId);
   const variants = [allPokemon.find(p => p.id === dexId), ...formsOf(dexId, allPokemon)];
-  const variantLabels = variants.map(v => (v.speciesId ? (ctx.l === 'es' ? v.formEs : v.formEn) : ctx.dic['form.base']));
+  const variantLabels = formLabels(variants, variants[0].name, ctx);
   return { pokemon, dex, html: fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels, evolutions, dex }) };
 }
 
@@ -220,7 +219,7 @@ async function pintarConTexto(id, ctx, texto) {
   const dexId = pokemon.speciesId || pokemon.id;
   const dex = await fetchDex(dexId);
   const variants = [allPokemon.find(p => p.id === dexId), ...formsOf(dexId, allPokemon)];
-  const variantLabels = variants.map(v => (v.speciesId ? (ctx.l === 'es' ? v.formEs : v.formEn) : ctx.dic['form.base']));
+  const variantLabels = formLabels(variants, variants[0].name, ctx);
   return fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels, evolutions, dex, texto });
 }
 const raichuAlola = allPokemon.find(p => p.name === 'raichu-alola');
