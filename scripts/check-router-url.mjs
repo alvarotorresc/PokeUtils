@@ -510,8 +510,11 @@ const fuenteDe = fichero => fuentes.find(f => f.fichero === fichero).src;
 const appRoute = fuenteDe('app.js');
 check('route() decide con conservaShell y el data-ruta del shell',
   /conservaShell\(shell\.dataset\.ruta, logica\)/.test(appRoute) && !/\[data-shell\]'\) && esHome/.test(appRoute), true);
-const hero = readFileSync(join(RAIZ, 'index.html'), 'utf8').match(/<div class="swarm-wrap"[^>]*>/)?.[0];
-check('el hero de index.html es el shell de la portada', hero, '<div class="swarm-wrap" data-shell data-ruta="/">');
+// El shell de la portada envuelve el hero y, en el build, lo mas buscado, las
+// rejillas y el texto (PR 3, commit 6): por eso no es .swarm-wrap, cuyo fondo
+// absoluto cubriria todo lo que llevara dentro.
+const hero = readFileSync(join(RAIZ, 'index.html'), 'utf8').match(/<div [^>]*data-shell[^>]*>\s*<div class="swarm-wrap">/)?.[0].split('>')[0];
+check('el hero de index.html va dentro del shell de la portada', hero, '<div class="portada" data-shell data-ruta="/"');
 
 // Los textos: dos import() literales (con una plantilla esbuild no los saca
 // como trozos), y pedidos en el mismo Promise.all que el modulo de la ruta.

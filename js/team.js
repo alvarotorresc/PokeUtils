@@ -167,7 +167,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
     const noEdge = [...coverage.neutral, ...coverage.resisted];
 
     analysisEl.innerHTML = `
-      <h3 class="section-title">${t('team.defense')}</h3>
+      <h2 class="section-title">${t('team.defense')}</h2>
       <div class="card" style="margin-bottom:20px">
         <div class="team-summary">
           <div>
@@ -204,7 +204,7 @@ export async function renderTeam(container, query = new URLSearchParams()) {
         </table>
       </div>
 
-      <h3 class="section-title">${t('team.offense')}</h3>
+      <h2 class="section-title">${t('team.offense')}</h2>
       <div class="card" style="margin-bottom:20px">
         <p class="team-hint">${t('team.offense.hint')}</p>
         <div class="filter-row team-atk">

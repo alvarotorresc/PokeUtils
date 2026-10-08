@@ -4130,7 +4130,7 @@ a.evo-node:hover img {
   border-color: rgba(255, 255, 255, 0.12);
 }
 
-.ability-card h3 {
+.ability-card :is(h2, h3) {
   font-size: 0.5rem;
   color: var(--accent-text);
   margin-bottom: 8px;

@@ -95,12 +95,12 @@ export function renderPokedex(container, query = new URLSearchParams()) {
           <input type="text" class="search-input" id="pdxSearch" placeholder="${t('pokedex.search')}" value="${esc(state.q)}">
         </div>
         <div class="pdx-count" id="pdxCount"></div>
-        <h4 class="dex-side-title">${t('pokedex.type')}</h4>
+        <h2 class="dex-side-title">${t('pokedex.type')}</h2>
         <div class="filter-row" id="pdxFilters">
           <button class="filter-btn${state.type === '' ? ' active' : ''}" data-type="">${t('common.all')}</button>
           ${TYPES.map(tp => `<button class="filter-btn${state.type === tp ? ' active' : ''}" data-type="${tp}"><span class="type-badge sm" data-type="${tp}" style="padding:3px 6px;font-size:0.42rem">${typeName(tp)}</span></button>`).join('')}
         </div>
-        <h4 class="dex-side-title">${t('pokedex.sort')}</h4>
+        <h2 class="dex-side-title">${t('pokedex.sort')}</h2>
         <div class="pdx-controls">
           <!-- Ninguna opcion repite el nombre de su filtro: leer
                "Rareza: Normales, Rareza: Legendarios, Rareza: Singulares" es

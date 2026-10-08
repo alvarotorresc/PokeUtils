@@ -10,9 +10,13 @@
 //
 // Cada pagina existe en espanol y en ingles (/en/...), con su <html lang>, sus
 // textos fijos ya traducidos y los tres hreflang que la emparejan con la otra.
-// Todas salvo las dos portadas llevan noindex: abrir las fichas al indice es
-// una decision aparte (PR 3). La portada espanola no se regenera: es el
-// index.html tal cual, con su canonical y sus hreflang escritos a mano.
+// Solo se indexan las 53 por idioma de INDEXABLES (js/contenido.js): portada,
+// hubs, FAQ, herramientas, tipos y grupos. Esas llegan ademas con su contenido
+// en el HTML (contenidoDe, abajo), el mismo que pinta el cliente. Las demas
+// llevan noindex: abrir las fichas al indice es la PR 4. La portada espanola no
+// se regenera: es el index.html tal cual, con su canonical y sus hreflang
+// escritos a mano, y el build le mete dentro del hero su contenido
+// (rellenarPortada).
 //
 // Funciones puras, sin tocar disco: build.mjs las llama y escribe, y
 // check-pages.mjs las comprueba contra el fuente antes de que haya build.
@@ -22,7 +26,14 @@ import {
 } from '../js/rutas.js';
 import { TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from '../js/data.js';
 import { isForm, tieneUrlPropia } from '../js/forms.js';
-import { TOOLS } from '../js/tools.js';
+import { TOOLS, CATEGORIES } from '../js/tools.js';
+import {
+  INDEXABLES, conDerivados, encabezadoHTML, introHTML, tipoHTML, grupoHTML, faqHTML, listaGruposHTML,
+  rejillaHerramientasHTML, idsDeCategoria, tiposTodosHTML, portadaHTML, chipsInicialesHTML,
+} from '../js/contenido.js';
+import { reservaDe } from '../js/cascaras.js';
+import textosEs from '../js/textos-es.js';
+import textosEn from '../js/textos-en.js';
 // pokeName es la misma regla con la que las fichas ponen su nombre, asi que el
 // <title> del build y el del cliente salen iguales. Con el idioma explicito:
 // el build saca los dos sin tocar el idioma activo de i18n.js.
@@ -31,6 +42,14 @@ import es from '../js/i18n-es.js';
 import en from '../js/i18n-en.js';
 
 const DICCIONARIOS = { es, en };
+const TEXTOS = { es: textosEs, en: textosEn };
+
+// Los textos de cada idioma con el parrafo derivado de tipos y grupos ya puesto:
+// lo mismo que lleva el trozo de textos del cliente, que el build calcula con
+// la misma funcion (derivadosEnTextos en build.mjs).
+export function textosConDerivados({ pokemon, moves }) {
+  return Object.fromEntries(IDIOMAS.map(l => [l, conDerivados(TEXTOS[l], { l, dic: DICCIONARIOS[l], pokemon, moves })]));
+}
 // El nombre completo de cada tipo, el mismo que pinta renderTipo en su h1.
 const NOMBRES_TIPO = { es: TYPE_NAMES_FULL, en: TYPE_NAMES_FULL_EN };
 
@@ -149,21 +168,69 @@ function fichas(l, { pokemon, moves, abilities }) {
 // indice es data/rutas.json: se fija aqui para que urlDe sepa los slugs.
 export function rutasPublicas({ indice, pokemon, moves, abilities }) {
   fijarIndice(indice);
+  const textos = textosConDerivados({ pokemon, moves });
   return IDIOMAS.flatMap(l => [...rutasFijas(l), ...fichas(l, { pokemon, moves, abilities })].map(fila => {
     const alternas = Object.fromEntries(IDIOMAS.map(otro => [otro, urlDe(fila.logica, otro)]));
     const publica = alternas[l];
-    return {
+    // La misma ruta logica en los dos idiomas: ES es indexable si y solo si lo
+    // es EN, y el hreflang nunca apunta a una pagina que no se deja indexar.
+    const indexable = INDEXABLES.includes(fila.logica);
+    const fija = {
       idioma: l,
       logica: fila.logica,
       publica,
       alternas,
       titulo: fila.titulo,
-      descripcion: fila.descripcion,
-      // D2: /en tambien es indexable, o el hreflang de / apuntaria a una pagina
-      // que no se deja indexar.
-      noindex: publica !== '/' && publica !== '/en',
+      // La de una indexable es la escrita a mano en los textos, de 120 a 155.
+      descripcion: indexable ? textos[l][fila.logica].descripcion : fila.descripcion,
+      indexable,
+      noindex: !indexable,
     };
+    if (!indexable) return fija;
+    const ctx = { l, dic: DICCIONARIOS[l], textos: textos[l], pokemon };
+    return fila.logica === '/'
+      ? { ...fija, contenido: portadaHTML(ctx), chips: chipsInicialesHTML(ctx) }
+      : { ...fija, contenido: contenidoDe(fila.logica, ctx) };
   }));
+}
+
+// ===== El contenido de una pagina indexable =====
+//
+// Lo que va dentro de <div data-shell data-ruta="<logica>">: lo mismo que pinta
+// el renderizador de esa ruta (pestanas, miga, cabecera, el cuerpo y el texto),
+// con las mismas funciones de contenido.js. Las herramientas no se pueden
+// pintar sin el navegador: en su sitio va un hueco del alto que ocupan
+// (reservaDe, en PANTALLAS de cascaras.js), para que el texto de debajo no
+// salte al hidratar. ctx = {l, dic, textos, pokemon}.
+export function contenidoDe(logica, ctx) {
+  const [seccion, id] = logica.split('/').filter(Boolean);
+  let cuerpo;
+  if (seccion === 'types' && id) cuerpo = tipoHTML(id, ctx);
+  else if (seccion === 'egg' && id) cuerpo = grupoHTML(id, ctx);
+  else if (logica === '/faq') cuerpo = faqHTML(ctx);
+  else if (logica === '/egg') cuerpo = `<div id="eggContent">${listaGruposHTML(ctx)}</div>`;
+  else {
+    const categoria = CATEGORIES.find(c => c.route === logica && !c.direct);
+    const tool = TOOLS.find(t => t.route === logica);
+    if (categoria) cuerpo = rejillaHerramientasHTML(ctx, idsDeCategoria(categoria.id));
+    else if (tool) {
+      cuerpo = `<div class="tool-reserva" style="min-height:${reservaDe(tool.id)}px"></div>`;
+      // La tabla de tipos lleva debajo de la herramienta la tira de los 18.
+      if (logica === '/types') cuerpo += tiposTodosHTML(ctx);
+    } else throw new Error(`pages.mjs: no se que contenido lleva ${logica}`);
+  }
+  return encabezadoHTML(logica, ctx) + cuerpo + introHTML(logica, ctx);
+}
+
+// La portada: lo de debajo del buscador dentro del shell (el hero), detras del
+// .swarm-wrap, y los chips iniciales en su sitio. La espanola es el index.html
+// del build; la inglesa, la de paginaHtml.
+export function rellenarPortada(html, ruta) {
+  let salida = sustituir(html, /<div class="swarm-chips" id="swarmChips"><\/div>/,
+    () => `<div class="swarm-chips" id="swarmChips">${ruta.chips}</div>`, 'los chips del hero');
+  salida = sustituir(salida, /(<div class="portada" data-shell data-ruta="\/">[\s\S]*?)(\s*<\/div>\s*<\/main>)/,
+    (m, antes, cierre) => `${antes}${ruta.contenido}${cierre}`, 'el final del shell de la portada');
+  return salida;
 }
 
 // La misma cuenta, pero desde los datos y no desde rutasPublicas, y de un solo
@@ -342,6 +409,14 @@ export function paginaHtml(esqueleto, ruta, origen = ORIGEN) {
       () => '<main class="main" id="app" data-reservando></main>', 'el <main> con el hero');
   }
   if (l === 'en') html = enlacesEnIngles(traducirPlantilla(html, portada));
+  // El contenido despues de traducir la plantilla: ya va en su idioma, y los
+  // patrones de traducirPlantilla (el <h1> del hero) no tienen que verlo.
+  if (ruta.indexable && portada) html = rellenarPortada(html, ruta);
+  else if (ruta.indexable) {
+    html = sustituir(html, /<main class="main" id="app" data-reservando><\/main>/,
+      () => `<main class="main" id="app" data-reservando><div data-shell data-ruta="${esc(ruta.logica)}">${ruta.contenido}</div></main>`,
+      'el <main> vacio');
+  }
   // El conmutador lleva a la misma pagina en el otro idioma, y lo dice en su
   // texto, su hreflang y su lang. Despues de enlacesEnIngles, que no lo distingue
   // de los demas enlaces.

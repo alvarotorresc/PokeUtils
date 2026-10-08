@@ -40,11 +40,11 @@ export async function renderSpeed(container, query = new URLSearchParams()) {
     return `
       <div class="spd-tiers">
         <div>
-          <h3 class="section-title">${t('speed.above', { n: tiers.fasterCount })}</h3>
+          <h2 class="section-title">${t('speed.above', { n: tiers.fasterCount })}</h2>
           ${tiers.above.map(rowHTML).join('') || `<p class="egg-note">${t('speed.nobodyabove')}</p>`}
         </div>
         <div>
-          <h3 class="section-title">${t('speed.below', { n: tiers.slowerCount })}</h3>
+          <h2 class="section-title">${t('speed.below', { n: tiers.slowerCount })}</h2>
           ${tiers.tiedCount ? `<p class="egg-note" style="margin:0 0 8px">${t('speed.tied', { n: tiers.tiedCount })}</p>` : ''}
           ${tiers.below.map(rowHTML).join('') || `<p class="egg-note">${t('speed.nobodybelow')}</p>`}
         </div>

@@ -29,13 +29,13 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import {
   rutasPublicas, paginaHtml, ficheroDe, redirectsDe, paginasEsperadas, sinComentarios,
-  literalesEspanol, ORIGEN, SCRIPTS_DE_LA_PORTADA,
+  literalesEspanol, ORIGEN, SCRIPTS_DE_LA_PORTADA, rellenarPortada, textosVisibles, textosConDerivados,
 } from './pages.mjs';
 import {
   TABLA_ESTATICA, GRUPOS_HUEVO_ES, TIPOS_ES, SECCIONES_DE_FICHA, IDIOMAS, urlDe, logicaDe, idiomaDe,
 } from '../js/rutas.js';
 import { TITULOS_SEO } from '../js/titulos.js';
-import { INDEXABLES } from '../js/contenido.js';
+import { INDEXABLES, contarPalabras } from '../js/contenido.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'dist');
@@ -291,7 +291,11 @@ async function generarPaginas(esqueleto) {
   const rutas = rutasPublicas({ indice, pokemon, moves, abilities });
 
   for (const ruta of rutas) {
-    if (ruta.publica === '/') continue; // la portada es el index.html de arriba, tal cual
+    if (ruta.publica === '/') {
+      // La portada es el index.html de arriba, con su contenido dentro del hero.
+      await writeFile(join(OUT, 'index.html'), rellenarPortada(esqueleto, ruta));
+      continue;
+    }
     const destino = join(OUT, ficheroDe(ruta.publica));
     await mkdir(dirname(destino), { recursive: true });
     await writeFile(destino, paginaHtml(esqueleto, ruta));
@@ -368,15 +372,74 @@ async function generarPaginas(esqueleto) {
     if (html.includes('<!--')) throw new Error(`dist/${f} conserva un comentario HTML (<!--): pasa por sinComentarios`);
   }
 
-  // (f) noindex en todas salvo las dos portadas (D2: /en tambien se indexa).
-  const portadas = ['index.html', 'en.html'];
+  // (f) noindex en todas salvo las 53 por idioma de INDEXABLES, y sale de ahi:
+  // de la ruta logica, que es la misma en los dos idiomas, asi que una pagina
+  // espanola es indexable si y solo si lo es su par inglesa. Las legales nunca.
+  const rutaDeFichero = new Map(rutas.map(r => [ficheroDe(r.publica), r]));
+  const indexables = new Set();
   for (const { f, html } of paginas) {
+    const ruta = rutaDeFichero.get(f);
+    if (!ruta) throw new Error(`dist/${f} no es ninguna de las rutas de pages.mjs`);
     const robots = unico(html, /<meta name="robots" content="([^"]*)"/g);
-    const esperado = portadas.includes(f) ? [] : ['noindex'];
-    if (JSON.stringify(robots) !== JSON.stringify(esperado)) {
-      throw new Error(`dist/${f} lleva robots ${JSON.stringify(robots)} y deberia llevar ${JSON.stringify(esperado)}`
-        + ' -- las dos portadas son las unicas indexables');
+    const indexable = INDEXABLES.includes(ruta.logica);
+    if (JSON.stringify(robots) !== JSON.stringify(indexable ? [] : ['noindex'])) {
+      throw new Error(`dist/${f} (${ruta.logica}) lleva robots ${JSON.stringify(robots)} y `
+        + `${indexable ? 'es' : 'no es'} de INDEXABLES (js/contenido.js)`);
     }
+    if (indexable) indexables.add(f);
+  }
+  for (const f of indexables) {
+    const par = ficheroDe(rutaDeFichero.get(f).alternas[idiomaDeFichero(f) === 'es' ? 'en' : 'es']);
+    if (!indexables.has(par)) throw new Error(`dist/${f} es indexable y su par dist/${par} no`);
+  }
+  for (const legal of ['/privacy', '/terms']) {
+    for (const l of IDIOMAS) {
+      if (indexables.has(ficheroDe(urlDe(legal, l)))) throw new Error(`${urlDe(legal, l)} es una pagina legal y no puede indexarse`);
+    }
+  }
+  if (indexables.size !== INDEXABLES.length * IDIOMAS.length) {
+    throw new Error(`${indexables.size} paginas indexables en dist/ y tendrian que ser ${INDEXABLES.length * IDIOMAS.length}`);
+  }
+
+  // El shell de una indexable: lo que hay desde <div ... data-shell ...> hasta
+  // el </main>. Es lo que el cliente conserva al hidratar, y lo que lee un
+  // rastreador sin ejecutar nada.
+  const shellDe = (f, html) => {
+    const trozos = html.split(/<div [^>]*\bdata-shell\b[^>]*>/);
+    if (trozos.length !== 2) throw new Error(`dist/${f} lleva ${trozos.length - 1} [data-shell] y tiene que llevar 1`);
+    const [dentro, resto] = trozos[1].split('</main>');
+    if (resto === undefined) throw new Error(`dist/${f}: su [data-shell] no esta dentro del <main>`);
+    return dentro;
+  };
+
+  // (n) Un solo h1 por indexable, un h2 como minimo y ningun salto de nivel
+  // (de h2 a h4, o un h3 antes del primer h2). En la pagina entera: el nav y el
+  // pie no llevan encabezados, asi que todos son del contenido.
+  for (const f of indexables) {
+    const niveles = [...porFichero.get(f).replace(/<script\b[\s\S]*?<\/script>/g, '').matchAll(/<h([1-6])\b/g)].map(m => Number(m[1]));
+    const h1 = niveles.filter(n => n === 1).length;
+    if (h1 !== 1 || niveles[0] !== 1) throw new Error(`dist/${f} lleva ${h1} h1 y su primer encabezado es h${niveles[0]}: tiene que ser un h1, y uno solo`);
+    if (!niveles.includes(2)) throw new Error(`dist/${f} no lleva ningun h2`);
+    const salto = niveles.findIndex((n, i) => i > 0 && n > niveles[i - 1] + 1);
+    if (salto > 0) throw new Error(`dist/${f} salta de h${niveles[salto - 1]} a h${niveles[salto]} (encabezados: ${niveles.join(' ')})`);
+  }
+
+  // (p) El h1 y el texto de la pagina estan en el HTML, dentro del shell, y el
+  // shell tiene 80 palabras visibles como minimo: lo que un rastreador lee sin
+  // ejecutar el JS. El texto es el de los textos del idioma, con el derivado en
+  // tipos y grupos, escapado como lo escribe contenido.js.
+  const textos = textosConDerivados({ pokemon, moves });
+  const escHtml = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  for (const f of indexables) {
+    const { logica, idioma } = rutaDeFichero.get(f);
+    const shell = shellDe(f, porFichero.get(f));
+    const texto = textos[idioma][logica];
+    if (!/<h1\b/.test(shell)) throw new Error(`dist/${f}: el h1 no esta dentro del shell`);
+    const parrafos = texto.mano ? [texto.mano, texto.derivado] : [texto.h2, ...texto.intro];
+    const falta = parrafos.find(p => !p || !shell.includes(escHtml(p)));
+    if (falta !== undefined) throw new Error(`dist/${f}: el shell no lleva el texto de ${logica} (${idioma}): ${JSON.stringify(String(falta).slice(0, 60))}`);
+    const palabras = contarPalabras(textosVisibles(shell).join(' '));
+    if (palabras < 80) throw new Error(`dist/${f}: el shell tiene ${palabras} palabras visibles y tienen que ser 80 como minimo`);
   }
 
   // (g) Tantas paginas como dicen los datos, una por idioma.
@@ -444,6 +507,19 @@ async function generarPaginas(esqueleto) {
     const colados = literalesEspanol(html, esqueleto);
     if (colados.length) throw new Error(`dist/${f} lleva texto en espanol: ${JSON.stringify(colados)} -- mira traducirPlantilla en pages.mjs`);
   }
+  // (k) ampliado a los textos: ninguna cadena de textos-es.js (descripcion, h1,
+  // subtitulo, h2, parrafos, la frase a mano y el derivado) en una indexable
+  // inglesa. Solo las que cambian de un idioma a otro, y en el texto visible y
+  // en los content del <head>, ya desescapados.
+  const cadenas = texto => [texto.descripcion, texto.h1, texto.subtitulo, texto.h2, ...(texto.intro ?? []), texto.mano, texto.derivado]
+    .filter(Boolean);
+  const cadenasEs = new Set(Object.values(textos.es).flatMap(cadenas));
+  for (const ingles of Object.values(textos.en).flatMap(cadenas)) cadenasEs.delete(ingles);
+  for (const f of [...indexables].filter(x => idiomaDeFichero(x) === 'en')) {
+    const visibles = textosVisibles(porFichero.get(f)).join('\n');
+    const colada = [...cadenasEs].find(c => visibles.includes(c.replace(/\s+/g, ' ').trim()));
+    if (colada) throw new Error(`dist/${f} lleva un texto de textos-es.js: ${JSON.stringify(colada.slice(0, 80))}`);
+  }
 
   // (l) Los enlaces internos van al idioma de la pagina, y el conmutador al par.
   for (const { f, html } of paginas) {
@@ -477,8 +553,7 @@ async function generarPaginas(esqueleto) {
   // (o) Las 53 paginas por idioma que se indexan llevan en disco el titulo de
   // titulos.js, de 50 a 60 caracteres (lo que Google ensena sin cortar), y su
   // og:title es el mismo. La portada espanola cuenta: es el index.html a mano,
-  // el unico que no pasa por paginaHtml. La description entra aqui cuando la
-  // escriban los textos (PR 3, commit 4).
+  // el unico que no pasa por paginaHtml.
   const desescapar = texto => texto.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
   const conTituloLargo = rutas.filter(r => Object.hasOwn(TITULOS_SEO[r.idioma], r.logica));
   const esperadasConTitulo = IDIOMAS.reduce((n, l) => n + Object.keys(TITULOS_SEO[l]).length, 0);
@@ -496,6 +571,42 @@ async function generarPaginas(esqueleto) {
     }
     if (largo < 50 || largo > 60) throw new Error(`dist/${f}: su titulo tiene ${largo} caracteres (de 50 a 60)`);
     if (JSON.stringify(og) !== JSON.stringify([titulo])) throw new Error(`dist/${f}: og:title ${JSON.stringify(og)} y title "${titulo}"`);
+    // Y la description, la de los textos, de 120 a 155 (desde el commit 6).
+    const [descripcion] = unico(html, /<meta name="description" content="([^"]*)">/g).map(desescapar);
+    const corta = [...descripcion].length;
+    if (descripcion !== textos[ruta.idioma][ruta.logica].descripcion) throw new Error(`dist/${f}: su description no es la de los textos`);
+    if (corta < 120 || corta > 155) throw new Error(`dist/${f}: su description tiene ${corta} caracteres (de 120 a 155)`);
+  }
+
+  // (s) Todo indexable a 3 clics como mucho de su portada y con un enlace
+  // entrante desde otra indexable, siguiendo los <a href> del HTML (sin JS) y
+  // pasando solo por indexables de su idioma. El conmutador no cuenta: lleva al
+  // otro idioma. El error lista las que quedan lejos o huerfanas.
+  const enlacesDe = html => [...html.matchAll(/<a\s[^>]*?href="(\/[^"#?]*)[^"]*"[^>]*>/g)]
+    .filter(m => !m[0].includes('id="langToggle"'))
+    .map(m => ficheroDe(m[1] === '' ? '/' : m[1]))
+    .filter(destino => indexables.has(destino));
+  const entrantes = new Map([...indexables].map(f => [f, new Set()]));
+  for (const f of indexables) for (const destino of enlacesDe(porFichero.get(f))) if (destino !== f) entrantes.get(destino).add(f);
+  const lejos = [];
+  for (const [l, raiz] of [['es', 'index.html'], ['en', 'en.html']]) {
+    const distancia = new Map([[raiz, 0]]);
+    const cola = [raiz];
+    while (cola.length) {
+      const actual = cola.shift();
+      for (const destino of enlacesDe(porFichero.get(actual))) {
+        if (idiomaDeFichero(destino) !== l || distancia.has(destino)) continue;
+        distancia.set(destino, distancia.get(actual) + 1);
+        cola.push(destino);
+      }
+    }
+    for (const f of [...indexables].filter(x => idiomaDeFichero(x) === l)) {
+      if (!(distancia.get(f) <= 3)) lejos.push(`${f} (${distancia.has(f) ? `${distancia.get(f)} clics` : 'inalcanzable'})`);
+    }
+  }
+  const huerfanas = [...entrantes].filter(([, desde]) => desde.size === 0).map(([f]) => f);
+  if (lejos.length || huerfanas.length) {
+    throw new Error(`Recorrido de enlaces: a mas de 3 clics ${JSON.stringify(lejos)}; sin enlace entrante desde otra indexable ${JSON.stringify(huerfanas)}`);
   }
   return ficheros.length;
 }

@@ -3,7 +3,7 @@ import { TYPES, CHART, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from './data.js';
 import { t, typeName, getLang } from './i18n.js';
 import { wireToolTabs, titularFicha, encabezadoDe, introDe, contextoActivo, seguimosEn } from './ui.js';
 import { fetchPokemonList } from './api.js';
-import { tipoHTML, tiraTiposHTML } from './contenido.js';
+import { tipoHTML, tiposTodosHTML } from './contenido.js';
 
 let selectedTypes = [];
 let activeTab = 'defense';
@@ -80,10 +80,7 @@ export function renderTypeChart(container) {
       <div id="tcDefPanel" class="tab-content"></div>
       <div id="tcAtkPanel" class="tab-content" style="display:none"></div>
     </div>
-    <section class="ficha-lista tipos-todos">
-      <h2 class="section-title">${t('contenido.tipos')}</h2>
-      ${tiraTiposHTML(null, contextoActivo())}
-    </section>
+    ${tiposTodosHTML(contextoActivo())}
     ${introDe('/types')}
   `;
   wireToolTabs(container);

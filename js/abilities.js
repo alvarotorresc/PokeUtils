@@ -119,7 +119,7 @@ export function renderAbilities(container, highlightName = null) {
 
       const desc = getLang() === 'es' ? (a.descriptionEs || a.effect) : (a.descriptionEn || a.effect);
       card.innerHTML = `
-        <h3>${pokeName(a)}</h3>
+        <h2>${pokeName(a)}</h2>
         <div style="font-size:0.44rem;color:var(--ink-3);margin-bottom:6px">${a.name}</div>
         <div class="ability-desc">${desc || t('abilities.nodesc')}</div>
       `;

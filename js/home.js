@@ -4,11 +4,10 @@
 // the app reads the same from the top as from the menu. The cards come from
 // tools.js: this file decides how they look, not which ones there are.
 import { spriteUrl } from './data.js';
-import { CATEGORIES, TOOLS } from './tools.js';
 import { t, getLang } from './i18n.js';
-import { esc, contextoActivo, introDe } from './ui.js';
+import { contextoActivo } from './ui.js';
 import { urlDe } from './rutas.js';
-import { rejillaHerramientasHTML, idsDeCategoria } from './contenido.js';
+import { portadaHTML, chipsInicialesHTML, chipHTML } from './contenido.js';
 import { attachGlobalSearch, leerHistorial } from './global-search.js';
 
 // The background is made of real sprites from the app, not an illustration: 100
@@ -21,15 +20,6 @@ const SWARM = [1, 4, 7, 25, 39, 52, 54, 63, 66, 74, 92, 95, 104, 111, 116, 129,
   653, 656, 667, 674, 679, 686, 690, 694, 700, 704, 714, 722, 725, 728, 736,
   742, 747, 757, 765, 772, 777, 782, 789, 793, 799, 804, 810, 813, 816, 821,
   827, 831, 835, 843, 846, 850, 856, 868, 872];
-
-// Los chips son el historial de busqueda; estos cinco solo salen mientras no
-// haya historial, para que la primera visita no vea un hueco.
-const QUICK = [[984, 'Great Tusk'], [983, 'Kingambit'], [6, 'Charizard'],
-  [445, 'Garchomp'], [149, 'Dragonite']];
-
-// Five tools with their Pokemon and their number. The five most used, not the
-// first five in the table.
-const WANTED = ['pokedex', 'damage', 'meta', 'team', 'speed'];
 
 // El campo se rellena midiendo, no con un numero fijo: con 100 sprites sueltos
 // la ultima fila se quedaba a medias y el fondo cortaba en horizontal. Se
@@ -65,18 +55,12 @@ function fillSwarm(swarm) {
   swarm.innerHTML = html;
 }
 
-const chipHTML = (href, name, sprite) =>
-  `<a class="qchip" href="${esc(href)}">${sprite
-    ? `<img src="${esc(sprite)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : ''}${esc(name)}</a>`;
-
 // Todos los dominios traen sprite: el suyo los Pokemon y los objetos, la MT de
 // su tipo los movimientos, la Capsula Habilidad las habilidades y el icono de
 // la propia herramienta las herramientas.
 const chipsHTML = () => {
   const historial = leerHistorial();
-  if (!historial.length) {
-    return QUICK.map(([id, name]) => chipHTML(urlDe(`/pokedex/${id}`), name, spriteUrl(id))).join('');
-  }
+  if (!historial.length) return chipsInicialesHTML(contextoActivo());
   return historial.map(e => {
     // Lo guardado puede ser de una version anterior y llevar a una ruta que ya
     // no existe: urlDe() lanza con ella, y un chip viejo no puede tumbar la
@@ -91,61 +75,17 @@ const chipsHTML = () => {
   }).join('');
 };
 
-// El rotulo de categoria: etiqueta, linea de acento y -- solo si se le pasa un
-// numero -- el contador. "Lo mas buscado" lo usa sin contador: sus cinco no
-// son "todas las herramientas de una categoria" (son un top curado de WANTED,
-// no una fila de tools.js) y ya llevan su propio 01-05 en cada tarjeta; sumarle
-// un "5 herramientas" al lado seria redundante. Sigue siendo <h2 class=
-// "home-group"> a secas -- el selector `.home-group + .home-grid` de style.css
-// necesita que el hermano directo del grid sea este elemento, no un envoltorio.
-const groupHeaderHTML = (label, count) => `
-  <h2 class="home-group">
-    <span class="home-group-label">${label}</span>
-    <span class="home-group-line"></span>
-    ${count == null ? '' : `<span class="home-group-count">${t('home.toolCount', { n: count })}</span>`}
-  </h2>
-`;
-
-const wantedHTML = () => WANTED.map((id, i) => {
-  const tool = TOOLS.find(x => x.id === id);
-  return `
-    <a class="mw" href="${urlDe(tool.route)}" style="--i:${i}">
-      <img src="${spriteUrl(tool.icon)}" alt="" loading="lazy">
-      <span>
-        <span class="t">${t(tool.label)}</span>
-        <span class="d">${t(tool.desc)}</span>
-      </span>
-      <span class="rank">${String(i + 1).padStart(2, '0')}</span>
-    </a>`;
-}).join('');
-
 export function renderHome(container) {
-  // Cada rejilla es la de contenido.js, la misma de los hubs. El rotulo va justo
-  // delante, sin envoltorio: el CSS casa `.home-group + .home-grid`.
-  const ctx = contextoActivo();
-  const groups = CATEGORIES.map(category => {
-    const ids = idsDeCategoria(category.id);
-    if (!ids.length) return '';
-    return `
-      ${groupHeaderHTML(t(`hub.${category.id}.title`), ids.length)}
-      ${rejillaHerramientasHTML(ctx, ids)}
-    `;
-  }).join('');
-
-  // No giant POKEUTILS in the middle any more: the same name sits in the nav bar
-  // 40px away, and it was spending 190px of the first screen repeating it.
-  const abajo = `
-    <section class="mostwanted">
-      ${groupHeaderHTML(t('home.mostwanted'))}
-      <div class="mw-grid stagger">${wantedHTML()}</div>
-    </section>
-    ${groups}
-    ${introDe('/')}
-  `;
+  // Lo mas buscado, las rejillas por categoria (las de los hubs) y el texto
+  // salen de contenido.js (portadaHTML), lo mismo que el build escribe en el
+  // HTML dentro del hero.
+  const abajo = portadaHTML(contextoActivo());
 
   // En la primera carga la portada ya viene en el HTML: se adopta en vez de
-  // repintarla, que es lo que provocaba el salto. En las siguientes visitas a la
-  // home (volver atras, cambiar de idioma) ya no esta, y se pinta entera.
+  // repintarla, que es lo que provocaba el salto. Del build llega entera; del
+  // fuente sin build, solo el hero, y lo de abajo se le anade dentro. En las
+  // siguientes visitas a la home (volver atras, cambiar de idioma) ya no esta,
+  // y se pinta entera, con el mismo envoltorio.
   const shell = container.querySelector('[data-shell]');
   if (shell) {
     shell.removeAttribute('data-shell');
@@ -159,22 +99,24 @@ export function renderHome(container) {
       input.setAttribute('aria-label', t('home.search'));
     }
     shell.querySelector('#swarmChips').innerHTML = chipsHTML();
-    container.insertAdjacentHTML('beforeend', abajo);
+    if (!shell.querySelector('.mostwanted')) shell.insertAdjacentHTML('beforeend', abajo);
   } else {
     container.innerHTML = `
-      <div class="swarm-wrap">
-        <div class="swarm" aria-hidden="true"></div>
-        <div class="swarm-fg">
-          <h1>${t('home.claim.a')}<br><span class="hl">${t('home.claim.b')}</span></h1>
-          <div class="swarm-search">
-            <span class="search-icon" aria-hidden="true">🔍</span>
-            <input type="search" id="globalSearch" autocomplete="off"
-                   placeholder="${t('home.search')}" aria-label="${t('home.search')}">
+      <div class="portada">
+        <div class="swarm-wrap">
+          <div class="swarm" aria-hidden="true"></div>
+          <div class="swarm-fg">
+            <h1>${t('home.claim.a')}<br><span class="hl">${t('home.claim.b')}</span></h1>
+            <div class="swarm-search">
+              <span class="search-icon" aria-hidden="true">🔍</span>
+              <input type="search" id="globalSearch" autocomplete="off"
+                     placeholder="${t('home.search')}" aria-label="${t('home.search')}">
+            </div>
+            <div class="swarm-chips" id="swarmChips">${chipsHTML()}</div>
           </div>
-          <div class="swarm-chips" id="swarmChips">${chipsHTML()}</div>
         </div>
+        ${abajo}
       </div>
-      ${abajo}
     `;
   }
 

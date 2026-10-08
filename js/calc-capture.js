@@ -20,7 +20,7 @@ export function renderCapture(container) {
   container.innerHTML = `
     <div class="calc-form">
       <div class="card">
-        <h3 class="section-title" style="margin-bottom:12px">${t('capture.target')}</h3>
+        <h2 class="section-title" style="margin-bottom:12px">${t('capture.target')}</h2>
         <div class="search-bar" style="margin-bottom:12px">
           <span class="search-icon">🔍</span>
           <input type="text" class="search-input" id="capSearch" placeholder="${t('calc.search')}">
@@ -30,7 +30,7 @@ export function renderCapture(container) {
       </div>
 
       <div class="card" id="capFormCard" style="display:none">
-        <h3 class="section-title" style="margin-bottom:12px">${t('capture.situation')}</h3>
+        <h2 class="section-title" style="margin-bottom:12px">${t('capture.situation')}</h2>
 
         <div class="calc-row">
           <div class="calc-field">

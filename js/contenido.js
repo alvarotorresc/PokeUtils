@@ -63,7 +63,7 @@
 import { urlDe, TITULOS, TITULOS_EN } from './rutas.js';
 import { TYPES, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN, CHART, spriteUrl } from './data.js';
 import { TOOLS, CATEGORIES, toolsIn } from './tools.js';
-import { EGG_GROUPS, membersOf, canBreed, partnersOf, hasEggData } from './egg-groups.js';
+import { EGG_GROUPS, membersOf, canBreed, partnersOf, hasEggData, groupCounts } from './egg-groups.js';
 import { isForm } from './forms.js';
 
 // Las 53 por idioma, en el orden de titulos.js: la portada, los hubs (las
@@ -781,4 +781,86 @@ export function grupoHTML(grupo, ctx) {
     + ` <span class="ficha-cuenta">${miembros.length}</span></h2>${listaPokemonHTML(miembros, ctx)}</section>`
     + `<section class="ficha-lista"><h2 class="section-title">${esc(tr(ctx, 'contenido.grupo.crian'))}</h2>`
     + `<ul class="lista-crian">${crian.map(item => `<li>${item}</li>`).join('')}</ul></section>`;
+}
+
+// ===== FAQ, indice de grupos y portada: lo que el prerender tambien escribe =====
+//
+// Las tres piezas que pintaban faq.js, egg-pages.js y home.js con t(): ahora
+// salen de aqui, con el contexto, para que el build escriba en el HTML lo mismo
+// que el cliente pinta al hidratar (si cambiaran, la pagina saltaria al
+// arrancar la app).
+
+// [pregunta, respuesta]. El orden es el de la FAQ de siempre: que es el sitio,
+// de donde salen los datos y por que pueden faltar o estar mal.
+const FAQ = [
+  ['faq.what.q', 'faq.what.a'],
+  ['faq.data.q', 'faq.data.a'],
+  ['faq.meta.q', 'faq.meta.a'],
+  ['faq.spanish.q', 'faq.spanish.a'],
+  ['faq.megastones.q', 'faq.megastones.a'],
+  ['faq.scvi.q', 'faq.scvi.a'],
+  ['faq.sprites.q', 'faq.sprites.a'],
+  ['faq.missing.q', 'faq.missing.a'],
+];
+
+// La tira de los 18 debajo de la tabla de tipos: desde ahi se llega a las 18
+// paginas de tipo.
+export const tiposTodosHTML = ctx => `<section class="ficha-lista tipos-todos"><h2 class="section-title">${esc(tr(ctx, 'contenido.tipos'))}</h2>`
+  + `${tiraTiposHTML(null, ctx)}</section>`;
+
+// Un h2 por pregunta (FAQPage no: Google lo retiro en mayo de 2026, D4).
+export function faqHTML(ctx) {
+  return '<div class="faq-list">' + FAQ.map(([q, a]) => '<div class="card faq-item">'
+    + `<h2 style="font-size:0.5rem;color:var(--accent-text);margin-bottom:8px">${esc(tr(ctx, q))}</h2>`
+    + `<p style="font-size:0.46rem;color:var(--ink-2);line-height:1.9">${esc(tr(ctx, a))}</p></div>`).join('')
+    + '</div>';
+}
+
+// Los 15 grupos con sus miembros, cada uno a su pagina, y la regla de cria:
+// el cuerpo de /egg. Es por donde se llega a los 15 grupos (Desconocido no lo
+// enlaza ningun otro). ctx = {l, dic, pokemon}.
+export function listaGruposHTML(ctx) {
+  const especies = especiesDe(ctx);
+  const tarjetas = groupCounts(especies).map(({ group, count }) => `<a class="egg-card" href="${urlDe(`/egg/${group}`, ctx.l)}">`
+    + `<div class="label">${esc(tr(ctx, `egg.group.${group}`))}</div><div class="count">${count}</div></a>`).join('');
+  return `<div class="egg-grid">${tarjetas}</div><p class="egg-note note-center">${esc(tr(ctx, 'egg.rules'))}</p>`;
+}
+
+// ----- La portada, debajo del buscador -----
+
+// Las cinco mas usadas, con su numero; no las cinco primeras de la tabla.
+const MAS_BUSCADAS = ['pokedex', 'damage', 'meta', 'team', 'speed'];
+
+// Los chips del buscador mientras no hay historial: la primera visita no ve un
+// hueco, y el prerender los escribe para que el hero no crezca al hidratar.
+const CHIPS_INICIALES = [[984, 'Great Tusk'], [983, 'Kingambit'], [6, 'Charizard'], [445, 'Garchomp'], [149, 'Dragonite']];
+
+export const chipHTML = (href, nombre, sprite) => `<a class="qchip" href="${esc(href)}">${sprite
+  ? `<img src="${esc(sprite)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : ''}${esc(nombre)}</a>`;
+
+export const chipsInicialesHTML = ctx => CHIPS_INICIALES
+  .map(([id, nombre]) => chipHTML(urlDe(`/pokedex/${id}`, ctx.l), nombre, spriteUrl(id))).join('');
+
+// El rotulo de una rejilla: etiqueta, linea de acento y, si se le pasa un
+// numero, el contador. "Lo mas buscado" va sin contador: ya lleva su 01-05.
+// Sin envoltorio: el CSS casa `.home-group + .home-grid`.
+const rotuloHTML = (etiqueta, n, ctx) => `<h2 class="home-group"><span class="home-group-label">${esc(etiqueta)}</span>`
+  + '<span class="home-group-line"></span>'
+  + (n == null ? '' : `<span class="home-group-count">${esc(tr(ctx, 'home.toolCount', { n }))}</span>`) + '</h2>';
+
+// Lo mas buscado, las rejillas por categoria (las de los hubs) y el texto.
+export function portadaHTML(ctx) {
+  const masBuscadas = MAS_BUSCADAS.map((id, i) => {
+    const tool = TOOLS.find(x => x.id === id);
+    return `<a class="mw" href="${urlDe(tool.route, ctx.l)}" style="--i:${i}">`
+      + `<img src="${spriteUrl(tool.icon)}" alt="" loading="lazy">`
+      + `<span><span class="t">${esc(tr(ctx, tool.label))}</span><span class="d">${esc(tr(ctx, tool.desc))}</span></span>`
+      + `<span class="rank">${String(i + 1).padStart(2, '0')}</span></a>`;
+  }).join('');
+  const grupos = CATEGORIES.map(categoria => {
+    const ids = idsDeCategoria(categoria.id);
+    return ids.length ? rotuloHTML(tr(ctx, `hub.${categoria.id}.title`), ids.length, ctx) + rejillaHerramientasHTML(ctx, ids) : '';
+  }).join('');
+  return `<section class="mostwanted">${rotuloHTML(tr(ctx, 'home.mostwanted'), null, ctx)}<div class="mw-grid stagger">${masBuscadas}</div></section>`
+    + grupos + introHTML('/', ctx);
 }

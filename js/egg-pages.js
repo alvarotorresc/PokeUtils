@@ -4,12 +4,11 @@
 // breeding rules are not here -- they live in egg-groups.js, which both this
 // and the Pokemon detail page call. La pagina de un grupo es la de
 // contenido.js (grupoHTML), la misma que escribe el prerender.
-import { EGG_GROUPS, groupCounts, hasEggData } from './egg-groups.js';
+import { EGG_GROUPS, hasEggData } from './egg-groups.js';
 import { fetchPokemonList } from './api.js';
-import { skeletonHTML, titularFicha, encabezadoDe, introDe, contextoActivo, seguimosEn, wireToolTabs } from './ui.js';
+import { titularFicha, encabezadoDe, introDe, contextoActivo, seguimosEn, wireToolTabs } from './ui.js';
 import { urlDe } from './rutas.js';
-import { esqueletoDe } from './cascaras.js';
-import { grupoHTML } from './contenido.js';
+import { grupoHTML, listaGruposHTML } from './contenido.js';
 import { t } from './i18n.js';
 
 export const eggGroupName = group => t(`egg.group.${group}`);
@@ -28,32 +27,17 @@ function staleDataHTML() {
   `;
 }
 
+// El indice entero de una vez, cuando llegan los datos: la cascara de la ruta
+// (o el prerender, con las mismas 15 tarjetas de listaGruposHTML) se queda a la
+// vista mientras tanto. Pintar antes un esqueleto encima del prerender lo
+// borraria y lo volveria a escribir, con su salto.
 export async function renderEggIndex(container) {
-  container.innerHTML = `
-    ${encabezadoDe('/egg')}
-    <div id="eggContent">${skeletonHTML(esqueletoDe('egg'))}</div>
-    ${introDe('/egg')}
-  `;
-  wireToolTabs(container);
-  const content = container.querySelector('#eggContent');
+  const vigente = seguimosEn(container);
   const all = await fetchPokemonList();
-
-  if (!hasEggData(all)) {
-    content.innerHTML = staleDataHTML();
-    return;
-  }
-
-  content.innerHTML = `
-    <div class="egg-grid">
-      ${groupCounts(all).map(({ group, count }) => `
-        <a class="egg-card" href="${urlDe(`/egg/${group}`)}">
-          <div class="label">${eggGroupName(group)}</div>
-          <div class="count">${count}</div>
-        </a>
-      `).join('')}
-    </div>
-    <p class="egg-note note-center">${t('egg.rules')}</p>
-  `;
+  if (!vigente()) return;
+  const cuerpo = hasEggData(all) ? listaGruposHTML({ ...contextoActivo(), pokemon: all }) : staleDataHTML();
+  container.innerHTML = `${encabezadoDe('/egg')}<div id="eggContent">${cuerpo}</div>${introDe('/egg')}`;
+  wireToolTabs(container);
 }
 
 // Todos los miembros en una lista de enlaces, sin paginar: es lo que lee un

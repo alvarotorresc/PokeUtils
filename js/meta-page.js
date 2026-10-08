@@ -106,7 +106,7 @@ export async function renderMeta(container, query = new URLSearchParams()) {
       </div>
       <p class="egg-note">${t('meta.source', { month: MONTH, battles: format.battles.toLocaleString(getLang() === 'es' ? 'es' : 'en') })}</p>
       ${chosen ? setHTML(chosen, byId.get(state.id)) : ''}
-      <h3 class="section-title">${t('meta.ranking')}</h3>
+      <h2 class="section-title">${t('meta.ranking')}</h2>
       <div class="meta-rank">
         ${ranking.slice(0, SHOWN).map((row, i) => {
           const mon = byId.get(row.id);

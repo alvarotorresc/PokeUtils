@@ -305,17 +305,19 @@
        ~350ms de "element render delay" sumados al LCP por algo que ya se veia.
        app.js no se lo vuelve a poner mientras adopta este hero (ver route()). -->
   <main class="main" id="app" data-reservando>
-    <div class="swarm-wrap" data-shell data-ruta="/">
-      <div class="swarm" aria-hidden="true"></div>
-      <div class="swarm-fg">
-        <h1>1351 Pok&eacute;mon.<br><span class="hl">16 herramientas.</span></h1>
-        <div class="swarm-search">
-          <span class="search-icon" aria-hidden="true">🔍</span>
-          <input type="search" id="globalSearch" autocomplete="off"
-                 placeholder="Busca un Pok&eacute;mon, un movimiento, un objeto..."
-                 aria-label="Busca un Pok&eacute;mon, un movimiento, un objeto...">
+    <div class="portada" data-shell data-ruta="/">
+      <div class="swarm-wrap">
+        <div class="swarm" aria-hidden="true"></div>
+        <div class="swarm-fg">
+          <h1>1351 Pok&eacute;mon.<br><span class="hl">16 herramientas.</span></h1>
+          <div class="swarm-search">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input type="search" id="globalSearch" autocomplete="off"
+                   placeholder="Busca un Pok&eacute;mon, un movimiento, un objeto..."
+                   aria-label="Busca un Pok&eacute;mon, un movimiento, un objeto...">
+          </div>
+          <div class="swarm-chips" id="swarmChips"></div>
         </div>
-        <div class="swarm-chips" id="swarmChips"></div>
       </div>
     </div>
   </main>

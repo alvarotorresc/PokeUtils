@@ -87,7 +87,7 @@ export async function renderSurvive(container, query = new URLSearchParams()) {
         <div class="sv-line">${t('survive.effectiveness')}: x${bare.effectiveness}</div>
         <div class="sv-line sv-dim">${t('survive.assumption', { level })}</div>
       </div>
-      <h3 class="section-title">${t('survive.spread')}</h3>
+      <h2 class="section-title">${t('survive.spread')}</h2>
       <div class="sv-spread">${spread}</div>
     `;
   }

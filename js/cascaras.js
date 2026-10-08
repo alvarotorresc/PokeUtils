@@ -39,22 +39,43 @@ export const PAGINA = {
 // del contenido, medido en el navegador; `lado` es el de la barra lateral de
 // la Pokedex, que ademas le da a la rejilla su ancho correcto desde el primer
 // frame.
+//
+// `reserva` es el alto en px que el prerender (scripts/pages.mjs) deja para la
+// herramienta, entre la cabecera y el texto: el HTML trae la cabecera y el
+// texto pero no la herramienta, y sin el hueco el texto subiria hasta la
+// cabecera y bajaria de golpe al hidratar. Medido en dist/ el 2026-10-08: lo
+// que ocupa la herramienta ya pintada, a 390 y a 1280 px, menos los 40 px del
+// margen del texto (30 en la tabla de tipos, que lleva debajo la tira). En las
+// cortas, la media de los dos anchos; en las listas, el menor, que ya deja el
+// texto fuera de la pantalla en los dos.
 const PANTALLAS = {
-  pokedex: { sk: { shape: 'grid', rows: PAGINA.pokedex }, lado: 614 },
-  moves: { sk: { shape: 'table', rows: PAGINA.moves }, controles: 164 },
-  abilities: { sk: { shape: 'cards', rows: PAGINA.abilities }, controles: 38 },
-  items: { sk: { shape: 'tiles', rows: PAGINA.items }, controles: 65 },
+  pokedex: { sk: { shape: 'grid', rows: PAGINA.pokedex }, lado: 614, reserva: 3730 },
+  moves: { sk: { shape: 'table', rows: PAGINA.moves }, controles: 164, reserva: 3700 },
+  abilities: { sk: { shape: 'cards', rows: PAGINA.abilities }, controles: 38, reserva: 3370 },
+  items: { sk: { shape: 'tiles', rows: PAGINA.items }, controles: 65, reserva: 1420 },
   egg: { sk: { shape: 'tiles', rows: 15 } },
-  compare: { sk: { shape: 'blocks', rows: 2 } },
-  counter: { sk: { shape: 'blocks', rows: 2 } },
-  survive: { sk: { shape: 'blocks', rows: 2 } },
-  speed: { sk: { shape: 'blocks', rows: 2 } },
-  meta: { sk: { shape: 'blocks', rows: 13 } },
-  team: { sk: { shape: 'blocks', rows: 3 } },
-  natures: { sk: { shape: 'blocks', rows: 4 } },
-  types: { sk: { shape: 'blocks', rows: 4 } },
-  ivev: { sk: { shape: 'blocks', rows: 4 } },
+  compare: { sk: { shape: 'blocks', rows: 2 }, reserva: 127 },
+  counter: { sk: { shape: 'blocks', rows: 2 }, reserva: 139 },
+  survive: { sk: { shape: 'blocks', rows: 2 }, reserva: 280 },
+  speed: { sk: { shape: 'blocks', rows: 2 }, reserva: 127 },
+  meta: { sk: { shape: 'blocks', rows: 13 }, reserva: 1720 },
+  team: { sk: { shape: 'blocks', rows: 3 }, reserva: 295 },
+  natures: { sk: { shape: 'blocks', rows: 4 }, reserva: 1350 },
+  types: { sk: { shape: 'blocks', rows: 4 }, reserva: 246 },
+  ivev: { sk: { shape: 'blocks', rows: 4 }, reserva: 289 },
+  // Dano y captura no tienen esqueleto propio (esperan como la de IV/EV), pero
+  // si su hueco: cada una es su pagina.
+  damage: { reserva: 603 },
+  capture: { reserva: 201 },
 };
+
+// El hueco de una herramienta en el prerender. Lanza si no lo tiene: sin el, el
+// texto de la pagina saltaria al hidratar y nada lo diria.
+export function reservaDe(toolId) {
+  const alto = PANTALLAS[toolId]?.reserva;
+  if (!Number.isInteger(alto) || alto <= 0) throw new Error(`cascaras.js: la herramienta "${toolId}" no tiene reserva en PANTALLAS`);
+  return alto;
+}
 
 // Las dos fichas. No llevan pestanas ni titulo fijo -- el titulo es el nombre
 // del Pokemon o del movimiento, que es justo lo que todavia no se sabe -- asi
