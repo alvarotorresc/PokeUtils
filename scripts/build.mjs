@@ -251,6 +251,24 @@ async function comprobarTextos(metafile, salidas, appJs) {
   }
 }
 
+// (w) La plantilla y el texto de la ficha de un Pokemon van en el trozo de la
+// ficha, que solo baja quien abre una, y nunca en el arranque. Como arriba, se
+// mira la salida y por marcas de texto: ficha-pokemon.js ya importaba
+// enfrentamientos de ficha-texto.js, y esbuild deja solo esa funcion si nadie
+// llama a textoEspecie, asi que la marca del texto es una cadena suya.
+async function comprobarFicha(metafile, salidas, appJs) {
+  const marcas = { 'ficha-texto.js': 'no tiene descripcion de la Pokedex', 'ficha-pokemon.js': 'poke-flavour' };
+  const detalle = salidas.find(p => /js\/pokedex-detail-[A-Z0-9]+\.js$/.test(p));
+  if (!detalle) throw new Error('js/pokedex-detail.js no ha salido como trozo propio: mira su import() en app.js');
+  const codigoDe = async cierre => (await Promise.all(cierre.map(p => readFile(join(OUT, p), 'utf8')))).join('\n');
+  const arranque = await codigoDe(cierreEstatico(metafile, appJs));
+  const ficha = await codigoDe(cierreEstatico(metafile, detalle));
+  for (const [modulo, marca] of Object.entries(marcas)) {
+    if (arranque.includes(marca)) throw new Error(`${modulo} ("${marca}") entra en el arranque: tiene que llegar con el trozo de la ficha`);
+    if (!ficha.includes(marca)) throw new Error(`${modulo} ("${marca}") no esta en el trozo de la ficha (${detalle}): la ficha saldria sin el`);
+  }
+}
+
 // El indice de rutas no lleva hash en el nombre y /data/* se sirve con una hora
 // de max-age y una semana de stale-while-revalidate (netlify.toml): sin version
 // en la URL, un JS recien desplegado podia leer el rutas.json de antes, y
@@ -872,6 +890,7 @@ async function main() {
   const appJs = salidas.find(p => /js\/app-[A-Z0-9]+\.js$/.test(p));
   if (!appJs) throw new Error('No encuentro el fichero de entrada de la app en la salida');
   await comprobarTextos(resultado.metafile, salidas, appJs);
+  await comprobarFicha(resultado.metafile, salidas, appJs);
 
   // Los dos diccionarios son trozos por su import() dinamico. index.html precarga
   // el del idioma guardado, asi que necesita el nombre real de cada uno.

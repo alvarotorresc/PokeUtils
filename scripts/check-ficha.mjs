@@ -205,6 +205,40 @@ for (const l of ['es', 'en']) {
     paldea.length === 3 && paldea.every(f => enlaza(tauros, f.name)), tauros);
 }
 
+// ===== El texto derivado, debajo de la descripcion =====
+//
+// fichaHTML no lo calcula: lo recibe en `texto` y pinta p2 y p3 (p1 es la
+// descripcion, que ya esta encima). Solo en la especie: con el mismo texto y la
+// pestana de Raichu de Alola, la seccion no sale (D8). Sin texto, tampoco.
+const { textoEspecie } = await import('../js/ficha-texto.js');
+const abilities = JSON.parse(readFileSync(new URL('../data/abilities.json', import.meta.url), 'utf8'));
+// Como el esc de la ficha: un apostrofo del ingles no casaria en crudo.
+const escHTML = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const seccionTexto = html => html.match(/<section class="intro intro-ficha">([^]*?)<\/section>/)?.[1] ?? null;
+async function pintarConTexto(id, ctx, texto) {
+  const pokemon = await fetchPokemonDetail(id);
+  const dexId = pokemon.speciesId || pokemon.id;
+  const dex = await fetchDex(dexId);
+  const variants = [allPokemon.find(p => p.id === dexId), ...formsOf(dexId, allPokemon)];
+  const variantLabels = variants.map(v => (v.speciesId ? (ctx.l === 'es' ? v.formEs : v.formEn) : ctx.dic['form.base']));
+  return fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels, evolutions, dex, texto });
+}
+const raichuAlola = allPokemon.find(p => p.name === 'raichu-alola');
+for (const l of ['es', 'en']) {
+  const ctx = CTX[l];
+  for (const id of [25, 26]) {
+    const texto = textoEspecie(id, { ...ctx, pokemon: allPokemon, abilities, evolutions, dex: await fetchDex(id) });
+    const [p1, p2, p3] = texto.parrafos;
+    const seccion = seccionTexto(await pintarConTexto(id, ctx, texto));
+    check(`texto ${l} #${id}: .intro-ficha con p2 y p3, y sin p1`,
+      seccion === `<p>${escHTML(p2)}</p><p>${escHTML(p3)}</p>` && !seccion.includes(escHTML(p1)), seccion ?? 'sin seccion');
+    check(`texto ${l} #${id}: sin texto, sin seccion`, seccionTexto(await pintarConTexto(id, ctx, null)) === null);
+  }
+  const deRaichu = textoEspecie(26, { ...ctx, pokemon: allPokemon, abilities, evolutions, dex: await fetchDex(26) });
+  check(`texto ${l}: la pestana de Raichu de Alola no lo pinta`,
+    raichuAlola && seccionTexto(await pintarConTexto(raichuAlola.id, ctx, deRaichu)) === null);
+}
+
 // ===== Anterior y siguiente, en el idioma de la pagina =====
 //
 // api.js los nombraba siempre en espanol: la ficha inglesa de Kingambit (983)

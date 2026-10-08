@@ -2206,6 +2206,21 @@ html.no-hero [data-shell][data-ruta="/"] {
   text-align: left;
 }
 
+/* El texto derivado de la especie, debajo de la descripcion y dentro de la
+   misma tarjeta: se lee como su continuacion, con su letra y su interlinea.
+   .intro-ficha de los tipos y los grupos va centrada y con su propio ancho;
+   aqui manda la tarjeta. Una raya de puntos lo separa de la descripcion, que
+   es una cita de la Pokedex y esto no. */
+.b-id .intro.intro-ficha {
+  max-width: none;
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 2px dashed var(--border);
+  font-size: 0.48rem;
+  line-height: 2;
+  text-align: left;
+}
+
 /* Dos columnas y no tres a partir de 1500. Con tres, un Pokemon sin set del
    meta dejaba la del medio en 457px contra 1030 la de la derecha: 573px de
    hueco a media pagina. Y no es cosa del reparto, es que las seis tarjetas no

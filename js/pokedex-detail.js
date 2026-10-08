@@ -1,6 +1,6 @@
 // ===== POKEMON DETAIL =====
 import { TYPES, STAT_KEYS, NATURES } from './data.js';
-import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchDex, fetchMeta, fetchMetaNames } from './api.js';
+import { fetchPokemonDetail, fetchEvolutions, fetchPokemonList, fetchAbilities, fetchDex, fetchMeta, fetchMetaNames } from './api.js';
 import { skeletonHTML, renderError, hostDeRuta, wireScrollFade, titularFicha, contextoActivo } from './ui.js';
 import { urlDe } from './rutas.js';
 import { esqueletoDeFicha } from './cascaras.js';
@@ -9,6 +9,9 @@ import { formsOf } from './forms.js';
 import { metaSetOf, defaultFormat, prettySlug, metaName, metaLink, FORMATS, MONTH } from './meta.js';
 import { getLevel } from './level.js';
 import { fichaHTML, evoSectionHTML, movesPanelHTML } from './ficha-pokemon.js';
+// Estatico y no import(): esto ya es el trozo de la ficha, que solo baja quien
+// abre una. El aserto (w) de scripts/build.mjs vigila que no suba al arranque.
+import { textoEspecie } from './ficha-texto.js';
 
 // Evolucion y movimientos llegan pintados dentro de fichaHTML. Lo de aqui es
 // solo su camino de error: un fallo cargando uno de los dos no tumba la ficha,
@@ -204,6 +207,20 @@ async function renderMetaSection(host, dexId, format, meta, allPokemon, evolutio
   }
 }
 
+// El texto derivado de la especie, con lo que la ficha ya tiene en memoria. Solo
+// en la especie: una forma ensena la descripcion sola (D8). Falla suave: sin
+// evoluciones o sin el dex el texto diria "no evoluciona" o "0 movimientos",
+// y sin descripcion se queda en cifras, asi que textoEspecie lanza y la ficha
+// sale sin la seccion, como antes.
+function textoDe(dexId, pokemon, ctx, { allPokemon, abilities, evolutions, dex }) {
+  if (pokemon.id !== dexId || !evolutions || !dex) return null;
+  try {
+    return textoEspecie(dexId, { ...ctx, pokemon: allPokemon, abilities, evolutions, dex });
+  } catch {
+    return null;
+  }
+}
+
 export async function renderPokedexDetail(container, id) {
   // hostDeRuta y no `container` a secas: la ficha espera a la descripcion de
   // pokeapi.co, que es red real a un tercero, asi que abrirla y volver atras
@@ -224,9 +241,11 @@ export async function renderPokedexDetail(container, id) {
   // informacion de mas y no la razon de estar en la pagina.
   const format = defaultFormat(getLevel());
   let errorEvo = null;
-  const [pokemon, allPokemon, meta, evolutions] = await Promise.all([
+  const [pokemon, allPokemon, abilities, meta, evolutions] = await Promise.all([
     fetchPokemonDetail(id),
     fetchPokemonList(),
+    // Para el texto. fetchPokemonDetail ya lo ha pedido: es la misma promesa.
+    fetchAbilities(),
     fetchMeta(format).catch(() => null),
     fetchEvolutions().catch((err) => { errorEvo = err; return null; }),
   ]);
@@ -258,7 +277,8 @@ export async function renderPokedexDetail(container, id) {
 
   // titularFicha con pokeName: el nombre del idioma activo, igual que el h1.
   titularFicha(`/pokedex/${id}`, pokeName(pokemon));
-  host.innerHTML = fichaHTML(contextoActivo(), { pokemon, allPokemon, variants, variantLabels, evolutions, dex });
+  const ctx = contextoActivo();
+  host.innerHTML = fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels, evolutions, dex, texto: textoDe(dexId, pokemon, ctx, { allPokemon, abilities, evolutions, dex }) });
 
   // Lo que no pudo cargar se queda con su error y su reintento, en su hueco.
   const evoHost = host.querySelector('#evoSection');

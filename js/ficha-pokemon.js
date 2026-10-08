@@ -312,7 +312,14 @@ function formasPropiasHTML(pokemon, variants, ctx) {
 //   dex            data/dex/{id}.json de la especie, o null. La especie y no
 //                  la forma: Mega Charizard X evoluciona y aprende igual que
 //                  Charizard, y los learnsets solo existen para las 1025.
-export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels, evolutions, dex }) {
+//   texto          lo que devuelve textoEspecie (ficha-texto.js), o nada. Lo
+//                  calcula quien llama, no esta funcion: el cliente con lo que
+//                  ya tiene en memoria y el build con sus datos, y la plantilla
+//                  sigue siendo barata. Va debajo de la descripcion, que es su
+//                  primer parrafo, y solo en la especie: en una pestana de
+//                  forma o en la pagina de una forma se queda la descripcion
+//                  sola (D8), porque el texto habla de la especie.
+export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels, evolutions, dex, texto }) {
   const dexId = pokemon.speciesId || pokemon.id;
   const { weak, resist, immune } = enfrentamientos(pokemon.types);
 
@@ -384,6 +391,7 @@ export function fichaHTML(ctx, { pokemon, allPokemon, variants, variantLabels, e
       ` : ''}
 
       ${flavour ? `<p class="poke-flavour">${flavour}</p>` : ''}
+      ${texto && pokemon.id === dexId ? `<section class="intro intro-ficha">${texto.parrafos.slice(1).map(p => `<p>${esc(p)}</p>`).join('')}</section>` : ''}
       </section>
 ${formasPropiasHTML(pokemon, variants, ctx)}
       <section class="b">
