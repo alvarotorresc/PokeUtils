@@ -24,7 +24,7 @@
 import { build } from 'esbuild';
 import { rm, mkdir, cp, readFile, writeFile, readdir, stat } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { join, dirname, relative } from 'node:path';
+import { join, dirname, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import {
@@ -35,6 +35,7 @@ import {
   TABLA_ESTATICA, GRUPOS_HUEVO_ES, TIPOS_ES, SECCIONES_DE_FICHA, IDIOMAS, urlDe, logicaDe, idiomaDe,
 } from '../js/rutas.js';
 import { TITULOS_SEO } from '../js/titulos.js';
+import { INDEXABLES } from '../js/contenido.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'dist');
@@ -171,6 +172,79 @@ function versionarIndice(version) {
       });
     },
   };
+}
+
+// ===== Los derivados de tipos y grupos, hechos en el build =====
+//
+// El parrafo derivado de /types/<t> y /egg/<g> sale de CHART, pokemon.json y
+// moves.json (derivadoTipo y derivadoGrupo en js/contenido.js). Calcularlo en
+// el cliente costaba ~4 KB gz mas en el arranque y bajar moves.json (404 KB)
+// para leer un parrafo que no cambia hasta el siguiente deploy. Asi que se
+// calcula aqui: al empaquetar js/textos-<l>.js, el plugin lo importa en node,
+// le pone a cada tipo y grupo su `derivado` (conDerivados) y entrega a esbuild
+// el objeto ya hecho. El trozo de textos lleva el hash de su contenido, asi
+// que un cambio de datos sale con otro nombre. En el fuente no se toca nada:
+// sirviendo sin build, la pagina ensena solo la frase a mano.
+function derivadosEnTextos({ pokemon, moves }) {
+  return {
+    name: 'derivados-en-textos',
+    setup(b) {
+      b.onLoad({ filter: /[\\/]js[\\/]textos-(es|en)\.js$/ }, async ({ path }) => {
+        const l = path.match(/textos-(es|en)\.js$/)[1];
+        const { conDerivados } = await import(pathToFileURL(join(ROOT, 'js', 'contenido.js')));
+        const { default: textos } = await import(pathToFileURL(path));
+        const { default: dic } = await import(pathToFileURL(join(ROOT, 'js', `i18n-${l}.js`)));
+        const hechos = conDerivados(textos, { l, dic, pokemon, moves });
+        return { contents: `export default ${JSON.stringify(hechos)};\n`, loader: 'js' };
+      });
+    },
+  };
+}
+
+// Lo que baja una pagina antes de pedir nada con import(): la entrada y sus
+// import estaticos, de trozo en trozo. Del metafile de esbuild, con las rutas
+// de salida relativas a dist/.
+function cierreEstatico(metafile, inicio) {
+  const vistos = new Set();
+  const pendientes = [inicio];
+  while (pendientes.length) {
+    const actual = pendientes.pop();
+    if (vistos.has(actual)) continue;
+    vistos.add(actual);
+    // El metafile nombra los ficheros relativos al directorio de trabajo.
+    const salida = Object.entries(metafile.outputs).find(([k]) => relative(OUT, resolve(k)) === actual)?.[1];
+    if (!salida) throw new Error(`cierreEstatico: ${actual} no esta en el metafile de esbuild`);
+    for (const imp of salida.imports) {
+      if (imp.kind === 'import-statement') pendientes.push(relative(OUT, resolve(imp.path)));
+    }
+  }
+  return [...vistos];
+}
+
+// Los textos salen como dos trozos perezosos, cada uno con sus 33 derivados, y
+// ni ellos ni el codigo que calcula los derivados acaban en el arranque ni en
+// los trozos de tipos y grupos. Se mira la salida, no el fuente: que el cliente
+// no llame a derivadoTipo no basta si esbuild lo arrastra igual.
+async function comprobarTextos(metafile, salidas, appJs) {
+  const esperados = INDEXABLES.filter(logica => /^\/(types|egg)\//.test(logica)).length;
+  const trozos = {};
+  for (const l of IDIOMAS) {
+    const trozo = salidas.find(p => new RegExp(`js/textos-${l}-[A-Z0-9]+\\.js$`).test(p));
+    if (!trozo) throw new Error(`js/textos-${l}.js no ha salido como trozo propio: mira las dos ramas de cargarTextos en ui.js`);
+    const n = ((await readFile(join(OUT, trozo), 'utf8')).match(/\bderivado:/g) ?? []).length;
+    if (n !== esperados) throw new Error(`dist/${trozo} lleva ${n} derivados y las paginas de tipo y grupo son ${esperados}`);
+    trozos[l] = trozo;
+  }
+  const marcas = ['el derivado de un tipo necesita ctx.moves', 'no hay ningun Ditto en ctx.pokemon', 'moves.json'];
+  for (const entrada of [appJs, ...['type-chart', 'egg-pages'].map(m => salidas.find(p => new RegExp(`js/${m}-[A-Z0-9]+\\.js$`).test(p)))]) {
+    const cierre = cierreEstatico(metafile, entrada);
+    for (const p of cierre) {
+      if (Object.values(trozos).includes(p)) throw new Error(`${p} (los textos) entra en el arranque de ${entrada}: tiene que ir por import()`);
+      const codigo = await readFile(join(OUT, p), 'utf8');
+      const marca = marcas.find(m => codigo.includes(m));
+      if (marca) throw new Error(`dist/${p}, en el arranque de ${entrada}, lleva "${marca}": el cliente no calcula los derivados`);
+    }
+  }
 }
 
 // El indice de rutas no lleva hash en el nombre y /data/* se sirve con una hora
@@ -448,7 +522,13 @@ async function main() {
     entryNames: '[name]-[hash]',
     chunkNames: '[name]-[hash]',
     metafile: true,
-    plugins: [versionarIndice(hash8(await readFile(join(ROOT, 'data', 'rutas.json'))))],
+    plugins: [
+      versionarIndice(hash8(await readFile(join(ROOT, 'data', 'rutas.json')))),
+      derivadosEnTextos({
+        pokemon: JSON.parse(await readFile(join(ROOT, 'data', 'pokemon.json'), 'utf8')),
+        moves: JSON.parse(await readFile(join(ROOT, 'data', 'moves.json'), 'utf8')),
+      }),
+    ],
     // Los sprites y los datos se piden por URL en tiempo de ejecucion, no se
     // importan: nada que resolver aqui.
     logLevel: 'warning',
@@ -457,6 +537,7 @@ async function main() {
   const salidas = Object.keys(resultado.metafile.outputs).map(p => relative(join(OUT), p));
   const appJs = salidas.find(p => /js\/app-[A-Z0-9]+\.js$/.test(p));
   if (!appJs) throw new Error('No encuentro el fichero de entrada de la app en la salida');
+  await comprobarTextos(resultado.metafile, salidas, appJs);
 
   // Los dos diccionarios son trozos por su import() dinamico. index.html precarga
   // el del idioma guardado, asi que necesita el nombre real de cada uno.
@@ -540,7 +621,9 @@ async function main() {
 
   const gzFuente = jsFuente.reduce((s, b) => s + gz(b), 0);
   const gzSalida = jsSalida.reduce((s, b) => s + gz(b), 0);
+  const arranque = await Promise.all(cierreEstatico(resultado.metafile, appJs).map(p => readFile(join(OUT, p))));
   console.log(`\n  JS:   ${jsFuente.length} modulos, ${kb(gzFuente)} gz -> ${jsSalida.length} ficheros, ${kb(gzSalida)} gz`);
+  console.log(`        arranque (app y sus import estaticos): ${arranque.length} ficheros, ${kb(arranque.reduce((s, b) => s + gz(b), 0))} gz`);
   console.log(`  CSS:  ${kb(gz(cssFuente))} gz -> ${kb(gz(cssBuf))} gz  (${cssNombre})`);
   console.log(`  HTML: ${nPaginas} paginas y dist/_redirects`);
   console.log(`  dist: ${kb(await pesoDe(OUT))} en disco, con data/, sprites/ y fonts/`);

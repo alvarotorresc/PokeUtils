@@ -5,6 +5,7 @@
 // pattern the tool pages use -- no new visual direction for three pages that
 // exist to explain the other ones.
 import { t } from './i18n.js';
+import { encabezadoDe, introDe } from './ui.js';
 
 // [question key, answer key]. Order matches the facts as handed down for
 // launch: what the site is, where the data comes from, and why it can be
@@ -22,17 +23,15 @@ const ENTRIES = [
 
 export function renderFaq(container) {
   container.innerHTML = `
-    <div class="page-header">
-      <h1>${t('faq.title')}</h1>
-      <p>${t('faq.subtitle')}</p>
-    </div>
+    ${encabezadoDe('/faq')}
     <div class="faq-list">
       ${ENTRIES.map(([q, a]) => `
         <div class="card faq-item">
-          <h3 style="font-size:0.5rem;color:var(--accent-text);margin-bottom:8px">${t(q)}</h3>
+          <h2 style="font-size:0.5rem;color:var(--accent-text);margin-bottom:8px">${t(q)}</h2>
           <p style="font-size:0.46rem;color:var(--ink-2);line-height:1.9">${t(a)}</p>
         </div>
       `).join('')}
     </div>
+    ${introDe('/faq')}
   `;
 }

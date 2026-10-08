@@ -2,7 +2,7 @@
 import { TYPES, spriteUrl, STAT_KEYS, GENERATIONS, SORT_KEYS } from './data.js';
 import { fetchPokemonList } from './api.js';
 import { isForm, spriteIdFor } from './forms.js';
-import { skeletonHTML, renderPagination, replaceQuery, esc, toolTabsHTML } from './ui.js';
+import { skeletonHTML, renderPagination, replaceQuery, esc, encabezadoDe, introDe } from './ui.js';
 import { urlDe } from './rutas.js';
 import { PAGINA, esqueletoDe } from './cascaras.js';
 import { t, typeName, statName, pokeName } from './i18n.js';
@@ -87,11 +87,7 @@ export function renderPokedex(container, query = new URLSearchParams()) {
   // The controls move into a sidebar, but keep every id they had: the handlers
   // below find them the same way and none of the behaviour changes.
   container.innerHTML = `
-    ${toolTabsHTML('pokedex', 'pokedex')}
-    <div class="page-header">
-      <h1>${t('pokedex.title')}</h1>
-      <p>${t('pokedex.subtitle')}</p>
-    </div>
+    ${encabezadoDe('/pokedex')}
     <div class="dex-split">
       <aside class="dex-side">
         <div class="search-bar">
@@ -137,6 +133,7 @@ export function renderPokedex(container, query = new URLSearchParams()) {
         <div id="pdxContent"></div>
       </div>
     </div>
+    ${introDe('/pokedex')}
   `;
 
   const content = container.querySelector('#pdxContent');

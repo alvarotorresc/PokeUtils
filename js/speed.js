@@ -5,7 +5,7 @@
 import { speedSpread, speedTiers } from './speed-tiers.js';
 import { fetchPokemonList } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { skeletonHTML, replaceQuery, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { skeletonHTML, replaceQuery, esc, encabezadoDe, introDe, wireToolTabs } from './ui.js';
 import { urlDe } from './rutas.js';
 import { esqueletoDe } from './cascaras.js';
 import { getLevel } from './level.js';
@@ -15,12 +15,9 @@ import { pokemonFilter } from './normalize.js';
 
 export async function renderSpeed(container, query = new URLSearchParams()) {
   container.innerHTML = `
-    ${toolTabsHTML('competitive', 'speed')}
-    <div class="page-header">
-      <h1>${t('speed.title')}</h1>
-      <p>${t('speed.subtitle')}</p>
-    </div>
+    ${encabezadoDe('/speed')}
     <div id="spdBody">${skeletonHTML(esqueletoDe('speed'))}</div>
+    ${introDe('/speed')}
   `;
   wireToolTabs(container);
   const body = container.querySelector('#spdBody');

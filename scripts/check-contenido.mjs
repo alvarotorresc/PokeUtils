@@ -247,5 +247,50 @@ check('sin datos, o sin genderRate, lanza', [
   lanza(() => derivadoGrupo('ground', { ...DATOS.es, pokemon: pokemon.map(p => (p.name === 'eevee' ? { ...p, genderRate: undefined } : p)) })),
 ], [true, true, true]);
 
+// ===== Las piezas con datos de tipos y grupos (PR 3, commit 5) =====
+console.log('\nTipos y grupos, y los derivados en los textos\n');
+const { tipoHTML, grupoHTML, encabezadoHTML, nombrePokemon, conDerivados } = await import('../js/contenido.js');
+const { pokeName } = await import('../js/i18n.js');
+check('nombrePokemon es pokeName, en las 1351 entradas y los dos idiomas',
+  ['es', 'en'].flatMap(l => pokemon.filter(p => nombrePokemon(p, l) !== pokeName(p, l)).map(p => `${l} ${p.name}`)), []);
+const cuantas = (html, re) => (html.match(re) ?? []).length;
+const fuego = { es: tipoHTML('fire', DATOS.es), en: tipoHTML('fire', DATOS.en) };
+check('Fuego: tira de 18, seis secciones y el h2 de sus especies', [
+  cuantas(fuego.es, /<a class="type-badge/g), cuantas(fuego.es, /<h2/g), cuantas(fuego.es, /aria-current="page"/g),
+  /<h2 class="section-title">Pokémon de tipo Fuego <span class="ficha-cuenta">81<\/span><\/h2>/.test(fuego.es),
+  /<h2 class="section-title">Fire-type Pokémon <span class="ficha-cuenta">81<\/span><\/h2>/.test(fuego.en),
+], [18, 7, 1, true, true]);
+check('y las 81 especies enlazadas a su ficha, en su idioma', [
+  cuantas(fuego.es.split('lista-pokemon')[1], /<li><a href="\/pokedex\//g),
+  fuego.es.includes('<a href="/pokedex/charizard">Charizard</a>'), fuego.en.includes('<a href="/en/pokedex/charizard">Charizard</a>'),
+  fuego.es.includes('<a class="result-badge" data-type="water" href="/tipos/agua">Agua<span class="multiplier">x2</span></a>'),
+], [81, true, true, true]);
+check('Normal no es supereficaz contra nada: la seccion lo dice', /super-effective"><h2>Supereficaz contra<\/h2><p class="empty-state visible">/.test(tipoHTML('normal', DATOS.es)), true);
+const campo = grupoHTML('ground', DATOS.es);
+check('Campo: sus 278 miembros y con quien crian', [
+  cuantas(campo.split('lista-crian')[0], /<li><a href="\/pokedex\//g), /Con <a href="\/grupos-huevo\/ditto">Ditto<\/a>: \d+ de 278/.test(campo),
+  cuantas(campo, /<h2/g),
+], [278, true, 2]);
+check('Ditto y Desconocido con su propia respuesta', [
+  grupoHTML('ditto', DATOS.en).includes('With any species that lays eggs, except another Ditto: 873'),
+  grupoHTML('no-eggs', DATOS.es).includes('Con ninguna: no ponen huevos, ni siquiera con Ditto'),
+], [true, true]);
+check('el encabezado de un tipo: pestanas de Datos, miga y h1', [
+  /^<div class="form-tabs-wrap"[\s\S]*<nav class="migas"[\s\S]*<h1>Fuego<\/h1>/.test(encabezadoHTML('/types/fire', CTX.es)),
+  /tool-tabs/.test(encabezadoHTML('/calculator?tab=damage', CTX.es)),
+], [true, false]);
+const textosEs = (await import('../js/textos-es.js')).default;
+const hechos = conDerivados(textosEs, DATOS.es);
+check('conDerivados: un derivado en cada tipo y grupo, y nada mas cambia', [
+  Object.values(hechos).filter(x => x.derivado).length,
+  hechos['/types/fire'].derivado === derivadoTipo('fire', DATOS.es),
+  Object.keys(hechos).every(k => hechos[k].mano === textosEs[k].mano && hechos[k].intro === textosEs[k].intro),
+], [33, true, true]);
+const conTexto = tipoHTML('fire', { ...DATOS.es, textos: hechos });
+check('la frase y el derivado, bajo la cabecera; sin derivado, solo la frase', [
+  conTexto.includes(`<section class="intro intro-ficha"><p>${textosEs['/types/fire'].mano}</p><p>${hechos['/types/fire'].derivado}</p></section>`),
+  cuantas(tipoHTML('fire', { ...DATOS.es, textos: textosEs }).split('intro-ficha')[1].split('</section>')[0], /<p>/g),
+], [true, 1]);
+
 console.log(failed ? `\n${failed} FAILED\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);

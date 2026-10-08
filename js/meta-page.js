@@ -7,7 +7,7 @@ import { fetchMeta, fetchPokemonList, fetchMetaNames } from './api.js';
 import { FORMATS, MONTH, defaultFormat, metaSetOf, metaName, metaLink, usageRanking } from './meta.js';
 import { spriteUrl, STAT_KEYS, NATURES } from './data.js';
 import { spriteIdFor } from './forms.js';
-import { skeletonHTML, replaceQuery, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { skeletonHTML, replaceQuery, esc, encabezadoDe, introDe, wireToolTabs } from './ui.js';
 import { urlDe } from './rutas.js';
 import { esqueletoDe } from './cascaras.js';
 import { getLevel } from './level.js';
@@ -17,12 +17,9 @@ const SHOWN = 30;
 
 export async function renderMeta(container, query = new URLSearchParams()) {
   container.innerHTML = `
-    ${toolTabsHTML('competitive', 'meta')}
-    <div class="page-header">
-      <h1>${t('meta.title')}</h1>
-      <p>${t('meta.subtitle')}</p>
-    </div>
+    ${encabezadoDe('/meta')}
     <div id="metaBody">${skeletonHTML(esqueletoDe('meta'))}</div>
+    ${introDe('/meta')}
   `;
   wireToolTabs(container);
   const body = container.querySelector('#metaBody');

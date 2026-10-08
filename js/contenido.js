@@ -43,10 +43,13 @@
 //                llegan con el render completo de la pagina).
 //   h1, subtitulo  opcionales, igual que arriba.
 //
-// El parrafo derivado (derivadoTipo y derivadoGrupo, abajo) no va en los
-// textos: sale de CHART y de los datos, asi que ninguna cifra se escribe a mano
-// ni se queda vieja cuando cambie pokemon.json. check-textos.mjs suma la frase a
-// mano y ese derivado para la longitud de la pagina.
+// El parrafo derivado (derivadoTipo y derivadoGrupo, abajo) no se escribe en
+// los textos: sale de CHART y de los datos, asi que ninguna cifra se escribe a
+// mano ni se queda vieja cuando cambie pokemon.json. Lo calcula el build y lo
+// mete ya hecho como `derivado` en el trozo de textos de cada idioma
+// (conDerivados): el cliente solo lo lee, y nunca baja moves.json para ello.
+// check-textos.mjs suma la frase a mano y ese derivado para la longitud de la
+// pagina.
 
 // egg-groups.js entra aqui directamente (decision del 2026-10-08, §10 del plan):
 // el derivado de un grupo necesita membersOf y canBreed, las reglas de cria que
@@ -54,7 +57,9 @@
 // arranque (data.js, tools.js y forms.js ya estaban). Medido el 2026-10-08:
 // mientras el cliente no llame a los derivados, esbuild los descarta y el
 // arranque sube 0,28 KB gz; cuando los llame, derivados y egg-groups.js pesan
-// unos 4,2 KB gz mas en este modulo.
+// unos 4,2 KB gz mas en este modulo. Por eso no los llama (commit 5): los llama
+// el build. tipoHTML y grupoHTML si van al cliente, con egg-groups.js: 1,1 KB gz
+// en el arranque, medido el 2026-10-08.
 import { urlDe, TITULOS, TITULOS_EN } from './rutas.js';
 import { TYPES, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN, CHART, spriteUrl } from './data.js';
 import { TOOLS, CATEGORIES, toolsIn } from './tools.js';
@@ -156,7 +161,8 @@ export function breadcrumbHTML(logica, ctx) {
 
 // Las claves del titulo y el subtitulo de cada herramienta: `${base}.title`
 // salvo en las tres pestanas de la calculadora, que comparten base
-// ('calculator', sin claves propias) y llevan las de TABS en calculator.js.
+// ('calculator', sin claves propias) y llevan estas: calc, dmg y capture. Es
+// la unica tabla: calculator.js y la cascara pintan la cabecera desde aqui.
 const CABECERA_DE_TOOL = { ivev: 'calc', damage: 'dmg', capture: 'capture' };
 
 function cabeceraPorDefecto(logica, ctx) {
@@ -288,17 +294,27 @@ function especiesDe(ctx) {
 
 // ===== Derivado de un tipo =====
 
+// Que ataca bien, mal o nada y que recibe doble, mitad o nada, solo de CHART y
+// en el orden de TYPES. Lo comparten el derivado y las secciones de tipoHTML,
+// asi que el texto y las listas de la pagina no pueden decir cosas distintas.
+function relacionesDe(tipo) {
+  const i = TYPES.indexOf(tipo);
+  if (i < 0) throw new Error(`contenido.js: "${tipo}" no es un tipo`);
+  const ataca = m => TYPES.filter((_, j) => CHART[tipo][j] === m);
+  const recibe = m => TYPES.filter(atacante => CHART[atacante][i] === m);
+  return {
+    supereficaz: ataca(2), pocoEficaz: ataca(0.5), sinEfecto: ataca(0),
+    debil: recibe(2), resiste: recibe(0.5), inmune: recibe(0),
+  };
+}
+
 // Las cuentas de un tipo, de CHART y de los datos. Es lo que pinta el derivado
 // y lo que vuelca la tabla de hechos para los redactores.
 export function hechosTipo(tipo, ctx) {
-  const i = TYPES.indexOf(tipo);
-  if (i < 0) throw new Error(`contenido.js: "${tipo}" no es un tipo`);
+  if (!TYPES.includes(tipo)) throw new Error(`contenido.js: "${tipo}" no es un tipo`);
   if (!Array.isArray(ctx.moves) || ctx.moves.length === 0) {
     throw new Error(`contenido.js: el derivado de un tipo necesita ctx.moves (${ctx.l})`);
   }
-  const ataca = m => TYPES.filter((_, j) => CHART[tipo][j] === m);
-  const recibe = m => TYPES.filter(atacante => CHART[atacante][i] === m);
-
   const especies = especiesDe(ctx).filter(p => p.types.includes(tipo));
   const puras = especies.filter(p => p.types.length === 1).length;
 
@@ -328,8 +344,7 @@ export function hechosTipo(tipo, ctx) {
   const porClase = cls => movimientos.filter(m => m.category === cls).length;
 
   return {
-    supereficaz: ataca(2), pocoEficaz: ataca(0.5), sinEfecto: ataca(0),
-    debil: recibe(2), resiste: recibe(0.5), inmune: recibe(0),
+    ...relacionesDe(tipo),
     especies: especies.length, puras,
     combinaciones: parejas.slice(0, corte).map(({ tipo: otro, especies: n }) => ({ tipo: otro, especies: n })),
     movimientos: { total: movimientos.length, fisicos: porClase('physical'), especiales: porClase('special'), estado: porClase('status') },
@@ -590,4 +605,180 @@ export function derivadoGrupo(grupo, ctx) {
   if (grupo === 'ditto') return f.ditto(h, g(grupo), g);
   if (grupo === 'no-eggs') return f.sinHuevos(h, g(grupo));
   return f.comun(h, g(grupo), g);
+}
+
+// ===== Los derivados, ya hechos, dentro de los textos =====
+//
+// Los textos con su `derivado` puesto en cada tipo y cada grupo huevo. Lo llama
+// el build (scripts/build.mjs, al empaquetar js/textos-<l>.js), no el cliente:
+// el derivado de un tipo necesita moves.json (404 KB) y el de un grupo, recorrer
+// las reglas de cria de las 1025 especies, y nada de eso cambia entre visitas.
+// Asi el cliente solo lee una cadena, y esbuild deja fuera derivadoTipo,
+// derivadoGrupo y sus frases (decision del 2026-10-08, §10 del plan).
+// ctx = {l, dic, pokemon, moves}.
+export function conDerivados(textos, ctx) {
+  const salida = {};
+  for (const [logica, texto] of Object.entries(textos)) {
+    const [seccion, id] = logica.split('/').filter(Boolean);
+    let derivado = null;
+    if (seccion === 'types' && id) derivado = derivadoTipo(id, ctx);
+    if (seccion === 'egg' && id) derivado = derivadoGrupo(id, ctx);
+    salida[logica] = derivado ? { ...texto, derivado } : texto;
+  }
+  return salida;
+}
+
+// ===== La ruta logica de una pagina indexable =====
+//
+// La clave de INDEXABLES (y de los textos y del data-ruta del shell) para lo
+// que devuelve parseRuta: la calculadora pliega su pestana en la ruta, porque
+// cada una es su pagina. null si la direccion no es indexable (una ficha, las
+// legales, una pestana que no existe sigue siendo la de IV/EV).
+export function logicaIndexable(path, query = new URLSearchParams()) {
+  let logica = path === '/home' ? '/' : path;
+  if (path === '/calculator') {
+    const tab = query.get('tab');
+    logica = tab === 'damage' || tab === 'catch' ? `/calculator?tab=${tab}` : '/calculator';
+  }
+  return INDEXABLES.includes(logica) ? logica : null;
+}
+
+// El prerender deja su contenido en <div data-shell data-ruta="<logica>">. El
+// router lo conserva solo si es el de la pagina que va a pintar: sin data-ruta
+// o con otra ruta (el hero de la portada en una direccion que no es la
+// portada), se vacia como siempre.
+export const conservaShell = (rutaDelShell, logica) => logica !== null && rutaDelShell === logica;
+
+// ===== El principio de una pagina =====
+//
+// Pestanas, miga de pan y cabecera, en ese orden y en un solo sitio: lo pintan
+// los renderizadores, las cascaras y el prerender. Las pestanas salen de la
+// propia ruta: las de la categoria de la herramienta, la tabla de tipos para un
+// tipo y Huevos para un grupo. La calculadora no lleva tira de enlaces: sus
+// pestanas son botones que conservan el calculo (calculator.js) y van debajo.
+function pestanasDe(logica) {
+  const [seccion, id] = logica.split('/').filter(Boolean);
+  if (seccion === 'types' && id) return ['data', 'types'];
+  if (seccion === 'egg' && id) return ['pokedex', 'egg'];
+  const tool = toolDe(logica);
+  if (!tool || tool.category === 'calculator') return null;
+  return [tool.category, tool.id];
+}
+
+export function encabezadoHTML(logica, ctx, propia) {
+  const pestanas = pestanasDe(logica);
+  return (pestanas ? pestanasHTML(pestanas[0], pestanas[1], ctx) : '')
+    + breadcrumbHTML(logica, ctx) + cabeceraHTML(logica, ctx, propia);
+}
+
+// ===== Tipos y grupos: las piezas con datos =====
+
+// La regla de pokeName (i18n.js), que aqui no se puede importar: i18n.js carga
+// su diccionario al importarse. check-contenido compara las dos con las 1351
+// entradas de pokemon.json.
+export const nombrePokemon = (p, l) => (l === 'en'
+  ? p.nameEn || p.name
+  : p.nameEs && p.nameEs !== p.name ? p.nameEs : p.nameEn || p.name);
+
+// La lista completa, enlazada a cada ficha y por numero de la Pokedex. Enlaces
+// de texto y no tarjetas: Campo tiene 278 especies, y con sprite y tipos
+// serian ~110 KB de HTML en vez de ~15.
+function listaPokemonHTML(especies, ctx) {
+  const items = [...especies].sort((a, b) => a.id - b.id)
+    .map(p => `<li><a href="${urlDe(`/pokedex/${p.id}`, ctx.l)}">${esc(nombrePokemon(p, ctx.l))}</a></li>`).join('');
+  return `<ul class="lista-pokemon">${items}</ul>`;
+}
+
+// La frase a mano y el derivado, debajo de la cabecera. El derivado lo pone el
+// build en los textos (conDerivados); sirviendo el fuente sin build no esta, y
+// sale solo la frase.
+function textoFichaHTML(logica, ctx) {
+  const texto = ctx.textos?.[logica];
+  if (!texto?.mano) return '';
+  return `<section class="intro intro-ficha"><p>${esc(texto.mano)}</p>`
+    + (texto.derivado ? `<p>${esc(texto.derivado)}</p>` : '') + '</section>';
+}
+
+// Como tr(), pero el texto del diccionario se escapa y las variables entran
+// como HTML ya hecho (un enlace a un grupo).
+function trHTML(ctx, clave, vars) {
+  return esc(tr(ctx, clave)).replace(/\{(\w+)\}/g, (m, nombre) => (nombre in vars ? vars[nombre] : m));
+}
+
+const MULTIPLICADOR = { 2: 'x2', 0.5: 'x½', 0: 'x0' };
+
+// Las 18 en una tira, cada una a su pagina, la de ahora marcada. Va en cada
+// tipo y, sin ninguno marcado, en la tabla de tipos: es por donde se llega a
+// las 18 paginas desde el resto del sitio.
+export function tiraTiposHTML(activo, ctx) {
+  const enlaces = TYPES.map(tipo => `<a class="type-badge${tipo === activo ? ' selected' : ''}" data-type="${tipo}"`
+    + ` href="${urlDe(`/types/${tipo}`, ctx.l)}"${tipo === activo ? ' aria-current="page"' : ''}>`
+    + `${esc(NOMBRES_TIPO[ctx.l][tipo])}</a>`).join('');
+  return `<nav class="type-selector-grid tipos-tira" aria-label="${esc(tr(ctx, 'contenido.tipos'))}">${enlaces}</nav>`;
+}
+
+function seccionTiposHTML(clase, clave, tipos, mult, ctx) {
+  const cuerpo = tipos.length
+    ? `<div class="result-badges">${tipos.map(tipo => `<a class="result-badge" data-type="${tipo}" href="${urlDe(`/types/${tipo}`, ctx.l)}">`
+      + `${esc(NOMBRES_TIPO[ctx.l][tipo])}<span class="multiplier">${MULTIPLICADOR[mult]}</span></a>`).join('')}</div>`
+    : `<p class="empty-state visible">${esc(tr(ctx, 'types.none.type'))}</p>`;
+  return `<section class="result-section ${clase}"><h2>${esc(tr(ctx, `contenido.tipo.${clave}`))}</h2>${cuerpo}</section>`;
+}
+
+// El cuerpo de /types/<tipo>, debajo de encabezadoHTML: la tira de los 18, la
+// frase y el derivado, que recibe y que hace en seis secciones (las de la tabla
+// de tipos, con un solo tipo y como enlaces), y las especies de ese tipo.
+// ctx = {l, dic, textos, pokemon}: pokemon es pokemon.json entero, las formas
+// se quitan aqui (81 de Fuego, la cuenta del derivado).
+export function tipoHTML(tipo, ctx) {
+  const r = relacionesDe(tipo);
+  const logica = `/types/${tipo}`;
+  const especies = especiesDe(ctx).filter(p => p.types.includes(tipo));
+  return tiraTiposHTML(tipo, ctx)
+    + textoFichaHTML(logica, ctx)
+    + '<div class="tipo-secciones">'
+    + seccionTiposHTML('weakness', 'debil', r.debil, 2, ctx)
+    + seccionTiposHTML('resistance', 'resiste', r.resiste, 0.5, ctx)
+    + seccionTiposHTML('immunity', 'inmune', r.inmune, 0, ctx)
+    + seccionTiposHTML('super-effective', 'supereficaz', r.supereficaz, 2, ctx)
+    + seccionTiposHTML('not-effective', 'pocoEficaz', r.pocoEficaz, 0.5, ctx)
+    + seccionTiposHTML('no-effect', 'sinEfecto', r.sinEfecto, 0, ctx)
+    + '</div>'
+    + `<section class="ficha-lista"><h2 class="section-title">${esc(tr(ctx, 'contenido.tipo.pokemon', { tipo: NOMBRES_TIPO[ctx.l][tipo] }))}`
+    + ` <span class="ficha-cuenta">${especies.length}</span></h2>${listaPokemonHTML(especies, ctx)}</section>`;
+}
+
+// El cuerpo de /egg/<grupo>: la frase y el derivado, los miembros (todos, sin
+// paginar) y con quien crian, con las reglas de egg-groups.js. Ditto y
+// Desconocido tienen su propia respuesta, como en el derivado.
+export function grupoHTML(grupo, ctx) {
+  if (!EGG_GROUPS.includes(grupo)) throw new Error(`contenido.js: "${grupo}" no es un grupo huevo`);
+  const especies = especiesDe(ctx);
+  const miembros = membersOf(grupo, especies);
+  const enlace = otro => `<a href="${urlDe(`/egg/${otro}`, ctx.l)}">${esc(tr(ctx, `egg.group.${otro}`))}</a>`;
+
+  let crian;
+  if (grupo === 'no-eggs') {
+    crian = [esc(tr(ctx, 'contenido.grupo.nadie'))];
+  } else if (grupo === 'ditto') {
+    const ditto = miembros[0];
+    crian = [esc(tr(ctx, 'contenido.grupo.dittoTodos', { n: partnersOf(ditto, especies).length }))];
+  } else {
+    const ditto = especies.find(p => p.eggGroups?.includes('ditto'));
+    const otros = EGG_GROUPS.filter(otro => otro !== grupo && otro !== 'ditto' && otro !== 'no-eggs')
+      .map(otro => ({ otro, n: miembros.filter(p => p.eggGroups.includes(otro)).length }))
+      .filter(x => x.n > 0)
+      .sort((a, b) => b.n - a.n);
+    crian = [
+      trHTML(ctx, 'contenido.grupo.propio', { grupo: enlace(grupo) }),
+      trHTML(ctx, 'contenido.grupo.ditto', { ditto: enlace('ditto'), n: miembros.filter(p => canBreed(p, ditto)).length, total: miembros.length }),
+      ...otros.map(({ otro, n }) => trHTML(ctx, 'contenido.grupo.otro', { grupo: enlace(otro), n })),
+    ];
+  }
+
+  return textoFichaHTML(`/egg/${grupo}`, ctx)
+    + `<section class="ficha-lista"><h2 class="section-title">${esc(tr(ctx, 'contenido.grupo.miembros'))}`
+    + ` <span class="ficha-cuenta">${miembros.length}</span></h2>${listaPokemonHTML(miembros, ctx)}</section>`
+    + `<section class="ficha-lista"><h2 class="section-title">${esc(tr(ctx, 'contenido.grupo.crian'))}</h2>`
+    + `<ul class="lista-crian">${crian.map(item => `<li>${item}</li>`).join('')}</ul></section>`;
 }

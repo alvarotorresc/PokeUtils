@@ -2,16 +2,15 @@
 //
 // Two routes: the index of the fifteen groups, and one group's members. The
 // breeding rules are not here -- they live in egg-groups.js, which both this
-// and the Pokemon detail page call.
-import { EGG_GROUPS, membersOf, groupCounts, hasEggData } from './egg-groups.js';
+// and the Pokemon detail page call. La pagina de un grupo es la de
+// contenido.js (grupoHTML), la misma que escribe el prerender.
+import { EGG_GROUPS, groupCounts, hasEggData } from './egg-groups.js';
 import { fetchPokemonList } from './api.js';
-import { pokemonCardHTML } from './pokedex.js';
-import { skeletonHTML, renderPagination, replaceQuery, toolTabsHTML, titularFicha } from './ui.js';
+import { skeletonHTML, titularFicha, encabezadoDe, introDe, contextoActivo, seguimosEn, wireToolTabs } from './ui.js';
 import { urlDe } from './rutas.js';
-import { PAGINA, esqueletoDe } from './cascaras.js';
+import { esqueletoDe } from './cascaras.js';
+import { grupoHTML } from './contenido.js';
 import { t } from './i18n.js';
-
-const PAGE_SIZE = PAGINA.egg;
 
 export const eggGroupName = group => t(`egg.group.${group}`);
 
@@ -31,13 +30,11 @@ function staleDataHTML() {
 
 export async function renderEggIndex(container) {
   container.innerHTML = `
-    ${toolTabsHTML('pokedex', 'egg')}
-    <div class="page-header">
-      <h1>${t('egg.title')}</h1>
-      <p>${t('egg.subtitle')}</p>
-    </div>
+    ${encabezadoDe('/egg')}
     <div id="eggContent">${skeletonHTML(esqueletoDe('egg'))}</div>
+    ${introDe('/egg')}
   `;
+  wireToolTabs(container);
   const content = container.querySelector('#eggContent');
   const all = await fetchPokemonList();
 
@@ -59,7 +56,11 @@ export async function renderEggIndex(container) {
   `;
 }
 
-export async function renderEggGroup(container, group, query = new URLSearchParams()) {
+// Todos los miembros en una lista de enlaces, sin paginar: es lo que lee un
+// buscador en el prerender, y el cliente pinta lo mismo para que la pagina no
+// cambie al hidratar. La rejilla de tarjetas paginada (y su ?p=) se queda para
+// la Pokedex.
+export async function renderEggGroup(container, group) {
   if (!EGG_GROUPS.includes(group)) {
     container.innerHTML = `
       <div class="no-results">
@@ -71,44 +72,20 @@ export async function renderEggGroup(container, group, query = new URLSearchPara
     return;
   }
 
-  titularFicha(`/egg/${group}`, eggGroupName(group));
-  let page = Math.max(1, parseInt(query.get('p'), 10) || 1);
-
-  container.innerHTML = `
-    ${toolTabsHTML('pokedex', 'egg')}
-    <p class="back-link"><a href="${urlDe('/egg')}">${t('egg.back')}</a></p>
-    <div class="page-header">
-      <h1>${eggGroupName(group)}</h1>
-      <p id="eggCount"></p>
-    </div>
-    <div id="eggContent">${skeletonHTML({ shape: 'grid', rows: PAGE_SIZE })}</div>
-  `;
-  const content = container.querySelector('#eggContent');
-  const countEl = container.querySelector('#eggCount');
+  const logica = `/egg/${group}`;
+  titularFicha(logica, eggGroupName(group));
+  // La cascara de la ruta (o el prerender) se queda a la vista mientras llegan
+  // los datos.
+  const vigente = seguimosEn(container);
   const all = await fetchPokemonList();
+  if (!vigente()) return;
 
   if (!hasEggData(all)) {
-    content.innerHTML = staleDataHTML();
+    container.innerHTML = encabezadoDe(logica) + staleDataHTML();
+    wireToolTabs(container);
     return;
   }
 
-  const members = membersOf(group, all);
-  countEl.textContent = `${members.length} ${t('pokedex.count')}`;
-
-  function render() {
-    const totalPages = Math.ceil(members.length / PAGE_SIZE) || 1;
-    if (page > totalPages) page = totalPages;
-    // The URL is written after the clamp: written first, #/egg/ground?p=999
-    // painted page 6 and left 999 in the bar.
-    replaceQuery(`/egg/${group}`, { p: page === 1 ? '' : page });
-    const slice = members.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-    content.innerHTML = `<div class="pokemon-grid">${slice.map(pokemonCardHTML).join('')}</div>`;
-    renderPagination(content, page, totalPages, p => {
-      page = p;
-      render();
-      container.querySelector('.page-header').scrollIntoView({ behavior: 'smooth' });
-    });
-  }
-
-  render();
+  container.innerHTML = encabezadoDe(logica) + grupoHTML(group, { ...contextoActivo(), pokemon: all }) + introDe(logica);
+  wireToolTabs(container);
 }

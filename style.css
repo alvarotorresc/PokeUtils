@@ -866,8 +866,10 @@ a.nav-toggle-btn {
    home.js se la quita en cuanto lo adopta. Si apuntara a .swarm-wrap, una
    sesion que arrancara fuera de la portada y navegara luego hasta ella se
    encontraria el hero repintado por home.js oculto para siempre, porque esa
-   clase nunca se quita del <html>. */
-html.no-hero [data-shell] {
+   clase nunca se quita del <html>.
+   Y solo el de la portada (data-ruta="/"): las paginas prerenderizadas llevan
+   su propio [data-shell] con no-hero puesto, y ese tiene que verse. */
+html.no-hero [data-shell][data-ruta="/"] {
   display: none;
 }
 
@@ -3854,7 +3856,7 @@ a.evo-node:hover img {
   transition: border-color 0.2s;
 }
 
-.result-section h3 {
+.result-section :is(h2, h3) {
   font-size: 0.5rem;
   margin-bottom: 12px;
   display: flex;
@@ -3875,17 +3877,17 @@ a.evo-node:hover img {
   letter-spacing: 0;
 }
 
-.result-section.weakness h3 { color: var(--danger-text); }
+.result-section.weakness :is(h2, h3) { color: var(--danger-text); }
 .result-section.weakness { border-color: rgba(251, 113, 133, 0.15); }
-.result-section.resistance h3 { color: var(--info-text); }
+.result-section.resistance :is(h2, h3) { color: var(--info-text); }
 .result-section.resistance { border-color: rgba(96, 165, 250, 0.15); }
-.result-section.immunity h3 { color: var(--special-text); }
+.result-section.immunity :is(h2, h3) { color: var(--special-text); }
 .result-section.immunity { border-color: rgba(167, 139, 250, 0.15); }
-.result-section.super-effective h3 { color: var(--success-text); }
+.result-section.super-effective :is(h2, h3) { color: var(--success-text); }
 .result-section.super-effective { border-color: rgba(52, 211, 153, 0.15); }
-.result-section.not-effective h3 { color: var(--warning-text); }
+.result-section.not-effective :is(h2, h3) { color: var(--warning-text); }
 .result-section.not-effective { border-color: rgba(245, 158, 11, 0.15); }
-.result-section.no-effect h3 { color: var(--ink-2); }
+.result-section.no-effect :is(h2, h3) { color: var(--ink-2); }
 .result-section.no-effect { border-color: rgba(148, 163, 184, 0.15); }
 
 .result-badges {
@@ -4494,4 +4496,139 @@ a.evo-node:hover img {
   :root {
     --gutter: 56px;
   }
+}
+
+/* ===== EL CONTENIDO DE LAS PAGINAS INDEXABLES =====
+   Las piezas de js/contenido.js, las mismas en el prerender y en el cliente:
+   la miga de pan, el bloque de texto del final, y las listas de tipos y grupos.
+   La prosa va como las respuestas de la FAQ (0.46rem, ink-2, 760px centrados):
+   es la misma clase de texto. */
+.migas ol {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 0;
+  font-size: 0.42rem;
+  color: var(--ink-3);
+  margin-top: 12px;
+}
+
+.migas li + li::before {
+  content: '›';
+  margin: 0 8px;
+  color: var(--ink-3);
+}
+
+.migas [aria-current] {
+  color: var(--ink-2);
+}
+
+.intro {
+  max-width: 760px;
+  margin: 40px auto 24px;
+  font-size: 0.46rem;
+  line-height: 1.9;
+  color: var(--ink-2);
+}
+
+.intro h2 {
+  font-size: 0.55rem;
+  color: var(--accent-text);
+  letter-spacing: 1px;
+  margin-bottom: 14px;
+}
+
+.intro p + p {
+  margin-top: 12px;
+}
+
+.intro h3 {
+  font-size: 0.46rem;
+  color: var(--ink-3);
+  margin: 20px 0 8px;
+}
+
+.relacionadas {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+/* En un tipo y un grupo, la frase y el derivado van arriba, bajo la cabecera:
+   son el resumen de las listas que vienen debajo. */
+.intro.intro-ficha {
+  margin: 0 auto 24px;
+}
+
+.tipos-tira .type-badge {
+  font-size: 0.4rem;
+  padding: 10px 2px;
+  overflow-wrap: anywhere;
+}
+
+.tipos-tira .type-badge:hover {
+  text-decoration: none;
+}
+
+.tipo-secciones {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 30px;
+}
+
+@media (min-width: 640px) {
+  .tipo-secciones { grid-template-columns: repeat(3, 1fr); }
+}
+
+.tipo-secciones .result-badge:hover {
+  text-decoration: none;
+  filter: brightness(1.1);
+}
+
+.ficha-lista {
+  margin-bottom: 30px;
+}
+
+.tipos-todos {
+  margin-top: 30px;
+}
+
+.ficha-cuenta {
+  color: var(--ink-3);
+}
+
+.lista-pokemon {
+  list-style: none;
+  columns: 2;
+  column-gap: 16px;
+  font-family: var(--font-data);
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+@media (min-width: 640px) {
+  .lista-pokemon { columns: 4; }
+}
+
+@media (min-width: 900px) {
+  .lista-pokemon { columns: 6; }
+}
+
+.lista-pokemon li {
+  break-inside: avoid;
+  overflow-wrap: anywhere;
+}
+
+.lista-crian {
+  list-style: none;
+  font-size: 0.46rem;
+  line-height: 1.9;
+  color: var(--ink-2);
+}
+
+.lista-crian li + li {
+  margin-top: 6px;
 }

@@ -1,6 +1,6 @@
 // ===== ABILITIES PAGE =====
 import { fetchAbilities } from './api.js';
-import { skeletonHTML, renderPagination, toolTabsHTML, wireToolTabs, titularFicha } from './ui.js';
+import { skeletonHTML, renderPagination, encabezadoDe, introDe, wireToolTabs, titularFicha } from './ui.js';
 import { PAGINA, esqueletoDe } from './cascaras.js';
 import { t, pokeName, getLang } from './i18n.js';
 import { norm } from './normalize.js';
@@ -23,17 +23,14 @@ export function renderAbilities(container, highlightName = null) {
   let targetName = highlightName;
 
   container.innerHTML = `
-    ${toolTabsHTML('data', 'abilities')}
-    <div class="page-header">
-      <h1>${t('abilities.title')}</h1>
-      <p>${t('abilities.subtitle')}</p>
-    </div>
+    ${encabezadoDe('/abilities')}
     ${targetName ? `<button class="back-btn" id="abBack">◀ ${t('abilities.back')}</button>` : ''}
     <div class="search-bar">
       <span class="search-icon">🔍</span>
       <input type="text" class="search-input" id="abSearch" placeholder="${t('abilities.search')}">
     </div>
     <div id="abContent"></div>
+    ${introDe('/abilities')}
   `;
   wireToolTabs(container);
 

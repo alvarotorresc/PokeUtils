@@ -1,7 +1,7 @@
 // ===== NATURES PAGE =====
 import { NATURES } from './data.js';
 import { t, statName, natureName, natureNameAlt, getLang } from './i18n.js';
-import { toolTabsHTML, wireToolTabs } from './ui.js';
+import { encabezadoDe, introDe, wireToolTabs } from './ui.js';
 
 const GRID_STATS = ['atk', 'def', 'spa', 'spd', 'spe'];
 
@@ -38,11 +38,7 @@ export function renderNatures(container) {
   const stats = GRID_STATS;
 
   container.innerHTML = `
-    ${toolTabsHTML('data', 'natures')}
-    <div class="page-header">
-      <h1>${t('natures.title')}</h1>
-      <p>${t('natures.subtitle')}</p>
-    </div>
+    ${encabezadoDe('/natures')}
 
     <div class="card" style="margin-bottom:24px">
       <div style="font-size:0.4rem;color:var(--ink-2);line-height:2;margin-bottom:12px">
@@ -64,7 +60,7 @@ export function renderNatures(container) {
       </table>
     </div>
 
-    <h3 class="section-title" style="margin-top:30px">${t('natures.grid.title')}</h3>
+    <h2 class="section-title" style="margin-top:30px">${t('natures.grid.title')}</h2>
     <div style="font-size:0.44rem;color:var(--ink-2);margin-bottom:12px">
       ${t('natures.grid.hint')}
     </div>
@@ -79,6 +75,7 @@ export function renderNatures(container) {
         <tbody id="natGrid"></tbody>
       </table>
     </div>
+    ${introDe('/natures')}
   `;
   wireToolTabs(container);
 

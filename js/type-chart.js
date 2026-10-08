@@ -1,7 +1,9 @@
 // ===== TYPE CHART PAGE =====
 import { TYPES, CHART, TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from './data.js';
 import { t, typeName, getLang } from './i18n.js';
-import { toolTabsHTML, wireToolTabs, titularFicha } from './ui.js';
+import { wireToolTabs, titularFicha, encabezadoDe, introDe, contextoActivo, seguimosEn } from './ui.js';
+import { fetchPokemonList } from './api.js';
+import { tipoHTML, tiraTiposHTML } from './contenido.js';
 
 let selectedTypes = [];
 let activeTab = 'defense';
@@ -51,12 +53,14 @@ function renderBadgeList(items) {
 }
 
 export function renderTypeChart(container) {
+  // El modulo vive mientras dure la sesion, y con el la seleccion: sin esto,
+  // /tipos despues de /tipos/fuego (o de una visita anterior a la tabla)
+  // arrancaba con los tipos de la ultima vez marcados. Cada visita a la tabla
+  // empieza vacia, en defensa.
+  selectedTypes = [];
+  activeTab = 'defense';
   container.innerHTML = `
-    ${toolTabsHTML('data', 'types')}
-    <div class="page-header">
-      <h1>${t('types.title')}</h1>
-      <p>${t('types.subtitle')}</p>
-    </div>
+    ${encabezadoDe('/types')}
     <div class="selected-display" id="tcSelected">
       <div class="selected-placeholder" id="tcPlaceholder">
         <span class="blink">▶</span> ${t('types.prompt')}
@@ -76,6 +80,11 @@ export function renderTypeChart(container) {
       <div id="tcDefPanel" class="tab-content"></div>
       <div id="tcAtkPanel" class="tab-content" style="display:none"></div>
     </div>
+    <section class="ficha-lista tipos-todos">
+      <h2 class="section-title">${t('contenido.tipos')}</h2>
+      ${tiraTiposHTML(null, contextoActivo())}
+    </section>
+    ${introDe('/types')}
   `;
   wireToolTabs(container);
 
@@ -126,17 +135,17 @@ export function renderTypeChart(container) {
 
     container.querySelector('#tcDefPanel').innerHTML = `
       <div class="result-section weakness">
-        <h3><span class="result-icon">💥</span> ${t('types.weak')} <span class="result-hint">${t('types.weak.hint')}</span></h3>
+        <h2><span class="result-icon">💥</span> ${t('types.weak')} <span class="result-hint">${t('types.weak.hint')}</span></h2>
         <div class="result-badges">${renderBadgeList(weak)}</div>
         ${!weak.length ? `<div class="empty-state visible">${t('types.none.weak')}</div>` : ''}
       </div>
       <div class="result-section resistance">
-        <h3><span class="result-icon">🛡️</span> ${t('types.resist')} <span class="result-hint">${t('types.resist.hint')}</span></h3>
+        <h2><span class="result-icon">🛡️</span> ${t('types.resist')} <span class="result-hint">${t('types.resist.hint')}</span></h2>
         <div class="result-badges">${renderBadgeList(resist)}</div>
         ${!resist.length ? `<div class="empty-state visible">${t('types.none.resist')}</div>` : ''}
       </div>
       <div class="result-section immunity">
-        <h3><span class="result-icon">🚫</span> ${t('types.immune')} <span class="result-hint">${t('types.immune.hint')}</span></h3>
+        <h2><span class="result-icon">🚫</span> ${t('types.immune')} <span class="result-hint">${t('types.immune.hint')}</span></h2>
         <div class="result-badges">${renderBadgeList(immune)}</div>
         ${!immune.length ? `<div class="empty-state visible">${t('types.none.immune')}</div>` : ''}
       </div>
@@ -153,17 +162,17 @@ export function renderTypeChart(container) {
 
     container.querySelector('#tcAtkPanel').innerHTML = `
       <div class="result-section super-effective">
-        <h3><span class="result-icon">⚔️</span> ${t('types.super')} <span class="result-hint">${t('types.super.hint')}</span></h3>
+        <h2><span class="result-icon">⚔️</span> ${t('types.super')} <span class="result-hint">${t('types.super.hint')}</span></h2>
         <div class="result-badges">${renderBadgeList(superEff)}</div>
         ${!superEff.length ? `<div class="empty-state visible">${t('types.none.type')}</div>` : ''}
       </div>
       <div class="result-section not-effective">
-        <h3><span class="result-icon">↓</span> ${t('types.noteff')} <span class="result-hint">${t('types.noteff.hint')}</span></h3>
+        <h2><span class="result-icon">↓</span> ${t('types.noteff')} <span class="result-hint">${t('types.noteff.hint')}</span></h2>
         <div class="result-badges">${renderBadgeList(notEff)}</div>
         ${!notEff.length ? `<div class="empty-state visible">${t('types.none.type')}</div>` : ''}
       </div>
       <div class="result-section no-effect">
-        <h3><span class="result-icon">✕</span> ${t('types.noeff')} <span class="result-hint">${t('types.noeff.hint')}</span></h3>
+        <h2><span class="result-icon">✕</span> ${t('types.noeff')} <span class="result-hint">${t('types.noeff.hint')}</span></h2>
         <div class="result-badges">${renderBadgeList(noEff)}</div>
         ${!noEff.length ? `<div class="empty-state visible">${t('types.none.type')}</div>` : ''}
       </div>
@@ -197,25 +206,26 @@ export function renderTypeChart(container) {
 
 // ===== LA PAGINA DE UN TIPO =====
 //
-// /tipos/fuego. De momento solo la cabecera con el nombre completo (typeName
-// abrevia: "Electr."), el mismo que pone el titulo del build; las secciones y
-// el texto llegan con contenido.js. Sin subtitulo: el de la tabla ("Selecciona
-// hasta 2 tipos") aqui seria mentira. Sin el selector: la pagina habla de un
-// tipo, y un selector que lo cambiara contradiria su h1.
-export function renderTipo(container, tipo) {
+// /tipos/fuego. Todo sale de contenido.js (tipoHTML), el mismo marcado que el
+// prerender: la tira de los 18, la frase y el derivado de los textos, las seis
+// secciones de CHART y las especies de ese tipo. Sin el selector: la pagina
+// habla de un tipo, y un selector que lo cambiara contradiria su h1. El
+// derivado llega hecho en los textos (el build lo calcula), asi que aqui no se
+// baja moves.json.
+export async function renderTipo(container, tipo) {
   // logicaDe ya descarta un slug que no es un tipo, pero la ruta logica tambien
   // llega a mano (navegar('/types/x')): sin esto se pintaria "undefined".
   if (!TYPES.includes(tipo)) {
     container.innerHTML = `<div class="no-results"><div class="icon">❓</div><p>${t('common.notfound')}</p></div>`;
     return;
   }
-  const nombre = (getLang() === 'en' ? TYPE_NAMES_FULL_EN : TYPE_NAMES_FULL)[tipo];
-  container.innerHTML = `
-    ${toolTabsHTML('data', 'types')}
-    <div class="page-header">
-      <h1>${nombre}</h1>
-    </div>
-  `;
+  const logica = `/types/${tipo}`;
+  titularFicha(logica, (getLang() === 'en' ? TYPE_NAMES_FULL_EN : TYPE_NAMES_FULL)[tipo]);
+  // La cascara de la ruta ya ensena la cabecera mientras llegan los datos.
+  const vigente = seguimosEn(container);
+  const pokemon = await fetchPokemonList();
+  if (!vigente()) return;
+  const ctx = { ...contextoActivo(), pokemon };
+  container.innerHTML = encabezadoDe(logica) + tipoHTML(tipo, ctx) + introDe(logica);
   wireToolTabs(container);
-  titularFicha(`/types/${tipo}`, nombre);
 }

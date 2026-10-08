@@ -4,8 +4,8 @@
 // grid (rejillaHerramientasHTML), so it inherits the styles that already exist.
 import { CATEGORIES, toolsIn } from './tools.js';
 import { t } from './i18n.js';
-import { contextoActivo } from './ui.js';
-import { cabeceraHTML, rejillaHerramientasHTML, idsDeCategoria } from './contenido.js';
+import { contextoActivo, encabezadoDe, introDe } from './ui.js';
+import { rejillaHerramientasHTML, idsDeCategoria } from './contenido.js';
 
 export function renderHub(container, categoryId) {
   const category = CATEGORIES.find(c => c.id === categoryId);
@@ -18,8 +18,9 @@ export function renderHub(container, categoryId) {
     return;
   }
 
-  // La cabecera y la rejilla son las de contenido.js, las mismas que escribira
-  // el build en el HTML de /datos y /competitivo.
-  const ctx = contextoActivo();
-  container.innerHTML = cabeceraHTML(category.route, ctx) + rejillaHerramientasHTML(ctx, idsDeCategoria(categoryId));
+  // La miga, la cabecera, la rejilla y el texto son los de contenido.js, los
+  // mismos que escribira el build en el HTML de /datos y /competitivo.
+  container.innerHTML = encabezadoDe(category.route)
+    + rejillaHerramientasHTML(contextoActivo(), idsDeCategoria(categoryId))
+    + introDe(category.route);
 }

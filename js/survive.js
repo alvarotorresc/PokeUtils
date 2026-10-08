@@ -5,7 +5,7 @@
 import { survives, minimumSpread, defenseKeyFor } from './survival.js';
 import { fetchPokemonList, fetchMoves } from './api.js';
 import { competitiveList, spriteIdFor } from './forms.js';
-import { skeletonHTML, replaceQuery, esc, toolTabsHTML, wireToolTabs } from './ui.js';
+import { skeletonHTML, replaceQuery, esc, encabezadoDe, introDe, wireToolTabs } from './ui.js';
 import { esqueletoDe } from './cascaras.js';
 import { getLevel } from './level.js';
 import { spriteUrl } from './data.js';
@@ -30,12 +30,9 @@ const FIELDS = [
 
 export async function renderSurvive(container, query = new URLSearchParams()) {
   container.innerHTML = `
-    ${toolTabsHTML('competitive', 'survive')}
-    <div class="page-header">
-      <h1>${t('survive.title')}</h1>
-      <p>${t('survive.subtitle')}</p>
-    </div>
+    ${encabezadoDe('/survive')}
     <div id="svBody">${skeletonHTML(esqueletoDe('survive'))}</div>
+    ${introDe('/survive')}
   `;
   wireToolTabs(container);
   const body = container.querySelector('#svBody');

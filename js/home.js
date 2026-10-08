@@ -6,7 +6,7 @@
 import { spriteUrl } from './data.js';
 import { CATEGORIES, TOOLS } from './tools.js';
 import { t, getLang } from './i18n.js';
-import { esc, contextoActivo } from './ui.js';
+import { esc, contextoActivo, introDe } from './ui.js';
 import { urlDe } from './rutas.js';
 import { rejillaHerramientasHTML, idsDeCategoria } from './contenido.js';
 import { attachGlobalSearch, leerHistorial } from './global-search.js';
@@ -140,6 +140,7 @@ export function renderHome(container) {
       <div class="mw-grid stagger">${wantedHTML()}</div>
     </section>
     ${groups}
+    ${introDe('/')}
   `;
 
   // En la primera carga la portada ya viene en el HTML: se adopta en vez de

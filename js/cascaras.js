@@ -19,7 +19,8 @@
 // ocupan, medida en el navegador.
 import { t } from './i18n.js';
 import { TOOLS, CATEGORIES, toolsIn } from './tools.js';
-import { toolTabsHTML, skeletonHTML } from './ui.js';
+import { skeletonHTML, encabezadoDe } from './ui.js';
+import { INDEXABLES, logicaIndexable } from './contenido.js';
 
 // El tamano de pagina de una lista lo necesitan dos: el modulo, para cortarla,
 // y la cascara, para reservar tantas filas. Vive aqui una vez y el modulo lo
@@ -30,7 +31,6 @@ export const PAGINA = {
   moves: 50,
   abilities: 30,
   items: 48,
-  egg: 50,
 };
 
 // La especificacion del esqueleto de cada pantalla, y la unica que hay: los
@@ -67,7 +67,7 @@ const FICHAS = {
 // Las que no esperan datos: solo esperan a su modulo, que es un chunk de uno o
 // dos KB. Aun asi el hueco existe, y su cabecera se puede pintar igual que la
 // de una herramienta.
-const ESTATICAS = { '/faq': 'faq', '/privacy': 'privacy', '/terms': 'terms' };
+const ESTATICAS = { '/privacy': 'privacy', '/terms': 'terms' };
 
 export const esqueletoDe = (toolId) => PANTALLAS[toolId]?.sk;
 
@@ -78,17 +78,11 @@ const rep = (n, html) => new Array(Math.max(0, n)).fill(html).join('');
 
 const bandaGris = (alto) => `<div class="sk sk-banda sk-box" style="height:${alto}px"></div>`;
 
-// La cabecera que toda pantalla de herramienta comparte, con su titulo de
-// verdad: `base` es el prefijo de sus claves en i18n y ya vive en tools.js.
-function cabecera(tool) {
-  return `
-    ${toolTabsHTML(tool.category, tool.id)}
-    <div class="page-header">
-      <h1>${t(`${tool.base}.title`)}</h1>
-      <p>${t(`${tool.base}.subtitle`)}</p>
-    </div>
-  `;
-}
+// La cabecera de una pagina indexable, la de verdad: pestanas, miga y h1 de
+// contenido.js, los mismos que pinta el modulo al llegar. Antes se armaba aqui
+// con `${tool.base}.title`, y las tres pestanas de la calculadora comparten base
+// ('calculator') sin claves propias: su cascara ensenaba "calculator.title"
+// crudo.
 
 // La Pokedex no apila sus controles: los pone en una barra al lado, y de ella
 // depende el ancho de la rejilla. Sin replicar ese reparto, el esqueleto salia
@@ -116,7 +110,7 @@ const cabeceraSuelta = (base) => `
 function cascaraHub(categoryId) {
   const n = toolsIn(categoryId).length;
   return `
-    ${cabeceraSuelta(`hub.${categoryId}`)}
+    ${encabezadoDe(CATEGORIES.find(x => x.id === categoryId).route)}
     <div class="sk">
       <div class="home-grid">
         ${rep(n, '<div class="home-card sk-card"><div class="sk-box sk-hub"></div></div>')}
@@ -146,26 +140,35 @@ function cascaraHome() {
 // null y no una cascara vacia: significa "esta ruta no tiene nada que adelantar
 // y el router hace lo de siempre". Hoy no lo devuelve ninguna ruta viva: queda
 // para la que no se reconozca, que es la que acaba en el "no encontrado".
-export function cascaraDeRuta(path, parts) {
+export function cascaraDeRuta(path, parts, query = new URLSearchParams()) {
   if (path === '/' || path === '/home') return cascaraHome();
   if (parts[0] === 'pokedex' && parts[1]) return skeletonHTML(FICHAS.pokedex);
   if (parts[0] === 'moves' && parts[1]) return skeletonHTML(FICHAS.moves);
-  // Una habilidad no tiene pagina propia: abre su lista, resaltada.
-  const base = parts[0] === 'abilities' ? '/abilities' : parts[0] === 'egg' ? '/egg' : path;
 
+  // Un tipo y un grupo huevo: su cabecera entera (el h1 es su nombre, que no
+  // depende de datos) y bloques grises mientras llega pokemon.json. Un slug que
+  // no existe no tiene cascara: cae en el "no encontrado" de su modulo.
+  if ((parts[0] === 'types' || parts[0] === 'egg') && parts[1]) {
+    const logica = `/${parts[0]}/${parts[1]}`;
+    return INDEXABLES.includes(logica) ? encabezadoDe(logica) + skeletonHTML({ shape: 'blocks', rows: 4 }) : null;
+  }
+
+  if (path === '/faq') return encabezadoDe('/faq') + skeletonHTML({ shape: 'blocks', rows: 3 });
   if (ESTATICAS[path]) return cabeceraSuelta(ESTATICAS[path]) + skeletonHTML({ shape: 'blocks', rows: 3 });
   if (CATEGORIES.some(x => x.id === parts[0] && !x.direct)) return cascaraHub(parts[0]);
 
-  const tool = TOOLS.find(x => x.route === base);
+  // Una habilidad no tiene pagina propia: abre su lista, resaltada.
+  const base = parts[0] === 'abilities' ? '/abilities' : path;
+  // La calculadora es una ruta con tres paginas: la pestana la dice la query.
+  const logica = base === '/calculator' ? logicaIndexable(base, query) : base;
+  const tool = TOOLS.find(x => x.route === logica);
   const def = tool && PANTALLAS[tool.id];
-  if (!tool || !def) return null;
+  if (!tool) return null;
+  // Las dos calculadoras sin PANTALLAS (dano y captura) esperan como la de IV/EV.
+  const sk = def?.sk ?? PANTALLAS.ivev.sk;
 
-  // El indice de grupos huevo es una rejilla de fichas; UN grupo es una rejilla
-  // de Pokemon, la misma de la Pokedex. Comparten ruta y no comparten forma.
-  const sk = (parts[0] === 'egg' && parts[1]) ? { shape: 'grid', rows: PAGINA.egg } : def.sk;
-
-  const cuerpo = def.lado
+  const cuerpo = def?.lado
     ? cuerpoPokedex(def)
-    : `${def.controles ? bandaGris(def.controles) : ''}${skeletonHTML(sk)}`;
-  return cabecera(tool) + cuerpo;
+    : `${def?.controles ? bandaGris(def.controles) : ''}${skeletonHTML(sk)}`;
+  return encabezadoDe(logica) + cuerpo;
 }

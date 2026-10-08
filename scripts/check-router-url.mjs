@@ -78,7 +78,7 @@ check('/calculadora-de-dano escribiendo /calculator con tab=damage',
   escribeDesde('/calculadora-de-dano', '/calculator', { tab: 'damage', a: 6 }), '/calculadora-de-dano?a=6');
 check('y volver a IV/EV cambia la ruta sin perder el calculo',
   escribeDesde('/calculadora-de-dano?a=6', '/calculator', { tab: '', a: 6 }), '/calculadora-ivs-evs?a=6');
-// La unica ruta interpolada: egg-pages construye `/egg/${group}`.
+// Una ruta con un segmento interpolado, como las de las fichas.
 check('/grupos-huevo/campo escribiendo /egg/ground',
   escribeDesde('/grupos-huevo/campo', '/egg/ground', { p: 3 }), '/grupos-huevo/campo?p=3');
 // Los valores por defecto se omiten y la URL queda limpia.
@@ -238,8 +238,10 @@ check('se han encontrado llamantes que revisar', llamantes.length > 0, true);
 const PAGINADAS = [
   { fichero: 'pokedex.js', recorte: /if \(state\.p > totalPages\)/, sync: /^\s*syncUrl\(\);/m },
   { fichero: 'moves.js', recorte: /if \(state\.p > totalPages\)/, sync: /^\s*syncUrl\(\);/m },
-  { fichero: 'egg-pages.js', recorte: /if \(page > totalPages\)/, sync: /replaceQuery\(`\/egg\//m },
 ];
+// Un grupo huevo ya no pagina (PR 3, commit 5): pinta todos sus miembros, como
+// el prerender. Si vuelve a escribir su ?p=, vuelve a esta lista.
+check('egg-pages.js no escribe la URL', /replaceQuery\(/.test(readFileSync(join(RAIZ, 'js', 'egg-pages.js'), 'utf8')), false);
 
 console.log('\nLa pagina se recorta antes de escribirla en la URL\n');
 
@@ -480,6 +482,76 @@ check('route() espera a setLang antes del titulo',
   iSetLang !== -1 && iSetLang < cuerpoRoute.indexOf('document.title'), true);
 check('i18n.js ya no lee el idioma guardado',
   /pkutils_lang/.test(fuentes.find(f => f.fichero === 'i18n.js').src), false);
+
+// ===== El prerender y el render del cliente (PR 3, commit 5) =====
+//
+// Una pagina indexable llega pintada en <div data-shell data-ruta="<logica>">,
+// y route() la conserva solo si es la de la ruta que va a pintar. La clave es
+// la ruta logica de INDEXABLES, con la pestana de la calculadora plegada: con
+// el path a secas, la de dano y la de IV/EV serian la misma.
+console.log('\nEl shell del prerender y los textos\n');
+
+const { logicaIndexable, conservaShell } = await import('../js/contenido.js');
+const logicaDeUrl = url => { ponerBarra(url); const r = parseRuta(); return logicaIndexable(r.path, r.query); };
+check('la clave de cada direccion', [
+  '/', '/en', '/calculadora-ivs-evs', '/calculadora-de-dano?a=6', '/en/catch-calculator', '/tipos/fuego', '/en/types/fire',
+  '/grupos-huevo/campo', '/datos', '/faq', '/pokedex/pikachu', '/privacidad', '/habilidades/levitacion',
+].map(logicaDeUrl), [
+  '/', '/', '/calculator', '/calculator?tab=damage', '/calculator?tab=catch', '/types/fire', '/types/fire',
+  '/egg/ground', '/data', '/faq', null, null, null,
+]);
+check('una pestana que no existe es la de IV/EV', logicaIndexable('/calculator', new URLSearchParams('tab=x')), '/calculator');
+check('el shell se conserva solo con su misma ruta', [
+  conservaShell('/', '/'), conservaShell('/types/fire', '/types/fire'), conservaShell(undefined, '/'),
+  conservaShell('/', '/types/fire'), conservaShell('/calculator', '/calculator?tab=damage'), conservaShell(undefined, null),
+], [true, true, false, false, false, false]);
+
+const fuenteDe = fichero => fuentes.find(f => f.fichero === fichero).src;
+const appRoute = fuenteDe('app.js');
+check('route() decide con conservaShell y el data-ruta del shell',
+  /conservaShell\(shell\.dataset\.ruta, logica\)/.test(appRoute) && !/\[data-shell\]'\) && esHome/.test(appRoute), true);
+const hero = readFileSync(join(RAIZ, 'index.html'), 'utf8').match(/<div class="swarm-wrap"[^>]*>/)?.[0];
+check('el hero de index.html es el shell de la portada', hero, '<div class="swarm-wrap" data-shell data-ruta="/">');
+
+// Los textos: dos import() literales (con una plantilla esbuild no los saca
+// como trozos), y pedidos en el mismo Promise.all que el modulo de la ruta.
+check('ui.js pide los textos con dos ramas literales',
+  [...fuenteDe('ui.js').matchAll(/import\((['"`])([^'"`]*textos[^'"`]*)\1\)/g)].map(m => m[2]),
+  ['./textos-es.js', './textos-en.js']);
+check('route() espera los textos junto al modulo',
+  /Promise\.all\(\[bajar\(\), indice, textos\]\)/.test(appRoute), true);
+
+// Los derivados de tipos y grupos los calcula el build (conDerivados) y llegan
+// hechos en los textos. Que ningun modulo del cliente los llame: llamarlos
+// metia en el arranque sus ~4 KB gz y moves.json (404 KB) en /tipos/<t>.
+const llamanDerivados = fuentes.filter(f => f.fichero !== 'contenido.js'
+  && /\b(derivadoTipo|derivadoGrupo|hechosTipo|hechosGrupo|conDerivados)\b/.test(f.src)).map(f => f.fichero);
+check('ningun modulo del cliente calcula los derivados', llamanDerivados, []);
+check('type-chart.js no baja moves.json', /fetchMoves/.test(fuenteDe('type-chart.js')), false);
+
+// /tipos despues de /tipos/fuego, o de otra visita a la tabla: el selector
+// empieza vacio. El modulo vive toda la sesion y con el la seleccion.
+const cuerpoTabla = fuenteDe('type-chart.js').match(/export function renderTypeChart\(container\) \{([\s\S]*?)container\.innerHTML/)?.[1] ?? '';
+check('renderTypeChart reinicia la seleccion antes de pintar', /selectedTypes = \[\];/.test(cuerpoTabla), true);
+
+// Las cascaras pintan la cabecera de contenido.js: la de las calculadoras
+// ensenaba "calculator.title" crudo, porque comparten base sin claves propias.
+const { cascaraDeRuta } = await import('../js/cascaras.js');
+const h1De = html => html?.match(/<h1>([^<]*)<\/h1>/)?.[1] ?? null;
+const esDic = (await import('../js/i18n-es.js')).default;
+check('las tres calculadoras con su h1', [
+  h1De(cascaraDeRuta('/calculator', ['calculator'], new URLSearchParams())),
+  h1De(cascaraDeRuta('/calculator', ['calculator'], new URLSearchParams('tab=damage'))),
+  h1De(cascaraDeRuta('/calculator', ['calculator'], new URLSearchParams('tab=catch'))),
+], [esDic['calc.title'], esDic['dmg.title'], esDic['capture.title']]);
+check('ninguna clave cruda en las cascaras de las indexables',
+  ['/calculator', '/pokedex', '/types', '/types/fire', '/egg/ground', '/data', '/faq', '/moves']
+    .map(p => cascaraDeRuta(p, p.split('/').filter(Boolean), new URLSearchParams()))
+    .filter(html => !html || /\b(calculator|hub|types|egg)\.title\b/.test(html)).length, 0);
+check('la de un tipo con su nombre y su miga', [
+  h1De(cascaraDeRuta('/types/fire', ['types', 'fire'])), /class="migas"/.test(cascaraDeRuta('/types/fire', ['types', 'fire'])),
+], ['Fuego', true]);
+check('un tipo que no existe no tiene cascara', cascaraDeRuta('/types/x', ['types', 'x']), null);
 
 console.log(failed ? `\n${failed} check(s) failed\n` : '\nAll checks passed\n');
 process.exit(failed ? 1 : 0);
