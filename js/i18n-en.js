@@ -583,6 +583,7 @@ export default {
     'contenido.tipo.pocoEficaz': 'Not very effective against',
     'contenido.tipo.sinEfecto': 'No effect on',
     'contenido.tipo.pokemon': '{tipo}-type Pokémon',
+    'contenido.tipo.formas': '{tipo}-type Mega Evolutions and regional forms',
     'contenido.grupo.miembros': 'Members',
     'contenido.grupo.crian': 'Who they breed with',
     'contenido.grupo.propio': 'With each other, within the {grupo} group',

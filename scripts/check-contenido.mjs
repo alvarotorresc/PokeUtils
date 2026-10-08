@@ -100,6 +100,19 @@ check('la FAQ', miga('/faq'), ['Inicio /', 'Preguntas frecuentes /faq']);
 check('en ingles', miga('/types/fire', 'en'), ['Home /en', 'Data /en/data', 'Type chart /en/types', 'Fire /en/types/fire']);
 check('en ingles, un grupo', miga('/egg/no-eggs', 'en'),
   ['Home /en', 'Pokédex /en/pokedex', 'Egg groups /en/egg-groups', 'Undiscovered /en/egg-groups/no-eggs']);
+// PR 5: una ficha de especie, 3 pasos; una forma con URL propia cuelga de su
+// especie, 4. Sin especieDeForma (una especie, o la forma pintada como pestana)
+// se queda en 3.
+const migaFicha = (logica, extra, l = 'es') => breadcrumbItems(logica, { ...CTX[l], ...extra }).map(i => `${i.nombre} ${i.url}`);
+check('una ficha de especie y una de forma', [
+  migaFicha('/pokedex/6', { nombre: 'Charizard' }),
+  migaFicha('/pokedex/10034', { nombre: 'Mega-Charizard X', especieDeForma: { logica: '/pokedex/6', nombre: 'Charizard' } }),
+  migaFicha('/pokedex/10091', { nombre: 'Alolan Rattata', especieDeForma: { logica: '/pokedex/19', nombre: 'Rattata' } }, 'en'),
+], [
+  ['Inicio /', 'Pokédex /pokedex', 'Charizard /pokedex/charizard'],
+  ['Inicio /', 'Pokédex /pokedex', 'Charizard /pokedex/charizard', 'Mega-Charizard X /pokedex/charizard-mega-x'],
+  ['Home /en', 'Pokédex /en/pokedex', 'Rattata /en/pokedex/rattata', 'Alolan Rattata /en/pokedex/rattata-alola'],
+]);
 
 const malas = [];
 for (const l of ['es', 'en']) {
@@ -272,11 +285,23 @@ check('nombrePokemon es pokeName, en las 1351 entradas y los dos idiomas',
   ['es', 'en'].flatMap(l => pokemon.filter(p => nombrePokemon(p, l) !== pokeName(p, l)).map(p => `${l} ${p.name}`)), []);
 const cuantas = (html, re) => (html.match(re) ?? []).length;
 const fuego = { es: tipoHTML('fire', DATOS.es), en: tipoHTML('fire', DATOS.en) };
-check('Fuego: tira de 18, seis secciones y el h2 de sus especies', [
+check('Fuego: tira de 18, seis secciones, el h2 de sus especies y el de sus formas', [
   cuantas(fuego.es, /<a class="type-badge/g), cuantas(fuego.es, /<h2/g), cuantas(fuego.es, /aria-current="page"/g),
   /<h2 class="section-title">Pokémon de tipo Fuego <span class="ficha-cuenta">81<\/span><\/h2>/.test(fuego.es),
   /<h2 class="section-title">Fire-type Pokémon <span class="ficha-cuenta">81<\/span><\/h2>/.test(fuego.en),
-], [18, 7, 1, true, true]);
+  /<h2 class="section-title">Megaevoluciones y formas regionales de tipo Fuego <span class="ficha-cuenta">17<\/span><\/h2>/.test(fuego.es),
+  /<h2 class="section-title">Fire-type Mega Evolutions and regional forms <span class="ficha-cuenta">17<\/span><\/h2>/.test(fuego.en),
+], [18, 8, 1, true, true, true, true]);
+// PR 5: las formas con URL propia de cada tipo, en su propia lista y a su
+// pagina, para que queden a 3 clics de la portada. Ni las de sin URL (la gorra
+// de Pikachu, Gigamax) ni las especies.
+const listaFormas = html => html.split('lista-pokemon')[2]?.split('</ul>')[0] ?? '';
+check('y las 17 formas de Fuego, cada una a su pagina', [
+  cuantas(listaFormas(fuego.es), /<li><a href="\/pokedex\//g),
+  listaFormas(fuego.es).includes('<a href="/pokedex/charizard-mega-x">Mega-Charizard X</a>'),
+  listaFormas(fuego.en).includes('<a href="/en/pokedex/arcanine-hisui">Hisuian Arcanine</a>'),
+  listaFormas(fuego.es).includes('href="/pokedex/charizard"'),
+], [17, true, true, false]);
 check('y las 81 especies enlazadas a su ficha, en su idioma', [
   cuantas(fuego.es.split('lista-pokemon')[1], /<li><a href="\/pokedex\//g),
   fuego.es.includes('<a href="/pokedex/charizard">Charizard</a>'), fuego.en.includes('<a href="/en/pokedex/charizard">Charizard</a>'),

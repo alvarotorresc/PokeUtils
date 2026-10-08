@@ -240,9 +240,13 @@ const umami = html => html.replace(/<!--[\s\S]*?-->/g, '').match(/<script\b[^>]*
 check('Umami ignora la query en el esqueleto',
   umami(esqueleto).map(t => /\sdata-exclude-search="true"/.test(t)), [true]);
 check('y en las paginas generadas', umami(pika).map(t => /\sdata-exclude-search="true"/.test(t)), [true]);
-// Sin plantilla (una forma, un movimiento), el <main> se queda vacio.
+// Sin plantilla (un movimiento, una habilidad), el <main> se queda vacio. Una
+// forma con URL propia ya lleva la suya (PR 5), aunque siga con noindex.
 check('el <main> sigue ahi, vacio, en una pagina sin plantilla',
-  ['/pokedex/charizard-mega-x', '/movimientos/impactrueno'].map(u => /<main class="main" id="app" data-reservando><\/main>/.test(paginaHtml(esqueleto, por(u)))),
+  ['/movimientos/impactrueno', '/en/abilities/static'].map(u => /<main class="main" id="app" data-reservando><\/main>/.test(paginaHtml(esqueleto, por(u)))),
+  [true, true]);
+check('y una forma con URL propia lleva su ficha en el shell, con noindex',
+  [paginaHtml(esqueleto, por('/pokedex/charizard-mega-x')).includes('<div data-shell data-ruta="/pokedex/10034">'), por('/pokedex/charizard-mega-x').noindex],
   [true, true]);
 
 // Una indexable lleva su contenido dentro de <div data-shell data-ruta>, en el

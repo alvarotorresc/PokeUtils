@@ -530,6 +530,10 @@ export function fichaHTML(ctx, { pokemon, allPokemon, abilities, variants, varia
   // pokemon.json y no `pokemon`, que no trae megaStone.
   const entrada = allPokemon.find(p => p.id === pokemon.id) ?? pokemon;
   const propia = tieneUrlPropia(entrada);
+  // La miga de una forma con URL propia pasa por su especie (4 pasos: portada,
+  // Pokedex, especie y forma); la de una especie o una pestana de forma sin URL,
+  // no (3).
+  const especieDeForma = { logica: `/pokedex/${dexId}`, nombre: displayName(allPokemon.find(p => p.id === dexId), ctx) };
   // Anterior y siguiente, en el idioma de la pagina. api.js los daba ya
   // nombrados, siempre en espanol: la ficha inglesa de Kingambit ofrecia
   // "Colmilargo" en vez de Great Tusk.
@@ -564,7 +568,7 @@ export function fichaHTML(ctx, { pokemon, allPokemon, abilities, variants, varia
 
   return `
     <div class="poke-detail${animar ? ' fade-in' : ''}">
-      ${breadcrumbHTML(`/pokedex/${pokemon.id}`, { ...ctx, nombre })}
+      ${breadcrumbHTML(`/pokedex/${pokemon.id}`, { ...ctx, nombre, ...(propia ? { especieDeForma } : {}) })}
 
       <div class="bento">
       <section class="b b-id">

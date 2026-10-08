@@ -40,8 +40,8 @@ import { TITULOS_SEO } from '../js/titulos.js';
 import { TOOLS } from '../js/tools.js';
 import { readPngSize, pngLooksFlat } from './build-icons.mjs';
 import { INDEXABLES, esIndexable, esFichaEspecie, ULTIMA_ESPECIE, contarPalabras, nombrePokemon } from '../js/contenido.js';
-import { textoEspecie } from '../js/ficha-texto.js';
-import { isForm, tieneUrlPropia, formaEnlazable, formsOf } from '../js/forms.js';
+import { textoEspecie, textoForma } from '../js/ficha-texto.js';
+import { isForm, tieneUrlPropia, formaEnlazable, formsOf, esMega, regionDe, REGIONES, MEGA_SIN_PIEDRA } from '../js/forms.js';
 import { TYPE_NAMES_FULL, TYPE_NAMES_FULL_EN } from '../js/data.js';
 import { pokeName } from '../js/i18n.js';
 import diccionarioEs from '../js/i18n-es.js';
@@ -877,6 +877,8 @@ async function generarPaginas(esqueleto) {
   for (const f of indexables) for (const destino of enlacesDe(porFichero.get(f))) if (destino !== f) entrantes.get(destino).add(f);
   const lejos = [];
   const profundidad = {};
+  const fichasDeForma = new Set(pokemon.filter(p => isForm(p) && tieneUrlPropia(p))
+    .flatMap(p => IDIOMAS.map(l => ficheroDe(urlDe(`/pokedex/${p.id}`, l)))));
   for (const [l, raiz] of [['es', 'index.html'], ['en', 'en.html']]) {
     const distancia = new Map([[raiz, 0]]);
     const cola = [raiz];
@@ -893,6 +895,22 @@ async function generarPaginas(esqueleto) {
     for (const f of [...indexables].filter(x => idiomaDeFichero(x) === l)) {
       if (!(distancia.get(f) <= 3)) lejos.push(`${f} (${distancia.has(f) ? `${distancia.get(f)} clics` : 'inalcanzable'})`);
     }
+    // Y las fichas de forma con URL propia, que aun llevan noindex: a 3 clics
+    // como mucho por indexables (la lista de formas de cada tipo), el ultimo
+    // desde una indexable hasta la forma. Cuando se indexen, el recorrido de
+    // arriba las cubre solo.
+    const distanciaForma = new Map();
+    for (const [origen, d] of distancia) {
+      for (const m of porFichero.get(origen).matchAll(/<a\s[^>]*?href="(\/[^"#?]*)[^"]*"[^>]*>/g)) {
+        const destino = ficheroDe(m[1] === '' ? '/' : m[1]);
+        if (!fichasDeForma.has(destino) || idiomaDeFichero(destino) !== l) continue;
+        distanciaForma.set(destino, Math.min(distanciaForma.get(destino) ?? Infinity, d + 1));
+      }
+    }
+    for (const f of [...fichasDeForma].filter(x => idiomaDeFichero(x) === l)) {
+      if (!(distanciaForma.get(f) <= 3)) lejos.push(`${f} (forma, ${distanciaForma.has(f) ? `${distanciaForma.get(f)} clics` : 'inalcanzable'})`);
+    }
+    profundidad[`${l}-formas`] = Math.max(...[...distanciaForma.values()]);
   }
   const huerfanas = [...entrantes].filter(([, desde]) => desde.size === 0).map(([f]) => f);
   if (lejos.length || huerfanas.length) {
@@ -1070,19 +1088,74 @@ function comprobarFichasDeEspecie({ pokemon, abilities, evolutions, dex, porFich
     }
   }
 
-  // (x) Las paginas de forma no llevan texto derivado (habla de la especie,
-  // D8) ni shell, y siguen con noindex.
-  const formasConPagina = pokemon.filter(p => isForm(p) && tieneUrlPropia(p));
+  // (y) Contenido de forma. Las 155 con URL propia (megas y regionales) llegan
+  // con su ficha en el shell, como las especies, y siguen con noindex hasta el
+  // commit que las indexe. Lo esperado sale de los datos, no de fichaHTML: un
+  // h1, el de su nombre; la miga de 4 pasos, por su especie; .intro-ficha con
+  // los parrafos de textoForma, sin la descripcion de la especie (D4); la
+  // tarjeta de obtencion con la megapiedra (o el movimiento de Rayquaza) o la
+  // region; y ningun enlace interno fuera de dist/ o de su idioma.
+  const formasConPagina = pokemon.filter(p => isForm(p) && tieneUrlPropia(p)).sort((a, b) => a.id - b.id);
   for (const p of formasConPagina) {
+    const especie = porId.get(p.speciesId);
     for (const l of IDIOMAS) {
       const f = ficheroDe(urlDe(`/pokedex/${p.id}`, l));
       const html = porFichero.get(f);
-      if (html.includes('intro-ficha') || html.includes('data-shell')) throw new Error(`(x) dist/${f} es de una forma y lleva texto derivado o shell`);
-      if (!/<meta name="robots" content="noindex">/.test(html)) throw new Error(`(x) dist/${f} es de una forma y no lleva noindex`);
+      if (!html) throw new Error(`(y) dist/${f} no existe`);
+      const falla = que => { throw new Error(`(y) dist/${f} (#${p.id} ${p.name}, ${l}): ${que}`); };
+      if (!/<meta name="robots" content="noindex">/.test(html)) falla('no lleva noindex');
+      const shell = shellDe(f, html);
+
+      const nombre = nombrePokemon(p, l);
+      const h1s = unico(html.replace(/<script\b[\s\S]*?<\/script>/g, ''), /<h1\b[^>]*>([\s\S]*?)<\/h1>/g);
+      if (JSON.stringify(h1s) !== JSON.stringify([escFicha(nombre)])) falla(`lleva los h1 ${JSON.stringify(h1s)} y tiene que llevar uno, ${JSON.stringify(nombre)}`);
+
+      // La miga: portada, Pokedex, su especie y la forma, sin enlace en el ultimo.
+      const miga = shell.match(/<nav class="migas"[^>]*><ol>([\s\S]*?)<\/ol><\/nav>/)?.[1];
+      if (!miga) falla('no lleva miga');
+      const pasos = unico(miga, /<li\b[^>]*>([\s\S]*?)<\/li>/g).map(t => t.replace(/<[^>]*>/g, ''));
+      const enlacesMiga = hrefs(miga);
+      const migaEsperada = [urlDe('/', l), urlDe('/pokedex', l), urlDe(`/pokedex/${especie.id}`, l)];
+      if (pasos.length !== 4 || JSON.stringify(enlacesMiga) !== JSON.stringify(migaEsperada)
+        || pasos[2] !== escFicha(nombrePokemon(especie, l)) || pasos[3] !== escFicha(nombre)) {
+        falla(`la miga es ${JSON.stringify(pasos)} con enlaces ${JSON.stringify(enlacesMiga)}`);
+      }
+
+      // Todo textoForma, escapado, y nada mas.
+      const texto = textoForma(p.id, { l, dic: DIC[l], pokemon, abilities });
+      if (texto.parrafos.length < 2 || texto.parrafos.some(t => !t?.trim())) falla('textoForma no da sus parrafos');
+      const intro = unico(shell, /<section class="intro intro-ficha">([\s\S]*?)<\/section>/g);
+      if (JSON.stringify(intro) !== JSON.stringify([texto.parrafos.map(t => `<p>${escFicha(t)}</p>`).join('')])) {
+        falla(`.intro-ficha no lleva textoForma escapado: ${JSON.stringify(intro.map(t => t.slice(0, 80)))}`);
+      }
+
+      // La obtencion: la piedra, el movimiento o la region, segun los datos.
+      const obtencion = shell.match(/<div class="obtencion">([\s\S]*?)<\/div>\s*<\/div>\s*<\/section>/)?.[1];
+      if (!obtencion) falla('no lleva la tarjeta de obtencion');
+      const piedra = esMega(p) ? p.megaStone : null;
+      const esperado = esMega(p) ? (piedra?.[l] ?? MEGA_SIN_PIEDRA[p.name]?.[l]) : REGIONES[regionDe(p)]?.[l]?.nombre;
+      if (!esperado) falla('los datos no dicen ni piedra, ni movimiento, ni region');
+      const nombresObtencion = unico(obtencion, /<div class="obtencion-nombre">([^<]*)<\/div>/g);
+      if (JSON.stringify(nombresObtencion) !== JSON.stringify([escFicha(esperado)])) falla(`la obtencion dice ${JSON.stringify(nombresObtencion)} y tiene que decir ${JSON.stringify(esperado)}`);
+      const conSprite = /<img class="obtencion-sprite"/.test(obtencion);
+      if (conSprite !== Boolean(piedra && !piedra.noSprite)) falla(`la obtencion ${conSprite ? 'lleva' : 'no lleva'} el sprite de la piedra`);
+
+      // Todos los internos llevan a un fichero de dist/ en el idioma de la
+      // pagina, y la forma enlaza su especie y sus tipos.
+      const todos = hrefs(shell);
+      for (const href of todos) {
+        const { path, ruta } = logicaDeHref(href);
+        if (!path.startsWith('/')) continue;
+        if (!ruta || ruta.idioma !== l || !enDisco.has(ficheroDe(path))) falla(`enlaza ${path}, que no es una pagina ${l} de dist/`);
+      }
+      const exigidos = [urlDe(`/pokedex/${especie.id}`, l), ...p.types.map(t => urlDe(`/types/${t}`, l))];
+      const falta = exigidos.find(href => !todos.includes(href));
+      if (falta) falla(`no enlaza ${falta}`);
     }
   }
 
-  // (k) ampliado a las fichas: ninguna cadena espanola en una ficha inglesa.
+  // (k) ampliado a las fichas: ninguna cadena espanola en una ficha inglesa, de
+  // especie o de forma con URL propia.
   // Las espanolas salen de los datos y del diccionario, no de las paginas
   // (restar las de las paginas inglesas a las de las espanolas daria, por
   // definicion, un conjunto que no esta en ninguna inglesa): los nombres de
@@ -1107,7 +1180,7 @@ function comprobarFichasDeEspecie({ pokemon, abilities, evolutions, dex, porFich
     for (const m of ficha.moves ?? []) anadir(espanolas, m.nameEs), anadir(inglesas, m.nameEn);
   }
   for (const t of inglesas) espanolas.delete(t);
-  for (const p of especies) {
+  for (const p of [...especies, ...formasConPagina]) {
     const f = ficheroDe(urlDe(`/pokedex/${p.id}`, 'en'));
     const shell = shellDe(f, porFichero.get(f)).replace(/<div class="name-en">[^<]*<\/div>/, '');
     const colada = textosVisibles(shell).find(t => espanolas.has(t));
@@ -1242,7 +1315,8 @@ async function main() {
   console.log(`        arranque (app y sus import estaticos): ${arranque.length} ficheros, ${kb(arranque.reduce((s, b) => s + gz(b), 0))} gz`);
   console.log(`  CSS:  ${kb(gz(cssFuente))} gz -> ${kb(gz(cssBuf))} gz  (${cssNombre})`);
   console.log(`  HTML: ${nPaginas} paginas y dist/_redirects; ${nIndexables} indexables, `
-    + `las fichas a ${IDIOMAS.map(l => `${profundidad[l]} clics (${l})`).join(' y ')} de su portada como mucho`);
+    + `las fichas a ${IDIOMAS.map(l => `${profundidad[l]} clics (${l})`).join(' y ')} de su portada como mucho, `
+    + `las de forma a ${IDIOMAS.map(l => `${profundidad[`${l}-formas`]} (${l})`).join(' y ')}`);
   console.log(`  dist: ${kb(await pesoDe(OUT))} en disco, con data/, sprites/ y fonts/`);
   console.log(`  en ${((Date.now() - inicio) / 1000).toFixed(1)} s\n`);
 }

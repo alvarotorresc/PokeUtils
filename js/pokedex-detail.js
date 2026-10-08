@@ -206,11 +206,12 @@ function textoDe(dexId, pokemon, ctx, { allPokemon, abilities, evolutions, dex }
 
 // ===== La ficha que llega en el HTML =====
 //
-// En la primera carga de una especie el build ya ha pintado la ficha entera
-// dentro de <div data-shell data-ruta="/pokedex/<id>">, y route() la conserva
+// En la primera carga de una especie, o de una forma con URL propia
+// (/pokedex/10034), el build ya ha pintado la ficha entera dentro de
+// <div data-shell data-ruta="/pokedex/<id>">, y route() la conserva
 // (logicaDeShell). Aqui no se pinta el esqueleto encima: se cargan los datos y
-// se adopta. Una forma no llega con shell, ni una pestana de forma, que repinta
-// sin pasar por el router.
+// se adopta. Una pestana de forma no llega con shell: repinta sin pasar por el
+// router.
 function shellDeFicha(container, id) {
   const shell = container.querySelector(':scope > [data-shell]');
   return shell?.dataset.ruta === `/pokedex/${id}` ? shell : null;
@@ -236,9 +237,19 @@ function textoDelShell(shell, esForma) {
 // /data/* de cache vieja, una seccion que no cargo), se cambia el contenido
 // entero en un solo paso. isEqualNode y no comparar cadenas: el navegador
 // serializa a su manera (&#39; vuelve como ').
+//
+// Menos la clase de la entrada de los sprites (wireSpriteFade, ui.js): un
+// sprite del shell que termina de cargar mientras llegan los datos ya la lleva,
+// y la ficha recien pintada no. Sin copiarla, esa sola clase repintaba la
+// ficha entera; pasaba sobre todo en las megas, con el sprite de su piedra.
 function adoptarShell(shell, html) {
   const nueva = document.createElement('div');
   nueva.innerHTML = html;
+  const vistas = shell.querySelectorAll('img');
+  const nuevas = nueva.querySelectorAll('img');
+  if (vistas.length === nuevas.length) {
+    vistas.forEach((img, i) => { if (img.classList.contains('sprite-entra')) nuevas[i].classList.add('sprite-entra'); });
+  }
   if (!nueva.isEqualNode(shell)) shell.replaceChildren(...nueva.childNodes);
 }
 

@@ -31,10 +31,11 @@ import { TOOLS, CATEGORIES, toolsIn } from '../js/tools.js';
 import {
   INDEXABLES, esIndexable, encabezadoHTML, introHTML, tipoHTML, grupoHTML, faqHTML, listaGruposHTML,
   rejillaHerramientasHTML, idsDeCategoria, tiposTodosHTML, portadaHTML, chipsInicialesHTML, breadcrumbItems, nombreDe, nombrePokemon,
+  ULTIMA_ESPECIE,
 } from '../js/contenido.js';
 import { conDerivados } from '../js/derivados.js';
 import { reservaDe } from '../js/cascaras.js';
-import { descripcionEspecie, textoEspecie, descripcionForma } from '../js/ficha-texto.js';
+import { descripcionEspecie, textoEspecie, descripcionForma, textoForma } from '../js/ficha-texto.js';
 import { fichaHTML, formLabels } from '../js/ficha-pokemon.js';
 import { detallePokemon } from '../js/api.js';
 import textosEs from '../js/textos-es.js';
@@ -146,9 +147,14 @@ function fichas(l, { pokemon, moves, abilities, evolutions, dex }) {
     .sort((a, b) => a.id - b.id)
     .map(p => {
       const nombre = pokeName(p, l);
+      // La de una forma lleva tambien su ficha en el shell (`forma`), y el nombre
+      // y la especie de su miga de 4 pasos para el BreadcrumbList del commit
+      // que las indexe.
       if (isForm(p)) {
+        const especie = pokemon.find(q => q.id === p.speciesId);
         return { logica: `/pokedex/${p.id}`, titulo: tituloDe(`/pokedex/${p.id}`, nombre, l),
-          descripcion: descripcionForma(p.id, { l, pokemon, abilities }) };
+          descripcion: descripcionForma(p.id, { l, pokemon, abilities }), forma: true, nombre: nombrePokemon(p, l),
+          especieDeForma: { logica: `/pokedex/${especie.id}`, nombre: nombrePokemon(especie, l) } };
       }
       // Sin recortar: ya sale de 120 a 155, y si no, que lo vea check-pages en
       // vez de cortarla aqui con unos puntos suspensivos. `nombre` es el de la
@@ -195,9 +201,10 @@ export async function leerDex(pokemon, leer) {
 // especies.
 //
 // `contenido` (lo que va en el shell) va con la plantilla y no con la
-// indexabilidad: las 53 por idioma de INDEXABLES y las 1025 fichas de especie lo
-// llevan, y las fichas aunque se apagara FICHAS_INDEXABLES. El noindex, el
-// JSON-LD y el lastmod si dependen de esIndexable.
+// indexabilidad: las 53 por idioma de INDEXABLES, las 1025 fichas de especie y
+// las 155 de forma con URL propia lo llevan, las fichas aunque se apagara
+// FICHAS_INDEXABLES y las formas con noindex. El noindex, el JSON-LD y el
+// lastmod si dependen de esIndexable.
 export function rutasPublicas({ indice, pokemon, moves, abilities, evolutions, dex }) {
   fijarIndice(indice);
   const textos = textosConDerivados({ pokemon, moves });
@@ -219,11 +226,11 @@ export function rutasPublicas({ indice, pokemon, moves, abilities, evolutions, d
       noindex: !indexable,
     };
     const ctx = { l, dic: DICCIONARIOS[l], textos: textos[l], pokemon, abilities, evolutions, dex };
-    const conContenido = fila.especie ? { ...fija, contenido: contenidoDe(fila.logica, ctx) } : fija;
+    const conContenido = fila.especie || fila.forma ? { ...fija, contenido: contenidoDe(fila.logica, ctx) } : fija;
     if (!indexable) return conContenido;
     // La ficha no tiene su nombre en ninguna tabla: la miga lo pide en ctx.
     const ctxLd = fila.especie ? { ...ctx, nombre: fila.nombre } : ctx;
-    const conLd = { ...conContenido, jsonLd: jsonLdDe(fila.logica, ctxLd, fija.descripcion), deps: depsDe(fila.logica, l) };
+    const conLd = { ...conContenido, jsonLd: jsonLdDe(fila.logica, ctxLd, fija.descripcion), deps: depsDe(fila.logica, l, pokemon) };
     if (fila.especie) return conLd;
     return fila.logica === '/'
       ? { ...conLd, contenido: portadaHTML(ctx), chips: chipsInicialesHTML(ctx) }
@@ -393,9 +400,19 @@ const MODULOS = {
     'data/pokemon.json', 'data/abilities.json', 'data/evolutions.json'],
 };
 
-export function depsDe(logica, l) {
+// Una forma (/pokedex/10034) no tiene data/dex propio: su ficha lee el de su
+// especie (evolucion, movimientos, cria), y su tarjeta de obtencion, la
+// megapiedra que ya viene en pokemon.json. Por eso depsDe recibe pokemon.json
+// cuando la ruta es de una forma; sin el, lanza en vez de pedir un fichero
+// que no existe.
+export function depsDe(logica, l, pokemon) {
   const [seccion, id] = logica.split('/').filter(Boolean);
-  if (seccion === 'pokedex' && id) return [...MODULOS.ficha, `data/dex/${id}.json`];
+  if (seccion === 'pokedex' && id) {
+    if (Number(id) <= ULTIMA_ESPECIE) return [...MODULOS.ficha, `data/dex/${id}.json`];
+    const forma = pokemon?.find(p => p.id === Number(id));
+    if (!forma || !tieneUrlPropia(forma)) throw new Error(`pages.mjs: ${logica} no es una especie ni una forma con URL propia`);
+    return [...MODULOS.ficha, `data/dex/${forma.speciesId}.json`];
+  }
   const clave = seccion === 'types' && id ? 'tipo' : seccion === 'egg' && id ? 'grupo' : logica;
   const modulos = MODULOS[clave];
   if (!modulos) throw new Error(`pages.mjs: ${logica} es indexable y no tiene deps en MODULOS`);
@@ -448,21 +465,33 @@ export function contenidoDe(logica, ctx) {
 // entrada animada y con el meta vacio, que el cliente rellena despues. El
 // objeto del Pokemon sale de detallePokemon, la misma funcion que usa
 // fetchPokemonDetail, y las pestanas de formLabels.
+//
+// La de una forma con URL propia (megas y regionales), igual que la pinta el
+// cliente: con el dex y las pestanas de su especie, y su texto de textoForma.
+// La tarjeta de obtencion sale de la propia entrada (megaStone) y de las
+// tablas de forms.js, sin items.json. Una forma sin URL propia no tiene pagina:
+// vive en la ficha de su especie, con su ancla.
 function contenidoFicha(id, ctx) {
   const { l, dic, pokemon: todos, abilities, evolutions, dex } = ctx;
   const entrada = todos.find(p => p.id === id);
-  if (!entrada || isForm(entrada)) throw new Error(`pages.mjs: /pokedex/${id} no es una especie y su pagina no lleva ficha`);
-  const ficha = dex.get(id);
-  const variants = [entrada, ...formsOf(id, todos)];
+  if (!entrada || (isForm(entrada) && !tieneUrlPropia(entrada))) {
+    throw new Error(`pages.mjs: /pokedex/${id} no es una especie ni una forma con URL propia y su pagina no lleva ficha`);
+  }
+  const dexId = entrada.speciesId || id;
+  const especie = todos.find(p => p.id === dexId);
+  const ficha = dex.get(dexId);
+  const variants = [especie, ...formsOf(dexId, todos)];
   return fichaHTML({ l, dic }, {
     pokemon: detallePokemon(entrada, abilities, ficha),
     allPokemon: todos,
     abilities,
     variants,
-    variantLabels: formLabels(variants, entrada.name, { l, dic }),
+    variantLabels: formLabels(variants, especie.name, { l, dic }),
     evolutions,
     dex: ficha,
-    texto: textoEspecie(id, { l, dic, pokemon: todos, abilities, evolutions, dex: ficha }),
+    texto: isForm(entrada)
+      ? textoForma(id, { l, dic, pokemon: todos, abilities })
+      : textoEspecie(id, { l, dic, pokemon: todos, abilities, evolutions, dex: ficha }),
     animar: false,
   });
 }

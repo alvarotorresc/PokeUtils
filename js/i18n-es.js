@@ -605,6 +605,7 @@ export default {
     'contenido.tipo.pocoEficaz': 'Poco eficaz contra',
     'contenido.tipo.sinEfecto': 'Sin efecto contra',
     'contenido.tipo.pokemon': 'Pokémon de tipo {tipo}',
+    'contenido.tipo.formas': 'Megaevoluciones y formas regionales de tipo {tipo}',
     'contenido.grupo.miembros': 'Miembros',
     'contenido.grupo.crian': 'Con quién crían',
     'contenido.grupo.propio': 'Entre ellas, dentro del grupo {grupo}',
